@@ -39,6 +39,7 @@ import Shell.Script
 import Shell.Harness
 import Shell.Cli
 import Shell.Encode
+import Shell.Vectors
 
 open Lean Elab Command
 
@@ -48,14 +49,17 @@ namespace Shell.Gate
     every scan below — it is a metaprogram over the environment, not shell code. -/
 def ioModules : List Name :=
   [`Shell.Store, `Shell.Cli, `Shell.Encode, `Shell.Harness,
+   -- CV-1 / C-2: the golden-vector emitter writes the conformance bundle's two vector
+   -- tables. It uses no primitive that was not already whitelisted below.
+   `Shell.Vectors,
    -- F-43(a): the executable roots perform IO by nature. They are now SCANNED (see
    -- `coveredModule`) and therefore must be named here — invisible is not permitted.
-   `Main, `EncodeMain, `HarnessMain]
+   `Main, `EncodeMain, `HarnessMain, `VectorsMain]
 
 /-- The executable roots. Their `main` is top-level, so the old `Shell`-name-prefix scan
     never reached them: a clock, `getEnv`, or a random source in `main` built
     all-gates-green (F-43(a), refuter wave 2). Coverage is by MODULE now, not by name. -/
-def rootModules : List Name := [`Main, `EncodeMain, `HarnessMain]
+def rootModules : List Name := [`Main, `EncodeMain, `HarnessMain, `VectorsMain]
 
 /-- The modules this gate covers. `Shell.Gate` is exempt: it is a metaprogram over the
     environment, not shell code. -/

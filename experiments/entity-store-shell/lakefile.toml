@@ -1,5 +1,8 @@
 name = "entity-store-shell"
-defaultTargets = ["Shell", "Roots", "RootGate", "estore", "estore-encode", "harness"]
+defaultTargets = [
+  "Shell", "Roots", "RootGate",
+  "estore", "estore-encode", "harness", "estore-vectors",
+]
 
 [[require]]
 name = "entity-store"
@@ -16,12 +19,12 @@ name = "Shell"
 # them. Without this they are invisible to every G-S scan (F-43(a)).
 [[lean_lib]]
 name = "Roots"
-roots = ["Main", "EncodeMain", "HarnessMain"]
+roots = ["Main", "EncodeMain", "HarnessMain", "VectorsMain"]
 
 # The whole-package gate: scans the executable roots too (F-43(a)).
 [[lean_lib]]
 name = "RootGate"
-roots = ["RootGate.Cli", "RootGate.Encode", "RootGate.Harness"]
+roots = ["RootGate.Cli", "RootGate.Encode", "RootGate.Harness", "RootGate.Vectors"]
 
 [[lean_exe]]
 name = "estore"
@@ -34,3 +37,7 @@ root = "HarnessMain"
 [[lean_exe]]
 name = "estore-encode"
 root = "EncodeMain"
+
+[[lean_exe]]
+name = "estore-vectors"
+root = "VectorsMain"

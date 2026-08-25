@@ -29,6 +29,15 @@ the caller's business — hence the `rm -rf` in the command rather than in the p
 `--verbose` to print every transcript line.
 
 ```bash
+rm -rf .harness-work && lake exe harness harness .harness-work --compare transcripts
+lake exe estore-vectors vectors
+```
+
+The two commands above regenerate nothing and check everything: the first byte-compares
+each script's transcript against the committed corpus, the second rewrites the golden
+vectors, which must come back byte-identical. See [Vectors](#vectors-the-conformance-bundles-first-two-tables).
+
+```bash
 lake exe estore --store /path/to/store init
 ```
 
@@ -78,7 +87,8 @@ Nothing in this package writes to `formal/`; the E2 carriers gain no instances a
 | [Shell/Model.lean](Shell/Model.lean) | the in-process model: `E2.StoreMap` under `E2.putPre` |
 | [Shell/Store.lean](Shell/Store.lean) | the disk store; the whole IO surface |
 | [Shell/Script.lean](Shell/Script.lean) | the fixture language |
-| [Shell/Harness.lean](Shell/Harness.lean) | the differential runner |
+| [Shell/Harness.lean](Shell/Harness.lean) | the differential runner, and the golden transcripts |
+| [Shell/Vectors.lean](Shell/Vectors.lean) | the golden-vector corpus and its emitter |
 | [Shell/Cli.lean](Shell/Cli.lean), [Shell/Encode.lean](Shell/Encode.lean) | `estore`, `estore-encode` |
 | [Shell/Gate.lean](Shell/Gate.lean) | the standing gates G-S1..G-S5 |
 
@@ -250,6 +260,24 @@ anywhere is a nonzero exit.
 | `25-name-roundtrip-hostile` | the name alphabet's edges round-trip through the hex filename: `r2-15`'s `trailing.` / `con` / `NUL`, a name that is itself 64 characters of lowercase hex, the 64-character cap admitted and 65 refused; and the five stray classes the encoding introduces — non-hex, UPPERCASE hex, invalid UTF-8, a decoded non-name, an overlong UTF-8 spelling |
 | `26-names-listing` | the `names` verb: the empty plane, bindings inserted in descending order and listed ascending, `Mu` sorting ahead of every lowercase name (codepoints, not case-folding), a rebind in place, and the verb gated like every other reader |
 
+### Golden transcripts — `--record` / `--compare`
+
+The comparison above is self-referential on its own. Both runners compute their observables
+with the same codec and the same digest, so a change to either moves both transcripts
+identically and the harness stays green; until CV-1 nothing about the transcripts was
+committed, and exactly one address existed estate-wide. Two flags close that:
+
+```bash
+rm -rf .harness-work && lake exe harness harness .harness-work --record  transcripts
+rm -rf .harness-work && lake exe harness harness .harness-work --compare transcripts
+```
+
+`--record` writes each script's canonical transcript to `transcripts/<script>.transcript`;
+`--compare` byte-compares each one against the committed file and fails naming the first
+differing script and line. Neither flag restructures the two runners — the recorded
+transcript IS the list of lines the comparison already builds — and with neither flag the
+behavior is exactly what it was before CV-1.
+
 ### Script language
 
 The whole file is a sequence of s-expressions; `;` comments to end of line. Steps are
@@ -347,6 +375,83 @@ canonicalization deliberately, to produce input the boundary must reject.
 lake exe estore-encode schema widget.schema widget.pre
 ```
 
+`estore-vectors` is the second such tool — the golden-vector emitter, described under
+[Vectors](#vectors-the-conformance-bundles-first-two-tables). Unlike `estore-encode` it does
+**not** sit outside the gates: it is an executable root of this package and is scanned like
+every other root.
+
+## Vectors — the conformance bundle's first two tables
+
+Ruling [CV-1](../../docs/entity-store/RULINGS.md) exports a versioned **conformance bundle**
+that the production monorepo pins: golden vectors, the wire-format specification, the script
+corpus, and the theorem-contract table. The glossary entry for it
+([CONTEXT.md](../../docs/entity-store/CONTEXT.md), *Conformance bundle*) sets the terms this
+corpus is built to — byte-deterministic, contents generated or proven only, no hand-written
+entries. This package holds three of those tables:
+
+| Table | Home | What it holds |
+|---|---|---|
+| Positive vectors | `vectors/positive.vectors` | one **admissible** carrier per encoder arm: fixture s-expression → pre-image hex → address hex |
+| Rejection vectors | `vectors/rejection.vectors` | one carrier per **admission clause**: fixture s-expression → the clause name |
+| Golden transcripts | `transcripts/*.transcript` | the 26 committed scripts' transcripts, one file per script |
+
+### What the corpus is for
+
+The differential harness was **self-referential**: exactly one committed address existed
+estate-wide (`harness/12-wfs-closed.script:39`) and no transcript was ever committed, so a
+codec or digest change moved both runners identically and the harness stayed green. Format
+drift had nowhere to show up. This corpus makes it a failing diff.
+
+The positive table's last section is the **continuity witness**: `(var 0)`, the carrier
+whose address that one committed script line already pinned. The emitter fails unless its
+own computation reproduces that address, so the corpus and the older committed byte string
+are one claim rather than two. It is inadmissible — it is rejection vector `R-01`'s `closed`
+carrier — so it sits in its own section with its verdict printed rather than hidden.
+
+### How to regenerate
+
+```bash
+lake exe estore-vectors vectors
+rm -rf .harness-work && lake exe harness harness .harness-work --record transcripts
+```
+
+Both are generated files: banner line 1 names the emitter and says DO NOT EDIT, LF endings,
+trailing newline, no timestamp, no host path, no git SHA. Re-running must produce identical
+bytes — that is the check, so run it and expect a clean `git diff`.
+
+`vectors/` is emitted by `lake exe estore-vectors`, whose corpus lives in
+[`Shell/Vectors.lean`](Shell/Vectors.lean). Every number in it is the proven functions' own
+output, called directly — `E2.preimageS`, `E2.preimageE`, `E2.canonS`, `E2.canonV`,
+`E2.schemaAdmissionClause`, `E2.valueAdmissionClause`, and `Shell.H`. What is written by
+hand is the fixture list and the arm labels: inputs and prose, never a row. The emitter is
+an executable root of this package and joins the G-S module coverage like every other root
+(the F-43(a) lesson) — a corpus is worth what the tool that generated it is worth.
+
+### The coverage rule
+
+**One vector per encoder arm; one rejection vector per admission clause.**
+
+The positive table names every one of the 22 tag values in
+[`E2/Encode.lean`](../../formal/entity-store/E2/Encode.lean) — 7 on the value plane
+(`0x10`–`0x16`), 2 on the check plane (`0x20`–`0x21`), 13 on the schema plane
+(`0x30`–`0x3c`) — plus the variants that ride inside a tag (`Prim`'s four, `UMode`'s two,
+field optionality, `filter`'s abort flag) and both arms of each frame (`encNat` single- and
+multi-byte, `encInt` `.ofNat` and `.negSucc`). Entity vectors carry the value universe and
+cite the schema vector they are typed by, by id and by address. The file's own arm index is
+generated from the same list, so it cannot drift from the rows.
+
+The rejection table names all six clauses — `closed`, `guarded`, `dup-key`, `spelling`,
+`lit-narrow`, `dup-key-value`. The clause column is **not** written by hand: it is the
+return value of `E2.schemaAdmissionClause` / `E2.valueAdmissionClause` called on the carrier
+the PUT boundary decodes, so a clause renamed in the core moves this file.
+
+**Coverage completeness is AUDITED, NOT PROVED.** That the fixture list names every arm is a
+reviewed claim, not a theorem — the same posture `canonicalSpellingB` carries in
+`E2/Model.lean`. Three narrower things *are* mechanical, and each fails the run rather than
+passing unnoticed: every positive fixture is admissible; the rejection carriers' called
+clauses cover the clause census exactly; and the continuity witness reproduces the committed
+address.
+
 ## Gates
 
 `lake build` runs them; a failure fails the build.
@@ -354,7 +459,7 @@ lake exe estore-encode schema widget.schema widget.pre
 | Gate | Check |
 |---|---|
 | G-S1 | no `opaque` and no `unsafe` constant under `Shell` — the `partial`→opaque trap. There is no `partial` in this package; every recursion is structural or takes fuel derived from the input length, and no fuel is a parameter of any verb or of any observable |
-| G-S2 | every constant whose type mentions `IO` lives in `Shell.Store`, `Shell.Cli`, `Shell.Encode`, or `Shell.Harness` |
+| G-S2 | every constant whose type mentions `IO` lives in `Shell.Store`, `Shell.Cli`, `Shell.Encode`, `Shell.Harness`, or `Shell.Vectors` |
 | G-S3 | the §3 IO whitelist by enumeration: every `IO.*` / `System.FilePath.*` constant the package references is listed and permitted. The effectful members are `readBinFile`, `writeBinFile`, `rename`, `createDirAll`, `readDir`, `pathExists`, `symlinkMetadata`, `println`, `eprintln` — and nothing else. Adding a clock, a random source, an environment read, or a socket fails the build here |
 | G-S4 | no shell **definition** shadows a core definition by name (constructors and compiler companions exempt) — rung 0's invariant, which a shell function named `canonS` would quietly break |
 | G-S5 | no `IO.FS.Metadata.accessed` and no `IO.FS.Metadata.modified` in the used-constant set. W3-15 admits `symlinkMetadata` so the scan can ask an entry's **type**; the struct it returns also carries two `SystemTime` fields, and §3's "no clock" would otherwise be admitted along with them. A forbidden list rather than an allowed one, so the leg keeps biting if a later edit adds the field to G-S3's whitelist |
@@ -362,10 +467,18 @@ lake exe estore-encode schema widget.schema widget.pre
 The gates scan `private` definitions too (they carry a `_private.` prefix that a naive
 scan exempts — which is most of this package).
 
+The gates run once per executable root (`Main`, `EncodeMain`, `HarnessMain`, `VectorsMain`)
+as well as over the library. Each root defines its own top-level `main`, so no single module
+can import them all; before those legs existed a clock or a random source in `main` built
+all-gates-green (F-43(a)).
+
 `Shell/Hash.lean` additionally re-checks `H` against the two kernel-proved CAVP digests
-(`Sha3.Kats.kat_sha3_512_empty`, `kat_sha3_512_37d518`) via `#guard`. These are compiled
-evaluation, conformance sanity and not theorems — the estate's `#guard` idiom, cf.
-`formal/fips202/Sha3/Impl.lean`. No digest was minted here.
+(`Sha3.Kats.kat_sha3_512_empty`, `kat_sha3_512_37d518`) via `#guard`, and
+`Shell/Vectors.lean` pins the continuity witness the same way — `preimageS (var 0)` and its
+address, so a change to `encSchema`, `preimageS`, `canonS`, `versionByte` or `H` fails the
+build before anyone thinks to regenerate. These are compiled evaluation, conformance sanity
+and not theorems — the estate's `#guard` idiom, cf. `formal/fips202/Sha3/Impl.lean`. No
+digest was minted here.
 
 ## Findings — questions the spec does not settle
 
