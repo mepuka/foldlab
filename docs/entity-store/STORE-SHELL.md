@@ -151,3 +151,18 @@ implementation. Windows leg unverified until the spike runs (dual-host gate).
 Home: `experiments/entity-store-shell/` at instrument grade; verified parts promote to
 `formal/` later as declared transformations. No file contact with the E2 tree or the
 other dispatched worktrees.
+
+## 9. Delivery record — SHELL-v0 (2026-08-25, codex worktree, adjudicated at merge)
+
+Delivered at rung 1 and claiming nothing above it: library, CLI verbs, and the
+differential harness — nine committed scripts, all green on the merged tree
+("9 scripts, all model/disk observables identical"), including corrupted-store (WF1),
+corrupted-typing, canonicity-strict, and hostile-bytes cases. The seat exceeded the
+brief with `Shell/Gate.lean`, making §1 rung 0 and §3's whitelist mechanical: G-S1
+opaque/unsafe scan (884 constants), G-S2 IO confinement to exactly
+`Shell.{Store,Cli,Encode,Harness}`, G-S3 an enumerated proof that every referenced
+IO/FilePath constant is whitelisted, G-S4 no core shadowing. Known follow-up: the
+branch predates A-3, so the boundary does not yet name `dupFreeS` explicitly —
+operationally covered today because a duplicate-key submission fails the §5 check-2
+re-canonicalization byte-compare. The daemon rung remains untouched (Windows
+`Std.Http` spike still owed).
