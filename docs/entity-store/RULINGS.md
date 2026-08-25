@@ -162,6 +162,20 @@ Terms minted with this ruling (entries in [CONTEXT.md](CONTEXT.md)): **oracle**,
 in-session design dialogue of 2026-08-25, and the ledger landing (`f32330c`…`6b25d5b`)
 that makes the bundle's theorem-contract table extractable rather than hand-written.
 
+## CV-2 — the test-capability ruling: no spawn class; transcripts are the rendezvous (2026-08-25, operator, in-session)
+
+One ruling closes the three items waiting on a harness capability class. **No
+process-spawn capability is admitted.** (1) **F-52 resolves as accepted residue**: the
+symlink/FIFO hazard legs stay hand-exercised (transcripts in the F-42 seat report),
+re-verified at the dual-host exercise; the protection itself is negatively validated.
+(2) **The third runner needs no spawn**: under CV-1 the monorepo's runner executes the
+bundle's script corpus in its own repo and byte-compares its transcripts against the
+committed golden transcripts — the transcripts are the cross-repo rendezvous; C-1's
+deepening therefore unifies the two in-process runners only. (3) **F-53's refusal fix**
+needs only the already-whitelisted `pathExists`: the harness exits 2 on a non-empty
+workdir. Evidence: C-2's landing (`2ae212c`…`250b895`), R-G C-1/C-2, the F-42 seat's
+hand-verification transcripts.
+
 ## R-1 — the Entity Store context ratified (2026-08-25, operator, in-session)
 
 `CONTEXT.md` ratified as recommended, discharging R-1 and completing W3-6 step 2: the
