@@ -1,19 +1,41 @@
 /-
 The canon bridge pins (coordinator, 2026-08-25, ruled in the PROCEDURE grill): the
-M17-feeding statements that `canonS`/`canonV` respect the admission judgments and
-conformance. FROZEN statements — refutation targets for wave 2 and proof targets for a
-later seat; a statement that resists proof or falls to a counterexample is a finding
-(F-number), never a silent reword.
+canon-preservation lemmas the M17 amendment consumes. FROZEN statements — a statement
+that resists proof or falls to a counterexample is a finding (F-number), never a silent
+reword.
 
-Two cracks surfaced AT PIN TIME and are priced into the statements:
-- F-23: `canonS` passes `.lit` payloads through while `canonV` sorts the same bytes on
-  the value plane, so the unconditional conformance bridge is FALSE (probe receipt in
-  FINDINGS). The bridge below conditions on `litsCanonicalB`. Ruling Q13 (whether
-  `canonS` should canonicalize `lit` payloads, making the condition vacuous) is OPEN.
-- F-24: the `refine` case forces the check semantics itself to be `canonV`-invariant —
-  an admission criterion for the R-4 allowlist, recorded for that session. The
-  resolver is fixed to `none` here (ref-free fragment first, as with M18); the
-  resolver-coherent extension is owed with M17'.
+AMENDED 2026-08-25 (window B, ruling W3-7).
+
+B1–B3 REMAIN, and route (i-a) is what makes them load-bearing. `Reachable.putS`'s
+premise is now `WFS (canonS s)`; B1 ∧ B2 ∧ B3 is exactly the proof that the new premise
+admits at least as many stores as the old one, so the amendment does not silently shrink
+`Reachable` on the schema plane. They are the canon-preservation lemmas the amendment
+consumes, and nothing more is claimed for them.
+
+B4 (`ObligationCanonRespectsConforms`) is RETIRED by declared amendment, and removed
+from this file. It bridged `Conforms env s v` to `Conforms env (canonS s) (canonV v)`,
+and it was owed only because `Reachable.putE`'s premise sat on the RAW carrier while
+M17's goal sat on the STORED one. Under (i-a) the premise moved to the stored form
+(`Conforms env (canonS s) (canonV v)`), so the gap it spanned no longer exists and no
+bridge is owed. B4 was RETIRED, NOT PROVED — that distinction is the whole record.
+
+What the retirement does NOT close:
+
+- F-23 (`canonS` and `canonV` disagreeing on `.lit` payloads) was closed at the EQUATION
+  level by A-6 in window A: `canonS (.lit v) = .lit (canonV v)`, shipped with F-26's
+  companion clause `dupFreeS (.lit v) = dupFreeV v`. Ruling Q13 is therefore CLOSED, not
+  open — `canonS` does canonicalize `.lit` payloads. `litsCanonicalB` below is retained
+  as the vocabulary that record names; with B4 gone nothing consumes it, and it stays
+  live for F-29 / R-4 on its own merits.
+- F-24 (the `refine` case forcing the check semantics itself to be `canonV`-invariant)
+  stays LIVE on its own merits, as an admission criterion for the R-4 allowlist. It is
+  the third of F-28's three value-plane routes — the `Check`-payload route — and it is
+  precisely the route window B leaves OPEN. The other two are closed: the entity-value
+  route by `Reachable.putE`'s `dupFreeV (canonV v)` premise (W3-9), the `.lit`-payload
+  route by F-26's `dupFreeS` clause (W3-10).
+
+M17′ (resolver coherence) is no longer owed-and-unstated: it is STATED as
+`ObligationM17'_store_env` in `E2/Admission.lean`.
 -/
 import E2.Core
 import E2.Encode
@@ -65,19 +87,14 @@ def ObligationCanonPreservesGuarded : Prop :=
   ∀ s : SchemaCore, guardedB s = true → guardedB (canonS s) = true
 
 /-- B3: canonicalization preserves duplicate-freedom (sorting permutes keys, never
-    multiplies them). -/
+    multiplies them). The value-plane twin is `ObligationCanonVPreservesDupFree`
+    (`E2/Model.lean`), stated in window B — `putE`'s `dupFreeV (canonV v)` premise needs
+    it to transfer to and from the raw value the caller supplied. -/
 def ObligationCanonPreservesDupFree : Prop :=
   ∀ s : SchemaCore, dupFreeS s = true → dupFreeS (canonS s) = true
 
-/-- B4: canonicalization respects conformance — conditioned per F-23 (lit payloads
-    value-canonical) and F-24 (check semantics canonV-invariant), ref-free fragment
-    first. -/
-def ObligationCanonRespectsConforms : Prop :=
-  ∀ (env : ConformsEnv),
-    (∀ c w, env.checkSem c w ↔ env.checkSem c (canonV w)) →
-    (∀ a, env.res a = none) →
-    ∀ (s : SchemaCore) (v : Value),
-      litsCanonicalB s = true →
-      Conforms env s v → Conforms env (canonS s) (canonV v)
+/- B4 (`ObligationCanonRespectsConforms`) stood here and is RETIRED by declared
+   amendment (RULINGS W3-7); see this module's header. Not proved, not falsified —
+   no longer owed. -/
 
 end E2
