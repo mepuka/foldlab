@@ -1,0 +1,1078 @@
+opam-version: "2.0"
+compiler: [
+  "base-bigarray.base"
+  "base-threads.base"
+  "base-unix.base"
+  "ocaml.4.14.4"
+  "ocaml-base-compiler.4.14.4"
+  "ocaml-config.2"
+  "ocaml-options-vanilla.1"
+]
+roots: [
+  "coq-itree.5.2.1"
+  "coq-paco.4.2.3"
+  "dune.3.23.1"
+  "ocaml-base-compiler.4.14.4"
+  "rocq-core.9.1.1"
+  "rocq-stdlib.9.0.0"
+]
+installed: [
+  "base-bigarray.base"
+  "base-threads.base"
+  "base-unix.base"
+  "conf-findutils.1"
+  "conf-gmp.5"
+  "conf-pkg-config.5"
+  "coq.9.1.1"
+  "coq-core.9.1.1"
+  "coq-ext-lib.0.13.1"
+  "coq-itree.5.2.1"
+  "coq-paco.4.2.3"
+  "coq-stdlib.9.0.0"
+  "coqide-server.9.1.1"
+  "dune.3.23.1"
+  "num.1.6"
+  "ocaml.4.14.4"
+  "ocaml-base-compiler.4.14.4"
+  "ocaml-config.2"
+  "ocaml-options-vanilla.1"
+  "ocamlfind.1.9.8"
+  "rocq-core.9.1.1"
+  "rocq-runtime.9.1.1"
+  "rocq-stdlib.9.0.0"
+  "zarith.1.14"
+]
+package "base-bigarray" {
+  opam-version: "2.0"
+  version: "base"
+  synopsis: ""
+  description: "Bigarray library distributed with the OCaml compiler"
+  maintainer: "https://github.com/ocaml/opam-repository/issues"
+}
+package "base-threads" {
+  opam-version: "2.0"
+  version: "base"
+  synopsis: ""
+  description: "Threads library distributed with the OCaml compiler"
+  maintainer: "https://github.com/ocaml/opam-repository/issues"
+}
+package "base-unix" {
+  opam-version: "2.0"
+  version: "base"
+  synopsis: ""
+  description: "Unix library distributed with the OCaml compiler"
+  maintainer: "https://github.com/ocaml/opam-repository/issues"
+}
+package "conf-findutils" {
+  opam-version: "2.0"
+  version: "1"
+  synopsis: "Virtual package relying on findutils"
+  description:
+    "This package can only install if the findutils binary is installed on the system."
+  maintainer: "Paolo G. Giarrusso <p.giarrusso@gmail.com>"
+  authors: "GNU Project"
+  license: "GPL-3.0-or-later"
+  homepage: "https://www.gnu.org/software/findutils/"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  flags: conf
+  build: ["sh" "-exc" "find . -name ."]
+  depexts: [
+    ["findutils"] {os-family = "debian"}
+    ["findutils"] {os-family = "ubuntu"}
+    ["findutils"] {os-family = "fedora"}
+    ["findutils"] {os-distribution = "rhel"}
+    ["findutils"] {os-distribution = "centos"}
+    ["findutils"] {os-distribution = "alpine"}
+    ["findutils"] {os-distribution = "nixos"}
+    ["findutils"] {os-family = "suse" | os-family = "opensuse"}
+    ["findutils"] {os-distribution = "ol"}
+    ["findutils"] {os-distribution = "arch"}
+    ["system:findutils"] {os = "win32" & os-distribution = "cygwinports"}
+    ["findutils"] {os-distribution = "cygwin"}
+    ["findutils"] {os-distribution = "msys2"}
+  ]
+}
+package "conf-gmp" {
+  opam-version: "2.0"
+  version: "5"
+  synopsis: "Virtual package relying on a GMP lib system installation"
+  description:
+    "This package can only install if the GMP lib is installed on the system."
+  maintainer: "nbraud"
+  authors: "nbraud"
+  license: "GPL-1.0-or-later"
+  homepage: "http://gmplib.org/"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  depends: [
+    "conf-pkg-config" {os = "macos"}
+    (("host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
+      "conf-mingw-w64-gmp-i686"
+        {os = "win32" & os-distribution != "cygwinports"}) |
+     ("host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
+      "conf-mingw-w64-gmp-x86_64"
+        {os = "win32" & os-distribution != "cygwinports"}))
+  ]
+  flags: conf
+  build: [
+    [
+      "sh"
+      "-c"
+      "pkg-config --print-errors --exists gmp || cc -c $CFLAGS -I/usr/local/include test.c"
+    ] {os != "win32"}
+    [
+      "sh"
+      "-exc"
+      "$(ocamlc -config-var c_compiler) -c $CFLAGS -I/usr/local/include test.c"
+    ] {os = "win32" & os-distribution = "cygwinports"}
+    [
+      "sh"
+      "-exc"
+      "%{host-arch-x86_64:installed?x86_64:}%%{host-arch-x86_32:installed?i686:}%-w64-mingw32-gcc -c $CFLAGS test.c"
+    ] {os = "win32" & os-distribution != "cygwinports"}
+  ]
+  depexts: [
+    ["libgmp-dev"] {os-family = "debian"}
+    ["libgmp-dev"] {os-family = "ubuntu"}
+    ["gmp"] {os = "macos" & os-distribution = "homebrew"}
+    ["gmp"] {os-distribution = "macports" & os = "macos"}
+    ["gmp" "gmp-devel"] {os-distribution = "centos"}
+    ["gmp" "gmp-devel"] {os-family = "fedora" | os-family = "fedora"}
+    ["gmp" "gmp-devel"] {os-distribution = "ol"}
+    ["gmp"] {os = "openbsd"}
+    ["gmp"] {os = "freebsd"}
+    ["gmp"] {os-distribution = "arch"}
+    ["gmp-dev"] {os-distribution = "alpine"}
+    ["gmp-devel"] {os-family = "suse" | os-family = "opensuse"}
+    ["gmp"] {os = "win32" & os-distribution = "cygwinports"}
+    ["gmp"] {os-distribution = "nixos"}
+    ["libgmp-devel"] {os-family = "altlinux"}
+  ]
+  extra-source "test.c" {
+    src:
+      "https://raw.githubusercontent.com/ocaml/opam-source-archives/main/patches/conf-gmp/test.c.4"
+    checksum: [
+      "sha256=54a30735f1f271a2531526747e75716f4490dd7bc1546efd6498ccfe3cc4d6fb"
+      "md5=2fd2970c293c36222a6d299ec155823f"
+    ]
+  }
+}
+package "conf-pkg-config" {
+  opam-version: "2.0"
+  version: "5"
+  synopsis:
+    "Check if pkg-config is installed and create an opam switch local pkgconfig folder"
+  description: """\
+This package can only install if the pkg-config package is installed
+on the system."""
+  maintainer: "David Allsopp <dra27@dra27.uk>"
+  authors: [
+    "James Henstridge" "Tim Janik" "Havoc Pennington" "Scott Remnant"
+  ]
+  license: "GPL-2.0-or-later"
+  homepage: "http://www.freedesktop.org/wiki/Software/pkg-config/"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  depends: [
+    ("host-arch-x86_64"
+       {os = "win32" &
+        (os-distribution = "cygwin" | os-distribution = "msys2")} &
+     "conf-mingw-w64-gcc-x86_64"
+       {os = "win32" &
+        (os-distribution = "cygwin" | os-distribution = "msys2")} &
+     "conf-mingw-w64-pkgconf-x86_64"
+       {os = "win32" & os-distribution = "msys2"} |
+     "host-arch-x86_32"
+       {os = "win32" &
+        (os-distribution = "cygwin" | os-distribution = "msys2")} &
+     "conf-mingw-w64-gcc-i686"
+       {os = "win32" &
+        (os-distribution = "cygwin" | os-distribution = "msys2")} &
+     "conf-mingw-w64-pkgconf-i686" {os = "win32" & os-distribution = "msys2"})
+  ]
+  conflicts: [
+    "mingw-w64-shims" {< "1.0.0"}
+  ]
+  build: [
+    ["pkg-config" "--help"]
+      {os != "win32" & !(os = "macos" & os-distribution = "homebrew")}
+    ["pkgconf" "--version"]
+      {os = "win32" & os-distribution != "msys2" |
+       os = "macos" & os-distribution = "homebrew"}
+    [
+      "sh"
+      "./write-config.sh"
+      name
+      "-v"
+      "command:list"
+      "EOL"
+      "pkg-config"
+        {os != "win32" & !(os = "macos" & os-distribution = "homebrew")}
+      "pkgconf"
+        {os = "win32" & os-distribution != "msys2" |
+         os = "macos" & os-distribution = "homebrew"}
+      "i686-w64-mingw32-pkgconf"
+        {os = "win32" & os-distribution = "msys2" &
+         host-arch-x86_32:installed}
+      "--personality=i686-w64-mingw32"
+        {os = "win32" & os-distribution = "cygwin" &
+         host-arch-x86_32:installed}
+      "x86_64-w64-mingw32-pkgconf"
+        {os = "win32" & os-distribution = "msys2" &
+         host-arch-x86_64:installed}
+      "--personality=x86_64-w64-mingw32"
+        {os = "win32" & os-distribution = "cygwin" &
+         host-arch-x86_64:installed}
+      "EOL"
+    ]
+    ["sh" "./install-shim.sh" name "pkgconf" bin]
+      {os = "win32" & os-distribution = "cygwin"}
+  ]
+  depexts: [
+    ["pkg-config"] {os-family = "debian" | os-family = "ubuntu"}
+    ["pkgconf"] {os-distribution = "arch"}
+    ["pkgconf-pkg-config"] {os-family = "fedora"}
+    ["pkgconfig"] {os-distribution = "centos" & os-version <= "7"}
+    ["pkgconf-pkg-config"] {os-distribution = "mageia"}
+    ["pkgconfig"] {os-distribution = "rhel" & os-version <= "7"}
+    ["pkgconfig"] {os-distribution = "ol" & os-version <= "7"}
+    ["pkgconf"] {os-distribution = "alpine"}
+    ["pkg-config"] {os-distribution = "nixos"}
+    ["pkgconf"] {os = "macos" & os-distribution = "homebrew"}
+    ["pkgconfig"] {os = "macos" & os-distribution = "macports"}
+    ["pkgconf"] {os = "freebsd"}
+    ["pkgconf-pkg-config"] {os-distribution = "rhel" & os-version >= "8"}
+    ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
+    ["pkgconf-pkg-config"] {os-distribution = "ol" & os-version >= "8"}
+    ["system:pkgconf"] {os = "win32" & os-distribution = "cygwinports"}
+    ["pkgconf"] {os-distribution = "cygwin"}
+  ]
+  dev-repo: "git+https://github.com/dra27/mingw-w64-shims.git"
+  extra-source "install-shim.sh" {
+    src:
+      "https://raw.githubusercontent.com/dra27/mingw-w64-shims/refs/tags/1.0.1/install-shim.sh"
+    checksum: [
+      "sha256=9f99322c38b0889f5b1dafbb35ab31dc012ae98c4f98b0f740a89f943142d961"
+      "sha512=0b76a529454b00027b5768fa6ead1b8dda6bc3adab55f4288a702f4cc5d7b280be938cced6841b1556e8cf98f56ecc95b7b22006859d7a91f0ef852aea74e88c"
+    ]
+  }
+  extra-source "write-config.sh" {
+    src:
+      "https://raw.githubusercontent.com/dra27/mingw-w64-shims/refs/tags/1.0.1/write-config.sh"
+    checksum: [
+      "sha256=b6cc5f98c2cfc23a7bc7774038621a2e7e7b94ed3d3080db40bc455a2575fc7a"
+      "sha512=00c4e7c605e46c8fb4d24c40da0a9317e31e3ec723a7aac59546b1cfb180024cc76dbd27c2aca8d223047ad4b0a4bcd047443fc64a6e218a21931aaa672c3e71"
+    ]
+  }
+}
+package "coq" {
+  opam-version: "2.0"
+  version: "9.1.1"
+  synopsis: "Compatibility metapackage for Coq after the Rocq renaming"
+  maintainer:
+    "The Rocq development team <rocq+rocq-development@discoursemail.com>"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org/"
+  doc: "https://rocq-prover.org/docs/"
+  bug-reports: "https://github.com/rocq-prover/rocq/issues"
+  depends: [
+    "coq-core" {= version}
+    "coq-stdlib" {= "9.0.0"}
+    "coqide-server" {= version}
+  ]
+  dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+}
+package "coq-core" {
+  opam-version: "2.0"
+  version: "9.1.1"
+  synopsis: "Compatibility binaries for Coq after the Rocq renaming"
+  description: """\
+The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes compatibility binaries to call Rocq
+through previous Coq commands like coqc coqtop,..."""
+  maintainer:
+    "The Rocq development team <rocq+rocq-development@discoursemail.com>"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org/"
+  doc: "https://rocq-prover.org/docs/"
+  bug-reports: "https://github.com/rocq-prover/rocq/issues"
+  depends: [
+    "dune" {>= "3.8"}
+    "rocq-runtime" {= version}
+    "odoc" {with-doc}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    [
+      "dune"
+      "build"
+      "-p"
+      name
+      "-j"
+      jobs
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+    ]
+  ]
+  post-messages: """\
+Coq has been renamed to The Rocq Prover, see https://rocq-prover.org/refman/changes.html#porting-to-the-rocq-prover for details.
+   This package provides compatibility binaries to ease the transition to the new rocq binary."""
+  dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+  url {
+    src:
+      "https://github.com/rocq-prover/rocq/releases/download/V9.1.1/rocq-9.1.1.tar.gz"
+    checksum:
+      "sha256=35cd03fc4193969b1cce01190340e5c129c1ba8f02242a9e6dff4b83be118759"
+  }
+}
+package "coq-ext-lib" {
+  opam-version: "2.0"
+  version: "0.13.1"
+  synopsis: "A library of Coq definitions, theorems, and tactics"
+  description:
+    "A collection of theories and plugins that may be useful in other Coq developments."
+  maintainer: "gmalecha@gmail.com"
+  authors: "Gregory Malecha"
+  license: "BSD-2-Clause"
+  tags: "logpath:ExtLib"
+  homepage: "https://github.com/coq-community/coq-ext-lib"
+  doc: "https://coq-community.github.io/coq-ext-lib/"
+  bug-reports: "https://github.com/coq-community/coq-ext-lib/issues"
+  depends: [
+    ("coq" {>= "8.9" & (< "8.10" | >= "8.11")} |
+     ("coq-core" {>= "9.2~"} & "rocq-stdlib"))
+  ]
+  build: [make "-j%{jobs}%" "theories"]
+  run-test: [make "-j%{jobs}%" "examples"]
+  install: [make "install"]
+  dev-repo: "git+https://github.com/coq-community/coq-ext-lib.git"
+  url {
+    src:
+      "https://github.com/coq-community/coq-ext-lib/archive/refs/tags/v0.13.1.tar.gz"
+    checksum: [
+      "md5=2e20520bf90bfc691ae6b7de71beb0a2"
+      "sha512=888c6c8834cf1cb6232ad35e0af55d54543a7cacd3c943b305748f70e6e72261a9372368b6540e66aa93c1702d816f4382b16707b2971eb9aa13d29ad5e0895c"
+    ]
+  }
+}
+package "coq-itree" {
+  opam-version: "2.0"
+  version: "5.2.1"
+  synopsis:
+    "Library for representing recursive and impure programs with equational reasoning"
+  maintainer: "Li-yao Xia <lysxia@gmail.com>"
+  authors: [
+    "Li-yao Xia"
+    "Yannick Zakowski"
+    "Paul He"
+    "Chung-Kil Hur"
+    "Gregory Malecha"
+    "Steve Zdancewic"
+    "Benjamin Pierce"
+  ]
+  license: "MIT"
+  tags: ["org:deepspec" "logpath:ITree" "date:2025-02-28"]
+  homepage: "https://github.com/DeepSpec/InteractionTrees"
+  bug-reports: "https://github.com/DeepSpec/InteractionTrees/issues"
+  depends: [
+    "dune" {>= "3.14"}
+    "coq" {>= "8.14"}
+    "coq-ext-lib" {>= "0.11.1"}
+    "coq-paco" {>= "4.2.1"}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    ["dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test}]
+  ]
+  dev-repo: "git+https://github.com/DeepSpec/InteractionTrees.git"
+  url {
+    src: "https://github.com/DeepSpec/InteractionTrees/archive/5.2.1.tar.gz"
+    checksum:
+      "sha512=8027de84ad96c89887051e2df4d8e68cac87389d353936a5f56f4910277d2e78fdd3447d8ce6b0704ecda8880692392cf9331f529de516d0e7ee6918aea3f8a5"
+  }
+}
+package "coq-paco" {
+  opam-version: "2.0"
+  version: "4.2.3"
+  synopsis: "Coq library implementing parameterized coinduction"
+  maintainer: "gil.hur@sf.snu.ac.kr"
+  authors: [
+    "Chung-Kil Hur <gil.hur@sf.snu.ac.kr>"
+    "Georg Neis <neis@mpi-sws.org>"
+    "Derek Dreyer <dreyer@mpi-sws.org>"
+    "Viktor Vafeiadis <viktor@mpi-sws.org>"
+    "Minki Cho <minki.cho@sf.snu.ac.kr>"
+  ]
+  license: "BSD-3-Clause"
+  tags: [
+    "date:2025-01-30"
+    "category:Computer Science/Programming Languages/Formal Definitions and Theory"
+    "category:Mathematics/Logic"
+    "keyword:co-induction"
+    "keyword:simulation"
+    "keyword:parameterized greatest fixed point"
+    "logpath:Paco"
+  ]
+  homepage: "https://github.com/snu-sf/paco/"
+  bug-reports: "https://github.com/snu-sf/paco/issues/"
+  depends: [
+    ("coq" {>= "8.13" & < "9~"} |
+     ("coq-core" {>= "9" & < "9.4~"} & "rocq-stdlib"))
+  ]
+  build: [make "-C" "src" "all" "-j%{jobs}%"]
+  install: [make "-C" "src" "-f" "Makefile.coq" "install"]
+  dev-repo: "git+https://github.com/snu-sf/paco.git"
+  url {
+    src: "https://github.com/snu-sf/paco/archive/v4.2.3.tar.gz"
+    checksum:
+      "sha512=b757a24b732e0fdbcc08979d99e9fca9b91d4b53ed9fff56e1dd1ef4fd3f45688d9e1cf67356102fd01303120b4f68460a815582122b5ea9ece12ff86048fbab"
+  }
+}
+package "coq-stdlib" {
+  opam-version: "2.0"
+  version: "9.0.0"
+  synopsis:
+    "Compatibility metapackage for Coq Stdlib library after the Rocq renaming"
+  maintainer: "The Rocq standard library development team"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://coq.inria.fr/"
+  doc: "https://coq.github.io/doc/"
+  bug-reports: "https://github.com/coq/stdlib/issues"
+  depends: [
+    "coq-core"
+    "rocq-stdlib" {= version}
+  ]
+  dev-repo: "git+https://github.com/coq/stdlib.git"
+}
+package "coqide-server" {
+  opam-version: "2.0"
+  version: "9.1.1"
+  synopsis: "The Rocq Prover, XML protocol server"
+  description: """\
+The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+This package provides the `coqidetop` language server, an
+implementation of Rocq's [XML protocol](https://github.com/rocq-prover/rocq/blob/master/dev/doc/xml-protocol.md)
+which allows clients, such as RocqIDE, to interact with the Rocq Prover in a
+structured way."""
+  maintainer:
+    "The Rocq development team <rocq+rocq-development@discoursemail.com>"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org/"
+  doc: "https://rocq-prover.org/docs/"
+  bug-reports: "https://github.com/rocq-prover/rocq/issues"
+  depends: [
+    "dune" {>= "3.8"}
+    "rocq-runtime" {= version}
+    "odoc" {with-doc}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    [
+      "dune"
+      "build"
+      "-p"
+      name
+      "-j"
+      jobs
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+    ]
+  ]
+  dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+  url {
+    src:
+      "https://github.com/rocq-prover/rocq/releases/download/V9.1.1/rocq-9.1.1.tar.gz"
+    checksum:
+      "sha256=35cd03fc4193969b1cce01190340e5c129c1ba8f02242a9e6dff4b83be118759"
+  }
+}
+package "dune" {
+  opam-version: "2.0"
+  version: "3.23.1"
+  synopsis: "Fast, portable, and opinionated build system"
+  description: """\
+Dune is a build system that was designed to simplify the release of
+Jane Street packages. It reads metadata from "dune" files following a
+very simple s-expression syntax.
+
+Dune is fast, has very low-overhead, and supports parallel builds on
+all platforms. It has no system dependencies; all you need to build
+dune or packages using dune is OCaml. You don't need make or bash
+as long as the packages themselves don't use bash explicitly.
+
+Dune is composable; supporting multi-package development by simply
+dropping multiple repositories into the same directory.
+
+Dune also supports multi-context builds, such as building against
+several opam roots/switches simultaneously. This helps maintaining
+packages across several versions of OCaml and gives cross-compilation
+for free."""
+  maintainer: "Jane Street Group, LLC <opensource@janestreet.com>"
+  authors: "Jane Street Group, LLC <opensource@janestreet.com>"
+  license: "MIT"
+  homepage: "https://github.com/ocaml/dune"
+  doc: "https://dune.readthedocs.io/"
+  bug-reports: "https://github.com/ocaml/dune/issues"
+  depends: [
+    ("ocaml" {>= "4.14"} |
+     ("ocaml" {>= "4.02" & < "4.14~~"} & "ocamlfind-secondary" &
+      "ocaml-secondary-compiler" {>= "4.14"}))
+    "base-unix"
+    "base-threads"
+    "lwt" {with-dev-setup & os != "win32"}
+    "cinaps" {with-dev-setup}
+    "csexp" {with-dev-setup & >= "1.3.0"}
+    "js_of_ocaml" {with-dev-setup & >= "6.1.0" & os != "win32"}
+    "js_of_ocaml-compiler" {with-dev-setup & >= "6.1.0" & os != "win32"}
+    "mdx" {with-dev-setup & >= "2.3.0" & os != "win32"}
+    "menhir" {with-dev-setup & os != "win32"}
+    "ocamlfind" {with-dev-setup & os != "win32"}
+    "odoc" {with-dev-setup & >= "2.4.0" & os != "win32"}
+    "ppx_expect" {with-dev-setup & >= "v0.17" & os != "win32"}
+    "spawn" {with-dev-setup}
+    "ppx_inline_test" {with-dev-setup & os != "win32"}
+    "ppxlib" {with-dev-setup & >= "0.37.0" & os != "win32"}
+    "ctypes" {with-dev-setup & os != "win32"}
+    "utop" {with-dev-setup & >= "2.6.0" & os != "win32"}
+    "melange" {with-dev-setup & >= "5.1.0-51" & os != "win32"}
+    "uutf" {with-dev-setup}
+    "conf-git-daemon" {with-test}
+  ]
+  conflicts: [
+    "merlin" {< "3.4.0"}
+    "ocaml-lsp-server" {< "1.3.0"}
+    "dune-configurator" {< "2.3.0"}
+    "odoc" {< "2.0.1"}
+    "dune-release" {< "2.0.0"}
+    "js_of_ocaml-compiler" {< "3.6.0"}
+    "jbuilder" {= "transition"}
+  ]
+  build: [
+    ["ocaml" "boot/bootstrap.ml" "-j" jobs]
+    [
+      "./_boot/dune.exe"
+      "build"
+      "dune.install"
+      "--release"
+      "--profile"
+      "dune-bootstrap"
+      "-j"
+      jobs
+    ]
+  ]
+  dev-repo: "git+https://github.com/ocaml/dune.git"
+  url {
+    src:
+      "https://github.com/ocaml/dune/releases/download/3.23.1/dune-3.23.1.tbz"
+    checksum: [
+      "sha256=93b4e7157f6ba8feb61cfc5f86008efd2c59037ba78a017d92b4abf30632348f"
+      "sha512=e5566bedc651292ae54d47ba1cdbcfff48962012c1436d0f9ece49a71aa10a674affc092058b0edee56ab2a2405c545b78fde1c472c0b4704c8f58570a2f46cd"
+    ]
+  }
+  x-commit-hash: "6f6eee69eda59e355bae2ca4e3ad1af678271883"
+  x-maintenance-intent: ["(latest)"]
+}
+package "num" {
+  opam-version: "2.0"
+  version: "1.6"
+  synopsis:
+    "The legacy Num library for arbitrary-precision integer and rational arithmetic"
+  maintainer: "Xavier Leroy <xavier.leroy@inria.fr>"
+  authors: ["Valérie Ménissier-Morain" "Pierre Weis" "Xavier Leroy"]
+  license: "LGPL-2.1-only WITH OCaml-LGPL-linking-exception"
+  homepage: "https://github.com/ocaml/num/"
+  bug-reports: "https://github.com/ocaml/num/issues"
+  depends: [
+    "ocaml" {>= "4.06.0"}
+  ]
+  conflicts: ["base-num"]
+  build: [
+    [
+      make
+      "PROFILE=release"
+      "opam-legacy" {!ocaml:preinstalled & ocaml:version < "5.0.0~~"}
+      "opam-modern" {ocaml:preinstalled | ocaml:version >= "5.0.0~~"}
+    ]
+    [make "test"] {with-test}
+  ]
+  dev-repo: "git+https://github.com/ocaml/num.git"
+  url {
+    src: "https://github.com/ocaml/num/archive/refs/tags/v1.6.tar.gz"
+    checksum: [
+      "sha256=b5cce325449aac746d5ca963d84688a627cca5b38d41e636cf71c68b60495b3e"
+      "sha512=5cb32dfa9a9f0ad375bfd89079e9b1422979f3c089f61ef2300ad9cc64fb1fc25ed1f86b0267eb017f12ae41a574a959df5bfa39ab22c2be2f1ac84c3c671bdf"
+    ]
+  }
+  x-maintenance-intent: ["(latest)"]
+}
+package "ocaml" {
+  opam-version: "2.0"
+  version: "4.14.4"
+  synopsis: "The OCaml compiler (virtual package)"
+  description: """\
+This package requires a matching implementation of OCaml,
+and polls it to initialise specific variables like `ocaml:native-dynlink`"""
+  maintainer: "David Allsopp <dra27@dra27.uk>"
+  authors: [
+    "Xavier Leroy"
+    "Damien Doligez"
+    "Alain Frisch"
+    "Jacques Garrigue"
+    "Didier Rémy"
+    "Jérôme Vouillon"
+  ]
+  license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
+  homepage: "https://ocaml.org"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  depends: [
+    "ocaml-config" {>= "2"}
+    "ocaml-base-compiler" {>= "4.14.4~" & < "4.14.5~"} |
+    "ocaml-variants" {>= "4.14.4~" & < "4.14.5~"} |
+    "ocaml-system" {>= "4.14.4" & < "4.14.5~"} |
+    "dkml-base-compiler" {>= "4.14.4~" & < "4.14.5~"}
+    ("ocaml-env-mingw64" {os = "win32"} | "ocaml-env-mingw32" {os = "win32"} |
+     "ocaml-env-msvc64" {os = "win32"} |
+     "ocaml-env-msvc32" {os = "win32"})
+  ]
+  flags: conf
+  setenv: [
+    [OCAMLTOP_INCLUDE_PATH += "%{toplevel}%"]
+    [CAML_LD_LIBRARY_PATH = "%{_:stubsdir}%"]
+    [CAML_LD_LIBRARY_PATH += "%{lib}%/stublibs"]
+    [OCAML_TOPLEVEL_PATH = "%{toplevel}%"]
+  ]
+  build: [
+    "ocaml" "%{ocaml-config:share}%/gen_ocaml_config.ml" _:version _:name
+  ]
+  build-env: CAML_LD_LIBRARY_PATH = ""
+  x-env-path-rewrite: [
+    [CAML_LD_LIBRARY_PATH (";" {os = "win32"} ":" {os != "win32"}) "target"]
+    [OCAMLTOP_INCLUDE_PATH (";" {os = "win32"} ":" {os != "win32"}) "target"]
+  ]
+  x-revision: "2"
+}
+package "ocaml-base-compiler" {
+  opam-version: "2.0"
+  version: "4.14.4"
+  synopsis: "Official release 4.14.4"
+  maintainer: [
+    "David Allsopp <dra27@dra27.uk>"
+    "Florian Angeletti <florian.angeletti@inria.fr>"
+  ]
+  authors: "Xavier Leroy and many contributors"
+  license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
+  homepage: "https://ocaml.org"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  depends: [
+    "ocaml" {= "4.14.4" & post}
+    "base-unix" {post}
+    "base-bigarray" {post}
+    "base-threads" {post}
+    (("arch-x86_64" {os = "win32" & arch = "x86_64"} &
+      ("system-mingw" | "system-msvc")) |
+     ("arch-x86_32" {os = "win32"} & ("system-mingw" | "system-msvc")) |
+     "base-unix" {os != "win32" & post})
+    "ocaml-options-vanilla" {post}
+    "flexdll" {>= "0.36" & os = "win32"}
+  ]
+  conflicts: ["relocatable"]
+  conflict-class: "ocaml-core-compiler"
+  flags: compiler
+  setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
+  build: [
+    [
+      "./configure"
+      "--host=x86_64-pc-windows"
+        {system-msvc:installed & arch-x86_64:installed}
+      "--host=x86_64-w64-mingw32"
+        {os-distribution = "cygwin" & system-mingw:installed &
+         arch-x86_64:installed}
+      "--host=i686-pc-windows"
+        {system-msvc:installed & arch-x86_32:installed}
+      "--host=i686-w64-mingw32"
+        {os-distribution = "cygwin" & system-mingw:installed &
+         arch-x86_32:installed}
+      "--prefix=%{prefix}%"
+      "--docdir=%{doc}%/ocaml"
+      "--with-flexdll=%{flexdll:share}%" {os = "win32" & flexdll:installed}
+      "-C"
+      "CC=cc" {os = "openbsd" | os = "macos"}
+      "ASPP=cc -c" {os = "openbsd" | os = "macos"}
+    ]
+    [make "-j%{jobs}%"]
+  ]
+  install: [make "install"]
+  build-env: MSYS2_ARG_CONV_EXCL = "*"
+  dev-repo: "git+https://github.com/ocaml/ocaml#4.14"
+  url {
+    src:
+      "https://github.com/ocaml/ocaml/releases/download/4.14.4/ocaml_4.14.4.tar.gz"
+    checksum:
+      "sha256=71415c000ebfce604defafaa584ab5ed10ad81ff180897db4e6fea8dac6e4b0d"
+  }
+  extra-source "ocaml-base-compiler.install" {
+    src:
+      "https://raw.githubusercontent.com/ocaml/ocaml/8c17fd444391392c5f9801241374d749c080c1a8/ocaml-variants.install"
+    checksum: [
+      "sha256=79f2a1a5044a91350a0eb6ce12e261a72a2855c094c425cddf3860e58c486678"
+      "md5=3e969b841df1f51ca448e6e6295cb451"
+    ]
+  }
+  x-env-path-rewrite: [
+    [CAML_LD_LIBRARY_PATH (";" {os = "win32"} ":" {os != "win32"}) "target"]
+  ]
+  x-revision: "3"
+}
+package "ocaml-config" {
+  opam-version: "2.0"
+  version: "2"
+  synopsis: "OCaml Switch Configuration"
+  description:
+    "This package is used by the OCaml package to set-up its variables."
+  maintainer: "David Allsopp <david@tarides.com>"
+  authors: [
+    "Louis Gesbert <louis.gesbert@ocamlpro.com>"
+    "David Allsopp <david.allsopp@metastack.com>"
+  ]
+  license: "ISC"
+  homepage: "https://opam.ocaml.org/"
+  bug-reports: "https://github.com/ocaml/opam/issues"
+  depends: [
+    "ocaml-base-compiler" {>= "4.12.0~"} | "ocaml-variants" {>= "4.12.0~"} |
+    "ocaml-system" {>= "4.12.0~"}
+  ]
+  available: os != "win32"
+  substs: "gen_ocaml_config.ml"
+  extra-source "gen_ocaml_config.ml.in" {
+    src:
+      "https://raw.githubusercontent.com/ocaml/ocaml/749a918bb85033b0a6370b85a7c6a4be33620c58/tools/opam/gen_ocaml_config.ml.in"
+    checksum: [
+      "sha256=22eb7c0211fc426028e444b272b97eac1e8287a49a512aebaa33c608652cfd29"
+      "md5=a4b41e3236593d8271295b84b0969172"
+    ]
+  }
+  extra-source "ocaml-config.install" {
+    src:
+      "https://raw.githubusercontent.com/ocaml/ocaml/363fb9f5a2fb87dbd5f8cc579af87dd04e14343b/tools/opam/ocaml-config.install"
+    checksum: [
+      "sha256=6e4fd93f4cce6bad0ed3c08afd0248dbe7d7817109281de6294e5b5ef5597051"
+      "md5=8e50c5e2517d3463b3aad649748cafd7"
+    ]
+  }
+}
+package "ocaml-options-vanilla" {
+  opam-version: "2.0"
+  version: "1"
+  synopsis: "Ensure that OCaml is compiled with no special options enabled"
+  maintainer: "David Allsopp <david@tarides.com>"
+  authors: ["David Allsopp" "Louis Gesbert"]
+  license: "CC0-1.0+"
+  homepage: "https://opam.ocaml.org"
+  bug-reports: "https://github.com/ocaml/opam-repository/issues"
+  depends: [
+    "ocaml-base-compiler" {post} | "ocaml-system" {post} |
+    "ocaml-variants" {post & >= "4.12.0~"}
+  ]
+  conflicts: [
+    "ocaml-option-32bit"
+    "ocaml-option-afl"
+    "ocaml-option-bytecode-only"
+      {arch = "arm64" | (arch = "x86_64" & os != "win32")}
+    "ocaml-option-default-unsafe-string"
+    "ocaml-option-flambda"
+    "ocaml-option-fp"
+    "ocaml-option-musl"
+    "ocaml-option-no-flat-float-array"
+    "ocaml-option-no-compression" {os != "win32"}
+    "ocaml-option-spacetime"
+    "ocaml-option-static"
+    "ocaml-option-nnp"
+    "ocaml-option-nnpchecker"
+    "ocaml-option-address-sanitizer"
+    "ocaml-option-leak-sanitizer"
+    "ocaml-option-tsan"
+    "ocaml-option-mingw"
+  ]
+  flags: compiler
+}
+package "ocamlfind" {
+  opam-version: "2.0"
+  version: "1.9.8"
+  synopsis: "A library manager for OCaml"
+  description: """\
+Findlib is a library manager for OCaml. It provides a convention how
+to store libraries, and a file format ("META") to describe the
+properties of libraries. There is also a tool (ocamlfind) for
+interpreting the META files, so that it is very easy to use libraries
+in programs and scripts."""
+  maintainer: "Thomas Gazagnaire <thomas@gazagnaire.org>"
+  authors: "Gerd Stolpmann <gerd@gerd-stolpmann.de>"
+  license: "MIT"
+  homepage: "http://projects.camlcity.org/projects/findlib.html"
+  bug-reports: "https://github.com/ocaml/ocamlfind/issues"
+  depends: [
+    "ocaml"
+      {>= "3.08.0" & (os != "cygwin" & os-distribution != "msys2" | < "5.0") &
+       < "5.5.0~"}
+  ]
+  depopts: ["graphics"]
+  conflicts: ["relocatable"]
+  build: [
+    [
+      "./configure"
+      "-bindir"
+      bin
+      "-sitelib"
+      lib
+      "-mandir"
+      man
+      "-config"
+      "%{lib}%/findlib.conf"
+      "-no-custom"
+      "-no-camlp4" {!ocaml:preinstalled & ocaml:version >= "4.02.0"}
+      "-no-topfind" {ocaml:preinstalled}
+    ]
+    [make "all"]
+    [make "opt"] {ocaml:native}
+  ]
+  install: [
+    [make "install"]
+    ["install" "-m" "0755" "ocaml-stub" "%{bin}%/ocaml"] {ocaml:preinstalled}
+  ]
+  dev-repo: "git+https://github.com/ocaml/ocamlfind.git"
+  url {
+    src:
+      "https://github.com/ocaml/ocamlfind/archive/refs/tags/findlib-1.9.8.tar.gz"
+    checksum: [
+      "md5=ca770e5806032a96131b670f6e07f146"
+      "sha512=8967986de2ab4ec5993f437b0a4206742adf37aa7a292a3bba0a04438d78539b84d001191e60b2d5bde98a695b38cba2593b7051f7749adbdb964a0df3c4b661"
+    ]
+  }
+}
+package "rocq-core" {
+  opam-version: "2.0"
+  version: "9.1.1"
+  synopsis: "The Rocq Prover with its prelude"
+  description: """\
+The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes the Rocq prelude, that is loaded automatically
+by Rocq in every .v file, as well as other modules bound to the
+Corelib.* and Ltac2.* namespaces."""
+  maintainer:
+    "The Rocq development team <rocq+rocq-development@discoursemail.com>"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org/"
+  doc: "https://rocq-prover.org/docs/"
+  bug-reports: "https://github.com/rocq-prover/rocq/issues"
+  depends: [
+    "dune" {>= "3.8"}
+    "rocq-runtime" {= version}
+    "odoc" {with-doc}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    [make "dunestrap" "COQ_SPLIT=1" "DUNESTRAPOPT=-p rocq-core"]
+    [
+      "dune"
+      "build"
+      "-p"
+      name
+      "-j"
+      jobs
+      "--promote-install-files=false"
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+    ]
+    ["dune" "install" "-p" name "--create-install-files" name]
+  ]
+  dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+  url {
+    src:
+      "https://github.com/rocq-prover/rocq/releases/download/V9.1.1/rocq-9.1.1.tar.gz"
+    checksum:
+      "sha256=35cd03fc4193969b1cce01190340e5c129c1ba8f02242a9e6dff4b83be118759"
+  }
+}
+package "rocq-runtime" {
+  opam-version: "2.0"
+  version: "9.1.1"
+  synopsis: "The Rocq Prover -- Core Binaries and Tools"
+  description: """\
+The Rocq Prover is an interactive theorem prover, or proof assistant. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes the Rocq Prover core binaries, plugins, and tools, but
+not the vernacular standard library.
+
+Note that in this setup, Rocq needs to be started with the -boot and
+-noinit options, as will otherwise fail to find the regular Rocq
+prelude, now living in the rocq-core package."""
+  maintainer:
+    "The Rocq development team <rocq+rocq-development@discoursemail.com>"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org/"
+  doc: "https://rocq-prover.org/docs/"
+  bug-reports: "https://github.com/rocq-prover/rocq/issues"
+  depends: [
+    "dune" {>= "3.8" & < "3.24"}
+    "ocaml" {>= "4.14.0"}
+    "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os-family != "windows")}
+    "zarith" {>= "1.11"}
+    "conf-linux-libc-dev" {os = "linux"}
+    "odoc" {with-doc}
+  ]
+  depopts: ["rocq-native" "memprof-limits" "memtrace"]
+  conflicts: [
+    "coq" {< "8.17"}
+    "coq-core" {< "8.21"}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    [
+      "./configure"
+      "-release"
+      "-prefix"
+      prefix
+      "-mandir"
+      man
+      "-libdir"
+      "%{lib}%/coq"
+      "-native-compiler"
+      "yes" {rocq-native:installed}
+      "no" {!rocq-native:installed}
+    ]
+    [
+      "dune"
+      "build"
+      "-p"
+      name
+      "-j"
+      jobs
+      "--promote-install-files=false"
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+    ]
+    ["dune" "install" "-p" name "--create-install-files" name]
+  ]
+  dev-repo: "git+https://github.com/rocq-prover/rocq.git"
+  url {
+    src:
+      "https://github.com/rocq-prover/rocq/releases/download/V9.1.1/rocq-9.1.1.tar.gz"
+    checksum:
+      "sha256=35cd03fc4193969b1cce01190340e5c129c1ba8f02242a9e6dff4b83be118759"
+  }
+}
+package "rocq-stdlib" {
+  opam-version: "2.0"
+  version: "9.0.0"
+  synopsis: "The Rocq Proof Assistant -- Standard Library"
+  description: """\
+Rocq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+Typical applications include the certification of properties of
+programming languages (e.g. the CompCert compiler certification
+project, or the Bedrock verified low-level programming library), the
+formalization of mathematics (e.g. the full formalization of the
+Feit-Thompson theorem or homotopy type theory) and teaching.
+
+This package includes the Rocq Standard Library, that is to say, the
+set of modules usually bound to the Stdlib.* namespace."""
+  maintainer: "The Rocq standard library development team"
+  authors: "The Rocq development team, INRIA, CNRS, and contributors"
+  license: "LGPL-2.1-only"
+  homepage: "https://rocq-prover.org"
+  doc: "https://coq.github.io/doc/"
+  bug-reports: "https://github.com/coq/stdlib/issues"
+  depends: [
+    "rocq-runtime" {< "9.2~"}
+    "rocq-core"
+  ]
+  build: [make "-j" jobs]
+  install: [make "install"]
+  dev-repo: "git+https://github.com/coq/stdlib.git"
+  url {
+    src:
+      "https://github.com/coq/stdlib/releases/download/V9.0.0/stdlib-9.0.0.tar.gz"
+    checksum:
+      "sha512=97faa80d63a398c2c6872e043d65b1b907bb01ec3ea42f35cf757b3457b8fa2b64475d1577000ce2dea2c3f93e59e36cc5af9864adacf47f92db96ecbe307a45"
+  }
+}
+package "zarith" {
+  opam-version: "2.0"
+  version: "1.14"
+  synopsis:
+    "Implements arithmetic and logical operations over arbitrary-precision integers"
+  description: """\
+The Zarith library implements arithmetic and logical operations over
+arbitrary-precision integers. It uses GMP to efficiently implement
+arithmetic over big integers. Small integers are represented as Caml
+unboxed integers, for speed and space economy."""
+  maintainer: "Xavier Leroy <xavier.leroy@inria.fr>"
+  authors: ["Antoine Miné" "Xavier Leroy" "Pascal Cuoq"]
+  license: "LGPL-2.0-only WITH OCaml-LGPL-linking-exception"
+  homepage: "https://github.com/ocaml/Zarith"
+  bug-reports: "https://github.com/ocaml/Zarith/issues"
+  depends: [
+    "ocaml" {>= "4.07.0"}
+    "ocamlfind"
+    "conf-pkg-config"
+    "conf-gmp"
+  ]
+  build: [
+    ["./configure"]
+    [make]
+  ]
+  install: [make "install"]
+  dev-repo: "git+https://github.com/ocaml/Zarith.git"
+  url {
+    src: "https://github.com/ocaml/Zarith/archive/release-1.14.tar.gz"
+    checksum: [
+      "sha256=5db9dcbd939153942a08581fabd846d0f3f2b8c67fe68b855127e0472d4d1859"
+      "sha512=8a7f3e82dfa5699c8dda54dd5398c712f3ac4fe04f5208d43d8ba198fb8152de5f91cbb59c15c0a4ba010d4dfcc79f52e405bdd0abbf2798167e9e4216bcb3dd"
+    ]
+  }
+  x-maintenance-intent: ["(latest)"]
+}

@@ -1,0 +1,28 @@
+# Root packages the annex declares. Everything else in the switch is a
+# dependency the solver chose; the resolved set is recorded in switch.export,
+# which is what a rebuild actually replays.
+#
+# The compiler is pinned conservatively rather than at the newest release.
+# This annex exists to read and run executable prior art — the paco and
+# InteractionTrees developments behind the bisimulation proof technique — so
+# ecosystem compatibility is worth more here than a current OCaml. Revisit
+# this line, not the library versions, if a package the annex needs refuses
+# to build.
+ocaml-base-compiler.4.14.4
+
+# Build and development tooling.
+dune
+
+# The lane: Rocq itself, then parameterized coinduction and interaction trees.
+#
+# The lower bounds are load-bearing, not decoration. Asked for `coq-paco` and
+# `coq-itree` unbounded, the solver satisfies the stated metadata with Coq
+# 8.13.2 — a 2021 release — and coq-itree then fails to compile against it,
+# because the library's declared lower bound is looser than what it really
+# builds on. Naming the Rocq 9 branch explicitly is what makes a fresh solve
+# reproduce the pin in switch.export rather than rediscover that dead end.
+# coq-paco supports this branch through its `coq-core >= 9 & < 9.4` clause.
+rocq-core>=9
+rocq-stdlib
+coq-paco
+coq-itree>=5.2.1

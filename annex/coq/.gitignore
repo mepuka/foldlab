@@ -1,0 +1,13 @@
+# The materialised toolchain is per-host build output, never repository
+# content. What the repository carries is the declaration that rebuilds it:
+# mise.toml, switch.export, and scripts/.
+.opamroot/
+_opam/
+*.log
+
+# Rocq build output from the smoke test.
+*.vo
+*.vok
+*.vos
+*.glob
+.*.aux

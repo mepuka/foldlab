@@ -1,0 +1,40 @@
+# Coq/OCaml annex toolchain.
+#
+# This configuration is directory-scoped on purpose. mise loads it only for
+# work inside `annex/coq/`, so a host that never enters this directory never
+# installs any of it: the annex is declared in the repository and materialised
+# only where it is used. The root `mise.toml` stays platform-neutral.
+#
+# The division of labour mirrors how the estate already pins Lean — mise pins
+# the package manager, and the package manager pins the toolchain:
+#
+#   mise  ->  opam            (this file)
+#   opam  ->  OCaml and Rocq  (switch.export)
+#
+# Nothing here writes to the operator's personal opam root. OPAMROOT points
+# inside the annex, so estate work cannot disturb switches that other projects
+# depend on, and those projects cannot silently change what the estate builds
+# against.
+
+[tools]
+opam = "2.5.2"
+
+[env]
+OPAMROOT = "{{config_root}}/.opamroot"
+OPAMSWITCH = "estate"
+
+[tasks.init]
+description = "Create the isolated opam root and the pinned switch from the lock"
+run = ["bash scripts/init.sh"]
+
+[tasks.lock]
+description = "Re-export the switch pin after a deliberate toolchain change"
+run = ["opam switch export --freeze --full switch.export"]
+
+[tasks.verify]
+description = "Report the resolved toolchain and prove the root is the annex's own"
+run = ["bash scripts/verify.sh"]
+
+[tasks.smoke]
+description = "Compile the acceptance test: Rocq builds, and both lane libraries load"
+run = ["opam exec -- rocq compile smoke/Smoke.v"]

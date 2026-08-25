@@ -24,6 +24,7 @@ from reading everything.
 | `formal/` | Formal verification artifacts (claim-gated) | — |
 | `experiments/` | Experimental artifacts | — |
 | `.staging/` | Pre-grade staged material (gitignored except README) | — |
+| [`annex/coq/`](annex/coq/README.md) | Coq/OCaml toolchain annex: prior-art technique only, never an estate artifact | Reading or running executable Coq prior art |
 
 ## Conduct (C1–C7)
 
@@ -88,11 +89,16 @@ gates carry the trust.
 
 ## Tooling
 
-- **Platform.** Windows-native primary; WSL2 Ubuntu is the lazy Coq/OCaml
-  annex, added only when Coq code must build. One mise config serves both.
+- **Platform.** Windows-native primary; the lazy Coq/OCaml annex lives on the
+  macOS host under [`annex/coq/`](annex/coq/README.md), added only when Coq
+  code must build. The root `mise.toml` serves every host and stays
+  platform-neutral; the annex's own `mise.toml` is directory-scoped, so a host
+  that never enters that directory installs none of it.
 - **Toolchains.** Managed with **mise** (not Nix) via the repo `mise.toml`:
   bun is the dev runtime; node is pinned as the claim-target engine; Lean pins
-  per Lake project through elan's `lean-toolchain`, never through mise.
+  per Lake project through elan's `lean-toolchain`, never through mise. The
+  annex pins the same way one level down: mise pins only the opam binary, and
+  opam pins OCaml and Rocq through a committed switch export.
 - **Tasks.** mise tasks are the canonical runner. `mise run gen` regenerates
   every derived file; `mise run check` runs gen, asserts a clean tree, then
   every test and gate defined so far. CI runs `check` and nothing else.
