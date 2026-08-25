@@ -183,14 +183,14 @@ what a theorem does **not** claim is part of its statement discipline.
 | M14 | L-get-put; getChecked = get on reachable stores |
 | M15 | L-faithful (round-trip through the store, up to `≈`) |
 | M16 | L-names-inert |
-| M19 | transport adequacy (G8, 2026-08-25): every ref-closed, acyclic finite set of pre-images admits an insertion order reaching it — owed with M10's reference-graph vocabulary; R-15c makes no G1 claim until this is proved |
+| M19 | transport adequacy (G8, 2026-08-25): every ref-closed, acyclic finite set of pre-images admits an insertion order reaching it — owed with M10's reference-graph vocabulary; R-15c makes no G1 claim until this is proved; restated over candidate stores (`Admissible`) per W3-22; the F-30 refutations are incorporated in the restatement |
 
 **Coupling:**
 
-| # | Statement |
-|---|---|
-| M17 | typed reachability: every stored entity's schema resolves and its value conforms |
-| M18 | `Conforms` total and decidable on guarded schemas × v1 values |
+| # | Statement | Anti-claim |
+|---|---|---|
+| M17 | typed reachability: every stored entity's schema resolves and its value conforms | M17 certifies conformance *as this model defines `Conforms`*, and `Conforms` does not observe the union `mode` byte (Q12). Under `mode = oneOf` a second successful member match is a decode **failure** in the pinned implementation (`SchemaAST.ts:3071-3073`; census §5a) while `Conforms` accepts, so M17 claims *typed reachability up to union-mode blindness*: it does **not** claim that a stored entity decodes under the pinned Effect decoder at its stored schema. `mode` rides in the pre-image, so the `anyOf` and `oneOf` spellings are two addresses carrying one typing judgment (W3-11) |
+| M18 | `Conforms` total and decidable on guarded schemas × v1 values | — |
 
 **Negative exhibits (kept, in the `v2_stream_not_injective` tradition):**
 
@@ -263,6 +263,9 @@ cannot carry duplicate keys, so the excluded values have no host counterpart). R
 L-comm is false as `StoreMap` value equality (the list conses) and true up to `find` —
 M11's commutation half must be pinned up to `find`-extensionality when seated.
 
+**Addendum 2026-08-25 (W3-9):** the value-plane decision recorded above is REVERSED —
+value-plane duplicate-freedom becomes `Reachable` premises (window B); see RULINGS.md.
+
 **Mapping-wave rulings touching the model (G1–G8 ratified 2026-08-25, all as
 recommended; full record in KICKOFF §18).** G4: `tupleRest` and `record` (index
 signature) constructors enter the carrier by amendment **A-4** — value shapes cannot
@@ -302,6 +305,12 @@ in identity (D1's priced carve-out); alpha-invariance of recursive schemas is a
 non-goal v1. G8: obligation M19 added to §6 as owed. The §16 provenance-merge and §17
 naming-convergence aspirations are DEMOTED to pending-A-5 (both die on array
 order-sensitivity today).
+
+**Addendum 2026-08-25 (W3-10):** A-6 ships with the F-26 clause-4 extension
+(`dupFreeS (.lit v) := dupFreeV v`) in window A; see RULINGS.md.
+
+**Addendum 2026-08-25 (W3-11):** the Q12 price is now named in M17's anti-claim (§6) —
+F-36 is resolved by naming the price, not paying it; see RULINGS.md.
 
 ## 8. Exclusions
 
