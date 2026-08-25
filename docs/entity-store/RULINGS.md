@@ -131,3 +131,16 @@ triage (`audit/`). All twenty-two ruled items were ruled as recommended; Block V
 - **W3-24** — F-45 count corrected ("nine" → ten) in both homes.
 - **W3-25** — the Θ(n²) `List.drop` in the fips202 absorb fold removed,
   representation-preserving; bridge + KATs must rebuild green (F-47).
+
+---
+
+## R-1 — the Entity Store context ratified (2026-08-25, operator, in-session)
+
+`CONTEXT.md` ratified as recommended, discharging R-1 and completing W3-6 step 2: the
+context is named **Entity Store**, home `docs/entity-store/`; the Lean namespace stays
+**`E2`** as the context's code label — no rename, no serialization window spent. The
+four wave-3 terms and seven rules minted as drafted, avoid-lists included;
+`address-commits-to-encoding` promoted from anatomy prose to a minted rule. CONTEXT-MAP
+row and relationships added; the PROCEDURE §7 registry row is live. Window B is
+unblocked (its other precondition, window A, merged the same day — A-6 + F-26 at
+`b44b9c6`, adjudicated with all ten differential scripts green on the merged tree).

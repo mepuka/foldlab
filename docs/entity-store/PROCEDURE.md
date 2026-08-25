@@ -122,7 +122,7 @@ this registry (or the estate's own law) has no standing in gated work.
 | `research/*.md` | survey reports and probes from literature/evidence waves | pre-ratification evidence | frozen at delivery; superseding evidence is a new report | report-internal; must carry receipts |
 | `LEDGER.md` (§8, planned) | the machine-extracted proved ledger, both sides, plus the W3-4 promise-status join | the mechanical statement of what is proved and gated | REGENERATED only; hand edits are violations the diff catches | generated; banner line 1 |
 | `RULINGS.md` | every dated ruling, amendment narrative, and falsification record from 2026-08-25 onward; prior records migrate at W3-6 step 5 | the sole ruling authority (W3-1); rulings and amendments cite entries here | append-only dated entries; an entry is immutable once committed; supersession is a new entry citing the old | one entry per docket or ruling, W-numbered items |
-| `CONTEXT.md` (planned, W3-6 step 2) | the context's vocabulary: minted terms and rules, estate minting shape | term authority; the R-1 context home | enters and amends by domain-modeling + grilling only (C4) | one entry per term: name, kind, carrier/judgment form, obligations, avoid-list |
+| `CONTEXT.md` | the context's vocabulary: minted terms and rules, estate minting shape | term authority; the R-1 context home (ratified 2026-08-25) | enters and amends by domain-modeling + grilling only (C4) | one entry per term: name, kind, carrier/judgment form, obligations, avoid-list |
 
 Estate-level law (`AGENTS.md`, `TOOLS.md`, `KINDS.md`, `CLAIM-GATES.md`) is not
 respecified here; this registry defers to it. TOOLS.md admission precedes any new

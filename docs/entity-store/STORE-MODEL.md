@@ -221,7 +221,9 @@ anything; in the model this holds by construction (inserts come from carriers th
 stays in the v1 model (M16). Both negative exhibits kept. GC stated-only and kinds as an
 open tag-byte enumeration confirmed. Vocabulary held as working labels until R-1 rules
 the context home. M1–M18 + NEG-1/2 is the pinned ledger; additions by amendment only,
-never smuggled.
+never smuggled. **Addendum 2026-08-25 (R-1):** the context home is ratified —
+[CONTEXT.md](CONTEXT.md), context "Entity Store"; the `E2` namespace stays as the code
+label (RULINGS.md R-1 entry). Working labels stand; minted terms live in the glossary.
 
 **Naming-as-entities addendum (2026-08-25).** The design thrust for modeling naming —
 name views, scenario/local naming, annotation sidecars — is captured in KICKOFF.md §17
