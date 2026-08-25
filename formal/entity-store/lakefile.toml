@@ -1,0 +1,5 @@
+name = "entity-store"
+defaultTargets = ["E2"]
+
+[[lean_lib]]
+name = "E2"
