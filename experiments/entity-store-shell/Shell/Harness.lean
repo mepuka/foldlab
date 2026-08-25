@@ -52,7 +52,11 @@ def runScriptDisk (r : StoreRoot) (src : String) : IO (Except String (List Strin
   match scriptSteps src with
   | .error e => pure (.error e)
   | .ok steps => do
-    r.init
+    -- A store fault on the disk side is a HARNESS failure, not a transcript line: the
+    -- model side has no such channel, so there is nothing to compare it against.
+    match ← r.init with
+    | .error f => return .error s!"store fault at init: {f.render}"
+    | .ok _ => pure ()
     let mut env := AddrEnv.empty
     let mut idx := 1
     let mut lines : List String := []
@@ -67,7 +71,10 @@ def runScriptDisk (r : StoreRoot) (src : String) : IO (Except String (List Strin
                 else return .error s!"step {idx}: {String.intercalate " " out.lines}"
             | none =>
               match st with
-              | .verb v => do let out ← r.run v; pure (out, stepAddr v out)
+              | .verb v => do
+                  match ← r.run v with
+                  | .error f => return .error s!"step {idx}: store fault: {f.render}"
+                  | .ok out => pure (out, stepAddr v out)
               | _ => return .error "unreachable: assertion without an outcome"
           lines := lines ++ transcriptLines idx (renderSexp x) out
           env := env.push addr out.code

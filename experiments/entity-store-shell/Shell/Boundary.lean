@@ -158,19 +158,28 @@ obligation records carry, and the scan cross-checks that every stored entity has
 The same scan runs over the in-process `StoreMap` and over the disk, so a corrupted store
 is a differential observable, not a disk-only anecdote. -/
 
-/-- What the scan reads. Both the model and the disk materialize one of these; the two
-    stray-file lists are always empty on the model side, since a `StoreMap` key is an
-    `Address` and a `NameMap` value is an `Address` — neither can be malformed. -/
+/-- What the scan reads. Both the model and the disk materialize one of these; the three
+    file-shape lists are always empty on the model side, since a `StoreMap` key is an
+    `Address` and a `NameMap` value is an `Address` — neither can be malformed, and
+    neither can be a directory. -/
 structure StoreView where
   objects : List (Address × Bytes)
   obligations : List Address
   names : List (String × Address)
   strayObjectFiles : List String := []
   strayNameFiles : List String := []
+  /-- Entries the layout names correctly but which are not regular files — a directory,
+      a symlink, a FIFO. Reported, never opened (F-42, ruling W3-15). -/
+  notRegularFiles : List String := []
 
 inductive Violation
   | strayObject (fname : String)
   | strayName (fname : String)
+  /-- A correctly named entry that is not a regular file. Distinct from a stray, which is
+      a MISNAMED file: this one is named exactly as the layout demands and is a directory,
+      a symlink, or a device. "your objects/ contains a symlink" is the diagnosis a
+      transported store needs; "stray" is not (F-42). -/
+  | notARegularFile (file : String)
   | wf1 (claimed actual : Address)
   | parseFail (a : Address)
   | nonCanonical (a : Address)
@@ -182,6 +191,7 @@ inductive Violation
 def Violation.render : Violation → String
   | .strayObject f => s!"violation stray-object file={renderStr f}"
   | .strayName f => s!"violation stray-name file={renderStr f}"
+  | .notARegularFile f => s!"violation not-a-regular-file file={renderStr f}"
   | .wf1 c a => s!"violation wf1 addr={hexOfAddr c} actual={hexOfAddr a}"
   | .parseFail a => s!"violation parse addr={hexOfAddr a}"
   | .nonCanonical a => s!"violation non-canonical addr={hexOfAddr a}"
@@ -204,7 +214,8 @@ def StoreView.normalize (v : StoreView) : StoreView :=
     obligations := sortByAddr id v.obligations
     names := v.names.mergeSort (fun x y => leHex x.fst y.fst)
     strayObjectFiles := sortStrings v.strayObjectFiles
-    strayNameFiles := sortStrings v.strayNameFiles }
+    strayNameFiles := sortStrings v.strayNameFiles
+    notRegularFiles := sortStrings v.notRegularFiles }
 
 def StoreView.toMap (v : StoreView) : StoreMap := v.objects
 
@@ -259,7 +270,11 @@ def checkReport (view₀ : StoreView) : CheckReport :=
       !entityAddrs.contains o && !isFaulted o)).map Violation.obligationOrphan
   { obligations := entities
     violations :=
+      -- File-shape observations first, in the order the planes are laid out: what the
+      -- scan could not even open comes before what it opened and found wrong. Each list
+      -- is sorted by name in `normalize`, so the whole block is deterministic.
       view.strayObjectFiles.map Violation.strayObject
+        ++ view.notRegularFiles.map Violation.notARegularFile
         ++ perObject.flatMap Prod.snd
         ++ missing ++ orphan
         ++ view.strayNameFiles.map Violation.strayName

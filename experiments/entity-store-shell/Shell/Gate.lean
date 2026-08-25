@@ -18,6 +18,12 @@ discipline made mechanical rather than asserted:
         pure behavior IS the core's; a shell function named `canonS` or `preimageE` would
         be the exact shape of a drift nobody notices. Constructors and compiler-generated
         companions are exempt — `Shell.Verb.putSchema` names a verb, not an insert.
+  G-S5  no clock, specifically: `IO.FS.Metadata.accessed` and `IO.FS.Metadata.modified`
+        are forbidden by name in the used-constant set. W3-15 admits
+        `System.FilePath.symlinkMetadata` so the store scan can ask an entry's TYPE, and
+        that one primitive hands back a struct carrying two `SystemTime` fields. §3's
+        "no clock" is a rung-0 property; admitting the struct would admit the timestamps
+        unless a gate says otherwise, so this leg says otherwise.
 -/
 import Lean
 import Shell.Hex
@@ -57,20 +63,45 @@ def coveredModule (m : Name) : Bool :=
   ((`Shell).isPrefixOf m && m != `Shell.Gate) || rootModules.contains m
 
 /-- The IO whitelist of STORE-SHELL §3, SHELL-v0, by enumeration. The effectful members
-    are exactly: file read/write under the store root, directory listing and creation,
-    existence tests, atomic rename, stdout/stderr, and exit codes. The rest are the
-    carrier types those signatures are written in. Nothing here reads a clock, a random
-    source, the environment, or a socket. -/
+    are exactly: file read/write under the store root, file-type interrogation of store
+    entries without following symlinks, directory listing and creation, existence tests,
+    atomic rename, stdout/stderr, and exit codes. The rest are the carrier types those
+    signatures are written in. Nothing here reads a clock, a random source, the
+    environment, or a socket — and G-S5 below pins the clock half of that sentence, which
+    `IO.FS.Metadata` would otherwise quietly undo. -/
 def ioWhitelist : List Name :=
   [ -- effectful primitives, SHELL-v0 §3
     `IO.FS.readBinFile, `IO.FS.writeBinFile, `IO.FS.rename, `IO.FS.createDirAll,
     `System.FilePath.readDir, `System.FilePath.pathExists,
+    -- F-42 / W3-15: admitted for ONE purpose — an entry is read only when it is a
+    -- regular file. The no-follow form, deliberately: `metadata` reports a symlink's
+    -- TARGET type, so `objects/<hex> -> /etc/hosts` would come back `.file` and be read.
+    `System.FilePath.symlinkMetadata,
     `IO.println, `IO.eprintln, `IO.print, `IO.eprint,
     -- carriers and plumbing those signatures are written in
     `IO, `EIO, `BaseIO, `IO.Error,
     `IO.FS.DirEntry, `IO.FS.DirEntry.fileName, `IO.FS.DirEntry.path,
+    `IO.FS.Metadata, `IO.FS.Metadata.type, `IO.FS.FileType, `IO.FS.FileType.file,
+    `IO.FS.instBEqFileType,
     `System.FilePath, `System.FilePath.mk, `System.FilePath._sizeOf_inst,
-    `System.FilePath.instDiv, `System.FilePath.instHDivString ]
+    `System.FilePath.instDiv, `System.FilePath.instHDivString,
+    -- `IO.Error`'s constructors: inert data of an already-admitted carrier. They appear
+    -- because `Shell.Store.faultOfIOError` matches on ALL of them with no catch-all —
+    -- the fault a store hands back is derived from the constructor and the path, never
+    -- from libuv's `details` text, which differs between the Mac and the Windows leg.
+    `IO.Error.alreadyExists, `IO.Error.otherError, `IO.Error.resourceBusy,
+    `IO.Error.resourceVanished, `IO.Error.unsupportedOperation, `IO.Error.hardwareFault,
+    `IO.Error.unsatisfiedConstraints, `IO.Error.illegalOperation, `IO.Error.protocolError,
+    `IO.Error.timeExpired, `IO.Error.interrupted, `IO.Error.noFileOrDirectory,
+    `IO.Error.invalidArgument, `IO.Error.permissionDenied, `IO.Error.resourceExhausted,
+    `IO.Error.inappropriateType, `IO.Error.noSuchThing, `IO.Error.unexpectedEof,
+    `IO.Error.userError, `IO.Error.casesOn ]
+
+/-- G-S5's subject, by enumeration — the same shape as `ioWhitelist`, read the other way.
+    A FORBIDDEN list rather than an allowed one, so the leg keeps biting even if a future
+    edit to `ioWhitelist` admits one of these names. -/
+def clockForbidden : List Name :=
+  [`IO.FS.Metadata.accessed, `IO.FS.Metadata.modified]
 
 private def mentionsIO (e : Expr) : Bool :=
   Option.isSome <| e.find? fun s =>
@@ -153,6 +184,12 @@ elab "#shell_gates" : command => do
     throwError "G-S1 FAILED — opaque/unsafe constants under Shell: {opaqueOffenders}"
   unless ioOffenders.isEmpty do
     throwError "G-S2 FAILED — IO outside the permitted modules: {ioOffenders}"
+  -- G-S5 is checked BEFORE G-S3 deliberately. A clock reading is also an unwhitelisted
+  -- constant, so G-S3 would fire on it first and report the generic diagnosis; the
+  -- specific one is the useful one, and it is the one that survives a whitelist edit.
+  let clocks := usedIO.toList.filter clockForbidden.contains
+  unless clocks.isEmpty do
+    throwError "G-S5 FAILED — clock readings off IO.FS.Metadata (§3 'no clock'): {clocks}"
   let stray := usedIO.toList.filter (fun u => !ioWhitelist.contains u)
   unless stray.isEmpty do
     throwError "G-S3 FAILED — IO constants outside the SHELL-v0 whitelist: {stray}"
@@ -160,7 +197,7 @@ elab "#shell_gates" : command => do
     throwError "G-S4 FAILED — Shell constants shadowing core names: {shadow}"
   logInfo s!"shell gates ok ({scanned} constants over {covered.toList.length} modules) \
 — G-S1 opaque/unsafe clean; G-S2 IO confined to {ioModules}; G-S4 no shadowing of \
-{coreNamespaces}.\n\
+{coreNamespaces}; G-S5 no clock reading off {clockForbidden}.\n\
 G-S coverage (by module, executable roots included): {sortStrings (covered.toList.map toString)}\n\
 G-S3 — every IO/FilePath constant this package references, all whitelisted:\n  \
 {sortStrings (usedIO.toList.map toString)}"

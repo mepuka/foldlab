@@ -39,7 +39,7 @@ Spec §1 numbers the rungs. This package reaches rung 1 and claims nothing above
 | Rung | Statement | Here |
 |---|---|---|
 | 0 | shared core: the shell's pure behavior IS the core's, by construction | held, and mechanically guarded — see **Gates** |
-| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 9 committed scripts, all green** |
+| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 11 committed scripts, all green** |
 | 2 | `Std.Do` Hoare triples on shell operations | not attempted |
 | 3 | full refinement / bisimulation | not attempted; the word does not appear as a claim |
 
@@ -80,7 +80,7 @@ Nothing in this package writes to `formal/`; the E2 carriers gain no instances a
 | [Shell/Script.lean](Shell/Script.lean) | the fixture language |
 | [Shell/Harness.lean](Shell/Harness.lean) | the differential runner |
 | [Shell/Cli.lean](Shell/Cli.lean), [Shell/Encode.lean](Shell/Encode.lean) | `estore`, `estore-encode` |
-| [Shell/Gate.lean](Shell/Gate.lean) | the standing gates G-S1..G-S4 |
+| [Shell/Gate.lean](Shell/Gate.lean) | the standing gates G-S1..G-S5 |
 
 ## On-disk layout (§4)
 
@@ -141,6 +141,7 @@ Violation classes, one line each:
 | `typing` | an entity's schema address does not resolve as a schema (§5 check 4) |
 | `obligation-missing` / `obligation-orphan` | the SH6 record set does not match the entity set |
 | `stray-object` / `stray-name` | a file the layout does not admit |
+| `not-a-regular-file` | an entry the layout names *correctly* that is a directory, a symlink, or a device. Reported, never opened — the discipline that makes the scan total on a directory the shell did not create (F-42) |
 
 Per object the scan reports the **first** structural failure (`wf1`, `parse`,
 `non-canonical`) and stops for that object, because those cascade; reference misses do
@@ -225,7 +226,9 @@ estore [--store <dir>] init | check
 The store root comes from argv (default `.`) because the whitelist forbids reading the
 environment. `<file>` holds the object's **pre-image bytes** — see finding F-1. Exit
 codes: `0` success; `1` rejection, not-found, or a failed store verification; `2` a usage
-or environment fault. Observables go to stdout, faults to stderr, and stdout is
+or environment fault. For `check` that is the three-way verdict of §5 — `0` checked and
+clean, `1` checked and violations found, `2` **could not check** — and all three legs are
+reachable (F-42, ruling W3-15). Observables go to stdout, faults to stderr, and stdout is
 byte-identical across identical invocations.
 
 `estore-encode` is the **fixture tool** §6 permits, not part of the store: it turns a
@@ -244,8 +247,9 @@ lake exe estore-encode schema widget.schema widget.pre
 |---|---|
 | G-S1 | no `opaque` and no `unsafe` constant under `Shell` — the `partial`→opaque trap. There is no `partial` in this package; every recursion is structural or takes fuel derived from the input length, and no fuel is a parameter of any verb or of any observable |
 | G-S2 | every constant whose type mentions `IO` lives in `Shell.Store`, `Shell.Cli`, `Shell.Encode`, or `Shell.Harness` |
-| G-S3 | the §3 IO whitelist by enumeration: every `IO.*` / `System.FilePath.*` constant the package references is listed and permitted. The effectful members are `readBinFile`, `writeBinFile`, `rename`, `createDirAll`, `readDir`, `pathExists`, `println`, `eprintln` — and nothing else. Adding a clock, a random source, an environment read, or a socket fails the build here |
+| G-S3 | the §3 IO whitelist by enumeration: every `IO.*` / `System.FilePath.*` constant the package references is listed and permitted. The effectful members are `readBinFile`, `writeBinFile`, `rename`, `createDirAll`, `readDir`, `pathExists`, `symlinkMetadata`, `println`, `eprintln` — and nothing else. Adding a clock, a random source, an environment read, or a socket fails the build here |
 | G-S4 | no shell **definition** shadows a core definition by name (constructors and compiler companions exempt) — rung 0's invariant, which a shell function named `canonS` would quietly break |
+| G-S5 | no `IO.FS.Metadata.accessed` and no `IO.FS.Metadata.modified` in the used-constant set. W3-15 admits `symlinkMetadata` so the scan can ask an entry's **type**; the struct it returns also carries two `SystemTime` fields, and §3's "no clock" would otherwise be admitted along with them. A forbidden list rather than an allowed one, so the leg keeps biting if a later edit adds the field to G-S3's whitelist |
 
 The gates scan `private` definitions too (they carry a `_private.` prefix that a naive
 scan exempts — which is most of this package).
@@ -341,10 +345,16 @@ Mirrors STORE-SHELL §7, with what this package adds.
 - **Nothing about the pinned Effect implementation**, about any digest's cryptographic
   properties (`H` is a parameter in the model; injectivity appears only as a named
   hypothesis), or about deployment.
-- **Rung 1 is testing, not proof.** The harness shows that nine committed scripts produce
-  identical observables on both sides. It is not a theorem about all scripts, and no
-  bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
+- **Rung 1 is testing, not proof.** The harness shows that eleven committed scripts
+  produce identical observables on both sides. It is not a theorem about all scripts, and
+  no bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
   untouched.
+- **No totality claim beyond the file-type discipline.** A store entry is opened only when
+  `symlinkMetadata` reports a regular file, and every residual IO fault exits 2 with a
+  `StoreFault` instead of a verdict (F-42, ruling W3-15). That is a claim about *this*
+  package's calls on a POSIX filesystem; nothing is claimed about a filesystem the shell
+  cannot interrogate, and the hostile-entry cases are exercised by hand rather than by a
+  script — the `(place …)` primitive that would make them fixtures is a separate seat.
 - **`Conforms` is recorded, not enforced** (SH6). A store that passes `check` is *not*
   claimed to be internally well-typed in M17's sense; every entity carries an explicitly
   accepted obligation saying exactly that.
