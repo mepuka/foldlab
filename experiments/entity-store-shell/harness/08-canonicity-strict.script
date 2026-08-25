@@ -1,0 +1,29 @@
+; STORE-MODEL §7 (Q5, canonical-image strictness) and Q11 (its value twin).
+; `legalInsert` admits only bytes in the image of `pre_k`. At the shell that is a
+; decidable check on received bytes: re-run the core's own assembly and byte-compare.
+; Non-canonical input is REJECTED, never silently repaired — otherwise two byte-forms of
+; one carrier could both be "in" the store and dedup would stop being a theorem.
+;
+; The `-raw` forms below assemble a pre-image with canonicalization deliberately
+; skipped; they are unreachable from any CLI verb.
+
+; fields out of order: not in the image of preimageS
+(schema-put-raw (object (f "beta" req (prim str)) (f "alpha" req (prim int))))
+(assert-code prev 1)
+
+; the same carrier written canonically: admitted
+(schema-put-raw (object (f "alpha" req (prim int)) (f "beta" req (prim str))))
+(assert-code prev 0)
+
+; the value twin (Q11): vobj keys out of order
+(entity-put-raw @3 (obj ("beta" (s "x")) ("alpha" (i 1))))
+(assert-code prev 1)
+
+(entity-put-raw @3 (obj ("alpha" (i 1)) ("beta" (s "x"))))
+(assert-code prev 0)
+
+; and the canonicalizing path lands on exactly the same address as the canonical raw one
+(entity-put @3 (obj ("beta" (s "x")) ("alpha" (i 1))))
+(assert-same @7 @9)
+
+(check)

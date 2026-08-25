@@ -1,0 +1,16 @@
+; STORE-SHELL §6 / STORE-MODEL M12 (L-dedup, unconditional).
+;
+; Three puts of the same schema up to the ratified equivalence (R-10: object fields are
+; a set, ordered by name in the canonical form). All three take the SAME address, and
+; the store holds ONE object — dedup is a theorem of the encoding, not a property of the
+; hash, and the shell inherits it by calling the core's own `preimageS`.
+
+(schema-put (object (f "alpha" req (prim int)) (f "beta" req (prim str))))
+(schema-put (object (f "beta" req (prim str)) (f "alpha" req (prim int))))
+(schema-put (object (f "alpha" req (prim int)) (f "beta" req (prim str))))
+
+(assert-same @1 @2)
+(assert-same @1 @3)
+
+; L-put-idem / L-frame made visible: one object, not three.
+(check)

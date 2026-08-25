@@ -1,0 +1,29 @@
+; STORE-SHELL §4 (the names plane, beside the store) and STORE-MODEL M16 (L-names-inert).
+; Names are the mutable plane: rebinding one changes no address, no resolve, and no
+; verdict. They are never inside a pre-image.
+
+(schema-put (prim int))
+(schema-put (prim str))
+
+(name-set "head" @1)
+(name-get "head")
+
+; rebinding is allowed and inert
+(name-set "head" @2)
+(name-get "head")
+
+(name-set "other" @1)
+(name-get "other")
+
+; an unbound name is a rejection, not a store fault
+(name-get "absent")
+(assert-code prev 1)
+
+; a name that could leave the store root is refused at the input boundary, not sanitized
+(name-set "../escape" @1)
+(assert-code prev 1)
+
+; the objects are exactly what they were before any of this
+(get @1)
+(resolve @1)
+(check)

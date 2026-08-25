@@ -1,0 +1,361 @@
+# entity-store-shell — SHELL-v0, the executable store
+
+Status: experimental artifact, instrument grade (`experiments/`). Built 2026-08-25 to the
+ratified spec [docs/entity-store/STORE-SHELL.md](../../docs/entity-store/STORE-SHELL.md)
+(joints SH1–SH8), which implements
+[STORE-MODEL.md](../../docs/entity-store/STORE-MODEL.md). This README adds mechanics only
+and restates neither.
+
+Scope is **SHELL-v0 exactly**: library, CLI verbs, and the differential harness. The
+daemon is SHELL-v1 and is out of scope until the Windows `Std.Http` spike runs
+(dual-host gate, §3); there is no socket code in this package.
+
+Toolchain `leanprover/lean4:v4.33.1`. Two path-requires, both on the same pin:
+`entity-store` (lib `E2`, the gated pure core) and `fips202` (lib `Sha3`). No other
+dependency, no network at build or run time.
+
+## Build and run
+
+```bash
+lake build
+```
+
+```bash
+rm -rf .harness-work && lake exe harness harness .harness-work
+```
+
+The harness never deletes anything (there is no deletion in v0), so the work directory is
+the caller's business — hence the `rm -rf` in the command rather than in the program. Add
+`--verbose` to print every transcript line.
+
+```bash
+lake exe estore --store /path/to/store init
+```
+
+## The claim ladder, and where this sits
+
+Spec §1 numbers the rungs. This package reaches rung 1 and claims nothing above it.
+
+| Rung | Statement | Here |
+|---|---|---|
+| 0 | shared core: the shell's pure behavior IS the core's, by construction | held, and mechanically guarded — see **Gates** |
+| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 9 committed scripts, all green** |
+| 2 | `Std.Do` Hoare triples on shell operations | not attempted |
+| 3 | full refinement / bisimulation | not attempted; the word does not appear as a claim |
+
+## Layer-2 discipline, made checkable
+
+Spec §2 puts the shell outside the E2 opaque/unsafe gate boundary and gives it a
+different rule instead: every function is (a) a pure core call, (b) a whitelisted IO
+primitive, or (c) a composition — nothing else. Two structural choices make that
+inspectable rather than asserted:
+
+- **All decision content is in one pure module.** [Shell/Verbs.lean](Shell/Verbs.lean)
+  answers "given a store view and a verb, what is the observable and what must be
+  written". The model runner and the disk runner differ only in how they materialize a
+  view and how they interpret the resulting `Effect`. The differential harness therefore
+  compares *plumbing against semantics*, never semantics against semantics.
+- **All store IO is in one module.** [Shell/Store.lean](Shell/Store.lean) is the only
+  module that touches a store — reads it, writes it, or names a path inside it. The three
+  other modules permitted to perform IO do only what their jobs require and never open a
+  store themselves: `Shell.Cli` reads an argv-named input file and writes stdout/stderr,
+  `Shell.Encode` (the fixture tool) writes its output file, `Shell.Harness` reads its
+  committed fixtures. Gate G-S2 fails the build if any constant outside those four so
+  much as mentions `IO` in its type.
+
+Nothing in this package writes to `formal/`; the E2 carriers gain no instances and no
+`Repr`. Rendering, hex, and parsing live here.
+
+| Module | Content |
+|---|---|
+| [Shell/Hex.lean](Shell/Hex.lean) | lowercase hex, the digest width, the `ByteArray` bridge |
+| [Shell/Hash.lean](Shell/Hash.lean) | `H := fun b => ⟨Sha3.Impl.sha3_512 b⟩`, and only here |
+| [Shell/Render.lean](Shell/Render.lean) | deterministic rendering of the E2 carriers |
+| [Shell/Sexp.lean](Shell/Sexp.lean) | the reader; fuel-based, no `partial` |
+| [Shell/Carrier.lean](Shell/Carrier.lean) | s-expression → `SchemaCore` / `Value` / `Check` |
+| [Shell/Boundary.lean](Shell/Boundary.lean) | the PUT boundary and the verification-on-open scan, pure |
+| [Shell/Verbs.lean](Shell/Verbs.lean) | the verbs, decided once, for both runners |
+| [Shell/Model.lean](Shell/Model.lean) | the in-process model: `E2.StoreMap` under `E2.putPre` |
+| [Shell/Store.lean](Shell/Store.lean) | the disk store; the whole IO surface |
+| [Shell/Script.lean](Shell/Script.lean) | the fixture language |
+| [Shell/Harness.lean](Shell/Harness.lean) | the differential runner |
+| [Shell/Cli.lean](Shell/Cli.lean), [Shell/Encode.lean](Shell/Encode.lean) | `estore`, `estore-encode` |
+| [Shell/Gate.lean](Shell/Gate.lean) | the standing gates G-S1..G-S4 |
+
+## On-disk layout (§4)
+
+```
+<root>/objects/<hex>        pre-image bytes, verbatim; filename = hex of H of the content
+<root>/names/<name>         one address per file — the mutable plane
+<root>/obligations/<hex>    the SH6 accepted-Conforms record, one per entity object
+```
+
+Hex is lowercase, two digits per byte, no separators; the digest is 64 bytes, so an
+object filename is exactly 128 characters. Every write is temp-file-then-rename
+(`.tmp-<name>` in the same directory, then `IO.FS.rename`); the rename is the commit
+point. Objects are append-only: a put whose address is already present writes nothing,
+because by WF1 the bytes already there are the same bytes.
+
+An interrupted write leaves a `.tmp-` file, which `check` reports as a stray object.
+There is no deletion in v0, so removing it is an operator act below the model.
+
+## The PUT boundary (§5)
+
+`admit` enforces, in this order:
+
+1. the bytes parse as a well-formed pre-image of a known kind — and of the kind the verb
+   was asked for (`stripPre` checks version and tag; the decoders demand the body be
+   consumed exactly);
+1a. for entities, the `<schema-addr>` argument matches the address embedded in the
+   pre-image (an argument-consistency check, not a model condition);
+2. **canonicity**: re-run the core's own `preimageS`/`preimageE` and byte-compare. Q5
+   canonical-image strictness — non-canonical bytes are **rejected, never repaired**.
+   Silently canonicalizing would put two byte-forms of one carrier into circulation and
+   stop dedup from being a theorem;
+3. every reference resolves in the store (WF2 precondition);
+4. for entities, the schema address resolves **as a schema** — check 3 established only
+   that it is present.
+
+Check 5, `Conforms`, is not enforceable until the M18 seat delivers the decision
+procedure. Per SH6, v0 records it as an explicitly accepted obligation per entity PUT and
+flags it in `check` output. **When M18 lands, enforcement with no grace period** — the
+single place to add it is check 5 in `admit`, and `check` gains the corresponding scan.
+
+## Verification-on-open (§4, SH5)
+
+Opening a directory as a store *establishes* reachability, so every verb opens by running
+the full scan, and every verb but `check` refuses to run when the scan fails — reporting
+exactly what `check` would report, then `aborted store-verification-failed`. Each object
+is re-hashed, parsed, canonicity-checked, its references resolved, and — for entities —
+its schema resolved as a schema. What is not decidable today is exactly what the
+obligation records carry, and the scan cross-checks that every stored entity has one.
+
+Violation classes, one line each:
+
+| Class | Meaning |
+|---|---|
+| `wf1` | the content does not hash to the filename (STORE-MODEL M8) |
+| `parse` | stored bytes are not a well-formed pre-image |
+| `non-canonical` | stored bytes are not in the image of `pre_k` |
+| `wf2` | a reference does not resolve (M9) |
+| `typing` | an entity's schema address does not resolve as a schema (§5 check 4) |
+| `obligation-missing` / `obligation-orphan` | the SH6 record set does not match the entity set |
+| `stray-object` / `stray-name` | a file the layout does not admit |
+
+Per object the scan reports the **first** structural failure (`wf1`, `parse`,
+`non-canonical`) and stops for that object, because those cascade; reference misses do
+not cascade, so every missing reference is reported. An address already carrying a
+violation is excluded from the obligation cross-check, so one corruption produces one
+line, not three. In `check`'s summary line, `objects=` counts every object file while
+`schemas=` and `entities=` count only those that passed the scan.
+
+`parse` and `non-canonical` are unreachable in a store this shell built — the boundary
+rejects such bytes, and any later mutation changes the hash and is caught as `wf1` first.
+They exist for stores assembled or transported by something else.
+
+## Names
+
+Names are inert (STORE-MODEL M16): setting one changes no address, no resolve, and no
+verdict, and a name is never inside a pre-image. A name is a filename under `names/`, so
+the alphabet is restricted at the input boundary to `[A-Za-z0-9._-]`, at most 128
+characters, not beginning with `.`; a name that could traverse out of the store root is
+**rejected, not sanitized**. A name is not required to point at anything that resolves,
+and a dangling name is not a violation — names are beside the store, not in it.
+
+## The differential harness (§6, SH7)
+
+Each committed `harness/*.script` executes twice — against the pure model in process, and
+against a fresh disk store through the CLI codepaths — and every observable is compared
+line by line. Each side threads its own address environment, so a divergence in one
+step's address propagates into every later step instead of being masked. Divergence
+anywhere is a nonzero exit.
+
+| Script | What it pins |
+|---|---|
+| `01-schema-put-dedup` | M12: field-reorder puts take one address and store one object |
+| `02-entity-put-dedup` | Q11/M12E: the value twin; and that the schema is part of an entity's identity |
+| `03-dangling-ref-rejected` | check 3 for schema refs, entity schema addresses, and `vaddr` refs (A-1) |
+| `04-names-plane` | M16: rebinding, unbound lookups, and a name that would escape the root |
+| `05-roundtrips` | M15 in executable form: `get` / `resolve` / `refs` return the canonical representative |
+| `06-corrupt-wf1` | WF1 catches a flipped bit, and every other verb then refuses to open the store |
+| `07-corrupt-typing` | corruption propagating along the typing edge: `wf1` on a schema, `typing` on its entity |
+| `08-canonicity-strict` | Q5 and its Q11 twin: non-canonical bytes rejected; the canonicalizing path agrees |
+| `09-hostile-bytes` | inline byte fixtures: `not-a-preimage`, `wrong-kind`, `schema-addr-mismatch`, `schema-unresolved` |
+
+### Script language
+
+The whole file is a sequence of s-expressions; `;` comments to end of line. Steps are
+1-based. An address is written `@N` (step N's address), `@prev`, `@last` (the most recent
+step that produced one), or 128 lowercase hex characters.
+
+```
+(schema-put <schema>)          (entity-put <addr> <value>)
+(schema-put-raw <schema>)      (entity-put-raw <addr> <value>)     ; canonicalization skipped
+(schema-put-bytes <hex>)       (entity-put-bytes <addr> <hex>)     ; raw bytes
+(get <addr>) (resolve <addr>) (refs <addr>)
+(name-set "<name>" <addr>) (name-get "<name>") (check)
+(corrupt <addr> <byte-index> <mask-hex>)                            ; harness primitive
+(assert-same <addr> <addr>) (assert-differ <addr> <addr>) (assert-code <N|prev> <code>)
+```
+
+Carrier syntax is exactly what `resolve` prints, so a resolve result pastes back into a
+fixture; gate G-S1's `#guard`s exercise that round-trip.
+
+```
+schema  (prim null|bool|int|str) | (lit <v>) | (object (f "k" req|opt <s>)…) | (tuple <s>…)
+      | (array <s>) | (union anyOf|oneOf <s>…) | (refine <s> <check>) | (ref <addr>)
+      | (var <n>) | (mu "<disc>" <s>) | address
+value   null | true | false | (i <n>) | (s "…") | (arr <v>…) | (obj ("k" <v>)…) | (vaddr <addr>)
+check   (filter "<id>" <v> true|false) | (group <check>…)
+```
+
+`corrupt` is a **harness primitive, not a CLI verb**: it is the only writer in the package
+that bypasses admission, and it exists so that a corrupted store is a differential
+observable rather than a disk-only anecdote. It is unreachable from `estore`.
+
+## CLI
+
+```
+estore [--store <dir>] init | check
+                            | put-schema <file> | put-entity <schema-addr> <file>
+                            | get <addr> | resolve <addr> | refs <addr>
+                            | name-set <name> <addr> | name-get <name>
+```
+
+The store root comes from argv (default `.`) because the whitelist forbids reading the
+environment. `<file>` holds the object's **pre-image bytes** — see finding F-1. Exit
+codes: `0` success; `1` rejection, not-found, or a failed store verification; `2` a usage
+or environment fault. Observables go to stdout, faults to stderr, and stdout is
+byte-identical across identical invocations.
+
+`estore-encode` is the **fixture tool** §6 permits, not part of the store: it turns a
+carrier literal into the pre-image bytes the PUT verbs expect. Its `-raw` forms skip
+canonicalization deliberately, to produce input the boundary must reject.
+
+```bash
+lake exe estore-encode schema widget.schema widget.pre
+```
+
+## Gates
+
+`lake build` runs them; a failure fails the build.
+
+| Gate | Check |
+|---|---|
+| G-S1 | no `opaque` and no `unsafe` constant under `Shell` — the `partial`→opaque trap. There is no `partial` in this package; every recursion is structural or takes fuel derived from the input length, and no fuel is a parameter of any verb or of any observable |
+| G-S2 | every constant whose type mentions `IO` lives in `Shell.Store`, `Shell.Cli`, `Shell.Encode`, or `Shell.Harness` |
+| G-S3 | the §3 IO whitelist by enumeration: every `IO.*` / `System.FilePath.*` constant the package references is listed and permitted. The effectful members are `readBinFile`, `writeBinFile`, `rename`, `createDirAll`, `readDir`, `pathExists`, `println`, `eprintln` — and nothing else. Adding a clock, a random source, an environment read, or a socket fails the build here |
+| G-S4 | no shell **definition** shadows a core definition by name (constructors and compiler companions exempt) — rung 0's invariant, which a shell function named `canonS` would quietly break |
+
+The gates scan `private` definitions too (they carry a `_private.` prefix that a naive
+scan exempts — which is most of this package).
+
+`Shell/Hash.lean` additionally re-checks `H` against the two kernel-proved CAVP digests
+(`Sha3.Kats.kat_sha3_512_empty`, `kat_sha3_512_37d518`) via `#guard`. These are compiled
+evaluation, conformance sanity and not theorems — the estate's `#guard` idiom, cf.
+`formal/fips202/Sha3/Impl.lean`. No digest was minted here.
+
+## Findings — questions the spec does not settle
+
+Each of these is a place where SHELL-v0 was built to a reading rather than to a ruling.
+They are recorded for the coordinator; none was chosen silently.
+
+- **F-1 — the PUT input unit.** §5 gives `put-schema <file>` and
+  `put-entity <schema-addr> <file>` without saying what the file holds. Ruled here: the
+  full **pre-image bytes**, for both verbs, because §5 check 1 is about bytes parsing as a
+  pre-image, §4 says an object file's content is exactly the pre-image, and §5's v1 wire
+  protocol says `PUT /objects` body = pre-image. Consequence: `<schema-addr>` is
+  redundant with the embedded address, so it is treated as a declaration and
+  cross-checked (check 1a). The alternative reading — the file holds the *carrier body*
+  and the shell assembles the pre-image — would make `<schema-addr>` load-bearing and
+  would move canonicity from a check to a construction, defeating Q5.
+- **F-2 — `Shell.classify` duplicates the parse inside `E2.refsOfPreimage`.** The core
+  exposes the refs-of-bytes reading but not the parse-of-bytes reading, so the shell
+  composes its own (`stripPre` → `decodeSchema` / `decAddr` + `decodeValue`) to recover
+  the kind and the carrier, which the boundary needs for checks 1, 1a and 2. The two
+  agree by inspection, not by theorem; if they ever drift, `refs` and the PUT boundary
+  would disagree about what a well-formed pre-image is. **Recommended core addition:** a
+  `decodePreimage : Bytes → Option (kind × carrier)` in `E2/Resolve.lean`, with
+  `refsOfPreimage` defined as a composition on top of it, so the agreement is
+  definitional. This is the one place where the shell holds pure logic that the core
+  arguably should own.
+- **F-3 — hostile-bytes rejection rests on behavior, not on a theorem.** M4b (decode
+  rejects every byte string outside the image of the encoding) is OWED in the core. Until
+  it lands, `rejected not-a-preimage` is a tested property of `decodeSchema`/`decodeValue`,
+  not a proved one. Script `09-hostile-bytes` is evidence, not a proof.
+- **F-4 — reading the input file.** §3's whitelist reads "file read/write under the store
+  root", but `put-schema <file>` necessarily reads a file that is not under it. Taken here
+  as: the "under the store root" clause governs the *store's own* reads and writes, and an
+  argv-named input file is part of the ruled verb. The harness likewise reads its
+  committed fixtures and creates store directories under an argv-given work root.
+- **F-5 — verification-on-open before every verb.** §4/SH5 says opening a directory as a
+  store establishes reachability by the full scan. Since every CLI invocation is an open,
+  every verb scans first and refuses on violation. The cost is one full re-hash of the
+  store per invocation; the benefit is that no verb ever operates on a store the model
+  calls unreachable. A narrower reading — only `check` scans — is available and would be
+  cheaper.
+- **F-6 — scan classes beyond WF1/WF2.** SH5 names WF1+WF2. The scan also decides the
+  entity typing precondition (`typing`), the SH6 record cross-check, and stray files.
+  These are the remaining decidable halves of `Reachable`; they are additions to the
+  literal SH5 wording.
+- **F-7 — the SH6 obligation mechanism.** Chosen as the brief directs: one file per entity
+  under `obligations/`, **identity is the filename** (the entity's address); the file's
+  content is informational. `check` derives its obligation lines from the stored object
+  bytes, never from the record's content, so the two runners cannot diverge over it. A
+  consequence: a record with wrong content is not detected in v0.
+- **F-8 — names may dangle.** The spec does not say whether `name-set` requires a
+  resolvable address. Ruled: no. Names are the mutable plane and inert (M16); a dangling
+  name is not a violation. A *malformed* name file — a filename outside the alphabet, or
+  content that is not digest hex — is a violation, because `name-get` would otherwise be
+  undefined.
+- **F-9 — address width.** `E2.Address` states no width invariant (the core calls it an
+  obligation, not a field). The shell imposes the digest width, 64 bytes, at every input
+  boundary: filenames, name-file contents, and script literals.
+- **F-10 — no `Std.Mutex` in v0.** §2's architecture text gives the storage engine a
+  `Std.Mutex` single-writer discipline. v0 is a single-process CLI, where an in-process
+  mutex serializes nothing across invocations and would create a false impression of
+  concurrency safety. It is therefore deliberately absent, consistent with §7's "no
+  concurrency claims"; the mutex attaches when v1's daemon gives it something to
+  serialize. Flagged because §2 mentions it and this package does not implement it.
+
+- **F-11 — `lake build --wfail` fails on the core, not on this package.** `E2/Decode.lean`
+  carries eight unused-variable warnings. This package is warning-clean, but a
+  `--wfail` task covering it would fail on its dependency. `formal/` is read-only from
+  this worktree; recorded for whoever wires the `mise` task.
+
+## Not claimed
+
+Mirrors STORE-SHELL §7, with what this package adds.
+
+- **No concurrency claims.** v0 is a single-process CLI with no locking of any kind
+  (F-10). Two concurrent `estore` processes against one store are outside anything stated
+  here. Multi-writer is a future ruling.
+- **No durability claims.** Temp-file-plus-rename buys *atomicity* of an object's
+  appearance, not durability: there is no `fsync` anywhere, so nothing is claimed about
+  what survives a power loss.
+- **No security claims.** No authentication, no authorization, no sandboxing; the name
+  alphabet is a path-containment measure, not a security boundary.
+- **No claim about `Std`'s IO layer.** Trust extends to the Lean compiler, the toolchain's
+  extern/libuv layer, and the OS filesystem (spec §3's trust statement, SH8). The
+  kernel-checked story covers the pure core only.
+- **Nothing about the pinned Effect implementation**, about any digest's cryptographic
+  properties (`H` is a parameter in the model; injectivity appears only as a named
+  hypothesis), or about deployment.
+- **Rung 1 is testing, not proof.** The harness shows that nine committed scripts produce
+  identical observables on both sides. It is not a theorem about all scripts, and no
+  bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
+  untouched.
+- **`Conforms` is recorded, not enforced** (SH6). A store that passes `check` is *not*
+  claimed to be internally well-typed in M17's sense; every entity carries an explicitly
+  accepted obligation saying exactly that.
+- **Windows unverified.** Built and run on macOS only. The dual-host gate is owed, and the
+  path handling and `IO.FS.rename` semantics have not been exercised there.
+
+## Owed
+
+- Dual-host re-check: build, gates, and a full harness run on the Windows host.
+- `mise` task wiring so `mise run check` covers this package. Not done here: the worktree
+  brief confines this branch to `experiments/entity-store-shell/`, and `mise.toml` is at
+  the repository root.
+- Coordinator rulings on F-1 through F-10; the core addition proposed in F-2.
+- M18 lands ⇒ boundary check 5 enforced, no grace period (SH6).

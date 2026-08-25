@@ -1,0 +1,27 @@
+; STORE-SHELL §5: `get` / `resolve` / `refs` round-trips, both kinds.
+; STORE-MODEL M15 (L-faithful) in executable form: what you get back is what you put,
+; up to exactly the declared equivalence — resolve returns the CANONICAL representative,
+; which is why the field order below comes back sorted.
+
+(schema-put (object (f "zulu" req (prim bool)) (f "alpha" req (array (prim int)))))
+(get @1)
+(resolve @1)
+(refs @1)
+
+; a schema that references another schema by address
+(schema-put (tuple (ref @1) (prim str)))
+(get @5)
+(resolve @5)
+(refs @5)
+
+; an entity, put with its fields in the wrong order, resolves canonical
+(entity-put @1 (obj ("zulu" true) ("alpha" (arr (i 1) (i -2) (i 3)))))
+(get @9)
+(resolve @9)
+(refs @9)
+
+; a recursive schema: `mu` is guarded, and recursion stays inside one object
+(schema-put (mu "tag" (object (f "next" opt (var 0)) (f "leaf" req (prim int)))))
+(resolve @13)
+
+(check)

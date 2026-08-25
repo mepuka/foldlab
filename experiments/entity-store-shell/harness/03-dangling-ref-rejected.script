@@ -1,0 +1,24 @@
+; STORE-SHELL §5 boundary check 3 (WF2 precondition) and STORE-MODEL NEG-2.
+; A reference that does not resolve is REJECTED at the boundary — the store never
+; reaches a state the model calls unreachable.
+
+; (a) a schema whose `ref` leaf dangles
+(schema-put (array (ref 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000)))
+(assert-code prev 1)
+
+; (b) an entity whose schema address is absent entirely: check 3 fires first
+(entity-put 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 (obj ("k" null)))
+(assert-code prev 1)
+
+; (c) an entity whose value carries a dangling address (A-1 / joint B: `refsV`)
+(schema-put (object (f "peer" req address)))
+(entity-put @5 (obj ("peer" (vaddr 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000))))
+(assert-code prev 1)
+
+; (d) the same entity with a reference that DOES resolve is admitted
+(entity-put @5 (obj ("peer" (vaddr @5))))
+(assert-code prev 0)
+(refs @last)
+
+; Nothing rejected ever landed: one schema, one entity.
+(check)

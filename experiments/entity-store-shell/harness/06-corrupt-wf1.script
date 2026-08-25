@@ -1,0 +1,26 @@
+; STORE-SHELL §4 (verification-on-open) / STORE-MODEL M8 (WF1, address consistency).
+;
+; One byte is flipped inside a stored object, below the PUT boundary — the only writer
+; in the shell that does not go through admission, and it exists precisely so that a
+; corrupted store is a DIFFERENTIAL observable rather than a disk-only anecdote.
+; The next open re-hashes every object and catches it.
+
+(schema-put (object (f "alpha" req (prim int)) (f "beta" req (prim str))))
+(entity-put @1 (obj ("alpha" (i 1)) ("beta" (s "x"))))
+(check)
+(assert-code prev 0)
+
+; flip the low bit of one byte inside the entity object
+(corrupt @2 3 01)
+(check)
+(assert-code prev 1)
+
+; verification-on-open is a precondition, not a report: every other verb refuses to run
+(get @1)
+(assert-code prev 1)
+(resolve @1)
+(assert-code prev 1)
+(schema-put (prim int))
+(assert-code prev 1)
+(name-set "head" @1)
+(assert-code prev 1)

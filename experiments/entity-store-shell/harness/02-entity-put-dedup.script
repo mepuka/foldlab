@@ -1,0 +1,19 @@
+; STORE-SHELL §5 (entity PUT boundary) and §6.
+; STORE-MODEL Q11 / M12E: values canonicalize too — `vobj` fields sort by key (R-10
+; mirrored), so two entities differing only in field order take the SAME address.
+; The SH6 obligation record appears in `check` output, once, for the one entity.
+
+(schema-put (object (f "name" req (prim str)) (f "size" req (prim int))))
+
+(entity-put @1 (obj ("name" (s "widget")) ("size" (i 7))))
+(entity-put @1 (obj ("size" (i 7)) ("name" (s "widget"))))
+
+(assert-same @2 @3)
+
+; A schema is part of an entity's identity (STORE-MODEL §5): the same value at a
+; different schema is a different entity at a different address.
+(schema-put (object (f "name" opt (prim str)) (f "size" req (prim int))))
+(entity-put @5 (obj ("name" (s "widget")) ("size" (i 7))))
+(assert-differ @2 @6)
+
+(check)

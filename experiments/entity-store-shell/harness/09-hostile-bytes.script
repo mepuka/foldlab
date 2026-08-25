@@ -1,0 +1,33 @@
+; STORE-SHELL §5, boundary checks 1, 1a and 4, against bytes the shell did not make.
+; These are the inline byte fixtures §6 asks for: hex handed straight to the boundary.
+
+; not a pre-image at all — the version byte is wrong
+(schema-put-bytes deadbeef)
+(assert-code prev 1)
+
+; a truncated schema body: the version and kind bytes are right, the decode is not
+(schema-put-bytes 010030)
+(assert-code prev 1)
+
+; a well-formed canonical schema pre-image, by hand: version 01, kind 00, prim int
+(schema-put-bytes 01003002)
+(assert-code prev 0)
+
+; an ENTITY pre-image offered to put-schema: parses, but the kind is wrong
+(schema-put-bytes 0101400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010)
+(assert-code prev 1)
+
+; the same bytes offered to put-entity with a DIFFERENT declared schema address:
+; the declaration and the pre-image disagree (check 1a)
+(entity-put-bytes @5 0101400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010)
+(assert-code prev 1)
+
+; an entity whose declared schema address resolves to an ENTITY, not a schema:
+; check 3 passes (the address is present) and check 4 rejects (it is not a schema)
+(entity-put @5 (i 42))
+(assert-code prev 0)
+(entity-put @last (i 43))
+(assert-code prev 1)
+
+; nothing rejected ever landed
+(check)

@@ -1,0 +1,25 @@
+name = "entity-store-shell"
+defaultTargets = ["Shell", "estore", "estore-encode", "harness"]
+
+[[require]]
+name = "entity-store"
+path = "../../formal/entity-store"
+
+[[require]]
+name = "fips202"
+path = "../../formal/fips202"
+
+[[lean_lib]]
+name = "Shell"
+
+[[lean_exe]]
+name = "estore"
+root = "Main"
+
+[[lean_exe]]
+name = "harness"
+root = "HarnessMain"
+
+[[lean_exe]]
+name = "estore-encode"
+root = "EncodeMain"
