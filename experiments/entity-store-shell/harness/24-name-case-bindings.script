@@ -1,0 +1,60 @@
+; STORE-SHELL §4 (the names plane, as amended by W3-14) — F-39 CLOSED.
+;
+; THE DEFECT THIS SCRIPT USED TO BE. This is `r2-11-name-case-collision.script` from the
+; wave-2 refuter battery, where it was an S1 FAILURE: the model's name plane is keyed by an
+; exact Lean `String`, the disk plane was one file per name, and APFS and NTFS both fold
+; case. Two model bindings became one file. The receipt:
+;
+;     FAIL A1-name-case.script
+;          DIVERGENCE at line 10:
+;           model: 5 | ok 27d77d3b…a38f
+;           disk : 5 | ok bf279c82…a572e
+;
+; Step 5 is `(name-get "Widget")`. The model answered with step 1's address, the disk with
+; step 2's, and BOTH EXITED 0 — a silent wrong answer, which is what puts it in the S1
+; tier. On disk one file survived, keeping the FIRST binding's spelling and the SECOND
+; binding's content.
+;
+; WHY IT PASSES NOW. W3-14 ruled that the model's `String` keys are authoritative and the
+; filename stops being the key: a name lives at `names/<lowercase hex of its UTF-8 bytes>`.
+; `Widget` is `576964676574` and `widget` is `776964676574` — two filenames that differ in
+; their FIRST BYTE, on a plane whose alphabet is `[0-9a-f]`. No filesystem folds those
+; together. The model side did not move at all; that is the point of the ruling.
+;
+; This is the class-closure observable: the script is committed in the position where it
+; used to fail, and its passing IS the amendment record (PROCEDURE §5 ratchet).
+
+(schema-put (prim int))
+(schema-put (prim str))
+
+; two distinct objects, so a plane answering with the wrong one is visible rather than
+; accidentally right
+(assert-differ @1 @2)
+
+(name-set "Widget" @1)
+(name-set "widget" @2)
+
+; the divergence's exact site. Each name resolves to ITS OWN address, on both planes.
+(name-get "Widget")
+(name-get "widget")
+
+; TWO bindings, not one: `names=2` is the count that used to be 1 on disk and 2 in the
+; model while both sides exited 0
+(check)
+(assert-code prev 0)
+
+; and the listing shows both, decoded — the same two keys the model holds
+(names)
+
+; case is not the only host relation that could have collapsed the pair. Rebinding one
+; must leave the other alone, which a one-file-for-both plane could never manage.
+(name-set "Widget" @2)
+(name-get "Widget")
+(name-get "widget")
+(names)
+(check)
+(assert-code prev 0)
+
+; and the objects plane never noticed any of it (M16, L-names-inert)
+(get @1)
+(resolve @2)
