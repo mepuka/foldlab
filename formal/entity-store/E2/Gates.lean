@@ -20,6 +20,10 @@ import E2.Faithful
 import E2.Closure
 import E2.Reject
 import E2.TypedReachability
+import E2.Wf3
+import E2.Commutation
+import E2.VersionByte
+import E2.IntraKind
 
 open Lean Elab Command in
 elab "#e2_opaque_scan" : command => do
@@ -139,3 +143,25 @@ example :
    `dupFreeV` hypothesis — the flipped comparison retired F-12's involution at the root. -/
 #print axioms E2.S1_canon_idempotent
 #print axioms E2.S1_canon_v_idempotent
+
+/- W3-22 seat, pin 1: M10 in the address-node vocabulary F-31 forced, with the ranking
+   form beside it. Both PROVED in `E2/Wf3.lean` — no hypothesis on `H` in either. -/
+#print axioms E2.M10_rank
+#print axioms E2.M10_wf3
+
+/- W3-22 seat, pin 2: M11's commutation half up to find-extensionality, and the companion
+   invariant F-38 showed it needs. Proved in `E2/Commutation.lean`;
+   `reachable_keys_nodup` is the lemma `Admissible.functional` has been naming. -/
+#print axioms E2.reachable_keys_nodup
+#print axioms E2.M11_comm
+#print axioms E2.M11_comm_keys_nodup
+
+/- W3-22 seat, pin 3: the pre-image version byte discharged rather than asserted (U-16;
+   `sha3_ne_prefips_spec`'s style). Proved in `E2/VersionByte.lean`. -/
+#print axioms E2.version_byte_separates
+#print axioms E2.version_byte_separates_bump
+
+/- W3-22 seat, pin 4: intra-kind faithfulness in the honest "injective except on the
+   characterised set" form (U-9), where W3-17 makes the exception set empty on the
+   admissible carriers. Proved in `E2/IntraKind.lean`. -/
+#print axioms E2.intraKindFaithful

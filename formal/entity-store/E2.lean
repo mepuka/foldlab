@@ -14,5 +14,9 @@ import E2.Faithful
 import E2.Closure
 import E2.Reject
 import E2.TypedReachability
+import E2.Wf3
+import E2.Commutation
+import E2.VersionByte
+import E2.IntraKind
 import E2.A4Probe
 import E2.Gates
