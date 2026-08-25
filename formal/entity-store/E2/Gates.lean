@@ -18,6 +18,7 @@ import E2.Bridge
 import E2.Faithful
 import E2.Closure
 import E2.Reject
+import E2.TypedReachability
 
 open Lean Elab Command in
 elab "#e2_opaque_scan" : command => do
@@ -82,3 +83,7 @@ example :
 /- Window B (W3-3): the only new PROVED item. `Graph` and `Admission` are otherwise
    definitions and stated obligations, which `#print axioms` has nothing to say about. -/
 #print axioms E2.wfsB_iff
+
+/- W3-7 seat: M17 typed reachability, proved in `E2/TypedReachability.lean` against the
+   statement pinned in `E2/Admission.lean`. No `H`-injectivity hypothesis. -/
+#print axioms E2.M17_typed_reachability
