@@ -79,6 +79,15 @@ theorem mem_refsS_canon (a : Address) : ∀ s : SchemaCore,
   | .mu d body => by
       intro h
       exact mem_refsS_canon a body h
+  | .tupleRest es rest => by
+      intro h
+      simp only [canonS, refsS, List.mem_append] at h ⊢
+      rcases h with hes | hrest
+      · exact Or.inl (mem_refsL_canon a es hes)
+      · exact Or.inr (mem_refsS_canon a rest hrest)
+  | .record cod => by
+      intro h
+      exact mem_refsS_canon a cod h
 
 theorem mem_refsF_canon (a : Address) : ∀ fs : FieldList,
     a ∈ refsF (canonFields fs) → a ∈ refsF fs

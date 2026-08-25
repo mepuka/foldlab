@@ -9,4 +9,5 @@ import E2.Resolve
 import E2.Faithful
 import E2.Closure
 import E2.Reject
+import E2.A4Probe
 import E2.Gates

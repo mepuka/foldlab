@@ -8,6 +8,15 @@ AMENDED 2026-08-25 (A-1, ratified under Q10): joint B now collects address-value
 entity references through `refsV`; `Reachable.putE` requires those references to
 resolve. `SchemaCore.address` is the working nullary address-type label, and
 `Conforms.addr` types every `Value.vaddr` without an existence premise.
+
+AMENDED 2026-08-25 (A-4, ratified under G4): `tupleRest` and `record` are
+componentwise in `refsS`/`closedB`/`guardedB`/`substS` and both are guard-positive
+(they consume value structure, so `guardSpineB`'s catch-all is correct for them).
+`Conforms.tupleRest` splits the array value into a prefix conforming elementwise to
+the positional elements and a suffix conforming-all to the rest schema — so the FLAT
+value that report A's `flat_rejected` proved the nested workaround rejects now
+conforms. `Conforms.record` admits a `.vobj` whose every field value conforms to the
+codomain, with keys unconstrained.
 -/
 import E2.Core
 import E2.Encode
@@ -32,6 +41,8 @@ def refsS : SchemaCore → List Address
   | .ref a => [a]
   | .var _ => []
   | .mu _ b => refsS b
+  | .tupleRest es rest => refsL es ++ refsS rest
+  | .record cod => refsS cod
   termination_by structural x => x
 
 def refsF : FieldList → List Address
@@ -83,6 +94,8 @@ def closedB (k : Nat) : SchemaCore → Bool
   | .ref _ => true
   | .var i => decide (i < k)
   | .mu _ b => closedB (k + 1) b
+  | .tupleRest es rest => closedL k es && closedB k rest
+  | .record cod => closedB k cod
   termination_by structural x => x
 
 def closedF (k : Nat) : FieldList → Bool
@@ -97,8 +110,9 @@ def closedL (k : Nat) : SchemaList → Bool
 end
 
 /-! Spine check: `var i` must not be reachable through value-non-consuming positions
-    (refine, union membership, nested mu spines). object/tuple/array consume value
-    structure, so the spine stops there. -/
+    (refine, union membership, nested mu spines). object/tuple/array — and, from A-4,
+    tupleRest/record — consume value structure, so the spine stops there; those
+    constructors fall into the catch-all below, which is what guard-positive means. -/
 
 mutual
 def guardSpineB (i : Nat) : SchemaCore → Bool
@@ -128,6 +142,8 @@ def guardedB : SchemaCore → Bool
   | .ref _ => true
   | .var _ => true
   | .mu _ b => guardSpineB 0 b && guardedB b
+  | .tupleRest es rest => guardedL es && guardedB rest
+  | .record cod => guardedB cod
   termination_by structural x => x
 
 def guardedF : FieldList → Bool
@@ -163,6 +179,8 @@ def substS (k : Nat) (u : SchemaCore) : SchemaCore → SchemaCore
   | .ref a => .ref a
   | .var i => if i = k then u else .var i
   | .mu d b => .mu d (substS (k + 1) u b)
+  | .tupleRest es rest => .tupleRest (substL k u es) (substS k u rest)
+  | .record cod => .record (substS k u cod)
   termination_by structural x => x
 
 def substF (k : Nat) (u : SchemaCore) : FieldList → FieldList
@@ -178,6 +196,12 @@ end
 
 def unfoldMu (d : String) (b : SchemaCore) : SchemaCore :=
   substS 0 (.mu d b) b
+
+/-- Value-list concatenation — the split `tupleRest` conformance is stated over (A-4).
+    The prefix is the positional part, the suffix the homogeneous tail. -/
+def ValueList.append : ValueList → ValueList → ValueList
+  | .nil, ys => ys
+  | .cons v vs, ys => .cons v (ValueList.append vs ys)
 
 /-! ## Conformance (STORE-MODEL §5). Inductive proposition; parameterized by the check
     semantics (R-4 pending) and a schema resolver for `.ref` (coherence with a store is
@@ -209,6 +233,9 @@ inductive Conforms (env : ConformsEnv) : SchemaCore → Value → Prop
       Conforms env (.refine s c) v
   | ref {a s v} : env.res a = some s → Conforms env s v → Conforms env (.ref a) v
   | mu {d b v} : Conforms env (unfoldMu d b) v → Conforms env (.mu d b) v
+  | tupleRest {es rest pre suf} : ConformsL env es pre → ConformsAll env rest suf →
+      Conforms env (.tupleRest es rest) (.varr (ValueList.append pre suf))
+  | record {cod vfs} : ConformsAllF env cod vfs → Conforms env (.record cod) (.vobj vfs)
 
 inductive ConformsF (env : ConformsEnv) : FieldList → ValueFields → Prop
   | nil : ConformsF env .nil .nil
@@ -228,6 +255,16 @@ inductive ConformsAll (env : ConformsEnv) : SchemaCore → ValueList → Prop
   | nil {e} : ConformsAll env e .nil
   | cons {e v vs} : Conforms env e v → ConformsAll env e vs →
       ConformsAll env e (.cons v vs)
+
+/- A-4: the `record` codomain rule. Every field's VALUE conforms to `cod`; the KEYS are
+   unconstrained here — string-keyed by construction (`ValueFields.cons key : String`),
+   and duplicate-freedom stays a boundary admission (A-3's record), never a Conforms
+   premise. This is exactly what `object_exact_width` showed `ConformsF` cannot express:
+   admitting a field the schema does not name by name. -/
+inductive ConformsAllF (env : ConformsEnv) : SchemaCore → ValueFields → Prop
+  | nil {c} : ConformsAllF env c .nil
+  | cons {c k v vfs} : Conforms env c v → ConformsAllF env c vfs →
+      ConformsAllF env c (.cons k v vfs)
 end
 
 /-! ## The store (joint A: finite map + inductive Reachable). -/

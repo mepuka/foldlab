@@ -12,6 +12,12 @@ bytes) is a separate owed obligation.
 AMENDED 2026-08-25 (A-1, ratified under Q10): the value decoder handles
 `Value.vaddr` at 0x16 through `decAddr`, and the schema decoder handles the nullary
 `SchemaCore.address` leaf at 0x3A. The unconditional M4a proof families include both.
+
+AMENDED 2026-08-25 (A-4, ratified under G4): the schema decoder handles
+`SchemaCore.tupleRest` at 0x3B (count frame, then that many elements, then the rest
+schema off the remaining bytes) and `SchemaCore.record` at 0x3C. Both enter the
+`sz`/`rt`/`szle` families per the uniform pattern, so M4a stays UNCONDITIONAL over
+the extended carrier.
 -/
 import E2.Core
 import E2.Encode
@@ -324,6 +330,20 @@ def decS : Nat → List UInt8 → Option (SchemaCore × List UInt8)
         | none => none
       | none => none
     else if b = 0x3A then some (.address, r)
+    else if b = 0x3B then
+      match decNat r with
+      | some (n, r1) =>
+        match decSs k n r1 with
+        | some (es, r2) =>
+          match decS k r2 with
+          | some (rest, r3) => some (.tupleRest es rest, r3)
+          | none => none
+        | none => none
+      | none => none
+    else if b = 0x3C then
+      match decS k r with
+      | some (cod, r') => some (.record cod, r')
+      | none => none
     else none
   termination_by k l => (k, 0)
 
@@ -414,6 +434,8 @@ def szS : SchemaCore → Nat
   | .ref _ => 1
   | .var _ => 1
   | .mu _ b => 1 + szS b
+  | .tupleRest es rest => 1 + Nat.max (szSs es) (szS rest)
+  | .record cod => 1 + szS cod
   termination_by structural x => x
 
 def szFs : FieldList → Nat
@@ -690,6 +712,29 @@ theorem rtS (s : SchemaCore) : ∀ (k : Nat) (r : List UInt8), szS s ≤ k →
       have hb := rtS body k r h1
       rw [decS.eq_def]
       simp [encSchema, List.append_assoc, decStr_encStr, hb]
+  | tupleRest es rest =>
+    intro k r hk
+    simp only [szS] at hk
+    cases k with
+    | zero => omega
+    | succ k =>
+      have hmax : Nat.max (szSs es) (szS rest) ≤ k := by omega
+      have h1 : szSs es ≤ k := Nat.le_trans (Nat.le_max_left _ _) hmax
+      have h2 : szS rest ≤ k := Nat.le_trans (Nat.le_max_right _ _) hmax
+      have hl := rtSs es k (encSchema rest ++ r) h1
+      have hr := rtS rest k r h2
+      rw [decS.eq_def]
+      simp [encSchema, List.append_assoc, decNat_encNat, hl, hr]
+  | record cod =>
+    intro k r hk
+    simp only [szS] at hk
+    cases k with
+    | zero => omega
+    | succ k =>
+      have h1 : szS cod ≤ k := by omega
+      have hc := rtS cod k r h1
+      rw [decS.eq_def]
+      simp [encSchema, hc]
   termination_by structural s
 
 theorem rtFs (fs : FieldList) : ∀ (k : Nat) (r : List UInt8), szFs fs ≤ k →
@@ -832,6 +877,17 @@ theorem szleS (s : SchemaCore) : szS s ≤ (encSchema s).length := by
     have h := szleS body
     have hs := encStr_length_pos d
     simp only [szS, encSchema, List.length_cons, List.length_append]; omega
+  | tupleRest es rest =>
+    have h1 := szleSs es
+    have h2 := szleS rest
+    have hn := encNat_length_pos es.length
+    have hm : Nat.max (szSs es) (szS rest)
+        ≤ (encSchemaList es).length + (encSchema rest).length :=
+      Nat.max_le.mpr ⟨by omega, by omega⟩
+    simp only [szS, encSchema, List.length_cons, List.length_append]; omega
+  | record cod =>
+    have h := szleS cod
+    simp only [szS, encSchema, List.length_cons]; omega
   termination_by structural s
 
 theorem szleFs (fs : FieldList) : szFs fs ≤ (encFieldList fs).length := by

@@ -6,6 +6,10 @@ match (completeness), a decided distinctness lemma. All kernel-checked on every 
 
 AMENDED 2026-08-25 (A-1, ratified under Q10): the exhaustive carrier tag map and
 distinctness witness include the new nullary `SchemaCore.address` variant.
+
+AMENDED 2026-08-25 (A-4, ratified under G4): `SchemaCore.tupleRest` and
+`SchemaCore.record` carry ascriptions, tags 11 and 12, and the 13-variant
+distinctness witness.
 -/
 import E2.Core
 
@@ -23,6 +27,8 @@ def refine : SchemaCore → Check → SchemaCore  := SchemaCore.refine
 def ref    : Address → SchemaCore             := SchemaCore.ref
 def var    : Nat → SchemaCore                 := SchemaCore.var
 def mu     : String → SchemaCore → SchemaCore := SchemaCore.mu
+def tupleRest : SchemaList → SchemaCore → SchemaCore := SchemaCore.tupleRest
+def record : SchemaCore → SchemaCore          := SchemaCore.record
 
 -- (2) COMPLETENESS: no extra variants. Exhaustiveness is kernel-checked; a new
 --     constructor fails this match as `Missing cases:`. The tag values also pin order.
@@ -38,9 +44,11 @@ def tag : SchemaCore → Nat
   | .var _      => 8
   | .mu _ _     => 9
   | .address    => 10
+  | .tupleRest _ _ => 11
+  | .record _   => 12
 
 -- (3) DISTINCTNESS: the tag assignment aliases no two variants.
 theorem tags_distinct :
-    ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : List Nat).eraseDups.length = 11 := by decide
+    ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : List Nat).eraseDups.length = 13 := by decide
 
 end E2.Correspondence

@@ -6,6 +6,15 @@ AMENDED 2026-08-25 (A-1, ratified under Q10): address-valued values enter as
 `Value.vaddr`; the nullary address-type schema node uses the working label
 `SchemaCore.address` until R-1 freezes the vocabulary.
 
+AMENDED 2026-08-25 (A-4, ratified under G4): `SchemaCore.tupleRest` (positional
+elements plus a homogeneous tail) and `SchemaCore.record` (string-keyed index
+signature) enter the carrier. Scout report A proved both workarounds wrong at the
+VALUE plane, not merely lossy: `flat_rejected` (the nested `.tuple`-with-trailing-
+`.array` spelling rejects the flat value Effect accepts) and `object_exact_width`
+(`ConformsF` has no rule admitting an unnamed field). Plain `.tuple` is unchanged;
+`record` is string-keyed only — symbol and template-literal key domains stay
+REJECTED-v1 per MAPPING rows 17/23.
+
 Shape: mutual-monomorphic per the metaprogramming survey §4 (deriving DecidableEq works,
 `induction` works). No derived Repr/Ord/ToJson/FromJson/ToExpr anywhere (partial→opaque
 trap). BEq recovered from DecidableEq in one line.
@@ -81,6 +90,8 @@ inductive SchemaCore
   | var    (i : Nat)
   | mu     (discriminator : String) (body : SchemaCore)
   | address
+  | tupleRest (elems : SchemaList) (rest : SchemaCore)
+  | record (cod : SchemaCore)
 inductive FieldList
   | nil
   | cons (key : String) (val : SchemaCore) (optional : Bool) (rest : FieldList)

@@ -12,6 +12,13 @@ Decode.lean (round-trip PROVED there).
 AMENDED 2026-08-25 (A-1, ratified under Q10): `Value.vaddr` uses discriminator
 0x16 and frames its payload with `encAddress`; `SchemaCore.address` is the nullary
 schema leaf at discriminator 0x3A.
+
+AMENDED 2026-08-25 (A-4, ratified under G4): `SchemaCore.tupleRest` takes 0x3B —
+the element count frame, then the elements, then the rest schema, which is
+self-delimiting because `encSchemaList` consumes exactly the framed count — and
+`SchemaCore.record` takes 0x3C with its codomain schema inline. Tags are ADDITIVE:
+`versionByte` stays 0x01 and every pre-A-4 byte string decodes unchanged, since
+0x3B/0x3C were previously in the reject set.
 -/
 import E2.Core
 
@@ -99,7 +106,7 @@ def encCheckList : CheckList → List UInt8
   termination_by structural x => x
 end
 
-/- Schema encoding. Tag bytes 0x30–0x3A; Prim and UMode fold into a second byte. -/
+/- Schema encoding. Tag bytes 0x30–0x3C; Prim and UMode fold into a second byte. -/
 def encPrim : Prim → UInt8
   | .null => 0x00 | .bool => 0x01 | .int => 0x02 | .str => 0x03
 
@@ -119,6 +126,8 @@ def encSchema : SchemaCore → List UInt8
   | .var i         => 0x38 :: encNat i
   | .mu d body     => 0x39 :: (encStr d ++ encSchema body)
   | .address       => [0x3A]
+  | .tupleRest es rest => 0x3B :: (encNat es.length ++ encSchemaList es ++ encSchema rest)
+  | .record cod    => 0x3C :: encSchema cod
   termination_by structural x => x
 
 def encFieldList : FieldList → List UInt8

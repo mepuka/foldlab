@@ -7,6 +7,12 @@ Soundness/completeness/idempotence are OBLIGATIONS (Obligations.lean).
 AMENDED 2026-08-25 (A-1, ratified under Q10): `SchemaCore.address` is a leaf and
 canonicalizes to itself.
 
+AMENDED 2026-08-25 (A-4, ratified under G4): `tupleRest` and `record` canonicalize
+componentwise — RECURSE ONLY, no sorting. Tuple element order is semantic (kickoff
+§4.3 already exempts `.tuple`, and the rest schema is a single position), and
+`record` carries no field list at all, so there is nothing for R-10's key sort to
+act on.
+
 AMENDED 2026-08-25 (Q11, operator ruling): values get their own structural
 canonicalizer `canonV` — `vobj` fields sort by key (R-10 mirrored), array/tuple element
 order stays semantic, leaves are fixed. Total on all values; on conforming values it
@@ -35,6 +41,8 @@ def canonS : SchemaCore → SchemaCore
   | .union m ms  => .union m (canonList ms)
   | .refine s c  => .refine (canonS s) c
   | .mu d body   => .mu d (canonS body)
+  | .tupleRest es rest => .tupleRest (canonList es) (canonS rest)
+  | .record cod  => .record (canonS cod)
   | .prim p      => .prim p
   | .lit v       => .lit v
   | .address     => .address
@@ -111,6 +119,8 @@ def dupFreeS : SchemaCore → Bool
   | .ref _ => true
   | .var _ => true
   | .mu _ b => dupFreeS b
+  | .tupleRest es rest => dupFreeL es && dupFreeS rest
+  | .record cod => dupFreeS cod
   termination_by structural x => x
 
 def dupFreeF : FieldList → Bool
