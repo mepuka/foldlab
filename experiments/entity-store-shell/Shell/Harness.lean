@@ -29,6 +29,19 @@ show up.
 flag restructures the two runners: the recorded transcript IS the list of lines the
 comparison already builds, which is why a green `--compare` says something about the codec
 rather than about this file. Default behavior — neither flag — is unchanged.
+
+THE RUNNER SEAM (ruling CV-2, candidate C-1). The step loop above is ONE algorithm, and it
+is written once, over the `Runner` interface below. A runner says three things — how to
+bring its store up, how to execute one verb into an observable, how to settle — and knows
+nothing about scripts, steps, transcripts, or comparison; the loop knows nothing about
+model states or directories. Everything that decides an observable therefore has exactly
+one home: step numbering, address threading, assertion handling, transcript assembly,
+`--record`/`--compare`, and the divergence report.
+
+CV-2 fixes the population of adapters at TWO. The third runner is the monorepo's, it lives
+in another repository, and it rendezvouses with this one through the committed transcripts
+in `transcripts/` — a byte-compare across repos, not a third instance of this structure.
+So the seam below is sized for the two adapters that exist.
 -/
 import Shell.Model
 import Shell.Store
@@ -38,74 +51,128 @@ namespace Shell
 
 open E2 System
 
-/-- Run a script against the pure model. An assertion that fails aborts the script — a
-    fixture states a claim, and a false claim is a harness failure, not a transcript line
-    nobody reads. -/
-def runScriptModel (src : String) : Except String (List String) := do
-  let steps ← scriptSteps src
-  let rec go (m : ModelState) (env : AddrEnv) (idx : Nat) :
-      List Sexp → Except String (List String)
-    | [] => .ok []
-    | x :: rest => do
-        let st ← sexpToStep env x
-        let (out, m', addr) ←
-          match runAssertion st with
-          | some out =>
-              if out.code = 0 then (Except.ok (out, m, none) : Except String _)
-              else .error s!"step {idx}: {String.intercalate " " out.lines}"
-          | none =>
-            match st with
-            | .verb v => let (out, m') := m.run v; .ok (out, m', stepAddr v out)
-            | _ => .error "unreachable: assertion without an outcome"
-        let env' := env.push addr out.code
-        let tl ← go m' env' (idx + 1) rest
-        .ok (transcriptLines idx (renderSexp x) out ++ tl)
-  go ModelState.empty AddrEnv.empty 1 steps
+/-! ## The seam -/
+
+/-- What a script needs from the thing it is run against, and nothing more.
+
+    `m` carries the runner's own state and its own failure channel, so neither appears
+    here: the model's `ModelState` and the disk's directory handle are the adapters'
+    business, not the loop's. The failure channel is `String` because a runner failure is
+    a HARNESS failure — the sides' error channels are not comparable observables (the
+    model has no store to fault), so a fault aborts the script instead of becoming a
+    transcript line.
+
+    `finalize` has no work in either adapter today, and says so honestly: the model's
+    state is a value, and the disk store's commit point is the per-verb atomic rename in
+    `StoreRoot.applyEffect`, so there is nothing left to flush once the last step
+    returns. It is here because settling is a runner's business and not the loop's — the
+    loop must not have to know that today's two answers are both "nothing". -/
+structure Runner (m : Type → Type) where
+  /-- Bring the store up. Runs once, after the script parses and before step 1. Named
+      `init` rather than `initialize`, which Lean reserves for a command. -/
+  init : m Unit
+  /-- Execute one verb and hand back its observable — the exit code and the lines. -/
+  applyStep : Verb → m Outcome
+  /-- Settle the store. Runs once, after the last step. -/
+  finalize : m Unit
+
+/-- The step loop, written once. `env` and `idx` are SCRIPT state, shared by every runner:
+    each side threads its own address environment so a divergence in any step's address
+    propagates into every later step rather than being masked.
+
+    An assertion that fails aborts the script — a fixture states a claim, and a false
+    claim is a harness failure, not a transcript line nobody reads. Assertions never reach
+    the runner: they are decided by `runAssertion`, identically on both sides, which is
+    why they cannot weaken the differential.
+
+    `step {idx}: ` is prefixed HERE, on both the assertion failure and the runner's own
+    failure. Step numbering is the loop's vocabulary; an adapter says what went wrong with
+    its store and is never told which step it is on. -/
+private def runSteps [Monad m] [MonadExceptOf String m] (R : Runner m) :
+    AddrEnv → Nat → List Sexp → m (List String)
+  | _, _, [] => pure []
+  | env, idx, x :: rest => do
+      let st ← liftExcept (sexpToStep env x)
+      let (out, addr) ←
+        match runAssertion st with
+        | some out =>
+            if out.code = 0 then pure (out, none)
+            else throw s!"step {idx}: {String.intercalate " " out.lines}"
+        | none =>
+          match st with
+          | .verb v => do
+              let out ← tryCatch (R.applyStep v) (fun e => throw s!"step {idx}: {e}")
+              pure (out, stepAddr v out)
+          | _ => throw "unreachable: assertion without an outcome"
+      let tl ← runSteps R (env.push addr out.code) (idx + 1) rest
+      pure (transcriptLines idx (renderSexp x) out ++ tl)
+
+/-- Run one script against one runner, yielding its transcript. -/
+def runScript [Monad m] [MonadExceptOf String m] (R : Runner m) (src : String) :
+    m (List String) := do
+  let steps ← liftExcept (scriptSteps src)
+  R.init
+  let lines ← runSteps R AddrEnv.empty 1 steps
+  R.finalize
+  pure lines
+
+/-! ## The two adapters -/
+
+/-- Adapter (a): the pure model — `E2.StoreMap` under `E2.putPre`, in process, no IO. The
+    state is threaded by `StateT`; the initial state is `ModelState.empty`, supplied by
+    `runScriptModel`, so there is nothing to bring up. -/
+def modelRunner : Runner (StateT ModelState (Except String)) where
+  init := pure ()
+  applyStep v := modifyGet (fun m => m.run v)
+  finalize := pure ()
+
+/-- Adapter (b): a store on a real directory, through the CLI codepaths. A `StoreFault`
+    is an environment fault and it aborts the script; it is never a transcript line. -/
+def diskRunner (r : StoreRoot) : Runner (ExceptT String IO) where
+  init := do
+    match ← liftM r.init with
+    | .error f => throw s!"store fault at init: {f.render}"
+    | .ok _ => pure ()
+  applyStep v := do
+    match ← liftM (r.run v) with
+    | .error f => throw s!"store fault: {f.render}"
+    | .ok out => pure out
+  finalize := pure ()
+
+/-- Run a script against the pure model. -/
+def runScriptModel (src : String) : Except String (List String) :=
+  StateT.run' (runScript modelRunner src) ModelState.empty
 
 /-- Run the same script against a fresh disk store. -/
-def runScriptDisk (r : StoreRoot) (src : String) : IO (Except String (List String)) := do
-  match scriptSteps src with
-  | .error e => pure (.error e)
-  | .ok steps => do
-    -- A store fault on the disk side is a HARNESS failure, not a transcript line: the
-    -- model side has no such channel, so there is nothing to compare it against.
-    match ← r.init with
-    | .error f => return .error s!"store fault at init: {f.render}"
-    | .ok _ => pure ()
-    let mut env := AddrEnv.empty
-    let mut idx := 1
-    let mut lines : List String := []
-    for x in steps do
-      match sexpToStep env x with
-      | .error e => return .error e
-      | .ok st =>
-          let (out, addr) ←
-            match runAssertion st with
-            | some out =>
-                if out.code = 0 then pure (out, none)
-                else return .error s!"step {idx}: {String.intercalate " " out.lines}"
-            | none =>
-              match st with
-              | .verb v => do
-                  match ← r.run v with
-                  | .error f => return .error s!"step {idx}: store fault: {f.render}"
-                  | .ok out => pure (out, stepAddr v out)
-              | _ => return .error "unreachable: assertion without an outcome"
-          lines := lines ++ transcriptLines idx (renderSexp x) out
-          env := env.push addr out.code
-          idx := idx + 1
-    pure (.ok lines)
+def runScriptDisk (r : StoreRoot) (src : String) : IO (Except String (List String)) :=
+  ExceptT.run (runScript (diskRunner r) src)
 
-/-- The first position at which two transcripts differ, rendered. -/
-private def firstDivergence (a b : List String) : Option String :=
+/-- The first position at which TWO runners' transcripts differ, rendered. The runners are
+    named by the caller — the report says which side is which, and this function does not
+    care that today's two callers are the model and the disk. The names are padded to a
+    common width so the two rendered lines align under each other. -/
+private def firstDivergence (aName bName : String) (a b : List String) : Option String :=
+  let width := max aName.length bName.length
+  let pad (s : String) : String := s ++ String.ofList (List.replicate (width - s.length) ' ')
   let rec go : Nat → List String → List String → Option String
     | _, [], [] => none
-    | i, [], y :: _ => some s!"line {i}: model ended, disk has {y}"
-    | i, x :: _, [] => some s!"line {i}: disk ended, model has {x}"
+    | i, [], y :: _ => some s!"line {i}: {aName} ended, {bName} has {y}"
+    | i, x :: _, [] => some s!"line {i}: {bName} ended, {aName} has {x}"
     | i, x :: xs, y :: ys =>
         if x == y then go (i + 1) xs ys
-        else some s!"line {i}:\n      model: {x}\n      disk : {y}"
+        else some s!"line {i}:\n      {pad aName}: {x}\n      {pad bName}: {y}"
   go 1 a b
+
+/-! The divergence report is the one harness observable no committed transcript reaches: a
+    golden exists only for a script whose two runners AGREED, so the corpus is silent about
+    what a disagreement prints. These pin it — including the padding, which is why the
+    second name is spelled `disk ` and not `disk`. -/
+
+#guard firstDivergence "model" "disk" [] ["y"] == some "line 1: model ended, disk has y"
+#guard firstDivergence "model" "disk" ["x"] [] == some "line 1: disk ended, model has x"
+#guard firstDivergence "model" "disk" ["a", "x"] ["a", "y"]
+        == some "line 2:\n      model: x\n      disk : y"
+#guard firstDivergence "model" "disk" ["a"] ["a"] == none
 
 structure ScriptResult where
   name : String
@@ -121,7 +188,7 @@ def runScriptBoth (name : String) (src : String) (r : StoreRoot) : IO ScriptResu
     match ← runScriptDisk r src with
     | .error e => pure ⟨name, false, [s!"disk: script error: {e}"], modelLines⟩
     | .ok diskLines =>
-        match firstDivergence modelLines diskLines with
+        match firstDivergence "model" "disk" modelLines diskLines with
         | none => pure ⟨name, true, [], modelLines⟩
         | some d => pure ⟨name, false, [s!"DIVERGENCE at {d}"], modelLines⟩
 
@@ -212,15 +279,26 @@ private def compareTranscript (dir : FilePath) (script : String) (lines : List S
   else pure (firstTranscriptDivergence committed fresh)
 
 /-- The acceptance gate: run every committed script, print a transcript, exit nonzero on
-    any divergence. `workDir` must not already contain a store for a script being run —
-    the harness never deletes anything (there is no deletion in v0), so a fresh work
-    directory is the caller's business.
+    any divergence.
+
+    `workDir` MUST NOT EXIST (F-53, ruling CV-2). The harness never deletes anything —
+    there is no deletion in v0 — so a work directory carrying anything from an earlier run
+    silently changes what the disk side sees, and the run reports DIVERGENCES: a misreport
+    dressed as a verdict. The precondition used to be prose here and a per-script check
+    that counted a stale store as a script FAILURE, which is the same category error one
+    level down (exit 1 is a verdict about the store, and this is a fact about the caller's
+    filesystem). It is now checked once, up front, and refused with exit 2 — an
+    environment fault is never a verdict.
 
     `action` adds the CV-1 transcript leg on top, without touching the differential: a
     transcript is recorded or compared only for a script whose two runners already agreed,
     since a divergent run has no canonical transcript to speak of. -/
 def runHarness (scriptsDir workDir : FilePath) (verbose : Bool)
     (action : TranscriptAction := .plain) : IO UInt32 := do
+  if ← workDir.pathExists then
+    IO.eprintln s!"harness: work directory {workDir} already exists; it must not, because \
+the harness never deletes anything (F-53). Remove it and re-run."
+    return 2
   let names ← findScripts scriptsDir
   if names.isEmpty then
     IO.eprintln s!"harness: no *.script fixtures in {scriptsDir}"
@@ -230,11 +308,6 @@ def runHarness (scriptsDir workDir : FilePath) (verbose : Bool)
   for n in names do
     let src ← readTextFile (scriptsDir / n)
     let root : StoreRoot := ⟨workDir / n⟩
-    if ← root.isInitialized then
-      IO.println s!"FAIL {n}"
-      IO.println s!"     work directory already holds a store: {root.path}"
-      failures := failures + 1
-      continue
     let res ← runScriptBoth n src root
     if res.passed then
       match action with
