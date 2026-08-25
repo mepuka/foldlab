@@ -1,0 +1,4 @@
+e2 opaque/unsafe gate ok (1444 constants scanned)
+'E2.Correspondence.tags_distinct' does not depend on any axioms
+this line is not part of the model report format
+'E2.directionA' depends on axioms: [propext, Classical.choice, Quot.sound]
