@@ -1,0 +1,10 @@
+{
+  "name": "entity-store-ledger",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "gen": "bun run src/generate.ts",
+    "check": "bun run src/check.ts",
+    "test": "bun test"
+  }
+}

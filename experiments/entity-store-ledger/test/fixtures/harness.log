@@ -1,0 +1,12 @@
+PASS 01-schema-put-dedup.script (12 transcript lines)
+PASS 02-entity-put-dedup.script (18 transcript lines)
+PASS 03-dangling-ref-rejected.script (25 transcript lines)
+PASS 04-names-plane.script (30 transcript lines)
+PASS 05-roundtrips.script (33 transcript lines)
+PASS 06-corrupt-wf1.script (40 transcript lines)
+PASS 07-corrupt-typing.script (17 transcript lines)
+PASS 08-canonicity-strict.script (23 transcript lines)
+PASS 09-hostile-bytes.script (31 transcript lines)
+PASS 10-a4-constructors.script (24 transcript lines)
+
+harness: 10 scripts, all model/disk observables identical
