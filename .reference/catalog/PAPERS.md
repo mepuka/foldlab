@@ -5,8 +5,9 @@ file is rendered from the paper lock plus the cluster roles declared in the
 generator; regeneration instructions are in
 [../provenance/README-papers.md](../provenance/README-papers.md).
 
-88 papers are held locally under `.reference/papers/` (gitignored: the
-repository must not redistribute publisher-copyrighted documents). Canonical
+88 papers are held locally under [`.reference/papers/`](../papers/README.md)
+(gitignored: the repository must not redistribute publisher-copyrighted
+documents, so a fresh checkout holds none of them). Canonical
 identity — digest, byte length, and the identifier printed on the document —
 lives in the [paper lock](../provenance/papers.lock.json). This index adds the
 one thing a digest cannot carry: what each group of sources may be used for,

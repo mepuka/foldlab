@@ -221,7 +221,9 @@ def identifier_markdown(ident):
     if not ident:
         return "unresolved — pinned by digest"
     if ident["scheme"] == "arXiv":
-        bare = ident["value"].split("v")[0]
+        # Strip only a trailing version marker; an old-style identifier keeps
+        # its archive prefix, which splitting on "v" would truncate.
+        bare = re.sub(r"v\d+$", "", ident["value"])
         return f"[arXiv:{ident['value']}](https://arxiv.org/abs/{bare})"
     return f"[doi:{ident['value']}](https://doi.org/{ident['value']})"
 
@@ -287,8 +289,9 @@ def main(files_path, identity_path, titles_path, lock_out, index_out, snapshot):
         "generator; regeneration instructions are in",
         "[../provenance/README-papers.md](../provenance/README-papers.md).",
         "",
-        f"{len(entries)} papers are held locally under `.reference/papers/` (gitignored: the",
-        "repository must not redistribute publisher-copyrighted documents). Canonical",
+        f"{len(entries)} papers are held locally under [`.reference/papers/`](../papers/README.md)",
+        "(gitignored: the repository must not redistribute publisher-copyrighted",
+        "documents, so a fresh checkout holds none of them). Canonical",
         "identity — digest, byte length, and the identifier printed on the document —",
         "lives in the [paper lock](../provenance/papers.lock.json). This index adds the",
         "one thing a digest cannot carry: what each group of sources may be used for,",
