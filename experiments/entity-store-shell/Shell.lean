@@ -12,4 +12,5 @@ import Shell.Harness
 import Shell.Cli
 import Shell.Encode
 import Shell.Vectors
+import Shell.VectorTheorems
 import Shell.Gate

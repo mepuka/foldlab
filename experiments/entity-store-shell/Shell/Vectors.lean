@@ -327,7 +327,11 @@ committed {w.cwCommitted}, computed {r.resAddress}"
 
 /-! ### Table 2 -/
 
-private def rejectionClause (r : RejectionVector) : Except String String :=
+/-- The clause a rejection carrier trips, obtained by calling the core's admission
+    verdict on the carrier the PUT boundary decodes. Public rather than `private` so
+    `Shell/VectorTheorems.lean` can state the `clause` column as a theorem about THIS
+    function rather than about a copy of it. -/
+def rejectionClause (r : RejectionVector) : Except String String :=
   if r.rejOnValuePlane then do
     let v ← parseValue AddrEnv.empty r.rejSrc
     match valueAdmissionClause (canonV v) with
