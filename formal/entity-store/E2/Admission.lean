@@ -66,6 +66,32 @@ theorem wfsB_iff (s : SchemaCore) : wfsB s = true ↔ WFS s := by
     and this is the same clause on the candidate side. -/
 def wfvB : Value → Bool := dupFreeV
 
+/-- Carrier-level admission verdict, schema plane: the first failing `WFS` clause by
+    name, or `none` when admissible. The shell's PUT rejection consumes THIS — the
+    boundary calls Admission's surface and never the clause predicates (CONTEXT
+    avoid-list; W3-12). The clause names are the rejection vocabulary. -/
+def schemaAdmissionClause (s : SchemaCore) : Option String :=
+  if !closedB 0 s then some "closed"
+  else if !guardedB s then some "guarded"
+  else if !dupFreeS s then some "dup-key"
+  else if !canonicalSpellingB s then some "spelling"
+  else if !litNarrowB s then some "lit-narrow"
+  else none
+
+theorem schemaAdmissionClause_none_iff (s : SchemaCore) :
+    schemaAdmissionClause s = none ↔ wfsB s = true := by
+  cases h1 : closedB 0 s <;> cases h2 : guardedB s <;> cases h3 : dupFreeS s <;>
+    cases h4 : canonicalSpellingB s <;> cases h5 : litNarrowB s <;>
+    simp [schemaAdmissionClause, wfsB, h1, h2, h3, h4, h5]
+
+/-- Carrier-level admission verdict, value plane. -/
+def valueAdmissionClause (v : Value) : Option String :=
+  if !wfvB v then some "dup-key-value" else none
+
+theorem valueAdmissionClause_none_iff (v : Value) :
+    valueAdmissionClause v = none ↔ wfvB v = true := by
+  cases h : wfvB v <;> simp [valueAdmissionClause, h]
+
 /-! ## The judgment. -/
 
 /-- What a delivered directory presents, once opened. Every clause is decidable, and
