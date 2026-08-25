@@ -34,6 +34,21 @@ involution while `dupFreeS (.lit _) = true` admitted it, so `ObligationCanonIdem
 would be false on schemas its own hypothesis accepts (R1 `A6_refalsifies_S1`, verified
 over 15,310 schemas). The clause is exactly what keeps the conditional S1 obligation
 true one plane down.
+
+AMENDED 2026-08-25 (W3-19, finding F-48): the tie comparison in `insertField` FLIPS, and
+the same flip lands on the value plane's `insertVField` (plane-inheritance, CONTEXT.md,
+minted W3-9/W3-10). The guard used to test the INCOMING key against the existing one
+(`key < k`), which is false on a tie, so an equal key was placed AFTER the run it met;
+because `canonFields` inserts the head last, a duplicate-key run came out reversed —
+F-12's involution, F-40's palindromic admission, F-41's self-rejecting bytes. The guard
+now tests the EXISTING key against the incoming one (`!decide (k < key)`), which is true
+on a tie, so an equal key is placed BEFORE the run: a STABLE insertion sort, hence
+idempotent on ALL carriers, duplicate keys included (R-E P10/P11 — exhaustive over the
+243 duplicate-heavy length-5 lists, and provable). The S1 obligations return to
+unconditional form (Obligations.lean). Ruled AFTER the boundary well-formedness check
+went live (merge af13824): a stable sort makes every duplicate-key carrier a byte-compare
+fixed point, so alone it would widen F-40 from the palindromic case to the general one.
+The byte form of a duplicate-FREE carrier is unchanged; only the faulty subset re-addresses.
 -/
 import E2.Core
 
@@ -42,11 +57,17 @@ namespace E2
 /-! ## Value plane (Q11). Defined first: A-6 makes the schema canonicalizer call
     `canonV` at `.lit`. -/
 
-/-- Insert an (already canonical) value field into a sorted field list, by key (Q11). -/
+/-- Insert an (already canonical) value field into a sorted field list, by key (Q11).
+
+    STABLE since W3-19/F-48: the guard tests the EXISTING key `k` against the incoming
+    `key`, so a tie (`!decide (k < key) = true`) inserts BEFORE the run. Identical
+    mechanism and identical flip to the schema plane's `insertField` — F-40 registered the
+    fault on both planes, and plane-inheritance (CONTEXT.md) makes the symmetric treatment
+    the ruled reading. -/
 def insertVField (key : String) (val : Value) : ValueFields → ValueFields
   | .nil => .cons key val .nil
   | .cons k v rest =>
-      if key < k then
+      if !decide (k < key) then
         .cons key val (.cons k v rest)
       else
         .cons k v (insertVField key val rest)
@@ -75,11 +96,16 @@ end
 
 /-! ## Schema plane. -/
 
-/-- Insert an (already canonical) field into a sorted field list, by key. -/
+/-- Insert an (already canonical) field into a sorted field list, by key.
+
+    STABLE since W3-19/F-48: the guard tests the EXISTING key `k` against the incoming
+    `key`, so a tie (`!decide (k < key) = true`) inserts BEFORE the run rather than after
+    it. This is the single comparison F-48 identified as the root of F-12's involution;
+    it is also, verbatim, the adjacent-pair test `fieldsSortedB` decides. -/
 def insertField (key : String) (val : SchemaCore) (opt : Bool) : FieldList → FieldList
   | .nil => .cons key val opt .nil
   | .cons k v o rest =>
-      if key < k then
+      if !decide (k < key) then
         .cons key val opt (.cons k v o rest)
       else
         .cons k v o (insertField key val opt rest)
@@ -114,9 +140,17 @@ end
 
 /-! ## Duplicate-freedom (A-3, 2026-08-25). STORE-MODEL §5 clause 4 demands
     duplicate-free field-name lists; `WFS` implements the clause via `dupFreeS` (landed
-    the same day, in the post-seat-wave serialization window). On duplicate keys the
-    sort below is an INVOLUTION, not idempotent — kernel-checked falsification of the
-    unconditional S1 obligations, recorded in STORE-MODEL §7.
+    the same day, in the post-seat-wave serialization window).
+
+    HISTORY, kept per the Q10 discipline (falsifications are recorded, never erased): on
+    duplicate keys the sort ABOVE used to be an INVOLUTION, not idempotent — the
+    kernel-checked falsification of the unconditional S1 obligations recorded as F-12 and
+    in STORE-MODEL §7. That is why these predicates carry the conditional weight they do.
+    W3-19/F-48 removed the involution at its root by flipping one comparison, and the S1
+    obligations returned to unconditional form; `dupFreeS`/`dupFreeV` are UNCHANGED and
+    remain load-bearing for STORE-MODEL §5 clause 4 and for the boundary check, which is
+    what keeps F-40 closed now that every duplicate-key carrier is a byte-compare fixed
+    point.
 
     As with the canonicalizers, the value plane is defined first: F-26 makes `dupFreeS`
     call `dupFreeV` at `.lit`. -/
