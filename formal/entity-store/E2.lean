@@ -12,5 +12,6 @@ import E2.Bridge
 import E2.Faithful
 import E2.Closure
 import E2.Reject
+import E2.TypedReachability
 import E2.A4Probe
 import E2.Gates
