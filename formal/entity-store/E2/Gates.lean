@@ -66,3 +66,12 @@ example :
 #print axioms E2.M4a_schema
 #print axioms E2.M4a_value
 #print axioms E2.decNat_encNat
+
+#print axioms E2.M15_fresh
+#print axioms E2.M15_faithful_schema
+#print axioms E2.M15_faithful_entity
+#print axioms E2.M9_wf2
+#print axioms E2.NEG2_dangling_unreachable
+#print axioms E2.encSchema_inj
+#print axioms E2.encValue_inj
+#print axioms E2.M12E_dedup

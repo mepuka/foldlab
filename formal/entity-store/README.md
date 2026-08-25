@@ -32,18 +32,21 @@ unconditional dedup to entities. The M15 entity pin returns `canonV v`.
 | `E2/Obligations.lean` | identity assembly (`preimageS`/`preimageE`, version + kind in pre-image); obligation ledger as named `Prop`s | **directionA** (congruence); **kind_separation** (schema/entity pre-images differ) |
 | `E2/Correspondence.lean` | Shape B correspondence pattern (ascriptions + exhaustive tag map) | `tags_distinct` (zero axioms) |
 | `E2/Resolve.lean` | STORE-MODEL §4 `resolve_k` (`resolveSchema`/`resolveEntity`, `stripPre`), `refsOfPreimage`; the PINNED M15/M9/NEG-2 statements (coordinator-frozen, dispatch 2026-08-25) | — |
-| `E2/Faithful.lean`, `E2/Closure.lean`, `E2/Reject.lean` | seat modules for M15 / M9 / NEG-2 (stubs; proofs arrive by worktree) | — |
-| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,217 constants |
+| `E2/Faithful.lean` | seat delivery (codex worktree, adjudicated 2026-08-25) | **M15** fresh + both L-faithful halves (reachable stores; H-injectivity only ever a hypothesis); **F/S, F/V encode injectivity** discharged as M4a corollaries |
+| `E2/Closure.lean` | canon-refs lemma families (schema and value sides), `refsOfPreimage` characterizations | **M9** WF2 over stored bytes |
+| `E2/Reject.lean` | the dangling-singleton derivation analysis | **NEG-2** unreachability, for every `H` and env |
+| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,372 constants |
 
 Axiom posture: every proved theorem within `[propext, Classical.choice, Quot.sound]`
 (several at `[propext]` or fewer). No `native_decide`, no Mathlib, no `partial`, no
 `@[extern]`/`@[implemented_by]` in these namespaces.
 
 Stated (seats, statements pinned): M11 idempotence, M18 conformance decidability;
-M15 (fresh + both faithful halves), M9, NEG-2 in `E2/Resolve.lean` (dispatched to a
-worktree, briefs under `docs/entity-store/dispatch/`). Owed with named vocabulary
-dependencies (see `E2/Model.lean` OWED block and STORE-MODEL §6): M10, M11-commutation,
-M16, M17/M17′, M4b.
+S1 canon idempotence both kinds (conditional on duplicate-freedom after the M1
+falsification — STORE-MODEL §7 A-3 record). Owed with named vocabulary dependencies
+(see `E2/Model.lean` OWED block and STORE-MODEL §6): M10, M11-commutation, M16,
+M17/M17′, M4b, M19. Planned amendments A-3 (WFS clause 4) and A-4
+(`tupleRest`/`record`) are one scheduled serialization point.
 
 ## Not claimed
 

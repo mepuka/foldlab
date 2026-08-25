@@ -327,6 +327,16 @@ unblocked: M15 faithfulness, M9 closure, M17 typed reachability, NEG-2; then M18
 canonicalizing `preimageE`, and the proved M12E — build and gate green at 1,217
 constants.
 
+**Seat wave delivered (same day, codex worktree, coordinator-adjudicated):** **M15
+proved** — the fresh half hypothesis-free, both L-faithful halves on reachable stores
+with H-injectivity only ever a hypothesis; **M9 proved** as WF2 over stored bytes,
+via the canon-refs lemma families on both planes; **NEG-2 proved** for every `H` and
+every environment, by derivation analysis through `kind_separation` and
+M4a-injectivity. The F/S and F/V encode-injectivity obligations (the load-bearing
+layer-(b) statements) are **discharged** as two-line M4a corollaries
+(`encSchema_inj`, `encValue_inj`). All axiom reports within the allowlist; gate green
+at 1,372 constants.
+
 ## Claim posture
 
 This document is a specification: highest satisfied gate none. The scaffold's proved
