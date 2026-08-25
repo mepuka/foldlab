@@ -57,6 +57,20 @@ shipped tarball into a fresh directory.
 **Requirement:** remote gates are idempotent — create their target paths, build only from the
 bytes they shipped, and never reuse a pre-existing checkout.
 
+## 7. A clean `git status` is not a clean state
+
+During promotion, a second layout of this artifact appeared in the graded tree with one module
+diverging from the gated bytes (a stale copy predating the reviewed header) and an edit to a
+ratified frozen contract document. `git status` reported nothing for any of it — the files
+matched a commit that had been minted outside the review loop, so "no changes" meant "already
+committed", not "nothing happened". The divergence was caught only by hand-hashing the landed
+tree against the gated one.
+
+**Requirement:** promotion gates verify landed bytes against the gated digest set — the source
+lock must carry per-file digests of the artifact itself, and frozen documents carry digests so
+any edit is mechanically detected. Commit minting is a gated step, never a side effect of a
+proof seat's run.
+
 ## Disposition
 
 Open. To be resolved by the functional-verification-tooling lane when it opens; until then these

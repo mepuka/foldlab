@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "kind": "sha3-source-lock",
+  "kind": "fips202-source-lock",
   "snapshotDate": "2026-08-24",
-  "artifact": "formal/sha3",
+  "artifact": "formal/fips202",
   "sources": [
     {
       "id": "nist-fips-202",

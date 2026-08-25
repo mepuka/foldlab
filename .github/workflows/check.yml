@@ -18,6 +18,6 @@ jobs:
       - uses: leanprover/lean-action@v1
         with:
           auto-config: false
-          lake-package-directory: formal/sha3
+          lake-package-directory: formal/fips202
       - uses: jdx/mise-action@v2
       - run: mise run check
