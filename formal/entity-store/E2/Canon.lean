@@ -84,6 +84,77 @@ def canonVList : ValueList → ValueList
   termination_by structural x => x
 end
 
+/-! ## Duplicate-freedom (A-3 vocabulary, 2026-08-25). STORE-MODEL §5 clause 4 demands
+    duplicate-free field-name lists; `WFS` does not yet implement the clause (planned
+    amendment A-3, scheduled after the in-flight seat wave merges — changing
+    `Reachable`'s constructors mid-dispatch would break seat proofs). On duplicate keys
+    the sort below is an INVOLUTION, not idempotent — kernel-checked falsification of
+    the unconditional S1 obligations, recorded in STORE-MODEL §7. -/
+
+def keyAbsent (key : String) : FieldList → Bool
+  | .nil => true
+  | .cons k _ _ rest => (!(key == k)) && keyAbsent key rest
+
+def fieldsDupFreeB : FieldList → Bool
+  | .nil => true
+  | .cons k _ _ rest => keyAbsent k rest && fieldsDupFreeB rest
+
+mutual
+def dupFreeS : SchemaCore → Bool
+  | .prim _ => true
+  | .lit _ => true
+  | .address => true
+  | .object fs => fieldsDupFreeB fs && dupFreeF fs
+  | .tuple es => dupFreeL es
+  | .array e => dupFreeS e
+  | .union _ ms => dupFreeL ms
+  | .refine s _ => dupFreeS s
+  | .ref _ => true
+  | .var _ => true
+  | .mu _ b => dupFreeS b
+  termination_by structural x => x
+
+def dupFreeF : FieldList → Bool
+  | .nil => true
+  | .cons _ v _ rest => dupFreeS v && dupFreeF rest
+  termination_by structural x => x
+
+def dupFreeL : SchemaList → Bool
+  | .nil => true
+  | .cons hd tl => dupFreeS hd && dupFreeL tl
+  termination_by structural x => x
+end
+
+def vkeyAbsent (key : String) : ValueFields → Bool
+  | .nil => true
+  | .cons k _ rest => (!(key == k)) && vkeyAbsent key rest
+
+def vfieldsDupFreeB : ValueFields → Bool
+  | .nil => true
+  | .cons k _ rest => vkeyAbsent k rest && vfieldsDupFreeB rest
+
+mutual
+def dupFreeV : Value → Bool
+  | .vnull => true
+  | .vbool _ => true
+  | .vint _ => true
+  | .vstr _ => true
+  | .vaddr _ => true
+  | .vobj fs => vfieldsDupFreeB fs && dupFreeVF fs
+  | .varr vs => dupFreeVL vs
+  termination_by structural x => x
+
+def dupFreeVF : ValueFields → Bool
+  | .nil => true
+  | .cons _ v rest => dupFreeV v && dupFreeVF rest
+  termination_by structural x => x
+
+def dupFreeVL : ValueList → Bool
+  | .nil => true
+  | .cons hd tl => dupFreeV hd && dupFreeVL tl
+  termination_by structural x => x
+end
+
 /-- Adjacent-pair sortedness of a field list, decidably. -/
 def fieldsSortedB : FieldList → Bool
   | .nil => true

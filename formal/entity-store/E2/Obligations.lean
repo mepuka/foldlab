@@ -54,17 +54,24 @@ def ObligationEncodeSchemaInjective : Prop :=
 def ObligationEncodeValueInjective : Prop :=
   ∀ v₁ v₂ : Value, encValue v₁ = encValue v₂ → v₁ = v₂
 
-/-- S1: canonicalization is idempotent. -/
+/-- S1 — AMENDED 2026-08-25: the unconditional form was FALSIFIED by kernel-checked
+    counterexample (scenario scout, probe3: a duplicate-key run reverses under
+    `insertField`, making canon an involution there; STORE-MODEL §7 A-3 record).
+    Idempotence is claimed only on duplicate-free schemas — exactly the §5 clause-4
+    admission that `WFS` still owes (planned amendment A-3). -/
 def ObligationCanonIdempotent : Prop :=
-  ∀ s : SchemaCore, canonS (canonS s) = canonS s
+  ∀ s : SchemaCore, dupFreeS s = true → canonS (canonS s) = canonS s
 
 /-- S2 (half): canonical object fields are sorted by key. -/
 def ObligationCanonSorts : Prop :=
   ∀ fs : FieldList, fieldsSortedB (canonFields fs) = true
 
-/-- S1 value twin (Q11): value canonicalization is idempotent. -/
+/-- S1 value twin (Q11) — AMENDED 2026-08-25 with the schema half: unconditional form
+    falsified the same way on duplicate-key `vobj` runs; conditional on duplicate-free
+    values. (A JS object cannot carry duplicate keys, so the excluded values have no
+    host counterpart — the boundary rejects them; STORE-MODEL §7 A-3 record.) -/
 def ObligationCanonVIdempotent : Prop :=
-  ∀ v : Value, canonV (canonV v) = canonV v
+  ∀ v : Value, dupFreeV v = true → canonV (canonV v) = canonV v
 
 /-- A2 / Direction B: conditional on digest injectivity, equal addresses give equal
     canonical forms. The hypothesis is a premise, never an axiom (E1 T12 shape). -/

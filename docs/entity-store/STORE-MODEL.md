@@ -245,6 +245,26 @@ M17: the raw-carrier put preconditions (`WFS s`, `Conforms env s v`) must transf
 the stored canonical forms — `canonS`/`canonV` respect well-formedness and conformance,
 symmetric across both kinds.
 
+**M1 falsification and planned amendment A-3 (2026-08-25).** The scenario scout proved
+— kernel-checked, within the estate allowlist, coordinator-reverified — that the
+unconditional S1 obligations were FALSE: on a run of equal field keys, `insertField`
+inserts after equals while `canonFields` folds right-to-left, so each canon pass
+REVERSES the run — an involution, not idempotence, for both kinds. Root cause: `WFS`
+implements only §5 clauses 1–2; clause 4's duplicate-free demand was never carried into
+the scaffold, so duplicate-key schemas are reachable today. Landed same day under Q10
+discipline: `dupFreeS`/`dupFreeV` vocabulary (`E2/Canon.lean`) and both S1 obligations
+restated conditionally on duplicate-freedom. Planned **A-3**: `WFS` gains the clause-4
+conjunct; scheduled as a serialization point AFTER the in-flight seat wave merges,
+because strengthening `Reachable`'s preconditions mid-dispatch would break seat proof
+scripts. Value-plane duplicate-freedom is a boundary admission, not a `Reachable`
+clause (a JS object cannot carry duplicate keys, so the excluded values have no host
+counterpart). Interim shell note: STORE-SHELL §5 check 2 (re-canonicalize and compare)
+already REJECTS duplicate-key submissions, since non-idempotence makes the re-canon
+differ — the interim incoherence is model-accepts/shell-rejects, closed by A-3;
+harness fixtures stay duplicate-free. Related statement caution from the same wave:
+L-comm is false as `StoreMap` value equality (the list conses) and true up to `find` —
+M11's commutation half must be pinned up to `find`-extensionality when seated.
+
 ## 8. Exclusions
 
 No mutation or deletion in the model (GC stated only). No cycles (unconstructible —
