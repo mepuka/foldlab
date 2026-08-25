@@ -19,9 +19,11 @@ def kindEntity  : UInt8 := 0x01
 def preimageS (s : SchemaCore) : List UInt8 :=
   versionByte :: kindSchema :: encSchema (canonS s)
 
-/-- Entity pre-image: the kind separator for entities is the schema's own address. -/
+/-- Entity pre-image: the kind separator for entities is the schema's own address.
+    Q11 (2026-08-25): the value is canonicalized — dedup is a theorem for entities too
+    (M12E), never a property of the hash. -/
 def preimageE (schemaAddr : Address) (v : Value) : List UInt8 :=
-  versionByte :: kindEntity :: (encAddress schemaAddr ++ encValue v)
+  versionByte :: kindEntity :: (encAddress schemaAddr ++ encValue (canonV v))
 
 def addressS (H : List UInt8 → Address) (s : SchemaCore) : Address :=
   H (preimageS s)
@@ -59,6 +61,10 @@ def ObligationCanonIdempotent : Prop :=
 /-- S2 (half): canonical object fields are sorted by key. -/
 def ObligationCanonSorts : Prop :=
   ∀ fs : FieldList, fieldsSortedB (canonFields fs) = true
+
+/-- S1 value twin (Q11): value canonicalization is idempotent. -/
+def ObligationCanonVIdempotent : Prop :=
+  ∀ v : Value, canonV (canonV v) = canonV v
 
 /-- A2 / Direction B: conditional on digest injectivity, equal addresses give equal
     canonical forms. The hypothesis is a premise, never an axiom (E1 T12 shape). -/

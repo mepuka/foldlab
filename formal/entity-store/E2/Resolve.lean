@@ -95,16 +95,16 @@ def ObligationM15_faithful_schema : Prop :=
     ∀ (σ : StoreMap) (s : SchemaCore), Reachable H env σ →
       resolveSchema H (putSchema H σ s) (addressS H s) = some (canonS s)
 
-/-- M15 — L-faithful for kind E. Value canonicalization is currently the identity
-    (`preimageE` embeds the value as given), so the faithful representative is the value
-    itself. Flagged for design review in the dispatch record. Seat:
+/-- M15 — L-faithful for kind E. AMENDED same day under Q11 (operator ruling, before
+    any seat proof existed): `preimageE` canonicalizes the value, so the faithful
+    representative is `canonV v` — the exact L-faithful shape, `c' = canon_k c`. Seat:
     `theorem M15_faithful_entity`. -/
 def ObligationM15_faithful_entity : Prop :=
   ∀ (H : Bytes → Address) (env : ConformsEnv),
     (∀ b₁ b₂, H b₁ = H b₂ → b₁ = b₂) →
     ∀ (σ : StoreMap) (sAddr : Address) (v : Value), Reachable H env σ →
       resolveEntity H (putEntity H σ sAddr v) (H (preimageE sAddr v)) =
-        some (sAddr, v)
+        some (sAddr, canonV v)
 
 /-- M9 — WF2 over stored bytes: on reachable stores, every stored byte string parses as
     a well-formed pre-image and every reference it carries resolves in the store.

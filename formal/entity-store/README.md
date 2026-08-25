@@ -16,6 +16,10 @@ address-valued values are `Value.vaddr`; the nullary address-type schema leaf us
 pre-R-1 working label `SchemaCore.address`; their discriminator bytes are 0x16 and 0x3A,
 respectively. Joint B now closes entity insertion over every address in the value.
 
+Ruling Q11 (2026-08-25, STORE-MODEL §7): values canonicalize — `canonV` mirrors R-10
+(`vobj` fields sort by key), `preimageE` stores the canonical form, and M12E extends
+unconditional dedup to entities. The M15 entity pin returns `canonV v`.
+
 ## What is here, and what is proved
 
 | Module | Content | Proved now |
@@ -23,13 +27,13 @@ respectively. Joint B now closes entity insertion over every address in the valu
 | `E2/Core.lean` | mutual-monomorphic carriers: `SchemaCore`/`FieldList`/`SchemaList`, `Value` family (including `vaddr`), `Check` family; nullary `SchemaCore.address`; derived `DecidableEq`, `BEq` from it | — |
 | `E2/Encode.lean` | framed byte encoding; unbounded LEB128-style `encNat` frames (Q10 amendment: the earlier be64 frame truncated and falsified injectivity); A-1 tags 0x16/0x3A | — |
 | `E2/Decode.lean` | fueled decoders, fuel derived from input length and absent from all statements; A-1 cases included | **M4a both kinds**: `decodeSchema ∘ encSchema = some`, `decodeValue ∘ encValue = some`, unconditional over the extended carriers |
-| `E2/Canon.lean` | `canonS` with the ratified sort-by-name field order (R-10); the address-type node is a leaf | — |
-| `E2/Model.lean` | `refsS`/`refsV`, `closedB`/`guardedB`/`WFS`, `substS`/`unfoldMu`, inductive `Conforms` (including unconditional address conformance; parameterized check semantics + resolver), `StoreMap`, `Reachable` with entity-reference closure, operations, `NameMap` | **M8** WF1 (address consistency, by induction on `Reachable`); **M12** unconditional dedup; **M13** frame/append-only; **M14** get-after-put (fresh half) |
+| `E2/Canon.lean` | `canonS` with the ratified sort-by-name field order (R-10); the address-type node is a leaf; `canonV` value canonicalizer (Q11: `vobj` fields sort by key, array/tuple order semantic) | — |
+| `E2/Model.lean` | `refsS`/`refsV`, `closedB`/`guardedB`/`WFS`, `substS`/`unfoldMu`, inductive `Conforms` (including unconditional address conformance; parameterized check semantics + resolver), `StoreMap`, `Reachable` with entity-reference closure, operations, `NameMap` | **M8** WF1 (address consistency, by induction on `Reachable`); **M12/M12E** unconditional dedup, both kinds (Q11); **M13** frame/append-only; **M14** get-after-put (fresh half) |
 | `E2/Obligations.lean` | identity assembly (`preimageS`/`preimageE`, version + kind in pre-image); obligation ledger as named `Prop`s | **directionA** (congruence); **kind_separation** (schema/entity pre-images differ) |
 | `E2/Correspondence.lean` | Shape B correspondence pattern (ascriptions + exhaustive tag map) | `tags_distinct` (zero axioms) |
 | `E2/Resolve.lean` | STORE-MODEL §4 `resolve_k` (`resolveSchema`/`resolveEntity`, `stripPre`), `refsOfPreimage`; the PINNED M15/M9/NEG-2 statements (coordinator-frozen, dispatch 2026-08-25) | — |
 | `E2/Faithful.lean`, `E2/Closure.lean`, `E2/Reject.lean` | seat modules for M15 / M9 / NEG-2 (stubs; proofs arrive by worktree) | — |
-| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,200 constants |
+| `E2/Gates.lean` | the opaque/unsafe scan (fails the build on any `partial`→opaque or unsafe constant in `E2` namespaces, exempting compiler `._unsafe_rec` companions); `#print axioms` reports | gate green at 1,217 constants |
 
 Axiom posture: every proved theorem within `[propext, Classical.choice, Quot.sound]`
 (several at `[propext]` or fewer). No `native_decide`, no Mathlib, no `partial`, no

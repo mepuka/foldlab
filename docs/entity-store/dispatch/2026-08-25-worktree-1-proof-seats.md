@@ -44,8 +44,10 @@ record.
 - **M15_faithful_schema**: cases on `σ.find (addressS H s)`. Fresh: as above. Present
   with bytes `b`: `putPre` no-ops; `M8_wf1` (reachability) gives `H b = addressS H s`,
   the injectivity hypothesis turns that into `b = preimageS s`, then strip + `M4a_schema`.
-- **M15_faithful_entity**: same skeleton; `decAddr_encAddress` splits the body,
-  `M4a_value` finishes.
+- **M15_faithful_entity**: same skeleton; note Q11 — `preimageE` canonicalizes, so the
+  stored body is `encAddress sAddr ++ encValue (canonV v)` and the target is
+  `some (sAddr, canonV v)`. `decAddr_encAddress` splits the body, `M4a_value` finishes
+  on the canonical form.
 - **M9_wf2**: induction on `Reachable`. Old bindings: IH plus monotonicity —
   `AllResolve` survives a put by `M13_frame`. New schema binding: it parses via
   `M4a_schema`; its refs are `refsS (canonS s)`, and the precondition speaks of
@@ -53,7 +55,10 @@ record.
   (`a ∈ refsS (canonS s) → a ∈ refsS s`; mutual induction over the carriers with a
   membership lemma for `insertField`). New entity binding: `decAddr_encAddress` +
   `M4a_value`; the schema address heads the list and resolves by `putE`'s own
-  precondition (`σ.find sAddr = some (preimageS s)`).
+  precondition (`σ.find sAddr = some (preimageS s)`); Q11 means the decoded value is
+  `canonV v` while the precondition speaks of `refsV v` — the value-side twin lemma
+  (`a ∈ refsV (canonV v) → a ∈ refsV v`, with a membership lemma for `insertVField`)
+  closes that gap.
 - **NEG2_dangling_unreachable**: generalize to
   `Reachable H env σ → σ ≠ [(H (preimageS (.ref a₀)), preimageS (.ref a₀))]` and
   induct on the derivation. No-op branches of `putPre`: IH verbatim. `putE` fresh head:

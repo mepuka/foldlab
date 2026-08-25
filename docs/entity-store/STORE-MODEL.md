@@ -126,8 +126,12 @@ construction.
    construction).
 
 **Kind E — entities.** Carrier: `(sAddr : Digest) × Value`. Pre-image:
-`versionByte ∷ kindEntity ∷ encAddress sAddr ++ ser_V(canonV s v)` where `s` is the
-schema `sAddr` resolves to, and `canonV` is the schema-directed value canonicalizer.
+`versionByte ∷ kindEntity ∷ encAddress sAddr ++ ser_V(canonV v)` where `canonV` is the
+structural value canonicalizer (Q11, 2026-08-25): `vobj` fields sort by key (R-10
+mirrored), array/tuple element order stays semantic, leaves are fixed. Total on all
+values; on conforming values it agrees with the schema-directed ordering this line
+originally named — canonical schemas are already key-sorted — and any schema-directed
+refinement (e.g. default elision) arrives only by future amendment.
 
 **The typing precondition.** `put_E (sAddr, v) σ` is legal only when:
 
@@ -226,6 +230,21 @@ plane stays one pointer per scope. Amendments A-1 (address-valued values: `Value
 and A-2 (the name-view schema) are ratified as planned and enter §5's carriers by
 declared amendment when implemented.
 
+**Value-canonicalization ruling (Q11, 2026-08-25).** Pinning M15's entity half exposed
+a spec-to-scaffold gap: §5's pre-image line already demanded `canonV`, while the
+scaffold's `preimageE` embedded the value as given — so L-dedup silently failed to
+extend to entities (two values differing only in `vobj` field order took two
+addresses). Operator ruling: mint `canonV` structurally, mirroring R-10. Alternatives
+weighed: treating JS own-property enumeration order as semantics (the
+mechanical-fidelity reading) — rejected as a host incidental, per the closure-identity
+precedent; schema-directed ordering — subsumed for conforming values, deferred
+otherwise (§5). Landed same day: canonicalizing `preimageE`; M12E (unconditional entity
+dedup) proved; `ObligationM15_faithful_entity` amended to return `canonV v` (before any
+seat proof existed); `ObligationCanonVIdempotent` stated. Owed bridge lemmas noted for
+M17: the raw-carrier put preconditions (`WFS s`, `Conforms env s v`) must transfer to
+the stored canonical forms — `canonS`/`canonV` respect well-formedness and conformance,
+symmetric across both kinds.
+
 ## 8. Exclusions
 
 No mutation or deletion in the model (GC stated only). No cycles (unconstructible —
@@ -265,6 +284,12 @@ LEB128-style `encNat`, restoring injectivity and the fuel-free round-trip. Strin
 via validity check plus the `String.ofByteArray` constructor (no dependence on the
 runtime's `fromUTF8`). M4b (rejection of non-image bytes) stated as owed. Next seats,
 unblocked: M15 faithfulness, M9 closure, M17 typed reachability, NEG-2; then M18.
+
+**Statement pins and Q11 (same day):** the M15/M9/NEG-2 statements are pinned in
+`E2/Resolve.lean` with seat stubs and worktree dispatch briefs
+(`docs/entity-store/dispatch/`); the Q11 ruling (§7) landed `canonV`, the
+canonicalizing `preimageE`, and the proved M12E — build and gate green at 1,217
+constants.
 
 ## Claim posture
 

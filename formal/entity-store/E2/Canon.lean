@@ -5,7 +5,14 @@ union and tuple order is semantic and untouched; everything else is syntactic.
 Soundness/completeness/idempotence are OBLIGATIONS (Obligations.lean).
 
 AMENDED 2026-08-25 (A-1, ratified under Q10): `SchemaCore.address` is a leaf and
-canonicalizes to itself. Values remain outside schema canonicalization.
+canonicalizes to itself.
+
+AMENDED 2026-08-25 (Q11, operator ruling): values get their own structural
+canonicalizer `canonV` — `vobj` fields sort by key (R-10 mirrored), array/tuple element
+order stays semantic, leaves are fixed. Total on all values; on conforming values it
+agrees with the spec's schema-directed ordering, since canonical schemas are already
+key-sorted (STORE-MODEL §5, Q11 record). `preimageE` now canonicalizes, extending
+unconditional dedup (M12E) to entities.
 -/
 import E2.Core
 
@@ -43,6 +50,37 @@ def canonFields : FieldList → FieldList
 def canonList : SchemaList → SchemaList
   | .nil => .nil
   | .cons hd tl => .cons (canonS hd) (canonList tl)
+  termination_by structural x => x
+end
+
+/-- Insert an (already canonical) value field into a sorted field list, by key (Q11). -/
+def insertVField (key : String) (val : Value) : ValueFields → ValueFields
+  | .nil => .cons key val .nil
+  | .cons k v rest =>
+      if key < k then
+        .cons key val (.cons k v rest)
+      else
+        .cons k v (insertVField key val rest)
+
+mutual
+def canonV : Value → Value
+  | .vobj fs  => .vobj (canonVFields fs)
+  | .varr vs  => .varr (canonVList vs)
+  | .vnull    => .vnull
+  | .vbool b  => .vbool b
+  | .vint n   => .vint n
+  | .vstr s   => .vstr s
+  | .vaddr a  => .vaddr a
+  termination_by structural x => x
+
+def canonVFields : ValueFields → ValueFields
+  | .nil => .nil
+  | .cons k v rest => insertVField k (canonV v) (canonVFields rest)
+  termination_by structural x => x
+
+def canonVList : ValueList → ValueList
+  | .nil => .nil
+  | .cons hd tl => .cons (canonV hd) (canonVList tl)
   termination_by structural x => x
 end
 

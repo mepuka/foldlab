@@ -307,6 +307,15 @@ theorem M12_dedup {H : Bytes → Address} {σ : StoreMap} {s₁ s₂ : SchemaCor
   unfold putSchema preimageS
   rw [h]
 
+/-- M12E — unconditional deduplication for entities (Q11): values equal up to `vobj`
+    field order give identical stores and addresses. PROVED — same two lines as M12,
+    which is the point: dedup is a theorem of the encoding for both kinds. -/
+theorem M12E_dedup {H : Bytes → Address} {σ : StoreMap} {sAddr : Address}
+    {v₁ v₂ : Value} (h : canonV v₁ = canonV v₂) :
+    putEntity H σ sAddr v₁ = putEntity H σ sAddr v₂ := by
+  unfold putEntity preimageE
+  rw [h]
+
 /-- M13 — frame/append-only: a put never disturbs an existing binding. PROVED. -/
 theorem M13_frame {H : Bytes → Address} {σ : StoreMap} {b₀ : Bytes} {d : Address}
     (hd : (σ.find d).isSome) : (putPre H σ b₀).find d = σ.find d := by
