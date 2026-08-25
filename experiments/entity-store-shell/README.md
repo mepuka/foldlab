@@ -345,7 +345,7 @@ Mirrors STORE-SHELL §7, with what this package adds.
 - **Nothing about the pinned Effect implementation**, about any digest's cryptographic
   properties (`H` is a parameter in the model; injectivity appears only as a named
   hypothesis), or about deployment.
-- **Rung 1 is testing, not proof.** The harness shows that eleven committed scripts
+- **Rung 1 is testing, not proof.** The harness shows that twelve committed scripts
   produce identical observables on both sides. It is not a theorem about all scripts, and
   no bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
   untouched.

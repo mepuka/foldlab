@@ -1,0 +1,15 @@
+; STORE-MODEL Q13 / amendment A-6, landed with the F-26 clause in window A
+; (RULINGS W3-10, adjudicated 2026-08-25): `canonS` recurses into `lit` payloads —
+; one carrier, one canonical form.
+;
+; Two lit schemas whose object payloads differ only in key order now take the SAME
+; address: the dedup L-dedup promised extends into the lit plane (F-23 closed).
+; Before A-6 these were two addresses.
+
+(schema-put (lit (obj ("alpha" (i 1)) ("beta" (s "x")))))
+(schema-put (lit (obj ("beta" (s "x")) ("alpha" (i 1)))))
+
+(assert-same @1 @2)
+
+; One object, not two — and the store checks clean.
+(check)
