@@ -83,4 +83,32 @@ def bytesOfByteArray (ba : ByteArray) : Bytes := ba.data.toList
 
 def byteArrayOfBytes (bs : Bytes) : ByteArray := ⟨bs.toArray⟩
 
+/-! ## Names on disk (W3-14, closing F-39)
+
+A name file's filename is the lowercase hex of the name's UTF-8 bytes — the objects
+plane's discipline, reused verbatim on the plane that used to run without one.
+
+WHY, in one sentence: the FILENAME IS NOT THE KEY. A case-folding filesystem merges
+`names/Widget` and `names/widget` into one file, so two model bindings became one file
+answering `name-get` differently on each plane, both exiting 0 (F-39, receipt
+`r2-11-name-case-collision`). Hex injects the model's `String` key space into a filename
+alphabet of `[0-9a-f]` — the smallest surface any filesystem can distort — so the two
+planes agree by construction rather than by the host's goodwill. Reserved device names
+(`con`, `NUL`) and trailing dots stop existing on disk for the same reason.
+
+The model side is UNCHANGED and that is the point: `E2.NameMap` is still keyed by an exact
+Lean `String`, and no host string relation — order or equality — reaches an observable
+(CONTEXT's `host-relation-neutrality`). -/
+
+/-- Lowercase hex of a name's UTF-8 bytes: the ENCODE half of the disk form. -/
+def hexOfName (n : String) : String := hexOfBytes (bytesOfByteArray n.toUTF8)
+
+/-- The DECODE half. `none` when the filename is not lowercase hex (`hexVal` refuses
+    uppercase by design) or when those bytes are not valid UTF-8. Admissibility of the
+    decoded string as a NAME is a separate clause — see `Shell.nameOfFileName`, which is
+    where `validName` and the canonical-spelling test live. -/
+def nameOfHex (s : String) : Option String := do
+  let bs ← bytesOfHex s
+  String.fromUTF8? (byteArrayOfBytes bs)
+
 end Shell

@@ -26,16 +26,50 @@ structure Outcome where
 def Outcome.ok (lines : List String) : Outcome := ⟨0, lines⟩
 def Outcome.rejected (r : Rejection) : Outcome := ⟨1, [s!"rejected {r.render}"]⟩
 
-/-- Names are filenames under `names/` (§4). The IO whitelist confines the shell to file
-    IO UNDER THE STORE ROOT, so the name alphabet is restricted at the input boundary:
-    a name that could traverse or escape a directory is rejected, not sanitized. -/
+/-- Names are the model's `String` keys (§4, W3-14). The IO whitelist confines the shell to
+    file IO UNDER THE STORE ROOT, so the alphabet is restricted at the input boundary: a
+    name that could traverse or escape a directory is rejected, not sanitized.
+
+    LENGTH, 64 (W3-14). A name is stored at `names/<hex of its UTF-8 bytes>`, so a 64-
+    character name is a 128-character filename — exactly the objects plane's width, which
+    is the whole point of the number. Hex doubles the plane, and doubling the previous
+    128-character bound would have made `names/` the store's worst case against Windows'
+    legacy `MAX_PATH` 260 (F-37, R-C §5.4(b)). The cap restores parity rather than
+    inventing a policy.
+
+    CASE IS NOT NARROWED, deliberately. `Widget` and `widget` are two names, and under
+    W3-14 they are two bindings on BOTH planes — that is the ruled feature, not a hazard to
+    be legislated away by shrinking the alphabet (option 1, rejected: it kept the filename
+    as the key and closed none of `trailing.` / `con` / `NUL`). Hex encoding closes all
+    four hazards at the disk form instead, which is why this alphabet could now be WIDENED
+    without the disk plane noticing. -/
 def validName (n : String) : Bool :=
   let cs := n.toList
-  !cs.isEmpty && cs.length ≤ 128
+  !cs.isEmpty && cs.length ≤ 64
     && cs.all (fun c =>
          ('a' ≤ c && c ≤ 'z') || ('A' ≤ c && c ≤ 'Z') || ('0' ≤ c && c ≤ '9')
            || c = '-' || c = '_' || c = '.')
     && (cs.head? != some '.')
+
+/-- The name a `names/` directory entry binds, or `none` if the entry is a stray. Four
+    clauses, and the existing stray vocabulary carries every failure:
+
+    * the filename is lowercase hex (`bytesOfHex`; `hexVal` refuses uppercase by design);
+    * those bytes are valid UTF-8;
+    * the decoded string is a `validName` — an entry that could not have come from
+      `name-set` is never silently given a binding;
+    * the filename is the spelling `hexOfName` would have produced. The objects plane has
+      always had this clause implicitly (`hexOfAddr` is the only spelling `hexVal` accepts);
+      stating it here keeps `hexVal`'s own reason — "accepting both would give one address
+      two spellings" — true of a name as well.
+
+    It lives beside `validName` rather than beside the disk reader for the reason
+    `addrOfFileBytes` does (W3-20): the model side must classify a placed entry EXACTLY as
+    the disk reader classifies it, so there is ONE function and no transcription to drift
+    into a differential divergence. -/
+def nameOfFileName (fn : String) : Option String := do
+  let n ← nameOfHex fn
+  if validName n && hexOfName n == fn then some n else none
 
 /-! ## Planes and below-the-boundary placement (W3-20)
 
@@ -119,12 +153,17 @@ def placedEntry (plane : Plane) (name : String) (kind : PlaceKind) : PlacedEntry
         | .file _ => .obligation a
         | .dir => .notRegular rel
   | .names =>
-      if !validName name then .strayName rel
-      else match kind with
+      -- The filename is tested FIRST here too, and under W3-14 that test is now the hex
+      -- decode: an entry whose filename is not the hex of an admissible name is a STRAY
+      -- whatever shape it is, exactly as on the objects plane. The DECODED string, never
+      -- the filename, is the key that reaches the view.
+      match nameOfFileName name with
+      | none => .strayName rel
+      | some n => match kind with
         | .dir => .notRegular rel
         | .file bs =>
           match addrOfFileBytes bs with
-          | some a => .name name a
+          | some a => .name n a
           | none => .strayName rel
 
 /-- Fold one placed entry into a view. A directory holds one entry per name, so each
@@ -156,6 +195,11 @@ inductive Verb
       than asserted, and observable rather than merely computed. One `addr <hex>` line per
       object. Additive — `check`'s transcript is untouched. -/
   | order
+  /-- The names plane, listed (W3-14). Hex filenames cost `ls names/` its readability —
+      the one property the straw named as a reason for the whole directory-of-files
+      design — so the ruling buys it back here: one line per binding, the name DECODED,
+      in the view's canonical order. Additive; no other transcript changes. -/
+  | names
   | putSchema (b : Bytes)
   | putEntity (sAddr : Address) (b : Bytes)
   | get (a : Address)
@@ -203,6 +247,13 @@ def runVerb (view₀ : StoreView) (v : Verb) : Outcome × List Effect :=
         -- and answering with the verdict the gate would give rather than minting a second
         -- observable for a state that cannot be reached.
         | none => blocked
+  | .names =>
+      -- `view` is `view₀.normalize`, so the order is the view's canonical one — a Lean
+      -- `String` comparison over the model's own keys, computed identically on both
+      -- runners. No HOST string relation is consulted (CONTEXT `host-relation-neutrality`):
+      -- the disk's directory order was discarded by `normalize` before this line runs.
+      gated <| (Outcome.ok (view.names.map
+        (fun p => s!"name {renderStr p.fst} addr {hexOfAddr p.snd}")), [])
   | .place plane name kind =>
       -- Below the boundary, like `corrupt`: UNGATED, because its whole purpose is to put
       -- a store into a state the scan will condemn.

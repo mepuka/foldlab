@@ -64,6 +64,7 @@ private def readPlane : String → Option Plane
 def sexpToVerbAux (env : AddrEnv) : Sexp → Except String Verb
   | .list (.cons (.atom "check") .nil) => .ok .check
   | .list (.cons (.atom "order") .nil) => .ok .order
+  | .list (.cons (.atom "names") .nil) => .ok .names
   -- The `(place …)` family (W3-20): the below-the-boundary writers. The filename is
   -- taken VERBATIM, never resolved through `@N` — the point of the primitive is to write
   -- an entry the boundary would never have produced, including one whose name is not an

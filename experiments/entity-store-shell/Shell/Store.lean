@@ -29,8 +29,15 @@ no verdict to give.
 Layout (§4):
 
     <root>/objects/<hex>        pre-image bytes, verbatim; filename = hex of H of content
-    <root>/names/<name>         one address per file — the mutable plane
+    <root>/names/<hex-of-name>  one address per file, filename = lowercase hex of the
+                                name's UTF-8 bytes — the mutable plane (W3-14, F-39)
     <root>/obligations/<hex>    the SH6 accepted-`Conforms` record, one per entity object
+
+The names plane's filename IS NOT ITS KEY (W3-14). The key is the model's Lean `String`,
+recovered by decoding the filename; the filesystem only ever sees `[0-9a-f]`. Before this
+ruling the name was the filename, so on a case-folding host `names/Widget` and
+`names/widget` were one file and `name-get` answered differently on each plane, both
+exiting 0 (F-39).
 -/
 import Shell.Verbs
 
@@ -178,15 +185,19 @@ def StoreRoot.readView (r : StoreRoot) : IO (Except StoreFault StoreView) := Exc
   for e in ← attempt "names" r.namesDir.readDir do
     let fn := e.fileName
     let rel := "names/" ++ fn
-    if !validName fn then strayNames := rel :: strayNames
-    else
+    -- W3-14: the filename is DECODED to the key, and a filename that is not the hex of an
+    -- admissible name is a stray. `Shell.nameOfFileName` is the same function the model
+    -- side's `placedEntry` runs, so the two cannot drift.
+    match nameOfFileName fn with
+    | none => strayNames := rel :: strayNames
+    | some n =>
       let md ← attempt rel e.path.symlinkMetadata
       if md.type != IO.FS.FileType.file then notRegular := rel :: notRegular
       else
         let raw ← attempt rel (IO.FS.readBinFile e.path)
         match addrOfFileBytes (bytesOfByteArray raw) with
         | none => strayNames := rel :: strayNames
-        | some a => names := (fn, a) :: names
+        | some a => names := (n, a) :: names
   let mut obligations : List Address := []
   for e in ← attempt "obligations" r.obligationsDir.readDir do
     let fn := e.fileName
@@ -227,7 +238,11 @@ def StoreRoot.applyEffect (r : StoreRoot) : Effect → ExceptT StoreFault IO Uni
           if !(← (r.obligationsDir / hex).pathExists) then
             atomicWrite "obligations" r.obligationsDir hex (textBytes (obligationText sAddr))
       | _, _ => pure ()
-  | .setName n a => atomicWrite "names" r.namesDir n (textBytes (hexOfAddr a ++ "\n"))
+  -- W3-14: the name is ENCODED on the way to disk. `runVerb` already refused anything
+  -- outside `validName`, so the filename here is at most 128 hex characters — the objects
+  -- plane's width, which is the cap's purpose.
+  | .setName n a =>
+      atomicWrite "names" r.namesDir (hexOfName n) (textBytes (hexOfAddr a ++ "\n"))
   | .corrupt a idx mask => do
       -- Below the boundary, deliberately: no temp+rename, no admission. Harness only.
       let hex := hexOfAddr a

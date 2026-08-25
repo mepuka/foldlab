@@ -1,0 +1,121 @@
+; STORE-SHELL §4 as amended by W3-14 — the names plane at its edges. R-C §5.6's
+; `24-name-roundtrip-hostile`, and the regression cover `r2-15-name-plane-edges.script`
+; used to carry.
+;
+; THE PROPERTY. Every name `validName` admits round-trips: `name-set` encodes it to
+; `names/<lowercase hex of its UTF-8 bytes>`, `readView` decodes the filename back, and
+; `name-get` answers with the address the model holds. The observables are byte-identical
+; on both planes, which is the property option 2 was chosen to buy.
+;
+; THE THREE HAZARDS THAT STOPPED EXISTING. `r2-15` flagged `trailing.` (Windows strips a
+; trailing dot, collapsing it with `trailing`) and the reserved device names `con` and
+; `NUL`. All three are pinned below. None of them is a hazard any more, and the reason is
+; not a blacklist: on disk they are `747261696c696e672e`, `636f6e` and `4e554c`. There is
+; no trailing dot, no device name, and nothing for a filesystem to fold — the alphabet is
+; `[0-9a-f]`, the smallest surface a host can distort. Closing these by BLACKLIST would
+; have meant baking Windows filesystem policy into a cross-platform name alphabet
+; (option 1, rejected).
+;
+; THE CAP. 64 characters (W3-14), because hex doubles the plane and a 64-character name is
+; a 128-character filename — the objects plane's exact width, which is MAX_PATH parity
+; rather than a fresh policy (F-37). 64 is admitted; 65 is `bad-name`.
+
+(schema-put (prim int))
+(schema-put (prim str))
+(assert-differ @1 @2)
+
+; --- the alphabet, one character wide in each class -------------------------------------
+(name-set "a" @1)
+(name-set "A" @2)
+(name-set "9" @1)
+(name-set "-" @2)
+(name-set "_" @1)
+(name-get "a")
+(name-get "A")
+(name-get "9")
+(name-get "-")
+(name-get "_")
+
+; `a` and `A` are two bindings, and the single-character case is the tightest form of the
+; F-39 pair: on disk they are `61` and `41`
+(names)
+
+; --- interior dots, and the trailing dot -------------------------------------------------
+(name-set "a.b.c" @1)
+(name-get "a.b.c")
+
+; `trailing.` -> `747261696c696e672e`. Windows would have collapsed the FILENAME with
+; `trailing`; it never sees either spelling now.
+(name-set "trailing." @2)
+(name-set "trailing" @1)
+(name-get "trailing.")
+(name-get "trailing")
+
+; --- the Windows reserved device names ---------------------------------------------------
+(name-set "con" @1)
+(name-set "NUL" @2)
+(name-get "con")
+(name-get "NUL")
+
+; --- a name that is itself lowercase hex, 64 characters ---------------------------------
+; the double-encoding edge: the filename is the hex of a string that already looks like a
+; filename, and nothing anywhere confuses the two layers
+(name-set "abababababababababababababababababababababababababababababababab" @1)
+(name-get "abababababababababababababababababababababababababababababababab")
+
+; --- the cap, from both sides -------------------------------------------------------------
+; exactly 64 characters: admitted, and 128 hex characters on disk
+(name-set "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn" @2)
+(name-get "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn")
+(assert-code prev 0)
+
+; 65 characters: refused at the input boundary, not truncated
+(name-set "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn" @2)
+(assert-code prev 1)
+
+; the empty name, and a name that could leave the store root: still refused
+(name-set "" @1)
+(assert-code prev 1)
+(name-set "esc/ape" @1)
+(assert-code prev 1)
+(name-set ".hidden" @1)
+(assert-code prev 1)
+
+; everything above is still one clean store
+(check)
+(assert-code prev 0)
+(names)
+
+; --- the stray classes the hex filename introduces ---------------------------------------
+; Each is written below the boundary with `(place …)`, and each is a STRAY under the
+; existing vocabulary — `Shell.nameOfFileName`'s four clauses, one per placement.
+
+; (1) the filename is not hex at all
+(place names zzz 00)
+(check)
+(assert-code prev 1)
+
+; (2) the filename is UPPERCASE hex. `hexVal` refuses uppercase by design, so one name has
+; exactly one filename — the objects plane's discipline, now the names plane's too.
+; `4e414d45` would be the name `NAME`; `4E414D45` is a stray.
+(place names 4E414D45 00)
+(check)
+(assert-code prev 1)
+
+; (3) valid lowercase hex whose bytes are not valid UTF-8
+(place names ff 00)
+(check)
+(assert-code prev 1)
+
+; (4) valid hex, valid UTF-8, and still not a name: `612f62` is `a/b`, which `validName`
+; refuses because it could leave the plane's directory
+(place names 612f62 00)
+(check)
+(assert-code prev 1)
+
+; (5) an OVERLONG UTF-8 encoding of `a` — the spelling that would otherwise give the name
+; `a` a second filename beside `61`. Rejected as invalid UTF-8, and the canonical-spelling
+; clause (`hexOfName n == fn`) refuses it a second time.
+(place names c1a1 00)
+(check)
+(assert-code prev 1)

@@ -39,7 +39,7 @@ Spec §1 numbers the rungs. This package reaches rung 1 and claims nothing above
 | Rung | Statement | Here |
 |---|---|---|
 | 0 | shared core: the shell's pure behavior IS the core's, by construction | held, and mechanically guarded — see **Gates** |
-| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 23 committed scripts, all green** |
+| 1 | differential harness: model and disk observables compare byte-for-byte | **the v0 acceptance gate; 26 committed scripts, all green** |
 | 2 | `Std.Do` Hoare triples on shell operations | not attempted |
 | 3 | full refinement / bisimulation | not attempted; the word does not appear as a claim |
 
@@ -86,7 +86,8 @@ Nothing in this package writes to `formal/`; the E2 carriers gain no instances a
 
 ```
 <root>/objects/<hex>        pre-image bytes, verbatim; filename = hex of H of the content
-<root>/names/<name>         one address per file — the mutable plane
+<root>/names/<hex-of-name>  one address per file; filename = hex of the name's UTF-8
+                            bytes — the mutable plane (W3-14)
 <root>/obligations/<hex>    the SH6 accepted-Conforms record, one per entity object
 ```
 
@@ -191,11 +192,26 @@ manufactures one.
 ## Names
 
 Names are inert (STORE-MODEL M16): setting one changes no address, no resolve, and no
-verdict, and a name is never inside a pre-image. A name is a filename under `names/`, so
-the alphabet is restricted at the input boundary to `[A-Za-z0-9._-]`, at most 128
-characters, not beginning with `.`; a name that could traverse out of the store root is
-**rejected, not sanitized**. A name is not required to point at anything that resolves,
-and a dangling name is not a violation — names are beside the store, not in it.
+verdict, and a name is never inside a pre-image. The alphabet is restricted at the input
+boundary to `[A-Za-z0-9._-]`, at most **64** characters, not beginning with `.`; a name
+that could traverse out of the store root is **rejected, not sanitized**. A name is not
+required to point at anything that resolves, and a dangling name is not a violation —
+names are beside the store, not in it.
+
+**The filename is not the key (W3-14, closing F-39).** A name lives at `names/<lowercase
+hex of its UTF-8 bytes>`; `readView` decodes the filename back to the model's `String`
+key. Before this ruling the name *was* the filename, so on a case-folding filesystem —
+APFS and NTFS both — `names/Widget` and `names/widget` were one file, and `name-get`
+answered with a different address on each plane while both exited `0`. The model side did
+not move at all; the disk representation now injects the model's key space. Consequences
+worth naming: the filesystem only ever sees `[0-9a-f]`, so reserved device names (`con`,
+`NUL`) and trailing dots stop existing on disk without a blacklist; the 64-character cap
+is MAX_PATH parity, since hex doubles the plane and 64 characters is a 128-character
+filename, the objects plane's exact width (F-37); a `names/` entry whose filename is not
+the hex of an admissible name is a **stray**, in the existing vocabulary; and case is
+deliberately **not** narrowed — two case-differing names are two bindings on both planes,
+which is the ruled feature. The verb `names` is the inspectability the encoding costs,
+bought back.
 
 ## The differential harness (§6, SH7)
 
@@ -230,6 +246,9 @@ anywhere is a nonzero exit.
 | `21-open-not-a-file` | `(place-dir …)` on all three planes: `not-a-regular-file`, a verdict rather than a crash, and every other verb refusing on the same verdict |
 | `22-place-strays` | `(place …)` files the layout does not admit: `stray-object`, `stray-name`, the `.tmp-` leftover, and a placed object caught by WF1 |
 | `23-exit-codes` | the three-way exit contract's reachable legs: clean → 0, corrupted → 1 |
+| `24-name-case-bindings` | **F-39 closed.** `r2-11`'s case-collision script, committed in the position where it used to diverge: `Widget` and `widget` are two bindings on both planes, each `name-get` answers with its own address, `names=2`. Its passing IS the amendment record (W3-14) |
+| `25-name-roundtrip-hostile` | the name alphabet's edges round-trip through the hex filename: `r2-15`'s `trailing.` / `con` / `NUL`, a name that is itself 64 characters of lowercase hex, the 64-character cap admitted and 65 refused; and the five stray classes the encoding introduces — non-hex, UPPERCASE hex, invalid UTF-8, a decoded non-name, an overlong UTF-8 spelling |
+| `26-names-listing` | the `names` verb: the empty plane, bindings inserted in descending order and listed ascending, `Mu` sorting ahead of every lowercase name (codepoints, not case-folding), a rebind in place, and the verb gated like every other reader |
 
 ### Script language
 
@@ -242,7 +261,7 @@ step that produced one), or 128 lowercase hex characters.
 (schema-put-raw <schema>)      (entity-put-raw <addr> <value>)     ; canonicalization skipped
 (schema-put-bytes <hex>)       (entity-put-bytes <addr> <hex>)     ; raw bytes
 (get <addr>) (resolve <addr>) (refs <addr>)
-(name-set "<name>" <addr>) (name-get "<name>") (check) (order)
+(name-set "<name>" <addr>) (name-get "<name>") (names) (check) (order)
 (corrupt <addr> <byte-index> <mask-hex>)                            ; harness primitive
 (place <plane> <filename> <hex>)                                    ; harness primitive
 (place-dir <plane> <filename>)                                      ; harness primitive
@@ -295,7 +314,7 @@ one that used to crash the scan.
 estore [--store <dir>] init | check | order
                             | put-schema <file> | put-entity <schema-addr> <file>
                             | get <addr> | resolve <addr> | refs <addr>
-                            | name-set <name> <addr> | name-get <name>
+                            | name-set <name> <addr> | name-get <name> | names
 ```
 
 `order` prints one `addr <hex>` line per object, sinks first — the topological order
@@ -303,6 +322,14 @@ Kahn's emits, which is M19's witness computed rather than asserted (W3-12). It i
 additive by design: `check`'s transcript is byte-identical with or without it, which is
 why the order is a verb and not a line in the report (R-C §2.4, option (b) over (a)).
 Like every verb but `check`, it refuses to run on a store that fails the scan.
+
+`names` prints one `name "<name>" addr <hex>` line per binding, the name decoded from its
+hex filename, sorted by name. Same shape of reasoning as `order` and added by the same
+kind of ruling (W3-14): `ls names/` stopped being readable when the filename became hex,
+so the verb buys that back, and it is additive — `check`'s transcript is byte-identical
+with or without it. The sort is Lean's `String` ordering over the model's own keys,
+applied by `StoreView.normalize` before any verb runs, so the disk's directory order —
+which has no definition at all — never reaches an observable.
 
 The store root comes from argv (default `.`) because the whitelist forbids reading the
 environment. `<file>` holds the object's **pre-image bytes** — see finding F-1. Exit
@@ -390,9 +417,9 @@ They are recorded for the coordinator; none was chosen silently.
   consequence: a record with wrong content is not detected in v0.
 - **F-8 — names may dangle.** The spec does not say whether `name-set` requires a
   resolvable address. Ruled: no. Names are the mutable plane and inert (M16); a dangling
-  name is not a violation. A *malformed* name file — a filename outside the alphabet, or
-  content that is not digest hex — is a violation, because `name-get` would otherwise be
-  undefined.
+  name is not a violation. A *malformed* name file — a filename that is not the hex of an
+  admissible name (W3-14), or content that is not digest hex — is a violation, because
+  `name-get` would otherwise be undefined.
 - **F-9 — address width.** `E2.Address` states no width invariant (the core calls it an
   obligation, not a field). The shell imposes the digest width, 64 bytes, at every input
   boundary: filenames, name-file contents, and script literals.
@@ -479,4 +506,11 @@ Mirrors STORE-SHELL §7, with what this package adds.
   `assert-code` all decide on the step alone; asserting "the emitted order equals the
   insertion order reversed" needs the opened view, which is a new harness primitive and
   therefore a ruling. Script `19` pins everything the current language can pin.
+- **Name-file content canonicity**, untouched by W3-14 and still open. `addrOfFileBytes`
+  reads up to the first whitespace, so `names/<hex>` holding a digest followed by
+  arbitrary junk resolves cleanly (R-C §5.3(iii), receipted at `R2-boundary.md:479-490`).
+  W3-14 ruled the FILENAME, not the content; tightening the content is a separate ruling
+  and it rides the family-3 residue. It is deliberately unchanged here rather than
+  silently fixed — the shape of a check-downgrade in reverse, and W3-16's posture cuts
+  both ways.
 - M18 lands ⇒ boundary check 6 enforced, no grace period (SH6).

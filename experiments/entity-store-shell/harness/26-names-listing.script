@@ -1,0 +1,55 @@
+; STORE-SHELL §5 — the `names` verb (W3-14), on a small store.
+;
+; WHY THE VERB EXISTS. Hex filenames cost the names plane its inspectability: `ls names/`
+; used to read as a list of names and now reads as `576964676574`. Inspectability is the
+; property the straw named as a reason for the whole directory-of-files design ("the store
+; should be the part you can inspect with `xxd` and delete with `rm -rf`"), so W3-14 buys
+; it back with a listing verb rather than spending it. This script is that verb's fixture.
+;
+; ADDITIVE, like `order` (W3-12). `check`'s transcript is untouched — the count it already
+; carried (`names=N`) is unchanged, and nothing else in the report moved.
+;
+; THE ORDER. One line per binding, sorted by NAME. The comparison is Lean's `String`
+; ordering over the model's own keys, applied by `StoreView.normalize` before any verb
+; runs — so the disk's directory order, which has no definition at all, is discarded before
+; it can reach an observable. That is `host-relation-neutrality` (W3-14) doing its job on
+; the ORDER half of the rule, the same way the hex filename does it on the equality half.
+
+(schema-put (prim int))
+(schema-put (prim str))
+(schema-put (prim bool))
+
+; the empty plane lists as nothing at all — not as a header, not as a count
+(names)
+(assert-code prev 0)
+
+; bind in deliberately DESCENDING order, so a listing that merely echoed insertion order
+; would come out backwards and the sort is visibly doing work
+(name-set "zeta" @1)
+(names)
+(name-set "beta" @2)
+(names)
+(name-set "alpha" @3)
+(names)
+
+; `Mu` sorts FIRST, ahead of every lowercase name, because the ordering is Lean's over
+; codepoints and is not case-folded. A host relation would have put it somewhere else —
+; and on a case-folding host it would have collided with a hypothetical `mu` besides.
+(name-set "Mu" @1)
+(names)
+
+; rebinding shows the new address in the same position: the key did not move, the value did
+(name-set "beta" @3)
+(names)
+
+; and the plane's count agrees with the listing's length
+(check)
+(assert-code prev 0)
+
+; the verb is GATED like every other reader: a store that fails verification-on-open gets
+; the verdict, not a listing it did not earn
+(place objects zzz 00)
+(names)
+(assert-code prev 1)
+(check)
+(assert-code prev 1)

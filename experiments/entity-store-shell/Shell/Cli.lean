@@ -11,6 +11,7 @@ The CLI (STORE-SHELL §5, v0 verb set exactly).
     estore [--store <dir>] refs <addr>
     estore [--store <dir>] name-set <name> <addr>
     estore [--store <dir>] name-get <name>
+    estore [--store <dir>] names
 
 The store root comes from argv (default `.`) because the IO whitelist forbids reading the
 environment. `<file>` holds the object's PRE-IMAGE BYTES — the same unit §5's v1 wire
@@ -49,7 +50,8 @@ def usageLines : List String :=
   , "  resolve <addr>                    the decoded carrier"
   , "  refs <addr>                       the references the object carries"
   , "  name-set <name> <addr>            bind a name"
-  , "  name-get <name>                   read a name" ]
+  , "  name-get <name>                   read a name"
+  , "  names                             every binding, decoded, in canonical order" ]
 
 private def fail (msg : String) : IO UInt32 := do
   IO.eprintln s!"estore: {msg}"
@@ -126,6 +128,10 @@ def runCli (argv : List String) : IO UInt32 := do
       | .error e => fail e
       | .ok addr => onStore r (.nameSet n addr)
   | "name-get" :: n :: [] => onStore r (.nameGet n)
+  -- W3-14: `names/` holds hex filenames, so `ls` no longer reads as a name list. This verb
+  -- is the inspectability the hex encoding costs, bought back — and it is a verb rather
+  -- than a line in `check` for the same reason `order` is: the transcript stays untouched.
+  | "names" :: [] => onStore r .names
   | v :: _ => do
       IO.eprintln s!"estore: unknown verb or wrong arity: {v}"
       for l in usageLines do IO.eprintln l

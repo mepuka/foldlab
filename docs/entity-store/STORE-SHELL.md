@@ -289,3 +289,82 @@ table's completeness — a permanent unchecked claim (F-34, W3-17), not a seat-o
 emitted order equals the model's insertion order reversed needs a store-aware assertion
 the script language does not have; adding one is a ruling, so script `19` pins what the
 current assertion set can pin and the residue is recorded in the shell README's *Owed*.
+
+**Addendum 2026-08-25 (W3-14 — the names-plane seat, Mac worktree).** The
+implementation-seat marker §4's layout block carries is discharged. F-39 is closed at the
+disk form: the model's `String` keys are authoritative and the filename has stopped being
+the key.
+
+*The disk form.* A name lives at `names/<lowercase hex of its UTF-8 bytes>` — the objects
+plane's existing discipline, reused on the plane that never had one. `applyEffect .setName`
+encodes; `readView`'s name branch decodes the filename back to the key. **The model side is
+unchanged, and that is the point**: `E2.NameMap` is still keyed by an exact Lean `String`,
+and the disk representation now injects that key space rather than approximating it. The
+encoder and the decoder are one pair in `Shell/Hex.lean` (`hexOfName` / `nameOfHex`), and
+the classifier `Shell.nameOfFileName` above them is a single function BOTH runners call —
+the same anti-drift discipline `addrOfFileBytes` is held to (W3-20), because a mirrored
+transcription of a reader's clause order is exactly the shape of a divergence the
+differential cannot catch. A `names/` entry whose filename is not the hex of an admissible
+name is a **stray**, in the existing vocabulary; the classifier has four clauses (lowercase
+hex, valid UTF-8, `validName` on the decoded string, and the filename being the spelling
+`hexOfName` would have produced), and script `25` places one entry per clause. That fourth
+clause is `hexVal`'s own reason — "accepting both would give one address two spellings" —
+restated for a name.
+
+*The cap, and what was deliberately NOT narrowed.* `validName` gains the 64-character
+bound. The number is MAX_PATH parity and nothing else: hex doubles the plane, so 64
+characters is a 128-character filename, exactly the objects plane's width, and without the
+cap `names/` would have become the store's worst case against Windows' legacy 260 (F-37,
+R-C §5.4(b)). The alphabet is otherwise untouched — **case is not narrowed**, because two
+case-differing names being two bindings is the ruled feature, not a hazard to legislate
+away. Option 1 (a lowercase-only alphabet) was rejected in the ruling for the reason this
+seat can now confirm from the fixtures: it would have left `trailing.`, `con` and `NUL`
+open and kept the filename as the key. Under hex those three stopped existing on disk
+without a blacklist, and a blacklist would have meant baking Windows filesystem policy into
+a cross-platform name alphabet.
+
+***§5's v0 verb list gains `names`*** — one `name "<name>" addr <hex>` line per binding,
+the name decoded, sorted by name. It is recorded here rather than by an edit to §5 for the
+same reason `order` was: **W3-14 is the ruling that adds it** ("a names listing verb
+(inspectability)"), and the verb list still changes only by ruling. It is the mitigation
+R-C §5.3 priced against option 2's one real cost — `ls names/` stopped being readable, and
+inspectability is the property the straw named as a reason for the whole
+directory-of-files design. Additive, like `order`: `check`'s transcript is byte-identical
+with or without it. The sort is Lean's `String` ordering over the model's own keys, applied
+by `StoreView.normalize` before any verb runs, so the disk's directory order — which has no
+definition at all — never reaches an observable. That is `host-relation-neutrality` holding
+on the ORDER half of the rule while the hex filename holds the EQUALITY half. The name is
+rendered through `renderStr`, as it is in every other observable that carries one, so the
+line stays unambiguous if the alphabet is ever widened — which is a thing option 2 makes
+possible and option 1 would have foreclosed.
+
+*Harness.* Twenty-six committed scripts, all green on both runners. Three are new. `24`
+is `r2-11-name-case-collision` committed **in the position where it used to diverge**: the
+wave-2 receipt has `(name-get "Widget")` answering `27d77d3b…a38f` on the model and
+`bf279c82…a572e` on the disk with both exiting 0, and the same steps now agree on both
+planes with `check` counting `names=2`. Its passing is the amendment record PROCEDURE §5
+asks for — a ratchet flip in the honest direction, an S1 silent-wrong-answer becoming a
+PASS. `25` is the hostile round-trip: `r2-15`'s edges (`trailing.`, `con`, `NUL`), a name
+that is itself 64 characters of lowercase hex, the cap admitted at 64 and refused at 65,
+and the five stray classes. `26` is the `names` verb's fixture. Physical confirmation on
+this APFS host, which is a case-folding filesystem: `name-set Widget` and `name-set widget`
+produce `names/576964676574` and `names/776964676574`, two files.
+
+*Three committed fixtures re-spelled, and why that is not a ratchet flip.* Scripts `21` and
+`22` place entries on the names plane by filename. Under the amended layout `alias`, `bad`
+and `..escape` are no longer filenames the layout admits, so each entry became a stray on
+its FILENAME before reaching the clause its comment says it exercises — `21`'s file-type
+discipline, `22`'s name-file-content test, `22`'s `validName` leading-dot refusal. All
+three scripts stayed green throughout (the differential compares the two planes, and both
+moved together), which is precisely why the loss would have been silent. The placements are
+now spelled `616c696173`, `626164` and `2e2e657363617065`; every violation CLASS is
+unchanged, and each leg reaches the clause it names again. Recorded here because a fixture
+that quietly stops testing what its comment claims is worse than one that fails.
+
+*Not closed by this seat, and named so the closure cannot over-claim.* **Name-file content
+canonicity.** `addrOfFileBytes` reads up to the first whitespace, so `names/<hex>` holding a
+digest followed by arbitrary junk still resolves cleanly (R-C §5.3(iii), receipted at
+`R2-boundary.md:479-490`). W3-14 ruled the filename, not the content; tightening the
+content is a separate ruling and it rides the family-3 residue. It is left visibly
+unchanged rather than silently fixed. The `.gitattributes` rider (W3-23) and the Windows
+leg are untouched by this seat.

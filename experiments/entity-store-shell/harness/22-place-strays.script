@@ -32,13 +32,17 @@
 (assert-code prev 1)
 
 ; a name file whose CONTENT is not an address: the name plane's stray class is about
-; content as well as filename
-(place names bad 6e6f74686578)
+; content as well as filename. Filename `626164` is the name `bad` under W3-14's disk
+; form — it must DECODE, or the entry is a stray on its filename and this leg stops
+; reaching the content test it exists for.
+(place names 626164 6e6f74686578)
 (check)
 (assert-code prev 1)
 
-; a name that could not have come from `name-set`: the leading dot `validName` refuses
-(place names ..escape 00)
+; a name that could not have come from `name-set`: the leading dot `validName` refuses.
+; `2e2e657363617065` is `..escape` — valid hex, valid UTF-8, and still not a name, which
+; is the clause under test. W3-14 moved the spelling, not the rule.
+(place names 2e2e657363617065 00)
 (check)
 (assert-code prev 1)
 

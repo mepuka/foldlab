@@ -40,7 +40,12 @@
 
 ; the same discipline on the names plane: an obligation record's or a name's IDENTITY is
 ; its filename, so a directory there could be COUNTED without ever being opened.
-(place-dir names alias)
+;
+; The filename is `616c696173`, which is the name `alias` under W3-14's disk form. It was
+; spelled `alias` until that ruling landed; a placement has to name a filename the layout
+; ADMITS, or the entry is a stray before the file-type test it is here to exercise ever
+; runs. Same leg, same violation class, re-spelled — not a ratchet flip.
+(place-dir names 616c696173)
 (check)
 (assert-code prev 1)
 
