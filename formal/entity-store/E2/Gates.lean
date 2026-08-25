@@ -9,6 +9,7 @@ import E2.Encode
 import E2.Canon
 import E2.Correspondence
 import E2.Obligations
+import E2.CanonIdem
 import E2.Model
 import E2.Decode
 import E2.Resolve
@@ -62,6 +63,51 @@ example :
       = .object (.cons "a" (.prim .int) false (.cons "b" (.prim .str) false .nil)) := by
   decide
 
+/-! W3-19/F-48 kernel spot-checks: the two carriers that used to break S1, now decided in
+    the kernel rather than argued. Both were fixed points of the OLD sort only by
+    accident — the first because the involution reversed it twice, the second because it
+    is a palindrome (F-40's shape). Under the flipped guard both are idempotent for the
+    reason the theorem gives. -/
+
+/-- F-12's original tie witness: the equal-key run that used to reverse. -/
+example :
+    E2.canonS (E2.canonS (.object (.cons "a" (.prim .int) false
+                                  (.cons "a" (.prim .str) false
+                                  (.cons "a" (.prim .bool) false .nil)))))
+      = E2.canonS (.object (.cons "a" (.prim .int) false
+                           (.cons "a" (.prim .str) false
+                           (.cons "a" (.prim .bool) false .nil)))) := by
+  decide
+
+/-- And, stability being the point, the run now comes out in INPUT order — under the old
+    guard this reversed to `bool, str, int`. -/
+example :
+    E2.canonS (.object (.cons "a" (.prim .int) false
+                       (.cons "a" (.prim .str) false
+                       (.cons "a" (.prim .bool) false .nil))))
+      = .object (.cons "a" (.prim .int) false
+                (.cons "a" (.prim .str) false
+                (.cons "a" (.prim .bool) false .nil))) := by
+  decide
+
+/-- F-40's shape: the palindromic duplicate-key run — three fields, two schemas. -/
+example :
+    E2.canonS (E2.canonS (.object (.cons "a" (.prim .int) false
+                                  (.cons "a" (.prim .str) false
+                                  (.cons "a" (.prim .int) false .nil)))))
+      = E2.canonS (.object (.cons "a" (.prim .int) false
+                           (.cons "a" (.prim .str) false
+                           (.cons "a" (.prim .int) false .nil)))) := by
+  decide
+
+/-- The value twin of the tie witness (`vobj`), per plane-inheritance. -/
+example :
+    E2.canonV (E2.canonV (.vobj (.cons "a" (.vint 1)
+                                (.cons "a" (.vint 2)
+                                (.cons "a" (.vint 3) .nil)))))
+      = .vobj (.cons "a" (.vint 1) (.cons "a" (.vint 2) (.cons "a" (.vint 3) .nil))) := by
+  decide
+
 #print axioms E2.M8_wf1
 #print axioms E2.M12_dedup
 #print axioms E2.M13_frame
@@ -87,3 +133,9 @@ example :
 /- W3-7 seat: M17 typed reachability, proved in `E2/TypedReachability.lean` against the
    statement pinned in `E2/Admission.lean`. No `H`-injectivity hypothesis. -/
 #print axioms E2.M17_typed_reachability
+
+/- W3-19 seat: S1 and its value twin, proved in `E2/CanonIdem.lean` against the
+   statements restored to UNCONDITIONAL form in `E2/Obligations.lean`. No `dupFreeS` /
+   `dupFreeV` hypothesis — the flipped comparison retired F-12's involution at the root. -/
+#print axioms E2.S1_canon_idempotent
+#print axioms E2.S1_canon_v_idempotent

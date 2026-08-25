@@ -147,7 +147,20 @@ def hashedB (H : Bytes → Address) (σ : StoreMap) : Bool :=
     to its own re-encoding. The re-encode-and-compare is what turns "decodes to `s`"
     into "IS `preimageS s`". Per W3-13 the well-formedness test precedes the canonicity
     byte-compare, because `ObligationCanonIdempotent` is conditional on `dupFreeS` and
-    the byte-compare's verdict is meaningless outside that hypothesis (F-40/F-41). -/
+    the byte-compare's verdict is meaningless outside that hypothesis (F-40/F-41).
+
+    W3-19/F-48 (2026-08-25) RETIRES THAT BASIS AND STRENGTHENS THE ORDER. S1 is now
+    unconditional, so the byte-compare's verdict is meaningful everywhere — but the
+    ordering matters MORE, not less. A stable sort makes EVERY duplicate-key carrier a
+    canonicity fixed point, not merely the palindromic ones F-40 found, so the
+    byte-compare no longer catches any of them. The `dupFreeS` conjunct of `wfsB` is now
+    the sole instrument that does, and `&&` short-circuits left to right: `wfsB` runs
+    first and rejects the whole duplicate-key family before canonicity is consulted.
+    This is exactly the precondition W3-19 sequenced the flip behind (merge af13824).
+    Reordering these conjuncts, or dropping `dupFreeS` from `wfsB` on the grounds that
+    the sort now "handles" duplicates, would re-open F-40 in its general form — and
+    would be a boundary-check weakening, which W3-16 permits only by ruled amendment
+    citing an F-number. -/
 def admittedB (b : Bytes) : Bool :=
   match b with
   | v :: k :: body =>

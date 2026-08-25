@@ -58,9 +58,18 @@ def ObligationEncodeValueInjective : Prop :=
     counterexample (scenario scout, probe3: a duplicate-key run reverses under
     `insertField`, making canon an involution there; STORE-MODEL §7 A-3 record).
     Idempotence is claimed only on duplicate-free schemas — exactly the §5 clause-4
-    admission `WFS` now enforces (A-3, implemented 2026-08-25). -/
+    admission `WFS` now enforces (A-3, implemented 2026-08-25).
+
+    RESTATED 2026-08-25 (W3-19, finding F-48) — the note above STAYS: that falsification
+    was real and is recorded, never erased (Q10 discipline). What changed is the equation
+    it falsified. F-48 located the involution in a single comparison, and W3-19 flipped
+    it: `insertField` is now a STABLE insertion sort, so `canonS` is idempotent on ALL
+    schemas, duplicate keys included. The `dupFreeS` hypothesis is therefore dropped and
+    S1 returns to unconditional form. Ruled to land only after the boundary
+    well-formedness check went live (merge af13824); `dupFreeS` keeps its independent
+    §5 clause-4 duty. -/
 def ObligationCanonIdempotent : Prop :=
-  ∀ s : SchemaCore, dupFreeS s = true → canonS (canonS s) = canonS s
+  ∀ s : SchemaCore, canonS (canonS s) = canonS s
 
 /-- S2 (half): canonical object fields are sorted by key. -/
 def ObligationCanonSorts : Prop :=
@@ -69,9 +78,19 @@ def ObligationCanonSorts : Prop :=
 /-- S1 value twin (Q11) — AMENDED 2026-08-25 with the schema half: unconditional form
     falsified the same way on duplicate-key `vobj` runs; conditional on duplicate-free
     values. (A JS object cannot carry duplicate keys, so the excluded values have no
-    host counterpart — the boundary rejects them; STORE-MODEL §7 A-3 record.) -/
+    host counterpart — the boundary rejects them; STORE-MODEL §7 A-3 record.)
+
+    RESTATED 2026-08-25 (W3-19, finding F-48), in step with the schema half — the note
+    above STAYS, including its parenthetical, which W3-9 had already refuted by
+    model-internal construction (F-28: duplicate-key values are reachable via `.record`
+    and `.lit`, so this obligation was vacuous exactly where F-12 bit). `insertVField`
+    carries the identical tie mechanism and takes the identical flip
+    (plane-inheritance, CONTEXT.md), so `canonV` is a stable, idempotent sort on ALL
+    values and the `dupFreeV` hypothesis is dropped. The restatement is not merely a
+    weakening removal here: it makes the twin say something on the carriers F-28 showed
+    were reachable all along. -/
 def ObligationCanonVIdempotent : Prop :=
-  ∀ v : Value, dupFreeV v = true → canonV (canonV v) = canonV v
+  ∀ v : Value, canonV (canonV v) = canonV v
 
 /-- A2 / Direction B: conditional on digest injectivity, equal addresses give equal
     canonical forms. The hypothesis is a premise, never an axiom (E1 T12 shape). -/
