@@ -34,9 +34,11 @@ move, not copy. Minted now: the wave-3 terms and rules below.
   resolution, and acyclicity of the reference graph. Decision procedure:
   `admissibleReport : StoreMap → Report`, per-clause verdicts (what the shell's named
   rejections and `check` consume).
-- **Obligations:** `ObligationTopoSound`/`ObligationTopoComplete` (the acyclicity
-  clause's instrument); `ObligationM19_transport : Admissible σ → Reachable … σ` —
-  stated, unproved; M19's restated home (W3-22).
+- **Obligations:** `ObligationTopoComplete` and `ObligationAdmissibleReportDecides` —
+  PROVED (C-3 adjudication 2026-08-25; the report's verdict is provably the judgment);
+  `ObligationTopoSound` — stated, refuted as pinned (F-55; restatement is a grill item);
+  `ObligationM19_transport : Admissible σ → … → Reachable … σ` — stated, unproved;
+  M19's restated home (W3-22).
 - **Avoid:** never say a scan "establishes reachability" — it establishes `Admissible`
   (F-33's lesson); never treat `Admissible` as containing `Conforms` while M18 is an
   obligation record; never bypass `admissibleReport` to call its internal predicates

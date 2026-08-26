@@ -4,7 +4,7 @@
 
 ## Model
 
-Gate constant count: 1707
+Gate constant count: 1769
 
 | theorem | axioms |
 | --- | --- |
@@ -28,6 +28,8 @@ Gate constant count: 1707
 | E2.M12E_dedup | propext, Classical.choice, Quot.sound |
 | E2.wfsB_iff | propext |
 | E2.M17_typed_reachability | propext, Classical.choice, Quot.sound |
+| E2.admissibleReportDecides | propext, Classical.choice, Quot.sound |
+| E2.topoComplete | propext, Classical.choice, Quot.sound |
 | E2.S1_canon_idempotent | propext, Classical.choice, Quot.sound |
 | E2.S1_canon_v_idempotent | propext, Classical.choice, Quot.sound |
 | E2.M10_rank | propext, Classical.choice, Quot.sound |
@@ -44,7 +46,7 @@ Gate constant count: 1707
 ### Shell gate
 
 ```text
-shell gates ok (1414 constants over 15 modules) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness, Shell.Vectors, Main, EncodeMain, HarnessMain, VectorsMain]; G-S4 no shadowing of [E2, Sha3, Sha3.Impl, Sha3.Spec]; G-S5 no clock reading off [IO.FS.Metadata.accessed, IO.FS.Metadata.modified].
+shell gates ok (1418 constants over 15 modules) — G-S1 opaque/unsafe clean; G-S2 IO confined to [Shell.Store, Shell.Cli, Shell.Encode, Shell.Harness, Shell.Vectors, Main, EncodeMain, HarnessMain, VectorsMain]; G-S4 no shadowing of [E2, Sha3, Sha3.Impl, Sha3.Spec]; G-S5 no clock reading off [IO.FS.Metadata.accessed, IO.FS.Metadata.modified].
 ```
 
 ### IO whitelist

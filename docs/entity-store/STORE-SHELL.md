@@ -285,7 +285,11 @@ clause fires *before* the payload-domain clause.
 *Not closed by this seat.* `Conforms` (the M18 seat, SH6) — unchanged. The `WFS` clause
 table's completeness — a permanent unchecked claim (F-34, W3-17), not a seat-owed gap.
 `ObligationM19_transport`, `ObligationTopoSound`, `ObligationTopoComplete`,
-`ObligationAdmissibleReportDecides` — all still stated and unproved. Asserting that the
+`ObligationAdmissibleReportDecides` — all still stated and unproved. *(Addendum
+2026-08-25, C-3 adjudication: `TopoComplete` and `AdmissibleReportDecides` are now
+PROVED — `E2/AdmissionDecides.lean`, Gates block; M19 stays stated; `TopoSound` is
+stated and REFUTED AS PINNED by a dangling-target edge — F-55, restatement is a grill
+item.)* Asserting that the
 emitted order equals the model's insertion order reversed needs a store-aware assertion
 the script language does not have; adding one is a ruling, so script `19` pins what the
 current assertion set can pin and the residue is recorded in the shell README's *Owed*.
