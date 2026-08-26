@@ -162,6 +162,21 @@ acyclic by Kahn's algorithm (WF3). What is not decidable today is exactly `Confo
 which is what the obligation records carry, and the scan cross-checks that every stored
 entity has one.
 
+**One decision surface (C-3, ruling W3-3).** The *verdict* is `E2.admissibleReport`'s —
+one call, on the view's own `StoreMap`, and `E2.admissibleReportDecides` is the theorem
+that its `clean` field **is** `E2.Admissible`. The per-object passes listed above are the
+*diagnostic* layer: they produce the violation lines, in the cascade order W3-13 ruled,
+and they decide nothing. Until this seat the shell decided all six `E2.Admissible`
+clauses independently and `E2.admissibleReport` had no callers anywhere in either
+package, so a theorem about the report would have been a theorem about the surface
+nothing ran. `Shell.CheckReport.ok_iff` is the shell-side statement of what a clean
+`check` now means, and it is a theorem only because the verdict comes from the report.
+
+The verdict's other half is `planesClean` — strays, non-regular entries, and the SH6
+obligation set. `E2.Admissible` is a judgment about a `StoreMap`, and a directory carries
+entries a `StoreMap` cannot represent; folding them into the model's clause list would be
+the same mistake as folding `Conforms` into `Admissible`.
+
 **Anti-claim (F-33's lesson).** The scan establishes `E2.Admissible`, **never**
 `Reachable`. The bridge is `E2.ObligationM19_transport` — stated, unproved, and carrying
 a conformance premise the scan does not supply. Kahn's pass is the *computational* half
@@ -586,9 +601,11 @@ Mirrors STORE-SHELL §7, with what this package adds.
   no bisimulation, refinement, or equivalence claim is made or implied. Rungs 2 and 3 are
   untouched.
 - **No claim that a clean `check` implies `Reachable`** (SH5 as narrowed by W3-12). The
-  scan decides the `E2.Admissible` clauses; `Admissible → Reachable` is
-  `E2.ObligationM19_transport`, stated and unproved, and it carries a conformance premise
-  the scan does not supply. Kahn's pass computes the order M19 asserts exists; it does not
+  scan decides the `E2.Admissible` clauses — literally, since C-3: the verdict is
+  `E2.admissibleReport`'s and `E2.admissibleReportDecides` says that report is the
+  judgment. That sharpens the anti-claim rather than softening it. `Admissible →
+  Reachable` is `E2.ObligationM19_transport`, stated and unproved, and it carries a
+  conformance premise the scan does not supply. Kahn's pass computes the order M19 asserts exists; it does not
   prove the implication. Nor is the `WFS` clause table claimed complete: no finite
   syntactic clause reaches the uninhabited generalisation (F-34, W3-17), and that marker
   is permanent rather than seat-owed.

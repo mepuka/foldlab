@@ -15,6 +15,7 @@ import E2.Decode
 import E2.Resolve
 import E2.Graph
 import E2.Admission
+import E2.AdmissionDecides
 import E2.Bridge
 import E2.Faithful
 import E2.Closure
@@ -137,6 +138,15 @@ example :
 /- W3-7 seat: M17 typed reachability, proved in `E2/TypedReachability.lean` against the
    statement pinned in `E2/Admission.lean`. No `H`-injectivity hypothesis. -/
 #print axioms E2.M17_typed_reachability
+
+/- C-3 seat: the decidability bridge W3-3 pinned and left unproved. `admissibleReport` now
+   MEANS `Admissible`, which is what makes a boundary that calls it a decider of the
+   judgment rather than a second opinion on it. `topoComplete` is its acyclicity leg —
+   `ObligationTopoComplete` (`E2/Graph.lean`), Kahn's algorithm in both directions —
+   and W3-12 landed the two in one package for exactly that reason. Both proved in
+   `E2/AdmissionDecides.lean`; no hypothesis on `H` in either. -/
+#print axioms E2.admissibleReportDecides
+#print axioms E2.topoComplete
 
 /- W3-19 seat: S1 and its value twin, proved in `E2/CanonIdem.lean` against the
    statements restored to UNCONDITIONAL form in `E2/Obligations.lean`. No `dupFreeS` /

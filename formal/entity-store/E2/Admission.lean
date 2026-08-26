@@ -234,9 +234,14 @@ def admissibleReport (H : Bytes → Address) (σ : StoreMap) : AdmissionReport w
   schemaTyped := schemaTypedB σ
   acyclic := (topoOrder σ).isSome
 
-/-- The decidability bridge: the report decides the judgment. STATED, UNPROVED (W3-3
-    permits this). Its acyclicity leg is exactly `ObligationTopoComplete`, which is why
-    W3-12 lands Kahn's and this judgment in the same package. -/
+/-- The decidability bridge: the report decides the judgment. Its acyclicity leg is
+    exactly `ObligationTopoComplete`, which is why W3-12 lands Kahn's and this judgment in
+    the same package.
+
+    PROVED (C-3 seat, 2026-08-25): `E2.admissibleReportDecides`, `E2/AdmissionDecides.lean`
+    — together with `E2.topoComplete`, its acyclicity leg. The statement below is
+    untouched; what changed is that `admissibleReport` now MEANS `Admissible`, and the
+    shell's `checkReport` takes its verdict from it (C-3's other half). -/
 def ObligationAdmissibleReportDecides : Prop :=
   ∀ (H : Bytes → Address) (σ : StoreMap),
     (admissibleReport H σ).clean = true ↔ Admissible H σ

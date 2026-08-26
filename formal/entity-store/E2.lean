@@ -9,6 +9,7 @@ import E2.Decode
 import E2.Resolve
 import E2.Graph
 import E2.Admission
+import E2.AdmissionDecides
 import E2.Bridge
 import E2.Faithful
 import E2.Closure

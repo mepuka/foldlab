@@ -102,9 +102,20 @@ def kahnLoop (σ : StoreMap) : Nat → List Address → Option (List Address)
 def topoOrder (σ : StoreMap) : Option (List Address) :=
   kahnLoop σ (Keys σ).length (Keys σ)
 
-/-! ## The two obligations. STATED, UNPROVED — the content is the standard finite-DAG
-    root-existence argument, which is also the only piece of M19's proof with real
-    content, and W3-3 lands them together for exactly that reason. -/
+/-! ## The two obligations. The content is the standard finite-DAG root-existence
+    argument, which is also the only piece of M19's proof with real content, and W3-3
+    lands them together for exactly that reason.
+
+    STATUS (C-3 seat, 2026-08-25). `ObligationTopoComplete` is PROVED — `E2.topoComplete`
+    in `E2/AdmissionDecides.lean`, both directions — because it is the acyclicity leg of
+    `ObligationAdmissibleReportDecides` and that seat could not close without it.
+    `ObligationTopoSound` remains unproved, and the seat REPORTED it as refutable as
+    pinned: it quantifies over every `Edge`, and `Edge` does not require its target to be
+    bound, so a dangling reference is an edge whose target has no position in the emitted
+    order. The note at the foot of `E2/AdmissionDecides.lean` carries the one-object
+    witness and is explicit that it was checked by compiled evaluation rather than landed
+    as a theorem. Restating the pin is a ruling, not a seat's business — the two
+    statements below are untouched. -/
 
 /-- The emitted order respects every edge: a referenced object precedes its referrer,
     so replaying the order is a legal insertion sequence. -/
