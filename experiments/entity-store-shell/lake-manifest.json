@@ -13,7 +13,7 @@
    "name": "«entity-store»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "../../formal/entity-store",
+   "dir": "../entity-store-model",
    "configFile": "lakefile.toml"}],
  "name": "«entity-store-shell»",
  "lakeDir": ".lake",

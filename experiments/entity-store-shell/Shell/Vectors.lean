@@ -155,7 +155,7 @@ def rejectionVectors : List RejectionVector :=
   ]
 
 /-- The admission-clause census, transcribed from `E2.schemaAdmissionClause` and
-    `E2.valueAdmissionClause` in `formal/entity-store/E2/Admission.lean`. It is a COVERAGE
+    `E2.valueAdmissionClause` in `experiments/entity-store-model/E2/Admission.lean`. It is a COVERAGE
     ASSERTION, not a vector row: the emitter fails unless the clauses its calls return
     cover this list exactly, so a clause added to the core without a rejection carrier
     breaks the emitter rather than passing unnoticed. -/
@@ -257,7 +257,7 @@ private def positiveHeader (vs : List GoldenVector) : List String :=
   , ";"
   , "; Golden vectors, table 1 of the CV-1 conformance bundle (docs/entity-store/RULINGS.md"
   , "; entry CV-1; docs/entity-store/CONTEXT.md entry \"Conformance bundle\"). POSITIVE"
-  , "; vectors: one ADMISSIBLE carrier per encoder arm of formal/entity-store/E2/Encode.lean."
+  , "; vectors: one ADMISSIBLE carrier per encoder arm of experiments/entity-store-model/E2/Encode.lean."
   , ";"
   , "; Every number below is the proven functions' own output, called directly:"
   , ";"

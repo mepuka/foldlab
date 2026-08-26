@@ -133,9 +133,10 @@ instrument's output entering gated work.
 Hand-maintained proved-lists drift. The ledger is therefore extracted, not written,
 and it covers **both sides**:
 
-- **Model side** — from the `formal/entity-store` build log: the gate line (constant
-  count) and every `#print axioms` report in the central `Gates.lean` block, parsed
-  into theorem → axiom-set rows.
+- **Model side** — from the model package's build log (`experiments/entity-store-model`
+  since ruling CV-3, 2026-08-26; formerly `formal/entity-store`): the gate line
+  (constant count) and every `#print axioms` report in the central `Gates.lean` block,
+  parsed into theorem → axiom-set rows.
 - **Live-build side** — from the shell build log and harness run: the G-S1…G-S4 gate
   lines, the enumerated IO whitelist, and the per-script harness results.
 

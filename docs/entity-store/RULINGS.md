@@ -176,6 +176,20 @@ needs only the already-whitelisted `pathExists`: the harness exits 2 on a non-em
 workdir. Evidence: C-2's landing (`2ae212c`…`250b895`), R-G C-1/C-2, the F-42 seat's
 hand-verification transcripts.
 
+## CV-3 — the entity store retires to experimental grade (2026-08-26, operator, in-session)
+
+`formal/entity-store` moves to **`experiments/entity-store-model`** — a declared
+grade transformation, not a loss of anything kernel-checked. What changes is the claim
+posture: the **machine algebra** (MACHINE-ALGEBRA, staged) becomes the formal lane's
+object once grilled, and the entity store is re-scoped as **Machine(K)'s experimental
+dogfooding instance** (CV-1's frame made directory-literal). Unchanged: every proof,
+gate, axiom report, and LEDGER row — the extraction, the harness, the vectors, and
+`mise run check` all follow the new home mechanically; `formal/fips202` stays promoted
+(the digest's grade is untouched). Historical documents keep their `formal/entity-store`
+references as history; only live surfaces (lakefiles, mise, the extractor, generated
+banners) moved. Machine-algebra slices land in `formal/` only after the draft grills
+(C4) — the freed lane is not pre-occupied.
+
 ## R-1 — the Entity Store context ratified (2026-08-25, operator, in-session)
 
 `CONTEXT.md` ratified as recommended, discharging R-1 and completing W3-6 step 2: the

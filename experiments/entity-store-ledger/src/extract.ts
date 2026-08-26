@@ -35,9 +35,9 @@ export const extractLedger = (progress: Progress = quiet): string => {
 }
 
 export const verifyLeanBuilds = (progress: Progress = quiet): void => {
-  progress("building formal/entity-store with ~/.elan/bin/lake build")
+  progress("building experiments/entity-store-model with ~/.elan/bin/lake build")
   runLake(["build"], modelDirectory)
-  progress("formal/entity-store build passed")
+  progress("experiments/entity-store-model build passed")
   progress("building experiments/entity-store-shell with ~/.elan/bin/lake build")
   runLake(["build"], shellDirectory)
   progress("experiments/entity-store-shell build passed")

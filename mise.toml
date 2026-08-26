@@ -33,7 +33,7 @@ run = [
 
 [tasks."check:entity-store"]
 description = "Build the E2 model with its opaque/unsafe gate and axiom reports"
-dir = "{{config_root}}/formal/entity-store"
+dir = "{{config_root}}/experiments/entity-store-model"
 run = "lake --wfail build"
 
 [tasks."check:ledger"]

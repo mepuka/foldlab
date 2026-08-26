@@ -324,6 +324,10 @@ kinds exhaust the design — kinds are an open enumeration behind the tag byte.
 
 ## 9. Mapping to the existing scaffold (`formal/entity-store/`)
 
+**Addendum 2026-08-26 (CV-3):** the scaffold's home is now
+`experiments/entity-store-model/` — a declared grade transformation (RULINGS CV-3); the
+paths below stand as the historical record of where the fragments landed.
+
 Already implemented and building: `SchemaCore`/`Value`/`Check` carriers; `encSchema`/
 `encValue` (framed `ser`); `canonS` with the R-10 field sort; `preimageS`/`preimageE`/
 `addressS`; **proved**: M5 for schemas (`directionA`), M7's pre-image half

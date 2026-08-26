@@ -137,6 +137,6 @@ harness: 26 scripts, all model/disk observables identical
 
 | working directory | command |
 | --- | --- |
-| `formal/entity-store` | `~/.elan/bin/lake env lean E2/Gates.lean` |
+| `experiments/entity-store-model` | `~/.elan/bin/lake env lean E2/Gates.lean` |
 | `experiments/entity-store-shell` | `~/.elan/bin/lake env lean Shell/Gate.lean` |
 | `experiments/entity-store-shell` | `~/.elan/bin/lake exe harness harness <tmp-workdir>` |

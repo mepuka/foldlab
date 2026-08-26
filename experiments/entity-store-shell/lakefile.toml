@@ -6,7 +6,7 @@ defaultTargets = [
 
 [[require]]
 name = "entity-store"
-path = "../../formal/entity-store"
+path = "../entity-store-model"
 
 [[require]]
 name = "fips202"

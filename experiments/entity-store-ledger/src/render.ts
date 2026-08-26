@@ -68,7 +68,7 @@ export const renderLedger = ({ model, shell, harness }: LedgerReports): string =
     "",
     "| working directory | command |",
     "| --- | --- |",
-    "| `formal/entity-store` | `~/.elan/bin/lake env lean E2/Gates.lean` |",
+    "| `experiments/entity-store-model` | `~/.elan/bin/lake env lean E2/Gates.lean` |",
     "| `experiments/entity-store-shell` | `~/.elan/bin/lake env lean Shell/Gate.lean` |",
     "| `experiments/entity-store-shell` | `~/.elan/bin/lake exe harness harness <tmp-workdir>` |"
   )
