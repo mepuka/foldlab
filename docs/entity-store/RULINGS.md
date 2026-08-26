@@ -190,6 +190,18 @@ references as history; only live surfaces (lakefiles, mise, the extractor, gener
 banners) moved. Machine-algebra slices land in `formal/` only after the draft grills
 (C4) — the freed lane is not pre-occupied.
 
+## CV-4 — the machine library home (2026-08-26, operator, in-session)
+
+Top-level **`library/`** is minted as the home for distributable Lean 4 libraries;
+`library/machine` is scaffolded (pinned toolchain, Lake project, doc-only root — no
+definition enters before its algebra slice grills, C4). **MACHINE-ALGEBRA moves from
+`.staging` to `library/machine/MACHINE-ALGEBRA.md`**, committed pre-grade in the
+STORE-MODEL precedent. Three standing references enter AGENTS.md: Functional
+Programming in Lean (https://lean-lang.org/functional_programming_in_lean/) as the
+direct library-craft reference; the experimental trees as the house pattern reference
+(reuse before re-deriving — the dogfood is the worked instance); the algebra draft as
+the library's design basis. `mise run check` gains the `check:machine` leg.
+
 ## R-1 — the Entity Store context ratified (2026-08-25, operator, in-session)
 
 `CONTEXT.md` ratified as recommended, discharging R-1 and completing W3-6 step 2: the

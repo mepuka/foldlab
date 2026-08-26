@@ -1,0 +1,5 @@
+name = "machine"
+defaultTargets = ["Machine"]
+
+[[lean_lib]]
+name = "Machine"

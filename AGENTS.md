@@ -22,6 +22,7 @@ from reading everything.
 | [DEVELOPMENT-INVARIANTS.md](docs/DEVELOPMENT-INVARIANTS.md) | Code invariants I-001–I-005 | Writing formal-core code |
 | [.reference/](.reference/) | Evidence only: source lock and receipts, catalog, study clones (gitignored), dumps | Resolving or citing sources |
 | `formal/` | Formal verification artifacts (claim-gated) | — |
+| [`library/`](library/machine/README.md) | Distributable Lean 4 libraries (claim-gated; the machine lives here) | Building machine-algebra slices |
 | `experiments/` | Experimental artifacts | — |
 | `.staging/` | Pre-grade staged material (gitignored except README) | — |
 | [`annex/coq/`](annex/coq/README.md) | Coq/OCaml toolchain annex: prior-art technique only, never an estate artifact | Reading or running executable Coq prior art |
@@ -107,6 +108,14 @@ gates carry the trust.
   the correspondence is re-recorded.
 - **Lake layout.** One Lake project per formal effort; no Mathlib by default;
   `formal/lib/` only when two projects share code.
+- **Library craft.** `library/` holds distributable Lean 4 libraries built to
+  ecosystem practice. The direct style reference is [Functional Programming in
+  Lean](https://lean-lang.org/functional_programming_in_lean/). The experimental
+  trees (`experiments/entity-store-*`) are the house pattern reference — reuse
+  their gates, obligation ledgers, framed encodings, and decidable-admission
+  idioms rather than re-deriving them. The machine library's design basis is
+  [MACHINE-ALGEBRA](library/machine/MACHINE-ALGEBRA.md) (pre-grade until
+  grilled; ruling CV-4).
 - **Licensing.** Apache-2.0 for code; CC BY 4.0 for documents.
 
 ## Skill routing

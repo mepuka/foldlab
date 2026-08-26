@@ -36,6 +36,11 @@ description = "Build the E2 model with its opaque/unsafe gate and axiom reports"
 dir = "{{config_root}}/experiments/entity-store-model"
 run = "lake --wfail build"
 
+[tasks."check:machine"]
+description = "Build the machine library under --wfail"
+dir = "{{config_root}}/library/machine"
+run = "lake --wfail build"
+
 [tasks."check:ledger"]
 description = "Both packages green, harness green, committed LEDGER.md byte-equal to a fresh extraction"
 dir = "{{config_root}}/experiments/entity-store-ledger"
@@ -51,5 +56,6 @@ run = [
   "git diff --exit-code",
   "mise run check:fips202",
   "mise run check:entity-store",
+  "mise run check:machine",
   "mise run check:ledger",
 ]
