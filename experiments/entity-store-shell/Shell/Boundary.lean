@@ -2,12 +2,21 @@
 The PUT boundary (STORE-SHELL §5) and the verification-on-open scan (§4/SH5), as pure
 functions.
 
-Layer-2 discipline: every line below is a call into the gated core (`stripPre`,
-`decodeSchema`, `decodeValue`, `decAddr`, `preimageS`, `preimageE`, `canonS`, `canonV`,
-`refsS`, `refsV`, `resolveSchema`, `StoreMap.find`) or a composition of such calls with
-`Shell.H`. No pure logic is re-implemented here; in particular canonicity is decided by
-re-running the core's own `preimageS`/`preimageE` and byte-comparing, never by an
-independent notion of "canonical".
+Layer-2 discipline: every line below is a call into the gated core (`admissibleReport`,
+`schemaAdmissionClause`, `valueAdmissionClause`, `stripPre`, `decodeSchema`,
+`decodeValue`, `decAddr`, `preimageS`, `preimageE`, `canonS`, `canonV`, `refsS`, `refsV`,
+`resolveSchema`, `StoreMap.find`) or a composition of such calls with `Shell.H`. No pure
+logic is re-implemented here; in particular canonicity is decided by re-running the core's
+own `preimageS`/`preimageE` and byte-comparing, never by an independent notion of
+"canonical".
+
+THE VERDICT IS THE MODEL'S, at both levels (C-3, ruling W3-3). A carrier's admission is
+`E2.schemaAdmissionClause`/`E2.valueAdmissionClause`; a whole store's is
+`E2.admissibleReport`, called ONCE in `checkReport`. The per-object passes below it are
+the DIAGNOSTIC layer — they say which address failed which clause, in the cascade order
+W3-13 ruled, and they decide nothing. Until this seat the shell decided all six
+`E2.Admissible` clauses itself and `E2.admissibleReport` had no callers anywhere, so the
+two surfaces agreed only by inspection.
 
 Both the in-process model and the disk store run THIS code. The differential harness
 therefore compares plumbing, not semantics — which is the point of rung 0.
@@ -207,7 +216,10 @@ acyclic by Kahn's (WF3). What is NOT decidable today — `Conforms` — is exact
 obligation records carry, and the scan cross-checks that every stored entity has one.
 
 ANTI-CLAIM (F-33's lesson, and the CONTEXT avoid-list). The scan establishes
-`E2.Admissible`, NEVER `Reachable`. The bridge between them is
+`E2.Admissible`, NEVER `Reachable`. It establishes it in the literal sense now that
+`E2.admissibleReportDecides` is proved and `checkReport` takes its verdict from the
+report — which sharpens the anti-claim rather than softening it: what a clean `check`
+means is exactly `E2.Admissible`, and the bridge to `Reachable` is
 `E2.ObligationM19_transport`, which is stated and unproved and which additionally carries
 a conformance premise this scan does not supply. Kahn's pass is the COMPUTATIONAL half of
 that bridge — it produces the insertion order M19 asserts exists; the theorem half is a
@@ -329,7 +341,9 @@ def scanObject (σ : StoreMap) (a : Address) (b : Bytes) : List Violation :=
 graph has a cycle, otherwise the topological order sinks-first — which is also a legal
 insertion sequence, which is why the same pass triples as the acyclicity decision, the
 cycle witness, and M19's reconstruction order. `Admissible.acyclic` is the clause it
-decides; `ObligationTopoComplete` is the theorem that says so, stated and unproved. -/
+decides and `E2.topoComplete` is the theorem that says so — PROVED, both directions
+(`E2/AdmissionDecides.lean`), which is what turns the `acyclic` field of the report from
+a computation into the clause. -/
 
 /-- The addresses Kahn's algorithm could not emit — empty exactly when `E2.topoOrder`
     succeeds, and otherwise the cyclic core together with everything that depends on it.
@@ -355,19 +369,49 @@ def cycleNodes (σ : StoreMap) : List Address :=
         | (_, rest) => go fuel rest
   go (Keys σ).length (Keys σ)
 
-/-- The verdict of opening a directory as a store. -/
+/-- The verdict of opening a directory as a store, and the diagnosis that accompanies it.
+
+    THE TWO ARE DIFFERENT THINGS and this structure keeps them apart (C-3). `admissible`
+    is the MODEL's judgment, taken whole from `E2.admissibleReport`; `planesClean` covers
+    the planes `E2.Admissible` does not speak about; `violations` is the operator's
+    reading of what went wrong and decides nothing. -/
 structure CheckReport where
   obligations : List (Address × Address)
+  /-- DIAGNOSIS, not verdict: one line per fault, in the order §4 lays the planes out.
+      Nothing reads `isEmpty` off this list to decide anything — see `CheckReport.ok`. -/
   violations : List Violation
+  /-- THE VERDICT's `Admissible` half: `(E2.admissibleReport H σ).clean`, one call into
+      the model's single decision surface (W3-3). `E2.admissibleReportDecides` is the
+      theorem that this `Bool` IS `E2.Admissible H σ`, which is what makes the scan a
+      DECIDER of the judgment rather than a second opinion that happens to agree. -/
+  admissible : Bool
+  /-- THE VERDICT's other half: the planes outside `E2.Admissible` — file shape (strays,
+      non-regular entries, F-42/W3-15) and the SH6 obligation set. `Admissible` is a
+      judgment about a `StoreMap`; a directory carries entries a `StoreMap` cannot
+      represent, and refusing to fold them into the model's clause list is the same
+      discipline that keeps `Conforms` out of `Admissible`. -/
+  planesClean : Bool
   objectCount : Nat
   schemaCount : Nat
   entityCount : Nat
   nameCount : Nat
 
-/-- The full WF1+WF2 scan. Pure: the disk side supplies the view, this decides. -/
+/-- The full scan. Pure: the disk side supplies the view, this decides.
+
+    ONE DECISION SURFACE (C-3, W3-3). The verdict is `E2.admissibleReport`'s, called once
+    on the view's own `StoreMap`; the per-object passes below it produce VIOLATION LINES
+    and nothing else. Before this the shell decided all six `Admissible` clauses itself
+    and `admissibleReport` had no callers at all, so the theorem that would have made
+    either of them mean `Admissible` would have been a statement about the wrong one.
+
+    The two layers are not redundant, they are different jobs. A `Bool` per clause is what
+    a proof consumes; a `Violation` list is what an operator reads, and it carries what
+    the report's fields deliberately cannot — the ADDRESS at fault, the missing reference,
+    the per-node cycle witness, and the cascade order W3-13 ruled. -/
 def checkReport (view₀ : StoreView) : CheckReport :=
   let view := view₀.normalize
   let σ := view.toMap
+  let report := E2.admissibleReport H σ
   let perObject := view.objects.map (fun p => (p.fst, scanObject σ p.fst p.snd))
   let faulted := (perObject.filter (fun p => !p.snd.isEmpty)).map Prod.fst
   let isFaulted := fun (a : Address) => faulted.contains a
@@ -386,38 +430,74 @@ def checkReport (view₀ : StoreView) : CheckReport :=
     (fun e => Violation.obligationMissing e.fst)
   let orphan := (view.obligations.filter (fun o =>
       !entityAddrs.contains o && !isFaulted o)).map Violation.obligationOrphan
-  -- WF3 (W3-12): the whole-graph clause, decided by the core's Kahn's pass. Read off
-  -- STORED BYTES via `E2.refsAt`, so it is a statement about the candidate directory and
-  -- not about any carrier the scan happens to be holding.
-  let cycles := (if (topoOrder σ).isSome then [] else cycleNodes σ).map Violation.cycle
+  -- WF3 (W3-12): the whole-graph clause. The GUARD is the model's own `acyclic` field —
+  -- definitionally `(topoOrder σ).isSome`, but read off the report so the witness list
+  -- cannot be produced against a different answer than the verdict was taken from.
+  -- `cycleNodes` then supplies the per-node witness the report's `Bool` cannot carry.
+  let cycles := (if report.acyclic then [] else cycleNodes σ).map Violation.cycle
+  -- File-shape observations first, in the order the planes are laid out: what the scan
+  -- could not even open comes before what it opened and found wrong. Then the per-object
+  -- faults, then the whole-graph fault, then the obligation plane, then names. Each list
+  -- is sorted by name or address in `normalize`, so the whole block is deterministic.
+  let strayObjects := view.strayObjectFiles.map Violation.strayObject
+  let notRegular := view.notRegularFiles.map Violation.notARegularFile
+  let strayNames := view.strayNameFiles.map Violation.strayName
   { obligations := entities
     violations :=
-      -- File-shape observations first, in the order the planes are laid out: what the
-      -- scan could not even open comes before what it opened and found wrong. Then the
-      -- per-object faults, then the whole-graph fault, then the obligation plane, then
-      -- names. Each list is sorted by name or address in `normalize`, so the whole block
-      -- is deterministic.
-      view.strayObjectFiles.map Violation.strayObject
-        ++ view.notRegularFiles.map Violation.notARegularFile
+      strayObjects ++ notRegular
         ++ perObject.flatMap Prod.snd
         ++ cycles
         ++ missing ++ orphan
-        ++ view.strayNameFiles.map Violation.strayName
+        ++ strayNames
+    admissible := report.clean
+    planesClean :=
+      strayObjects.isEmpty && notRegular.isEmpty && missing.isEmpty && orphan.isEmpty
+        && strayNames.isEmpty
     objectCount := view.objects.length
     schemaCount := schemas.length
     entityCount := entities.length
     nameCount := view.names.length }
 
+/-- The verdict, and the ONLY thing any caller may gate on: the model's judgment on the
+    store map, and the planes that judgment does not cover. `E2.admissibleReportDecides`
+    reads the first conjunct as `E2.Admissible H view.toMap` — which is exactly what SH5
+    as narrowed claims verification-on-open establishes, and no more (never `Reachable`:
+    that bridge is `E2.ObligationM19_transport`, unproved, and it carries a conformance
+    premise this scan does not supply). -/
+def CheckReport.ok (r : CheckReport) : Bool := r.admissible && r.planesClean
+
+/-- WHAT A CLEAN `check` MEANS, checked rather than asserted. This is the one theorem in
+    the shell that is about the shell's own verdict, and it exists because the sentence it
+    proves used to be a comment: "the scan establishes `Admissible`". It is a THEOREM only
+    because `checkReport` takes the verdict from `E2.admissibleReport` — restore the
+    independent six-clause scan and this statement stops being provable, which is the
+    property C-3 was opened to buy.
+
+    Read the two conjuncts as SH5 as narrowed reads them: the model's judgment on the
+    store map, and the directory-shape planes `E2.Admissible` has no vocabulary for. -/
+theorem CheckReport.ok_iff (view : StoreView) :
+    (checkReport view).ok = true ↔
+      (E2.Admissible H view.normalize.toMap ∧ (checkReport view).planesClean = true) := by
+  have hd := E2.admissibleReportDecides H view.normalize.toMap
+  constructor
+  · intro h
+    rw [CheckReport.ok, Bool.and_eq_true] at h
+    exact ⟨hd.1 h.1, h.2⟩
+  · intro h
+    rw [CheckReport.ok, Bool.and_eq_true]
+    exact ⟨hd.2 h.1, h.2⟩
+
 /-- `check` output: the accepted `Conforms` obligations (SH6), then one line per
-    violation, then a one-line verdict. Deterministic in every position. -/
+    violation, then a one-line verdict. Deterministic in every position.
+
+    The COUNT is the diagnosis's length — how many lines the operator is looking at — and
+    the WORD is the verdict. They are read from different places on purpose. -/
 def CheckReport.render (r : CheckReport) : List String :=
   r.obligations.map (fun p =>
       s!"obligation conforms-unverified entity={hexOfAddr p.fst} schema={hexOfAddr p.snd}")
     ++ r.violations.map Violation.render
-    ++ [ (if r.violations.isEmpty then "check clean" else s!"check violations={r.violations.length}")
+    ++ [ (if r.ok then "check clean" else s!"check violations={r.violations.length}")
           ++ s!" objects={r.objectCount} schemas={r.schemaCount}"
           ++ s!" entities={r.entityCount} names={r.nameCount}" ]
-
-def CheckReport.ok (r : CheckReport) : Bool := r.violations.isEmpty
 
 end Shell
