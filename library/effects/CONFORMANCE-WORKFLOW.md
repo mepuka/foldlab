@@ -90,6 +90,13 @@ section 10). Harness-authored work only *instantiates* bundles; audit means
 reading a small diff against a known shape. A statement that fits no
 ratified schema is a stop condition.
 
+Realization (M1 refinement): each family is a Lean structure in
+`Effects/Conformance.lean` whose fields are the template's holes, whose laws
+are proof fields, and whose anti-vacuity kit is also fields. An obligation
+instance is a term of the family structure — a term without its law or kit
+does not elaborate, so proved-without-kit is unrepresentable for Lean-side
+artifacts.
+
 The catalog (WGR-2), seeded from the obligation ledger:
 
 | Schema family | Statement shape | First instances |
@@ -125,12 +132,14 @@ layer:
   precise;
 - every declared mutant states **what killing it represents**, in the same
   register;
-- sentences are **single-sourced** in the docstring beside the artifact they
-  describe (theorem, mutant, checker) and **projected** onto the ledger,
-  briefings, and manifest family headers. Hand-editing a projection is the
-  derived-surface defect. The ratification diff shows sentence and statement
-  together, so a statement that moved under an unmoved sentence is visible
-  in one review.
+- sentences are **single-sourced** as fields of the typed artifact — the
+  `sentence` field of a schema-bundle instance, the `represents` field of a
+  mutant — and **projected** onto the ledger, briefings, and manifest family
+  headers by the emitter, which reads typed instances and never parses
+  comments. Docstrings carry the ratified *templates*; fields carry the
+  *instances*. Hand-editing a projection is the derived-surface defect. The
+  ratification diff shows sentence and statement together, so a statement
+  that moved under an unmoved sentence is visible in one review.
 
 ```lean
 /-- SCHEMA EXACT-STEP sentence: "When <hypothesis>, one reducer step changes
@@ -294,13 +303,17 @@ like every derived surface.
 #guard !(checkExactConsumption exampleMismatchStep)       -- falsification witness
 ```
 
-Presence is a gate grep by naming convention; truth is the Lean build
-itself; the ledger generator flips `Kit: ok` only when both markers exist.
-Review still reads kits at ratification — for meaning, not existence. Each
-schema family's kit template (ratified with the bundle) defines what its
-witnesses look like: a falsification witness for WF-PRESERVE is an
-ill-formed raw state; for TRACE-EXCLUDES it is the record-mode trace that
-does delegate.
+For Lean-side artifacts, presence is type-enforced (M1 refinement): kits are
+fields of the schema-bundle structures, so an instance without its witnesses
+does not elaborate and the ledger emitter needs no grep. The `#guard` and
+naming-convention route remains for artifacts outside the structures — the
+mirrored TypeScript mutants and any standalone checkers. Truth is the Lean
+build itself in both routes. Review still reads kits at ratification — for
+meaning, not existence. Each schema family's kit template (ratified with the
+bundle) defines what its witnesses look like: a falsification witness for
+WF-PRESERVE is an ill-formed raw state; for TRACE-EXCLUDES it is the
+record-mode trace that does delegate; DISTINCTNESS is positive-only by shape
+(its only falsification would deny the law itself).
 
 ## 11. The ratification point
 
@@ -379,4 +392,12 @@ Stop and return to grilling if:
 - **WGR-7** — gate-enforced kits via compile-checked `#guard`s plus
   convention grep; kit templates ratified per schema family.
 - **Rider: plain meaning** — sentence templates per schema, mutant meanings,
-  single-source docstrings projected to ledger/briefing/manifest headers.
+  single-source sentences projected to ledger/briefing/manifest headers.
+- **M1 refinement (2026-08-26, recorded at the M1 opening):** schema bundles
+  are realized as Lean structures with laws and kits as fields
+  (`Effects/Conformance.lean`), per the
+  [`tree-sitter-plan-prior-art`](research/tree-sitter-plan-prior-art.md)
+  note. This strengthens WGR-7 (kit presence type-enforced for Lean-side
+  artifacts; grep route retained for TS-side) and the plain-meaning rule
+  (sentence source is the typed `sentence`/`represents` field; docstrings
+  carry templates) without changing either rule's substance.

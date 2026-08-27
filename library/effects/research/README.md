@@ -46,6 +46,11 @@ repository locations.
   ratified Effect Replay design. It records reusable materialization patterns,
   strict non-support boundaries, and deferred recommendations without amending
   the contract.
+- [`tree-sitter-plan-prior-art.md`](tree-sitter-plan-prior-art.md) records the
+  `lean4-tree-sitter` implementation plan as design prior art for the
+  conformance workflow's schema bundles: proof obligations as structure
+  fields, kits made unrepresentable-when-missing, and the sentence field as
+  the plain-meaning source.
 
 ## Local external inputs
 
