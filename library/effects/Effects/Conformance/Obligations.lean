@@ -4,9 +4,8 @@
 The plan's section-7 obligation ledger as typed data — the merge input the
 ledger generator joins with the instance registry. Every row here mirrors
 one plan row exactly; a new obligation enters the plan first, then this
-inventory. The reducer well-formedness obligation (a WF-PRESERVE instance)
-receives its ledger ID when the M3 slice mints it; until then the inventory
-tracks plan section 7 verbatim.
+inventory. SES-002, the reducer well-formedness obligation, was minted at
+the M3 slice through exactly that route.
 -/
 
 namespace Effects.Conformance
@@ -68,6 +67,9 @@ def inventory : List Obligation := [
   { id := "SES-001"
     statement := "Record-mode append failure aborts the session through the transport seam; histories are truthful prefixes, never gapped subsequences."
     disposition := .schema "TRACE-EXCLUDES" "M3" },
+  { id := "SES-002"
+    statement := "Every reducer step preserves session-state well-formedness."
+    disposition := .schema "WF-PRESERVE" "M3" },
   { id := "CMP-001"
     statement := "Sequential interpretation threads replay state compositionally across success and typed-failure outcomes."
     disposition := .schema "HOMOMORPHISM" "M5" },

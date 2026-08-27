@@ -575,6 +575,7 @@ IDs are provisional planning identifiers.
 | `RPL-004` | Mismatch fails closed | Lean theorem and integration test | missing entry falls back to live adapter | adapter wiring |
 | `RPL-005` | Completion rejects unconsumed suffix entries; the rejection carries the program's terminal so far | Lean theorem and fixture | same final value hides an extra history call | observation normalizer |
 | `SES-001` | Record-mode append failure aborts the session through the transport seam; histories are truthful prefixes, never gapped subsequences | Lean record-mode theorem and fault-injection integration test | a caught store error lets later appends continue | transport seam and session state |
+| `SES-002` | Every reducer step preserves session-state well-formedness | Lean WF-PRESERVE instance | a step drives the cursor outside the history or breaks the record-mode cursor pin | none beyond model |
 | `CMP-001` | Sequential interpretation threads replay state compositionally across success and typed-failure outcomes | Lean bind/interpreter law over both cases | nested call resets or forks the cursor | session state carrier |
 | `CMP-002` | Identical requests remain separate occurrences | Lean theorem and repeated-call fixture | CAS deduplication shortens history | CAS storage versus history seam |
 | `CMP-003` | Deferred to M7: transparent and opaque policies have distinct, declared framed traces | two semantic rules and tests, when admitted | outer substitution silently leaves child cursor inconsistent | policy adapter |

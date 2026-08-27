@@ -8,13 +8,14 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | CAS-002 | instantiated (REJECTION-CLAUSE) |
 | CAS-003 | standing review rule |
 | RPL-001 | pending — by carrier construction at M3 |
-| RPL-002 | pending — TRACE-EXCLUDES instance at M3 |
-| RPL-003 | pending — EXACT-STEP instance at M3 |
-| RPL-004 | pending — FAIL-CLOSED instance at M3 |
-| RPL-005 | pending — FAIL-CLOSED instance at M3 |
-| SES-001 | pending — TRACE-EXCLUDES instance at M3 |
+| RPL-002 | instantiated (TRACE-EXCLUDES) |
+| RPL-003 | instantiated (EXACT-STEP) |
+| RPL-004 | instantiated (FAIL-CLOSED) |
+| RPL-005 | instantiated (FAIL-CLOSED) |
+| SES-001 | instantiated (TRACE-EXCLUDES) |
+| SES-002 | instantiated (WF-PRESERVE) |
 | CMP-001 | pending — HOMOMORPHISM instance at M5 |
-| CMP-002 | pending — DISTINCTNESS instance at M3 |
+| CMP-002 | instantiated (DISTINCTNESS) |
 | CMP-003 | deferred to M7 |
 | CTX-001 | pending — TypeScript evidence at M4 |
 | CTX-002 | pending — TypeScript evidence at M4 |
@@ -47,21 +48,37 @@ Replay is deterministic for a fixed admitted state and request.
 
 Replay-mode decision traces never select live delegation, and replay construction has no live-service requirement.
 
+**Sentence:** In replay mode, no step ever emits a live-delegation decision — replay is hermetic: whether a live adapter was requested is a projection of the decision trace, and in replay mode that projection is empty by law, never by luck.
+
 ## RPL-003
 
 Matching consumes exactly the permitted occurrence.
+
+**Sentence:** When the emitted invocation matches the entry at the cursor, one reducer step advances the cursor by exactly one — a matching request consumes exactly the permitted occurrence: never zero, never two.
 
 ## RPL-004
 
 Mismatch fails closed.
 
+**Sentence:** When request-side compatibility at the cursor fails, the step rejects with a typed mismatch category and the cursor is unchanged — a mismatch fails closed: it consumes nothing, names its category, and is terminal for the attempt; nothing falls through to a live adapter.
+
 ## RPL-005
 
 Completion rejects unconsumed suffix entries; the rejection carries the program's terminal so far.
 
+**Sentence:** When completion arrives before the cursor reaches the history length, the step rejects with the unconsumed-suffix category and the cursor is unchanged — the rejection carries the program's terminal so far, so a same-looking final value cannot hide a recorded action that was never re-emitted.
+
 ## SES-001
 
 Record-mode append failure aborts the session through the transport seam; histories are truthful prefixes, never gapped subsequences.
+
+**Sentence:** In an aborted session, no step ever emits an occurrence-append decision — a record-mode append failure aborts the session structurally, nothing appends past the failure, and histories stay truthful prefixes, never gapped subsequences.
+
+## SES-002
+
+Every reducer step preserves session-state well-formedness.
+
+**Sentence:** On every input, one reducer step from a well-formed session state yields a well-formed session state — the cursor stays inside the history, and record mode keeps it pinned to the history length.
 
 ## CMP-001
 
@@ -70,6 +87,8 @@ Sequential interpretation threads replay state compositionally across success an
 ## CMP-002
 
 Identical requests remain separate occurrences.
+
+**Sentence:** Two occurrences with identical invocation content remain distinct occurrence positions — the store deduplicates request nodes while the history keeps entries distinct; position is the occurrence identity, and every append claims a fresh one.
 
 ## CMP-003
 
