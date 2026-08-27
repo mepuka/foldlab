@@ -1,0 +1,148 @@
+{
+  "family": "RMT-003",
+  "meaning": "When a key's content stands integrity-rejected, no step ever issues an upload command carrying that key and that exact content again — an integrity failure is terminal for those bytes, and only changed content can try the wire.",
+  "model": "effects-model@0.1.0",
+  "rows": [
+    {
+      "case": "upload-rejected-then-repeat-000",
+      "expect": {
+        "commands": [],
+        "decisions": [
+          {
+            "_tag": "IntegrityRejected",
+            "key": 3
+          },
+          {
+            "_tag": "GaveUp",
+            "key": 3
+          },
+          {
+            "_tag": "RepeatRefused",
+            "key": 3
+          }
+        ],
+        "results": [
+          {
+            "_tag": "IntegrityRejected",
+            "key": 3
+          },
+          {
+            "_tag": "RepeatRefused",
+            "key": 3
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 1
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [1, 2],
+              "key": 3
+            }
+          },
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [1, 2],
+              "key": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "upload-server-mismatch-then-repeat-001",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Upload",
+            "bytes": [7, 9],
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Verified",
+            "key": 2
+          },
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Upload",
+              "bytes": [7, 9],
+              "key": 2
+            }
+          },
+          {
+            "_tag": "IntegrityRejected",
+            "key": 2
+          },
+          {
+            "_tag": "GaveUp",
+            "key": 2
+          },
+          {
+            "_tag": "RepeatRefused",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "IntegrityRejected",
+            "key": 2
+          },
+          {
+            "_tag": "RepeatRefused",
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 1
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [7, 9],
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "IntegrityMismatch"
+            }
+          },
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [7, 9],
+              "key": 2
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

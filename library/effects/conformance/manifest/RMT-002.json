@@ -1,0 +1,173 @@
+{
+  "family": "RMT-002",
+  "meaning": "When a declaration exceeds the declared budgets — an upload whose content size is over the byte budget, or a load response whose declared length is — the step rejects with the typed budget rejection and the cache is unchanged: the budget check reads only declarations, so nothing over budget is ever hashed, decoded, or admitted.",
+  "model": "effects-model@0.1.0",
+  "rows": [
+    {
+      "case": "load-declared-over-budget-001",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Load",
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "BudgetRejected",
+            "key": 2
+          },
+          {
+            "_tag": "GaveUp",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "BudgetRejected",
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "Ok",
+              "bytes": [7, 9],
+              "declared": 9
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "upload-over-budget-000",
+      "expect": {
+        "commands": [],
+        "decisions": [
+          {
+            "_tag": "BudgetRejected",
+            "key": 9
+          }
+        ],
+        "results": [
+          {
+            "_tag": "BudgetRejected",
+            "key": 9
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [0, 0, 0, 0, 0, 0, 0, 0, 0],
+              "key": 9
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "upload-within-budget-002",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Upload",
+            "bytes": [7, 9],
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Verified",
+            "key": 2
+          },
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Upload",
+              "bytes": [7, 9],
+              "key": 2
+            }
+          },
+          {
+            "_tag": "Cached",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "Uploaded",
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 1,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Upload",
+              "bytes": [7, 9],
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "Ok",
+              "bytes": [],
+              "declared": 0
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

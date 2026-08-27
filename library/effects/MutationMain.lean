@@ -1,5 +1,9 @@
 import Effects.Conformance.ManifestReplay
+import Effects.Conformance.ManifestRemote
 import Effects.Mutants.CMP001_ForkNestedCursor
+import Effects.Mutants.RMT001_CacheBeforeAdmission
+import Effects.Mutants.RMT002_OversizeAccepted
+import Effects.Mutants.RMT003_RetryUnchangedBytes
 import Effects.Mutants.RPL002_LiveFallback
 import Effects.Mutants.RPL003_SkipAdvance
 import Effects.Mutants.RPL004_ConsumeOnMismatch
@@ -33,6 +37,11 @@ def declaredMutants : List (Mutant RReducer) :=
 
 def cmpMutants : List (Mutant Effects.Mutants.CMP001ForkNestedCursor.CmpInterp) :=
   [ Effects.Mutants.CMP001ForkNestedCursor.mutant ]
+
+def remoteMutants : List (Mutant RStep) :=
+  [ Effects.Mutants.RMT001CacheBeforeAdmission.mutant
+  , Effects.Mutants.RMT002OversizeAccepted.mutant
+  , Effects.Mutants.RMT003RetryUnchangedBytes.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/
@@ -80,8 +89,19 @@ def main : IO UInt32 := do
       survivors := survivors + 1
     else
       IO.println s!"killed {m.id} ({m.attacks})"
+  for m in remoteMutants do
+    let model := remoteFamilyRowsRendered (Effects.Remote.step rmtParams) m.attacks
+    let mutated := remoteFamilyRowsRendered m.mutant m.attacks
+    if model.isEmpty then
+      IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"
+      survivors := survivors + 1
+    else if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
   if survivors > 0 then
     IO.eprintln s!"{survivors} mutation survivor(s); a survivor fails the task"
     return 1
-  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length} declared mutants killed"
+  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length} declared mutants killed"
   return 0

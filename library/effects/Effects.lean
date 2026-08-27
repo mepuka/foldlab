@@ -16,6 +16,10 @@ import Effects.Replay.Run
 import Effects.Replay.Witness
 import Effects.Replay.Program
 import Effects.Replay.Interp
+import Effects.Remote.Event
+import Effects.Remote.Command
+import Effects.Remote.Machine
+import Effects.Remote.Laws
 import Effects.Conformance
 
 /-!

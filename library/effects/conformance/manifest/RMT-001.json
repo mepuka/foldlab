@@ -1,0 +1,191 @@
+{
+  "family": "RMT-001",
+  "meaning": "When the pending input is not entitled — its bytes do not pass the declared budget and verify for the in-flight key — no step ever emits a cache decision: a wire-supplied digest is a routing hint, never an identity, and only verification admits a remote-loaded node.",
+  "model": "effects-model@0.1.0",
+  "rows": [
+    {
+      "case": "load-absent-002",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Load",
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "GaveUp",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "NotFound",
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "Absent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "load-integrity-rejected-001",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Load",
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "IntegrityRejected",
+            "key": 2
+          },
+          {
+            "_tag": "GaveUp",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "IntegrityRejected",
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 0,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "Ok",
+              "bytes": [7],
+              "declared": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "load-verified-cached-000",
+      "expect": {
+        "commands": [
+          {
+            "_tag": "Load",
+            "key": 2
+          }
+        ],
+        "decisions": [
+          {
+            "_tag": "Issued",
+            "command": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "Verified",
+            "key": 2
+          },
+          {
+            "_tag": "Cached",
+            "key": 2
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Commanded"
+          },
+          {
+            "_tag": "Delivered",
+            "bytes": [7, 9],
+            "key": 2
+          }
+        ],
+        "state": {
+          "cacheSize": 1,
+          "phase": {
+            "_tag": "Idle"
+          },
+          "rejectedSize": 0
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Request",
+            "op": {
+              "_tag": "Load",
+              "key": 2
+            }
+          },
+          {
+            "_tag": "FromWire",
+            "event": {
+              "_tag": "Ok",
+              "bytes": [7, 9],
+              "declared": 2
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

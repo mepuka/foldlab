@@ -29,9 +29,9 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | PRJ-004 | evidenced — TypeScript evidence (test/CasService.test.ts) |
 | PRJ-005 | evidenced — TypeScript evidence (test/CasService.test.ts) |
 | PRJ-006 | standing review rule |
-| RMT-001 | pending — TRACE-EXCLUDES instance at R1 |
-| RMT-002 | pending — FAIL-CLOSED instance at R1 |
-| RMT-003 | pending — TRACE-EXCLUDES instance at R1 |
+| RMT-001 | instantiated (TRACE-EXCLUDES) |
+| RMT-002 | instantiated (FAIL-CLOSED) |
+| RMT-003 | instantiated (TRACE-EXCLUDES) |
 | RMT-004 | pending — EXACT-STEP instance at R2 |
 | RMT-005 | pending — TRACE-EXCLUDES instance at R3 |
 | RMT-006 | pending — FAIL-CLOSED instance at R3 |
@@ -170,13 +170,19 @@ Equal roots imply no stronger value equality than the hash-hypothesis lattice pe
 
 No remote-loaded node reaches the cache or the caller without passing standard admission; a wire-supplied digest is a routing hint, never an identity.
 
+**Sentence:** When the pending input is not entitled — its bytes do not pass the declared budget and verify for the in-flight key — no step ever emits a cache decision: a wire-supplied digest is a routing hint, never an identity, and only verification admits a remote-loaded node.
+
 ## RMT-002
 
 Declared sizes and counts are checked against declared budgets before any hashing or decoding.
 
+**Sentence:** When a declaration exceeds the declared budgets — an upload whose content size is over the byte budget, or a load response whose declared length is — the step rejects with the typed budget rejection and the cache is unchanged: the budget check reads only declarations, so nothing over budget is ever hashed, decoded, or admitted.
+
 ## RMT-003
 
 An integrity failure is terminal for those bytes: no wire attempt ever repeats unchanged content.
+
+**Sentence:** When a key's content stands integrity-rejected, no step ever issues an upload command carrying that key and that exact content again — an integrity failure is terminal for those bytes, and only changed content can try the wire.
 
 ## RMT-004
 
