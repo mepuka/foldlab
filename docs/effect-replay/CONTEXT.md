@@ -47,7 +47,8 @@ enters as an ordinary refactor proposal at that time.
 ## Terms
 
 ### Operation description
-- **Kind:** schema. **Code label:** pending Pass B (provisional `src/Operation.ts`).
+- **Kind:** schema. **Code label:** `src/replay/Operation.ts`
+  (descriptions and the statically checked `describeService`).
 - **Form:** stable operation identity, revision, request Schema, success Schema,
   typed-failure Schema, and leaf-replay class for one method of a described
   Effect service.
@@ -60,7 +61,7 @@ enters as an ordinary refactor proposal at that time.
 ### CAS node
 - **Kind:** model (carrier). **Code label:** `Effects/Cas/Node.lean`
   (carrier) and `Effects/Cas/Codec.lean` (canonical codec); provisional
-  `src/CasNode.ts`.
+  `src/cas/Node.ts`.
 - **Form:** versioned kind, canonical payload bytes, and ordered typed
   references — the data-plus-references pattern. References live inside the
   framed body as full-length address bytes in declared order.
@@ -91,7 +92,7 @@ enters as an ordinary refactor proposal at that time.
 ### Node admission
 - **Kind:** model (judgment). **Code label:** `Effects/Cas/Admission.lean`
   (judgment and checked put) with the store carrier in
-  `Effects/Cas/Store.lean`; provisional `src/CasStore.ts`.
+  `Effects/Cas/Store.lean`; provisional `src/cas/Store.ts`.
 - **Form:** raw node to admitted node or clause-named typed CAS error
   (address mismatch, non-canonical bytes, unknown kind, dangling or wrong-kind
   reference). Closure and kind-typing are checked at `put`; `load` verifies
@@ -135,7 +136,8 @@ enters as an ordinary refactor proposal at that time.
 - **Kind:** model (state machine). **Code label:**
   `Effects/Replay/Session.lean` (state carrier) with the total reducer in
   `Effects/Replay/Reducer.lean` and the derived relation in
-  `Effects/Replay/Relation.lean`; provisional `src/Replay.ts`.
+  `Effects/Replay/Relation.lean`; provisional `src/replay/Session.ts`,
+  `src/replay/Reducer.ts`, and `src/replay/Replay.ts`.
 - **Form:** mode (record or replay), execution identity, history root, flat
   cursor, ordered decision trace, and terminal abort state.
 - **Obligations:** a record-mode append failure aborts the session through
@@ -155,7 +157,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Decision trace
 - **Kind:** model (observable). **Code label:**
-  `Effects/Replay/Decision.lean`; provisional `src/Decision.ts`.
+  `Effects/Replay/Decision.lean`; provisional `src/replay/Decision.ts`.
 - **Form:** the ordered decisions emitted by the pure reducer. Minimum cases:
   live delegation, record-mode occurrence append, recorded substitution,
   history consumption, typed rejection, completion.
@@ -196,7 +198,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Replay witness
 - **Kind:** schema. **Code label:** `Effects/Replay/Witness.lean`
-  (immutable carrier); `src/ReplayStorage.ts` (`StoredWitness`,
+  (immutable carrier); `src/internal/storage.ts` (`StoredWitness`,
   internal: consumed count plus history root — the ratified selected
   representation; entries stay recoverable through the root chain).
 - **Form:** mode, execution identity, consumed history, decision trace, and
@@ -243,8 +245,7 @@ enters as an ordinary refactor proposal at that time.
   reading absorbed as reachable behavior.
 
 ### Value descriptor
-- **Kind:** module. **Code label:** pending E2 (provisional
-  `src/CasValue.ts`).
+- **Kind:** module. **Code label:** `src/cas/Value.ts`.
 - **Form:** declared kind tag and revision, a service-free value Schema,
   and the declared canonical encoding of the Schema's Encoded form;
   `put` admits one leaf node with no references, `get` loads, verifies
@@ -259,8 +260,7 @@ enters as an ordinary refactor proposal at that time.
   equality beyond the hash-hypothesis lattice.
 
 ### Typed root
-- **Kind:** schema. **Code label:** pending E2 (provisional
-  `src/CasValue.ts`).
+- **Kind:** schema. **Code label:** `src/cas/Value.ts`.
 - **Form:** a branded content identifier carrying the descriptor's
   phantom value type and expected kind tag; assignable wherever a
   content identifier is; constructed by `put`.
@@ -271,8 +271,7 @@ enters as an ordinary refactor proposal at that time.
   identity before the session dependency-manifest extension exists.
 
 ### Projection codec failure
-- **Kind:** taxonomy. **Code label:** pending E2 (provisional
-  `src/CasValue.ts`).
+- **Kind:** taxonomy. **Code label:** `src/cas/Value.ts`.
 - **Form:** one typed error family for descriptor encode and decode
   failures, carrying the direction, the content identifier where known,
   and the issue; distinct from the CAS error family and the mismatch
@@ -282,8 +281,7 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** folding into the CAS family; retry-with-renormalize.
 
 ### Hydrated service layer
-- **Kind:** module. **Code label:** pending E3 (provisional
-  `src/CasService.ts`).
+- **Kind:** module. **Code label:** `src/cas/Service.ts`.
 - **Form:** a fixed-root service construction over a value descriptor:
   `layer(root)` builds the public service eagerly; `layerAs(tag, root)`
   builds the same shape under another key — the record-construction seam
@@ -297,8 +295,7 @@ enters as an ordinary refactor proposal at that time.
   service root read as replay identity.
 
 ### Service kit
-- **Kind:** module. **Code label:** pending Pass B (provisional
-  `src/ServiceAdapter.ts`).
+- **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.
 - **Form:** one kit constructor per described service, minting an internal live
   role tag and returning the record construction (requires the live role and
   the replay service) and the replay construction (requires the replay service

@@ -689,3 +689,22 @@ Stop and return to grilling if:
   and no behavior — the compiler and the full suite are the proof —
   and the context document's provisional TypeScript code labels update
   at the acceptance review.
+- **Codec-discipline and restructure acceptance (2026-08-27):** the
+  delivery was reviewed first-hand and accepted. The tree matches the
+  ratified layout exactly — git tracked the moves as renames, the
+  session carriers and pure reducer split out of the runtime with
+  bodies, helper names, and branch order unchanged (verified against
+  the reviewed mirror), and the barrel keeps every public name while
+  exposing `Cas` as a namespace export. The README carries the
+  value-schema discipline and the module map; the demonstration
+  custom-codec fixture (hex plus `decodeTo`) holds the put-get-put
+  same-root assertion. The S3 verification succeeded, so the
+  `Schema.Json` Encoded bound is RETAINED — every legal descriptor
+  compiled, and the intentionally unsafe fixture that was previously
+  caught only by the runtime guard is now also a compile-time
+  rejection. Gates run personally: 49/49 TypeScript tests across nine
+  files, Lean gate green, no ledger transition. The context document's
+  TypeScript code labels moved to the new paths, and the stale
+  "pending" qualifiers on shipped surfaces (operation descriptions,
+  the service kit, the four descriptor entries) were filled with their
+  real labels at this review.
