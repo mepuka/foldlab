@@ -1,5 +1,6 @@
 import Effects.Conformance.Obligations
 import Effects.Conformance.Registry
+import Effects.Conformance.ModelVersion
 
 /-!
 # The lane briefing (phase 1)
@@ -115,17 +116,22 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
     (inv : List Obligation) (rows : List LedgerEntry) : List Markdown.Block :=
   let dirtyMark := if dirty then " (dirty tree)" else ""
   let title := Markdown.Block.h1 s!"Briefing — {lane.name} lane @ {commit}{dirtyMark}"
+  let ratified :=
+    if ratifiedManifestVersions.isEmpty then "none"
+    else String.intercalate ", " ratifiedManifestVersions
   let identity := Markdown.Block.p [.text
-    s!"Model: pre-model (the first declared version arrives at M2). Ratified manifests: none. Instantiated obligations: {rows.length} of {inv.length}."]
+    s!"Model: {modelVersion}. Ratified manifests: {ratified}. Instantiated obligations: {rows.length} of {inv.length}."]
   let targets := laneTargets lane inv rows
   let work :=
     match lane with
     | .conformance => nextGroupBlocks targets
     | .implementation =>
-      [ Markdown.Block.h2 "Status: blocked on the first ratified manifest"
-      , .p [.text "No ratified manifest exists, so this lane has nothing to consume. The first unblocking is the M2 slice: CODEC and REJECTION-CLAUSE manifest families for the canonical node codec and node admission."] ]
-        ++ (if targets.isEmpty then []
-            else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
+      if ratifiedManifestVersions.isEmpty then
+        [ Markdown.Block.h2 "Status: blocked on the first ratified manifest"
+        , .p [.text "No ratified manifest exists, so this lane has nothing to consume. The first unblocking is the M2 slice: CODEC and REJECTION-CLAUSE manifest families for the canonical node codec and node admission."] ]
+          ++ (if targets.isEmpty then []
+              else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
+      else nextGroupBlocks targets
   let rules := [Markdown.Block.h2 "Standing rules in scope", .ul (laneRules lane)]
   (title :: identity :: work) ++ rules
 

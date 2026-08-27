@@ -22,9 +22,11 @@ def cas002Bound : Addr32 := ⟨List.replicate 32 0, by simp⟩
 /-- An address the kit store never binds: thirty-two one bytes. -/
 def cas002Missing : Addr32 := ⟨List.replicate 32 1, by simp⟩
 
-/-- The kit store: one resident node of kind tag five at the bound
-address. -/
-def cas002Store : Store := Store.empty.set cas002Bound ⟨0, 5, [], []⟩
+/-- The kit store's one resident: a node of kind tag five. -/
+def cas002Resident : Node := ⟨0, 5, [], []⟩
+
+/-- The kit store: the resident bound at the bound address. -/
+def cas002Store : Store := Store.empty.set cas002Bound cas002Resident
 
 /-- The kit's admitting node: one typed reference to the resident, at its
 declared kind. -/

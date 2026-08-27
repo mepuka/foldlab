@@ -47,14 +47,18 @@ dir = "{{config_root}}/library/effects"
 run = [
   "lake --wfail build",
   "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
+  "lake exe conformance_manifest conformance/manifest",
   "bun scripts/check-ledger-transitions.ts",
-  "git diff --exit-code -- CONFORMANCE-LEDGER.md",
+  "git diff --exit-code -- CONFORMANCE-LEDGER.md conformance/manifest",
 ]
 
 [tasks."gen:effects"]
-description = "Regenerate the effects conformance ledger"
+description = "Regenerate the effects conformance ledger and manifests"
 dir = "{{config_root}}/library/effects"
-run = "lake exe conformance_ledger CONFORMANCE-LEDGER.md"
+run = [
+  "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
+  "lake exe conformance_manifest conformance/manifest",
+]
 
 [tasks."brief:effects"]
 description = "Print a lane briefing (pass conformance or implementation)"
