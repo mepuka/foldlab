@@ -76,6 +76,7 @@ export type {
 export {
   CasRemoteConfig as RemoteConfig,
   CasRemoteError as RemoteError,
+  CapabilityProbeMode,
   DefaultDecisionTranscriptCapacity,
   RedirectPolicy,
   RemoteAuthority,
@@ -98,8 +99,9 @@ export {
 /**
  * Build the remote store and transfer views once over one shared adapter.
  * The transport owns the pinned FetchHttpClient realization so manual redirect
- * observation cannot be bypassed; platform Crypto remains a visible layer
- * requirement.
+ * observation cannot be bypassed. Capability probing is eager by default;
+ * `capabilityProbe: "lazy"` defers its one memoized probe until a wire-backed
+ * operation first needs it. Platform Crypto remains a visible layer requirement.
  */
 export const layerRemote = (
   config: CasRemoteConfig,

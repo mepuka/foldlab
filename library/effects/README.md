@@ -92,8 +92,11 @@ publish semantics, and the blob node graph — is normative in
 [`PROFILE-CAS-HTTP-0.md`](PROFILE-CAS-HTTP-0.md); this section
 describes the library's behavior above that wire.
 
-Every remote layer acquisition probes `GET /control/capabilities`; the
-eight-byte document is required and is not persisted across layers.
+Remote layers eagerly probe `GET /control/capabilities` by default; setting
+`capabilityProbe: "lazy"` lets the Layer acquire without network traffic and
+defers one deadline-bounded, per-layer memoized probe until the first
+wire-backed operation. The eight-byte document remains required and is never
+persisted across layers.
 `CasTransfer.missing` sends canonical, order-preserving key-list batches no
 larger than the probed key limit and returns positional planning data only—it
 never admits content or negatively caches absence. `CasTransfer.publish`

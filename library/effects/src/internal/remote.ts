@@ -730,26 +730,28 @@ export const makeRemoteAdapter = (
     new Error(`remote machine produced impossible not-found result for ${error.id}`),
   )))
 
-  const probedCapabilities: RemoteCapabilities | undefined =
-    config.authorityMode === "remote-authoritative"
-      ? yield* Effect.gen(function* () {
-        const opId = yield* allocateOpId
-        const exchange = yield* consumeExchange(opId, 1, {
-          _tag: "Command",
-          command: { _tag: "ProbeCapabilities" },
-        })
-        if (exchange.event._tag === "Capabilities") return exchange.event.limits
-        return yield* failureFromExchange(opId, 1, exchange)
-      }).pipe(Effect.withSpan("CasTransfer.Remote.capabilities.probe"))
-      : undefined
+  const probeCapabilities = Effect.fn("CasTransfer.Remote.capabilities.probe")(function* () {
+    const opId = yield* allocateOpId
+    const exchange = yield* consumeExchange(opId, 1, {
+      _tag: "Command",
+      command: { _tag: "ProbeCapabilities" },
+    })
+    if (exchange.event._tag === "Capabilities") return exchange.event.limits
+    return yield* failureFromExchange(opId, 1, exchange)
+  })
 
-  const capabilities = probedCapabilities === undefined
-    ? allocateOpId.pipe(Effect.flatMap((opId) => Effect.fail(remotePolicy(
+  const capabilities = config.authorityMode === "remote-authoritative"
+    ? yield* Effect.cached(probeCapabilities())
+    : allocateOpId.pipe(Effect.flatMap((opId) => Effect.fail(remotePolicy(
       config,
       opId,
       config.authorityMode === "offline" ? "offline" : "authorityMode",
     ))))
-    : Effect.succeed(probedCapabilities)
+
+  if (config.authorityMode === "remote-authoritative"
+    && (config.capabilityProbe ?? "eager") === "eager") {
+    yield* capabilities
+  }
 
   const validateUploadNode = (
     input: CasNodeInput,
@@ -1052,6 +1054,7 @@ export const makeRemoteAdapter = (
           config.authorityMode === "offline" ? "offline" : "authorityMode",
         )
       }
+      yield* capabilities
 
       const requested = yield* machineStep({
         _tag: "Request",
@@ -1228,6 +1231,7 @@ export const makeRemoteAdapter = (
     source: UploadSource,
     options: PutStreamOptions,
   ) {
+    if (config.authorityMode === "remote-authoritative") yield* capabilities
     const opId = yield* allocateOpId
     let expected = options.expected
     let attemptId = 1
@@ -1311,6 +1315,9 @@ export const makeRemoteAdapter = (
   })
 
   const put = Effect.fn("CasStore.Remote.put")(function* (input: CasNodeInput) {
+    if (config.authorityMode === "remote-authoritative") {
+      yield* capabilities.pipe(Effect.mapError(wrapRemoteFailure))
+    }
     const opId = yield* allocateOpId
     const validated = yield* validateUploadNode(input)
     if (config.authorityMode === "offline") {
@@ -1333,6 +1340,7 @@ export const makeRemoteAdapter = (
     if (config.authorityMode !== "remote-authoritative") {
       return yield* new ContentNotFound({ id })
     }
+    yield* capabilities.pipe(Effect.mapError(wrapRemoteFailure))
 
     const opId = yield* allocateOpId
     return yield* driveLoad(opId, id).pipe(

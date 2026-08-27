@@ -194,6 +194,7 @@ const config = (
     readonly maxAttempts: number
     readonly operationDeadlineMs: number
     readonly decisionTranscriptCapacity: number
+    readonly capabilityProbe: "eager" | "lazy"
   }> = {},
 ) => new CasRemoteConfig({
   authority: RemoteAuthority.make(authority),
@@ -207,6 +208,9 @@ const config = (
   ...(overrides.decisionTranscriptCapacity === undefined
     ? {}
     : { decisionTranscriptCapacity: overrides.decisionTranscriptCapacity }),
+  ...(overrides.capabilityProbe === undefined
+    ? {}
+    : { capabilityProbe: overrides.capabilityProbe }),
   redirectPolicy: { maxRedirects: 0, crossOrigin: "deny" },
 })
 
@@ -1089,6 +1093,67 @@ it.effect("capability probe interruption finalizes its transport", () =>
     ).pipe(Effect.forkScoped)
     yield* Deferred.await(fixture.started)
     yield* Fiber.interrupt(acquiring)
+    expect(yield* Ref.get(fixture.finalized)).toBe(true)
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("lazy capability probing lets the adapter acquire degraded", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* HostilePeer.serve({ fault: "capabilitiesMissing" })
+    const remoteConfig = config(endpoint.authority, { capabilityProbe: "lazy" })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+    )
+    expect(endpoint.observe().requests).toBe(0)
+
+    const error = yield* adapter.store.load(ContentId.make("11".repeat(32))).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasError/RemoteFailure",
+      cause: { _tag: "CasRemoteError/Protocol", code: "invalidStatus" },
+    })
+    expect(endpoint.observe().requests).toBe(1)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("lazy capability probing is memoized once per acquired adapter", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({})
+    const remoteConfig = config(endpoint.authority, { capabilityProbe: "lazy" })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+    )
+    expect(endpoint.observe().requests).toBe(0)
+    yield* adapter.transfer.capabilities
+    yield* adapter.transfer.capabilities
+    expect(endpoint.observe().requests).toBe(1)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("lazy capability probing remains deadline bounded", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const fixture = yield* makeBlockingTransport("ProbeCapabilities")
+    const remoteConfig = config("http://127.0.0.1:1", {
+      capabilityProbe: "lazy",
+      operationDeadlineMs: 100,
+    })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(remoteConfig, fixture.transport, address)
+    const probing = yield* adapter.transfer.capabilities.pipe(Effect.flip, Effect.forkScoped)
+    yield* Deferred.await(fixture.started)
+    yield* TestClock.adjust(101)
+
+    expect(yield* Fiber.join(probing)).toMatchObject({
+      _tag: "CasRemoteError/Unavailable",
+      code: "timeout",
+      completion: "possiblyProcessed",
+    })
     expect(yield* Ref.get(fixture.finalized)).toBe(true)
   }).pipe(Effect.provide(TestCrypto))))
 
