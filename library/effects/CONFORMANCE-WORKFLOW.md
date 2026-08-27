@@ -1166,3 +1166,57 @@ Stop and return to grilling if:
   mints stay G0 proposals from the streaming-sync survey; W6
   deliberately extends the ratified streamed-transfer service
   instead, and any service split is an F2 docket decision.
+- **MRK-2 conformance half landed (2026-08-27):** the ratified Q1–Q4
+  built and landed in one cycle; Q5 waits for the F1 delivery as
+  ratified. Q1: the consistency verifier is the RFC 9162 subproof
+  shape over the standards split — a bare hash list consumed
+  linearly down one spine with the whole walk derived from the two
+  sizes, the anchored flag tracking the left-spine phase — with the
+  reflection iff, completeness of the honest generator, and the
+  prefix-agreement corollary, all resting on the new
+  shared-split-point lemma (between the split point and the total,
+  the split point is stable). Q2: the proof-document codecs land
+  under the control-codec discipline with decode-of-encode identity
+  and exactness; the shared big-endian field tools were extracted to
+  a wire module with the capability codec re-based on them, its
+  encodings unchanged. Two boundary semantics are documented rather
+  than fought and carried as vector rows: the framings are
+  self-delimiting, so a truncation landing on a document boundary
+  reads as a DIFFERENT document whose wrong content the verifier
+  rejects, and a trailing skip tag extends a stream's item list —
+  transport length-delimits, verification decides. One design
+  correction recorded: the research sketch had the stream's skip
+  item carrying a hash; the model's skip is bare (a skipped
+  subtree's address is bound by its parent, and a carried hash
+  would be an unverified side channel) — the model is right and the
+  sketch was amended. Q3: ranged stream-generation completeness —
+  the honest extractor's stream decodes to done and emits exactly
+  the owed ranged emissions, assembled on the standing generation
+  and characterization lemmas — is the server-half theorem behind
+  the range-stream endpoint. Q4: the blob refinement tie — the
+  Merkle address function instantiated as the address of the
+  canonical blob-node encoding, so a blob root IS an ordinary
+  content identifier and the closure machinery applies verbatim.
+  One ruling made in the build and flagged for review: the
+  pre-image carrier's parent holds child ADDRESSES only, so a
+  per-child expected-kind cannot be derived at that altitude — the
+  materialization uses ONE declared blob tag with the leaf/parent
+  separation STRUCTURAL (payload-with-index and no references
+  versus empty payload and exactly two), and codec non-malleability
+  turns that into byte-level separation, with the collision-transfer
+  theorem keeping every Merkle collision disjunct meaningful on
+  bounded pre-images. Ledger: MRK-007 flips through its AGREEMENT
+  instance, MRK-011/012 enter as CODEC instances with vector
+  families and killed mutants (equal-roots shortcut, pad-short
+  opening, lenient tags), MRK-013/014 enter as carrier discharges;
+  26 declared mutants killed; committed families regenerate
+  byte-identical; three context entries minted (consistency proof,
+  proof documents, blob node graph). One elaboration hazard
+  recorded for the proof-engineering laws: a five-deep cons pattern
+  with a catch-all arm and a four-times-duplicated arithmetic
+  expression sent the functional compiler into an eight-minute
+  divergence — reading the field through the shared reader with a
+  match-hypothesis for the termination proof fixed compile time to
+  seconds, and the dependent-match decoder construction hit a
+  kernel recursion limit that the admitted-node decoder's
+  bind-and-recheck shape avoids entirely.

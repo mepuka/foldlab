@@ -483,6 +483,74 @@ enters as an ordinary refactor proposal at that time.
   minting identity from a proof carrier; extending the node codec's
   canonicality discipline to slices.
 
+### Consistency proof
+- **Kind:** judgment with executable verifier. **Code label:**
+  `Effects/Merkle/Consistency.lean`.
+- **Form:** the RFC 9162 subproof shape over the standards split: a
+  bare hash list relating the root of the first m chunks to the root
+  of all n, consumed linearly down one spine — one sibling per level
+  plus a terminal — with the WHOLE walk derived from the two sizes,
+  so an adversary controls hash values only, never the shape. The
+  anchored flag tracks whether the old tree is still a left spine of
+  the new one; the mathematical heart is the shared split point:
+  past the split, prefix and whole trees split at the same power of
+  two.
+- **Obligations:** the executable verifier accepts exactly the
+  judgment (reflection); honestly generated proofs relate the
+  committed prefix root to the whole root; an accepted proof against
+  an honest new tree forces the old root to BE the committed
+  prefix's root or exhibits a computable collision — never a
+  collision-resistance axiom.
+- **Avoid:** side-carrying or shape-carrying proof formats; equal
+  sizes needing a proof (root equality is definitional there); a
+  verifier consulting anything beyond the sizes, the roots, and the
+  hash list.
+
+### Proof documents
+- **Kind:** codecs. **Code label:** `Effects/Merkle/ProofCodec.lean`
+  over the shared field tools in `Effects/Wire/Nat32.lean`.
+- **Form:** byte realizations for the proof plane under the
+  control-codec discipline. The opening document: index, count,
+  length-prefixed leaf, sibling addresses root-side first — sides
+  never encoded. The range-stream document: a twelve-byte echoed
+  header, then items whose alphabet IS the verified-streaming
+  decoder's input language — a bare skip tag (a skipped subtree's
+  address was bound by its parent; carrying one would be a side
+  channel), a length-prefixed chunk, a parent's two child addresses.
+- **Obligations:** decoders are closed and exact — a successful
+  decode's input is exactly the canonical encoding of its result;
+  unknown tags and truncated items reject; the framings are
+  self-delimiting, so a boundary truncation reads as a DIFFERENT
+  document whose wrong content the verifier then rejects — transport
+  length-delimits, verification decides.
+- **Avoid:** JSON on the proof plane; a skip carrying a hash;
+  treating prefix-decodability as a codec defect to be fought
+  instead of a documented property the verifier backstops.
+
+### Blob node graph
+- **Kind:** refinement tie. **Code label:**
+  `Effects/Merkle/Blob.lean`.
+- **Form:** a blob is a node graph, not a second store: leaves are
+  ordinary nodes carrying index-prefixed chunk bytes, parents are
+  ordinary two-reference nodes, and the Merkle root IS the address
+  of the materialized root node — an ordinary content identifier.
+  One declared blob kind tag serves both shapes because the
+  pre-image carrier's parent holds child addresses only; the
+  leaf/parent separation is STRUCTURAL (nonempty payload and no
+  references versus empty payload and exactly two), turned into
+  byte-level separation by codec non-malleability.
+- **Obligations:** negotiation, closure-gated publish, and pull
+  apply to blobs verbatim through the ordinary reference closure; a
+  bounded pre-image collision under the instantiated address
+  function transfers to a byte-level hash collision, keeping every
+  Merkle collision disjunct meaningful; materialized nodes are
+  byte-bound well-formed under the profile chunk bound; the chunk
+  recipe is a profile constant, never a capability.
+- **Avoid:** a parallel blob identity kind or storage plane;
+  threshold-based silent chunking; server-declared chunk sizes;
+  references smuggled through payloads where the closure machinery
+  cannot see them.
+
 ### Service kit
 - **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.
 - **Form:** one kit constructor per described service, minting an internal live

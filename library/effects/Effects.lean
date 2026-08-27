@@ -21,11 +21,15 @@ import Effects.Remote.Command
 import Effects.Remote.Machine
 import Effects.Remote.Laws
 import Effects.Remote.ControlCodec
+import Effects.Wire.Nat32
 import Effects.Merkle.Chunk
 import Effects.Merkle.Tree
 import Effects.Merkle.Verify
 import Effects.Merkle.Decoder
 import Effects.Merkle.Laws
+import Effects.Merkle.Consistency
+import Effects.Merkle.ProofCodec
+import Effects.Merkle.Blob
 import Effects.Conformance
 
 /-!

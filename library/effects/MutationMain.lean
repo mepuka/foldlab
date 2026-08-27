@@ -17,6 +17,9 @@ import Effects.Mutants.MRK002_EmitUnverified
 import Effects.Mutants.MRK003_ValidateEarly
 import Effects.Mutants.MRK005_SkipEmitsGhost
 import Effects.Mutants.MRK006_AcceptAnyRoot
+import Effects.Mutants.MRK007_AcceptEqualRoots
+import Effects.Mutants.MRK011_PadShortOpening
+import Effects.Mutants.MRK012_LenientTags
 import Effects.Mutants.RPL002_LiveFallback
 import Effects.Mutants.RPL003_SkipAdvance
 import Effects.Mutants.RPL004_ConsumeOnMismatch
@@ -76,6 +79,15 @@ def merkleStepMutants : List (Mutant MStep) :=
 
 def merkleVerifyMutants : List (Mutant VerifyFn) :=
   [ Effects.Mutants.MRK006AcceptAnyRoot.mutant ]
+
+def merkleConsMutants : List (Mutant ConsFn) :=
+  [ Effects.Mutants.MRK007AcceptEqualRoots.mutant ]
+
+def merkleOpeningMutants : List (Mutant OpeningDecodeFn) :=
+  [ Effects.Mutants.MRK011PadShortOpening.mutant ]
+
+def merkleStreamMutants : List (Mutant StreamDecodeFn) :=
+  [ Effects.Mutants.MRK012LenientTags.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/
@@ -169,8 +181,32 @@ def main : IO UInt32 := do
       survivors := survivors + 1
     else
       IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleConsMutants do
+    let model := merkleConsRowsRendered realConsVerify
+    let mutated := merkleConsRowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleOpeningMutants do
+    let model := merkleOpeningRowsRendered realOpeningDecode
+    let mutated := merkleOpeningRowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleStreamMutants do
+    let model := merkleStreamRowsRendered realStreamDecode
+    let mutated := merkleStreamRowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
   if survivors > 0 then
     IO.eprintln s!"{survivors} mutation survivor(s); a survivor fails the task"
     return 1
-  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + controlCodecMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length} declared mutants killed"
+  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + controlCodecMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length + merkleConsMutants.length + merkleOpeningMutants.length + merkleStreamMutants.length} declared mutants killed"
   return 0

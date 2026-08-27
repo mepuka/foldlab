@@ -117,14 +117,18 @@ Two endpoints over root-addressed blobs:
   total-leaf-count, u32 from, u32 count echoed — client fails closed
   on any disagreement with its request) followed by a framed
   pre-order stream whose item alphabet is EXACTLY the verified
-  streaming decoder's input language: `0x00` + 32-byte hash (skip —
-  a subtree outside the range) or `0x01` + u32 length + chunk bytes
-  (leaf). The client runs the decoder; every emitted chunk is
-  root-bound by construction, fragmentation cannot change outcomes
-  (the pure-fold law), a complete decode determines its root, and
-  slice agreement ties the range read to the whole read. The wire
-  format being the decoder's input alphabet means the committed
-  MRK stream vectors constrain the wire directly.
+  streaming decoder's input language: `0x00` bare (skip — a subtree
+  outside the range; its address was already bound by its parent, so
+  carrying one would be a side channel), `0x01` + u32 length + chunk
+  bytes (leaf), or `0x02` + two 32-byte child addresses (parent).
+  The client runs the decoder; every emitted chunk is root-bound by
+  construction, fragmentation cannot change outcomes (the pure-fold
+  law), a complete decode determines its root, and slice agreement
+  ties the range read to the whole read. The wire format being the
+  decoder's input alphabet means the committed MRK stream vectors
+  constrain the wire directly. (Corrected at the build: an earlier
+  draft of this sketch had the skip carrying a hash — the model's
+  skip is bare, and the model is right.)
 - **Inclusion opening** — `GET {authority}/proofs/{root-hex}/{index}`:
   a closed opening document (u32 index, u32 total, u32 leaf length +
   leaf bytes, then the sibling hashes bottom-up). The verifier

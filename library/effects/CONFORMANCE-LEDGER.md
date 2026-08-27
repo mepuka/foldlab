@@ -51,10 +51,14 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | MRK-004 | discharged — carrier construction (complete\_decode\_root) |
 | MRK-005 | instantiated (AGREEMENT) |
 | MRK-006 | instantiated (AGREEMENT) |
-| MRK-007 | pending — AGREEMENT instance at MRK-2 |
+| MRK-007 | instantiated (AGREEMENT) |
 | MRK-008 | discharged — carrier construction (drun\_append) |
 | MRK-009 | standing review rule |
 | MRK-010 | discharged — carrier construction (opening\_binds\_committed) |
+| MRK-011 | instantiated (CODEC) |
+| MRK-012 | instantiated (CODEC) |
+| MRK-013 | discharged — carrier construction (ranged\_generation\_complete) |
+| MRK-014 | discharged — carrier construction (blob\_root\_addr) |
 
 ## CAS-001
 
@@ -298,6 +302,8 @@ The inclusion verifier accepts exactly the openings whose recomputed root matche
 
 The consistency verifier accepts exactly the related root pairs, and consistency forces prefix agreement or exhibits a collision.
 
+**Sentence:** On every claimed relation — an old size, a new size, two roots, and a proof — the executable consistency verifier and the decided consistency judgment agree at the boolean: the verifier accepts exactly the proofs whose size-derived rebuild reproduces both roots with the proof exactly consumed, honestly generated proofs relate the committed prefix root to the whole root, and an accepted proof against an honest new tree forces the old root to be the committed prefix's root or exhibits a computable hash collision.
+
 ## MRK-008
 
 The decoder is a pure fold: runs compose over input concatenation, so transport fragmentation below the parser cannot change any emission, rejection, or terminal.
@@ -309,3 +315,23 @@ Slice and encoding bytes are transport, never identity: only roots and decoded b
 ## MRK-010
 
 An accepted opening binds its index's committed chunk: bytes accepted at an index equal the chunk the tree commits at that index, or a collision is exhibited.
+
+## MRK-011
+
+Inclusion-opening documents parse fail-closed and exactly: sides are never encoded, truncation and malformed fields are rejected, and a successful decode's input is exactly the canonical encoding of its result.
+
+**Sentence:** Inclusion-opening documents parse fail-closed and exactly: the canonical encoding carries the index, the count, the length-prefixed leaf bytes, and the sibling addresses root-side first with sides never encoded; truncation, malformed fields, and trailing content are rejected, and a successful decode's input is exactly the canonical encoding of its result.
+
+## MRK-012
+
+Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: unknown tags and truncated items are rejected, and a successful decode's input is exactly the canonical encoding of its result.
+
+**Sentence:** Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: a twelve-byte header — the declared total and the requested range, echoed so a client fails closed on disagreement — then tagged items, a bare skip, a length-prefixed chunk, or a parent's two child addresses; unknown tags and truncated items are rejected, the framing is self-delimiting, and a successful decode's input is exactly the canonical encoding of its result.
+
+## MRK-013
+
+Ranged stream generation is complete: for any requested range the honest extractor's stream decodes to its done status and emits exactly the owed ranged emissions.
+
+## MRK-014
+
+The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision.

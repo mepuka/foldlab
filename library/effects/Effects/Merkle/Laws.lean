@@ -1059,4 +1059,33 @@ theorem complete_decode_root (D : DParams A) (hlo : D.lo = 0)
     (by simp)).2
   simpa using this
 
+/-- MRK-013 carrier: ranged stream generation is complete. For any
+requested range, the honest extractor's stream runs the decoder to its
+done status and emits exactly the owed ranged emissions — whose
+indices are exactly the in-range tree positions and which agree with
+the whole decode filtered to the range, by the standing
+characterization lemmas. This is the server half: the reference
+emitter behind the range-stream endpoint is honest by this theorem. -/
+theorem ranged_generation_complete (P : HP A) (lo hi : Nat)
+    (chunks : List Bytes) (hpos : 0 < chunks.length) :
+    (drun ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
+        (initState ⟨P, chunks.length, root P 0 chunks, lo, hi⟩)
+        (genStream P lo hi 0 chunks)).1.status = .done ∧
+      emissionsOf (drun ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
+          (initState ⟨P, chunks.length, root P 0 chunks, lo, hi⟩)
+          (genStream P lo hi 0 chunks)).2 =
+        rangedEmissions lo hi 0 chunks := by
+  have h := drun_genStream ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
+    chunks 0 [] [] hpos
+  simp only [List.append_nil] at h
+  simp only [initState]
+  rw [h]
+  constructor
+  · simp [drun, popped]
+  · rw [show (drun ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
+        (popped []) []).2 = [] from rfl]
+    rw [List.append_nil]
+    exact emissionsOf_honestDecs ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
+      chunks 0
+
 end Effects.Merkle

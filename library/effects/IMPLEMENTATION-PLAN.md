@@ -617,6 +617,10 @@ IDs are provisional planning identifiers.
 | `MRK-008` | The decoder is a pure fold: runs compose over input concatenation, so transport fragmentation below the parser cannot change any emission, rejection, or terminal | Lean carrier theorem (run composition) now; TypeScript rechunk-equivalence fixtures at the implementation slice | a run whose outcome depends on input grouping | verified-streaming decoder |
 | `MRK-009` | Slice and encoding bytes are transport, never identity: only roots and decoded bytes are identity-bearing, and encoding malleability is documented rather than fought | standing review rule; negative fixtures at the implementation slice | an API comparing encodings byte-for-byte or minting identity from a slice or proof carrier | API review |
 | `MRK-010` | An accepted opening binds its index's committed chunk: bytes accepted at an index equal the chunk the tree commits at that index, or a collision is exhibited — so a proof replayed at another index can never make a position serve bytes its leaf does not hold (position binding; the target the informal source admits it lacks; note a chunk legitimately stored at two indices verifies at both) | Lean binding extraction theorem composed from per-index binding and completeness | an accepted cross-index replay serving foreign bytes with no extractable collision | inclusion verifier |
+| `MRK-011` | Inclusion-opening documents parse fail-closed and exactly: sides are never encoded, truncation and malformed fields are rejected, and a successful decode's input is exactly the canonical encoding of its result | Lean CODEC instance over the bounded opening carrier | a non-canonical opening document decoding | proof-document codec |
+| `MRK-012` | Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: unknown tags and truncated items are rejected, and a successful decode's input is exactly the canonical encoding of its result | Lean CODEC instance over the bounded stream carrier | a malformed stream byte string decoding as items | proof-document codec |
+| `MRK-013` | Ranged stream generation is complete: for any requested range the honest extractor's stream decodes to its done status and emits exactly the owed ranged emissions | Lean carrier theorem (ranged generation completeness) | an in-range request whose generated stream rejects or under-emits | range extractor |
+| `MRK-014` | The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision | Lean carrier theorems (root-address tie; collision transfer) | a blob root that is not the address of its materialized root node | blob node graph |
 
 ## 8. Test and evidence strategy
 
@@ -961,17 +965,26 @@ declared mutant per falsification case in both directions.
   `CasTransfer`, TypeScript mirrors and harness lanes) is a LATER
   slice that consumes these ratified families.
 - **MRK-2 — consistency proofs and verified partial reads**
-  (`MRK-007` plus the Q docket): the RFC 9162 `SUBPROOF` shape over
-  append-only hash-chained structures (session histories, witnesses)
-  with the prefix-agreement corollary; the proof-document codecs
-  (opening, stream header and items) under the control-codec
-  discipline; ranged stream-generation completeness (the server-half
-  theorem); the blob refinement tie (abstract Merkle hash as the
-  address of the corresponding canonical node encoding); and the
-  key-list codec exactness closing the RMT-014 narrowing observation
-  after F1 lands. Design authority:
-  [`research/server-reference-and-verified-reads.md`](research/server-reference-and-verified-reads.md);
-  docket Q1–Q5 pending ratification.
+  (`MRK-007`, `MRK-011`–`MRK-014`; docket Q1–Q5 RATIFIED 2026-08-27,
+  conformance half landed the same day): the RFC 9162 `SUBPROOF`
+  shape over the standards split — the consistency verifier with the
+  size-derived walk, reflection iff, completeness, and the
+  prefix-agreement corollary through the shared-split-point lemma;
+  the proof-document codecs (opening; stream header and items over
+  exactly the decoder's input alphabet) under the control-codec
+  discipline with decode-of-encode identity and exactness; ranged
+  stream-generation completeness (the server-half theorem behind the
+  range-stream endpoint); and the blob refinement tie — the Merkle
+  address function instantiated as the address of the canonical
+  blob-node encoding, one declared blob tag with STRUCTURAL
+  leaf/parent separation (the pre-image carrier's parent holds child
+  addresses only), pre-image collisions transferring to byte-level
+  hash collisions on bounded pre-images, and materialized nodes
+  byte-bound well-formed under the profile chunk bound. Q5 — the
+  key-list codec exactness closing the RMT-014 narrowing
+  observation — deliberately waits for the F1 delivery so committed
+  manifests do not move mid-slice. Design authority:
+  [`research/server-reference-and-verified-reads.md`](research/server-reference-and-verified-reads.md).
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`;
   plus discovery-order pull (ruled at the R2 audit: a cold replica
   pulling a reference-carrying root must discover root-first and

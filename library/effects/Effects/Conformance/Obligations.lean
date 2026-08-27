@@ -192,7 +192,19 @@ def inventory : List Obligation := [
     disposition := .review },
   { id := "MRK-010"
     statement := "An accepted opening binds its index's committed chunk: bytes accepted at an index equal the chunk the tree commits at that index, or a collision is exhibited."
-    disposition := .carrier "MRK-1" }
+    disposition := .carrier "MRK-1" },
+  { id := "MRK-011"
+    statement := "Inclusion-opening documents parse fail-closed and exactly: sides are never encoded, truncation and malformed fields are rejected, and a successful decode's input is exactly the canonical encoding of its result."
+    disposition := .schema "CODEC" "MRK-2" },
+  { id := "MRK-012"
+    statement := "Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: unknown tags and truncated items are rejected, and a successful decode's input is exactly the canonical encoding of its result."
+    disposition := .schema "CODEC" "MRK-2" },
+  { id := "MRK-013"
+    statement := "Ranged stream generation is complete: for any requested range the honest extractor's stream decodes to its done status and emits exactly the owed ranged emissions."
+    disposition := .carrier "MRK-2" },
+  { id := "MRK-014"
+    statement := "The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision."
+    disposition := .carrier "MRK-2" }
 ]
 
 end Effects.Conformance

@@ -4,6 +4,9 @@ import Effects.Conformance.Instances.MRK002
 import Effects.Conformance.Instances.MRK003
 import Effects.Conformance.Instances.MRK005
 import Effects.Conformance.Instances.MRK006
+import Effects.Conformance.Instances.MRK007
+import Effects.Conformance.Instances.MRK011
+import Effects.Conformance.Instances.MRK012
 
 /-!
 # The Merkle manifest families
@@ -44,6 +47,7 @@ def merkleH : HP Addr32 := ⟨fun p => toyAddr (encPre32 p)⟩
 
 def mrkChunks2 : List Bytes := [[1], [2]]
 def mrkChunks3 : List Bytes := [[1], [2], [3]]
+def mrkChunks5 : List Bytes := [[1], [2], [3], [4], [5]]
 
 /-! ## Function-under-test carriers (the mutation comparison units) -/
 
@@ -51,10 +55,18 @@ abbrev ChunkFn := Bytes → List Bytes
 abbrev MStep :=
   DParams Addr32 → DState Addr32 → DInput Addr32 → DStep Addr32
 abbrev VerifyFn := Nat → Nat → Bytes → List Addr32 → Addr32 → Bool
+abbrev ConsFn := Nat → Nat → Addr32 → Addr32 → List Addr32 → Bool
+abbrev OpeningDecodeFn := List UInt8 → Option OpeningDoc
+abbrev StreamDecodeFn :=
+  List UInt8 → Option (StreamHeader × List (DInput Addr32))
 
 def realChunk : ChunkFn := mrkRecipe.chunk
 def realMStep : MStep := fun D s i => dstep D s i
 def realVerify : VerifyFn := fun m n b s r => verifyInclusion merkleH m n b s r
+def realConsVerify : ConsFn :=
+  fun m n o nw p => verifyConsistency merkleH m n o nw p
+def realOpeningDecode : OpeningDecodeFn := decodeOpening?
+def realStreamDecode : StreamDecodeFn := decodeStream?
 
 /-! ## Wire encodings -/
 
@@ -162,6 +174,93 @@ def mrk006Rows (vF : VerifyFn) : List (String × Value) :=
   , verifyRow vF "short-path-rejected-002" 1 3 [2] []
       (root merkleH 0 mrkChunks3) ]
 
+def consRow (vF : ConsFn) (caseId : String) (m n : Nat)
+    (oldRoot newRoot : Addr32) (proof : List Addr32) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", .obj
+             [("accepted", .bool (vF m n oldRoot newRoot proof))])
+         , ("input", .obj
+             [ ("newRoot", addrJson32 newRoot)
+             , ("newSize", .nat n)
+             , ("oldRoot", addrJson32 oldRoot)
+             , ("oldSize", .nat m)
+             , ("proof", .arr (proof.map addrJson32)) ]) ] )
+
+def mrk007Rows (vF : ConsFn) : List (String × Value) :=
+  [ consRow vF "honest-2-of-3-accepted-000" 2 3
+      (root merkleH 0 (mrkChunks3.take 2)) (root merkleH 0 mrkChunks3)
+      (genConsProof merkleH 0 2 mrkChunks3 true)
+  , consRow vF "honest-3-of-5-accepted-001" 3 5
+      (root merkleH 0 (mrkChunks5.take 3)) (root merkleH 0 mrkChunks5)
+      (genConsProof merkleH 0 3 mrkChunks5 true)
+  , consRow vF "tampered-proof-rejected-002" 2 3
+      (root merkleH 0 (mrkChunks3.take 2)) (root merkleH 0 mrkChunks3)
+      ((genConsProof merkleH 0 2 mrkChunks3 true).set 0 (toyAddr [9]))
+  , consRow vF "wrong-old-root-rejected-003" 2 3
+      (root merkleH 0 (mrkChunks3.take 1)) (root merkleH 0 mrkChunks3)
+      (genConsProof merkleH 0 2 mrkChunks3 true)
+  , consRow vF "trailing-element-rejected-004" 2 3
+      (root merkleH 0 (mrkChunks3.take 2)) (root merkleH 0 mrkChunks3)
+      (genConsProof merkleH 0 2 mrkChunks3 true ++ [toyAddr [7]])
+  , consRow vF "same-roots-not-shortcut-005" 1 2
+      (root merkleH 0 mrkChunks2) (root merkleH 0 mrkChunks2) [] ]
+
+def openingRow (dF : OpeningDecodeFn) (caseId : String)
+    (bytes : List UInt8) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", match dF bytes with
+             | some d =>
+                 .obj [ ("_tag", .str "Decoded")
+                      , ("doc", .obj
+                          [ ("index", .nat d.index)
+                          , ("leaf", bytesJson d.leaf)
+                          , ("siblings", .arr (d.sibs.map addrJson32))
+                          , ("total", .nat d.total) ]) ]
+             | none => .obj [("_tag", .str "Rejected")])
+         , ("input", .obj [("bytes", bytesJson bytes)]) ] )
+
+def openingDocKit : OpeningDoc :=
+  ⟨1, 3, [2], genPath merkleH 0 1 mrkChunks3⟩
+
+def mrk011Rows (dF : OpeningDecodeFn) : List (String × Value) :=
+  [ openingRow dF "canonical-opening-decodes-000"
+      (encodeOpening openingDocKit)
+  , openingRow dF "truncated-inside-sibling-rejected-001"
+      ((encodeOpening openingDocKit).take 14)
+  , openingRow dF "trailing-rejected-002"
+      (encodeOpening openingDocKit ++ [0])
+  , openingRow dF "empty-rejected-003" []
+  , openingRow dF "truncated-to-boundary-reads-shorter-doc-004"
+      ((encodeOpening openingDocKit).take 13) ]
+
+def streamRow (dF : StreamDecodeFn) (caseId : String)
+    (bytes : List UInt8) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", match dF bytes with
+             | some (h, items) =>
+                 .obj [ ("_tag", .str "Decoded")
+                      , ("header", .obj
+                          [ ("hi", .nat h.hi), ("lo", .nat h.lo)
+                          , ("total", .nat h.total) ])
+                      , ("items", .arr (items.map dInputJson)) ]
+             | none => .obj [("_tag", .str "Rejected")])
+         , ("input", .obj [("bytes", bytesJson bytes)]) ] )
+
+def streamKit : List UInt8 :=
+  encodeStream ⟨3, 1, 2⟩ (genStream merkleH 1 2 0 mrkChunks3)
+
+def mrk012Rows (dF : StreamDecodeFn) : List (String × Value) :=
+  [ streamRow dF "canonical-stream-decodes-000" streamKit
+  , streamRow dF "truncated-header-rejected-001" (streamKit.take 8)
+  , streamRow dF "unknown-tag-rejected-002"
+      (encodeStream ⟨1, 0, 1⟩ [] ++ [3])
+  , streamRow dF "truncated-chunk-item-rejected-003"
+      (encodeStream ⟨1, 0, 1⟩ [] ++ [1, 0, 0, 0, 5, 9])
+  , streamRow dF "trailing-skip-extends-items-004" (streamKit ++ [0]) ]
+
 /-- The declared oracle, named in every Merkle family document. -/
 def merkleOracle : String :=
   "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice."
@@ -181,7 +280,10 @@ def merkleFamilies : List (String × String × List (String × Value)) :=
   , ("MRK-002", mrk002.sentence, mrk002Rows realMStep)
   , ("MRK-003", mrk003.sentence, mrk003Rows realMStep)
   , ("MRK-005", mrk005.sentence, mrk005Rows realMStep)
-  , ("MRK-006", mrk006.sentence, mrk006Rows realVerify) ]
+  , ("MRK-006", mrk006.sentence, mrk006Rows realVerify)
+  , ("MRK-007", mrk007.sentence, mrk007Rows realConsVerify)
+  , ("MRK-011", mrk011.sentence, mrk011Rows realOpeningDecode)
+  , ("MRK-012", mrk012.sentence, mrk012Rows realStreamDecode) ]
 
 private def renderRows (rows : List (String × Value)) : String :=
   Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
@@ -200,6 +302,18 @@ def merkleDecoderRowsRendered (stepF : MStep) (family : String) : String :=
 /-- Rendered rows of the inclusion family under a verifier. -/
 def merkleVerifyRowsRendered (vF : VerifyFn) : String :=
   renderRows (mrk006Rows vF)
+
+/-- Rendered rows of the consistency family under a verifier. -/
+def merkleConsRowsRendered (vF : ConsFn) : String :=
+  renderRows (mrk007Rows vF)
+
+/-- Rendered rows of the opening-codec family under a decoder. -/
+def merkleOpeningRowsRendered (dF : OpeningDecodeFn) : String :=
+  renderRows (mrk011Rows dF)
+
+/-- Rendered rows of the stream-codec family under a decoder. -/
+def merkleStreamRowsRendered (dF : StreamDecodeFn) : String :=
+  renderRows (mrk012Rows dF)
 
 /-- The committed Merkle manifest files, additive at the declared model
 version. -/
