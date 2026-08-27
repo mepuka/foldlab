@@ -208,7 +208,8 @@ export type RedirectPolicy = typeof RedirectPolicy.Type
  * Explicit remote policy. Credentials are accepted only as Redacted values;
  * no error or transcript type has a field capable of carrying them.
  * Redirect policy fields are validated now but become behaviorally active in
- * R4; R2 observes every redirect and denies it through the machine.
+ * R4; the current adapter observes every redirect and denies it through the
+ * machine.
  */
 export class CasRemoteConfig extends Schema.Class<CasRemoteConfig>("CasRemoteConfig")({
   authority: RemoteAuthority,

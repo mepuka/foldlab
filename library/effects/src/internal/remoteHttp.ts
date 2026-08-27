@@ -8,10 +8,11 @@ import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse"
 import type { CasRemoteConfig } from "../cas/Remote.ts"
 import type { ContentId } from "../cas/Node.ts"
 import { encodeKeyListDocument } from "./remoteControl.ts"
-import type { Command, Event } from "./remoteMachine.ts"
+import type { Event } from "./remoteMachine.ts"
 import type {
   CompletionWitness,
   RemoteCasTransport,
+  RemoteIssue,
   RemoteTransportFailure,
   RemoteWireEvent,
 } from "./remoteTransport.ts"
@@ -189,28 +190,46 @@ const controlResponse = (
   return selected === undefined ? binaryBody(response, sentBytes) : selected
 }
 
-const uploadResponse = (
+const emptyAcknowledgement = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
-): Channel.Channel<RemoteWireEvent, never, CompletionWitness> => {
-  return HttpClientResponse.matchStatus(response, {
-    ...sharedStatusCases(sentBytes),
-    200: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
-    201: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
-    204: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
-    409: () => responseEvent({ _tag: "IntegrityMismatch" }, sentBytes),
-    orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
-  })
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
+  const declared = parseNonNegativeInteger(response.headers["content-length"])
+  const contentType = response.headers["content-type"]
+  if (declared === "invalid"
+    || (contentType !== undefined && contentType !== "application/octet-stream")) {
+    return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
+  }
+  if (declared !== undefined && declared !== 0) {
+    return responseEvent({ _tag: "Truncated" }, sentBytes, "unexpectedBody")
+  }
+
+  return Channel.unwrap(response.stream.pipe(
+    Stream.runHead,
+    Effect.mapError((error) => transportFailure(error, sentBytes)),
+    Effect.map((head) => Option.isNone(head)
+      ? responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes)
+      : finishAfter(
+        {
+          _tag: "Event",
+          event: { _tag: "Truncated" },
+          protocolCode: "unexpectedBody",
+        },
+        terminal(head.value.length, sentBytes),
+      )),
+  ))
 }
 
-const publishResponse = (
+const acknowledgementResponse = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
-): Channel.Channel<RemoteWireEvent, never, CompletionWitness> =>
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> =>
   HttpClientResponse.matchStatus(response, {
     ...sharedStatusCases(sentBytes),
-    200: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
-    201: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
+    200: (accepted) => emptyAcknowledgement(accepted, sentBytes),
+    201: (accepted) => emptyAcknowledgement(accepted, sentBytes),
+    // RFC 9110 defines 204 as terminating at the header section: it cannot
+    // carry content, so there is no response stream to decode.
     204: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
     409: () => responseEvent({ _tag: "IntegrityMismatch" }, sentBytes),
     orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
@@ -218,39 +237,39 @@ const publishResponse = (
 
 const commandRequest = (
   config: CasRemoteConfig,
-  command: Exclude<Command<ContentId, Uint8Array>, { readonly _tag: "QueryCommitted" }>,
-  publishClosure: ReadonlyArray<ContentId>,
+  issue: RemoteIssue,
 ): { readonly request: HttpClientRequest.HttpClientRequest; readonly sentBytes: number } => {
   let request: HttpClientRequest.HttpClientRequest
   let sentBytes = 0
-  switch (command._tag) {
-    case "ProbeCapabilities":
-      request = HttpClientRequest.get(`${config.authority}/control/capabilities`)
-      break
-    case "Load":
-      request = HttpClientRequest.get(`${config.authority}/cas/${command.key}`)
-      break
-    case "FindMissing": {
-      const body = encodeKeyListDocument(command.keys)
-      sentBytes = body.length
-      request = HttpClientRequest.post(`${config.authority}/control/missing`).pipe(
-        HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
-      )
-      break
-    }
-    case "Upload":
-      sentBytes = command.bytes.length
-      request = HttpClientRequest.put(`${config.authority}/cas/${command.key}`).pipe(
-        HttpClientRequest.bodyUint8Array(command.bytes, "application/octet-stream"),
-      )
-      break
-    case "PublishRoot": {
-      const body = encodeKeyListDocument(publishClosure)
-      sentBytes = body.length
-      request = HttpClientRequest.put(`${config.authority}/roots/${command.key}`).pipe(
-        HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
-      )
-      break
+  if (issue._tag === "Publish") {
+    const body = encodeKeyListDocument(issue.closure)
+    sentBytes = body.length
+    request = HttpClientRequest.put(`${config.authority}/roots/${issue.command.key}`).pipe(
+      HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
+    )
+  } else {
+    const command = issue.command
+    switch (command._tag) {
+      case "ProbeCapabilities":
+        request = HttpClientRequest.get(`${config.authority}/control/capabilities`)
+        break
+      case "Load":
+        request = HttpClientRequest.get(`${config.authority}/cas/${command.key}`)
+        break
+      case "FindMissing": {
+        const body = encodeKeyListDocument(command.keys)
+        sentBytes = body.length
+        request = HttpClientRequest.post(`${config.authority}/control/missing`).pipe(
+          HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
+        )
+        break
+      }
+      case "Upload":
+        sentBytes = command.bytes.length
+        request = HttpClientRequest.put(`${config.authority}/cas/${command.key}`).pipe(
+          HttpClientRequest.bodyUint8Array(command.bytes, "application/octet-stream"),
+        )
+        break
     }
   }
   request = request.pipe(
@@ -279,18 +298,9 @@ export const makeRemoteHttp = (
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
 
     return {
-      issue: (_opId, _attemptId, command, options) => {
-        if (command._tag === "QueryCommitted") {
-          return Channel.fromEffectDone(Effect.die(
-            new Error("query-committed has no cas-http/0 R3 realization"),
-          ))
-        }
-        if (command._tag === "PublishRoot" && options?.publishClosure === undefined) {
-          return Channel.fromEffectDone(Effect.die(
-            new Error("publish command missing declared closure"),
-          ))
-        }
-        const prepared = commandRequest(config, command, options?.publishClosure ?? [])
+      issue: (_opId, _attemptId, issue) => {
+        const command = issue.command
+        const prepared = commandRequest(config, issue)
 
         return Channel.unwrap(
           client.execute(prepared.request).pipe(
@@ -305,9 +315,9 @@ export const makeRemoteHttp = (
                 case "FindMissing":
                   return controlResponse(response, prepared.sentBytes, true)
                 case "Upload":
-                  return uploadResponse(response, prepared.sentBytes)
+                  return acknowledgementResponse(response, prepared.sentBytes)
                 case "PublishRoot":
-                  return publishResponse(response, prepared.sentBytes)
+                  return acknowledgementResponse(response, prepared.sentBytes)
               }
             }),
           ),

@@ -83,7 +83,12 @@ export const ReferencePeer: ConformancePeer = {
               response.writeHead(400).end()
               return
             }
-            const statuses = Uint8Array.from(decoded.value, (key) => nodes.has(key) ? 1 : 0)
+            const statuses = Uint8Array.from(decoded.value, (key) =>
+              realization.reportedMissing?.has(key) === true
+                ? 0
+                : nodes.has(key)
+                ? 1
+                : 0)
             stats.bodyBytesWritten += statuses.length
             response.writeHead(200, {
               "content-length": statuses.length,
@@ -117,7 +122,17 @@ export const ReferencePeer: ConformancePeer = {
               return
             }
             roots.add(root)
-            response.writeHead(204).end()
+            const acknowledgement = realization.publishAcknowledgementBody
+            if (acknowledgement === undefined) {
+              response.writeHead(204).end()
+            } else {
+              response.writeHead(200, {
+                "content-length": acknowledgement.length,
+                "content-type": realization.acknowledgementContentType
+                  ?? "application/octet-stream",
+              })
+              response.end(acknowledgement)
+            }
           }, () => response.destroy())
           return
         }
@@ -155,7 +170,17 @@ export const ReferencePeer: ConformancePeer = {
               return
             }
             nodes.set(id, bytes.slice())
-            response.writeHead(201).end()
+            const acknowledgement = realization.uploadAcknowledgementBody
+            if (acknowledgement === undefined) {
+              response.writeHead(201).end()
+            } else {
+              response.writeHead(201, {
+                "content-length": acknowledgement.length,
+                "content-type": realization.acknowledgementContentType
+                  ?? "application/octet-stream",
+              })
+              response.end(acknowledgement)
+            }
           }, () => response.destroy())
           return
         }

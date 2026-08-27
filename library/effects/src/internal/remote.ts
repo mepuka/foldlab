@@ -48,7 +48,6 @@ import {
 import {
   initialMachineState,
   step,
-  type Command,
   type Event,
   type MInput,
   type MachineState,
@@ -60,7 +59,7 @@ import {
 import type {
   CompletionWitness,
   RemoteCasTransport,
-  RemoteIssueOptions,
+  RemoteIssue,
   RemoteTransportFailure,
   RemoteWireEvent,
 } from "./remoteTransport.ts"
@@ -114,6 +113,7 @@ interface Verification {
 interface Exchange {
   readonly event: Event<ContentId, Uint8Array>
   readonly protocolCode?: Extract<RemoteWireEvent, { readonly _tag: "Event" }>["protocolCode"]
+  readonly presence?: CasPresence
   readonly witness: CompletionWitness
 }
 
@@ -276,20 +276,20 @@ export const makeRemoteAdapter = (
   const consumeExchange = (
     opId: number,
     attemptId: number,
-    command: Command<ContentId, Uint8Array>,
-    options?: RemoteIssueOptions,
+    issue: RemoteIssue,
   ): Effect.Effect<Exchange, CasRemoteError> => {
-    const preparedSentBytes = command._tag === "Upload"
+    const command = issue.command
+    const preparedSentBytes = issue._tag === "Publish"
+      ? encodeKeyListDocument(issue.closure).length
+      : command._tag === "Upload"
       ? command.bytes.length
       : command._tag === "FindMissing"
       ? encodeKeyListDocument(command.keys).length
-      : command._tag === "PublishRoot"
-      ? encodeKeyListDocument(options?.publishClosure ?? []).length
       : 0
     return Effect.scoped(Effect.gen(function* () {
     const scope = yield* Effect.scope
     const pull = yield* Channel.toPullScoped(
-      transport.issue(opId, attemptId, command, options),
+      transport.issue(opId, attemptId, issue),
       scope,
     )
     const chunks: Array<Uint8Array> = []
@@ -374,23 +374,23 @@ export const makeRemoteAdapter = (
             : { event, protocolCode: "invalidFraming" as const, witness }
         }
         if (command._tag === "FindMissing") {
-          const presence = decodePresenceDocument(command.keys, bytes)
-          if (Option.isNone(presence)) {
+          const decoded = decodePresenceDocument(command.keys, bytes)
+          if (Option.isNone(decoded)) {
             const event: Event<ContentId, Uint8Array> = { _tag: "Truncated" }
             return { event, protocolCode: "invalidFraming" as const, witness }
           }
           const results = command.keys.map((key, index) => {
-            switch (bytes[index]) {
-              case 0:
+            switch (decoded.value.statuses[index]) {
+              case "missing":
                 return { _tag: "Missing" as const, key }
-              case 1:
+              case "present":
                 return { _tag: "Found" as const, key, bytes: new Uint8Array() }
               default:
                 return { _tag: "Failed" as const, key }
             }
           })
           const event: Event<ContentId, Uint8Array> = { _tag: "BatchResult", results }
-          return { event, witness }
+          return { event, presence: decoded.value.presence, witness }
         }
         yield* clearInFlight(opId, { _tag: "Reset" }, config.maxEncodedBytes)
         return yield* remoteProtocol(config, opId, "invalidAcknowledgement", witness, attemptId)
@@ -506,11 +506,6 @@ export const makeRemoteAdapter = (
         preparedSentBytes,
         attemptId,
       ))),
-    )),
-    Effect.onInterrupt(() => clearInFlight(
-      opId,
-      { _tag: "Interrupted" },
-      command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
     )),
     )
   }
@@ -719,7 +714,10 @@ export const makeRemoteAdapter = (
     config.authorityMode === "remote-authoritative"
       ? yield* Effect.gen(function* () {
         const opId = yield* allocateOpId
-        const exchange = yield* consumeExchange(opId, 1, { _tag: "ProbeCapabilities" })
+        const exchange = yield* consumeExchange(opId, 1, {
+          _tag: "Command",
+          command: { _tag: "ProbeCapabilities" },
+        })
         if (exchange.event._tag === "Capabilities") return exchange.event.limits
         return yield* failureFromExchange(opId, 1, exchange)
       }).pipe(Effect.withSpan("CasTransfer.Remote.capabilities.probe"))
@@ -802,10 +800,13 @@ export const makeRemoteAdapter = (
     }
 
     const command = requested.commands[0]?.command
-    if (command === undefined) {
+    if (command === undefined || command._tag !== "Upload") {
       return yield* Effect.die(new Error("commanded upload emitted no command"))
     }
-    const exchange = yield* consumeExchange(opId, attemptId, command)
+    const exchange = yield* consumeExchange(opId, attemptId, {
+      _tag: "Command",
+      command,
+    })
     const rechecked = yield* address.digest(bytes.slice())
     const answered = yield* machineStep({
       _tag: "FromWire",
@@ -841,10 +842,13 @@ export const makeRemoteAdapter = (
     }
 
     const command = requested.commands[0]?.command
-    if (command === undefined) {
+    if (command === undefined || command._tag !== "Load") {
       return yield* Effect.die(new Error("commanded load emitted no command"))
     }
-    const exchange = yield* consumeExchange(opId, 1, command)
+    const exchange = yield* consumeExchange(opId, 1, {
+      _tag: "Command",
+      command,
+    })
 
     if (exchange.event._tag !== "Ok") {
       const answered = yield* machineStep({
@@ -909,59 +913,69 @@ export const makeRemoteAdapter = (
     keys: ReadonlyArray<ContentId>,
   ): Effect.fn.Return<CasPresence, CasRemoteError> {
     const opId = yield* allocateOpId
-    if (config.authorityMode !== "remote-authoritative") {
-      return yield* remotePolicy(
-        config,
-        opId,
-        config.authorityMode === "offline" ? "offline" : "authorityMode",
-      )
-    }
-    const limits = yield* capabilities
-
-    const requested = yield* machineStep({
-      _tag: "Request",
-      id: opId,
-      op: { _tag: "FindMissing", keys },
-    }, undefined, config.maxDecodedBytes, limits.maxBatchKeys)
-    if (requested.result._tag !== "Commanded") {
-      return yield* remoteResultError(opId, 1, requested.result, undefined, {
-        stage: "keys",
-        observed: keys.length,
-        bound: limits.maxBatchKeys,
-      })
-    }
-
-    const command = requested.commands[0]?.command
-    if (command === undefined || command._tag !== "FindMissing") {
-      return yield* Effect.die(new Error("commanded find-missing emitted no batch command"))
-    }
-    const exchange = yield* consumeExchange(opId, 1, command)
-    const answered = yield* machineStep({
-      _tag: "FromWire",
-      id: opId,
-      event: exchange.event,
-    }, undefined, config.maxDecodedBytes, limits.maxBatchKeys)
-    if (answered.result._tag !== "BatchAnswered" || exchange.event._tag !== "BatchResult") {
-      return yield* remoteResultError(opId, 1, answered.result, exchange)
-    }
-
-    const present: Array<ContentId> = []
-    const absent: Array<ContentId> = []
-    const failed: Array<ContentId> = []
-    for (const status of exchange.event.results) {
-      switch (status._tag) {
-        case "Found":
-          present.push(status.key)
-          break
-        case "Missing":
-          absent.push(status.key)
-          break
-        case "Failed":
-          failed.push(status.key)
-          break
+    return yield* Effect.gen(function* () {
+      if (config.authorityMode !== "remote-authoritative") {
+        return yield* remotePolicy(
+          config,
+          opId,
+          config.authorityMode === "offline" ? "offline" : "authorityMode",
+        )
       }
-    }
-    return { present, missing: absent, failed }
+      const limits = yield* capabilities
+
+      const requested = yield* machineStep({
+        _tag: "Request",
+        id: opId,
+        op: { _tag: "FindMissing", keys },
+      }, undefined, config.maxDecodedBytes, limits.maxBatchKeys)
+      if (requested.result._tag !== "Commanded") {
+        return yield* remoteResultError(opId, 1, requested.result, undefined, {
+          stage: "keys",
+          observed: keys.length,
+          bound: limits.maxBatchKeys,
+        })
+      }
+
+      const command = requested.commands[0]?.command
+      if (command === undefined || command._tag !== "FindMissing") {
+        return yield* Effect.die(new Error("commanded find-missing emitted no batch command"))
+      }
+      const exchange = yield* consumeExchange(opId, 1, {
+        _tag: "Command",
+        command,
+      })
+      const answered = yield* machineStep({
+        _tag: "FromWire",
+        id: opId,
+        event: exchange.event,
+      }, undefined, config.maxDecodedBytes, limits.maxBatchKeys)
+      if (answered.result._tag !== "BatchAnswered" || exchange.event._tag !== "BatchResult") {
+        return yield* remoteResultError(opId, 1, answered.result, exchange)
+      }
+
+      if (exchange.presence !== undefined) return exchange.presence
+      const present: Array<ContentId> = []
+      const absent: Array<ContentId> = []
+      const failed: Array<ContentId> = []
+      for (const status of exchange.event.results) {
+        switch (status._tag) {
+          case "Found":
+            present.push(status.key)
+            break
+          case "Missing":
+            absent.push(status.key)
+            break
+          case "Failed":
+            failed.push(status.key)
+            break
+        }
+      }
+      return { present, missing: absent, failed }
+    }).pipe(Effect.onInterrupt(() => clearInFlight(
+      opId,
+      { _tag: "Interrupted" },
+      config.maxDecodedBytes,
+    )))
   })
 
   const publish = Effect.fn("CasTransfer.Remote.publish")(function* (
@@ -969,38 +983,46 @@ export const makeRemoteAdapter = (
     closure: ReadonlyArray<ContentId>,
   ): Effect.fn.Return<void, CasRemoteError> {
     const opId = yield* allocateOpId
-    if (config.authorityMode !== "remote-authoritative") {
-      return yield* remotePolicy(
-        config,
-        opId,
-        config.authorityMode === "offline" ? "offline" : "authorityMode",
-      )
-    }
+    return yield* Effect.gen(function* () {
+      if (config.authorityMode !== "remote-authoritative") {
+        return yield* remotePolicy(
+          config,
+          opId,
+          config.authorityMode === "offline" ? "offline" : "authorityMode",
+        )
+      }
 
-    const requested = yield* machineStep({
-      _tag: "Request",
-      id: opId,
-      op: { _tag: "PublishRoot", key: root, closure },
-    }, undefined, config.maxEncodedBytes)
-    if (requested.result._tag !== "Commanded") {
-      return yield* remoteResultError(opId, 1, requested.result, undefined)
-    }
+      const requested = yield* machineStep({
+        _tag: "Request",
+        id: opId,
+        op: { _tag: "PublishRoot", key: root, closure },
+      }, undefined, config.maxEncodedBytes)
+      if (requested.result._tag !== "Commanded") {
+        return yield* remoteResultError(opId, 1, requested.result, undefined)
+      }
 
-    const command = requested.commands[0]?.command
-    if (command === undefined || command._tag !== "PublishRoot") {
-      return yield* Effect.die(new Error("commanded publish emitted no publish command"))
-    }
-    const exchange = yield* consumeExchange(opId, 1, command, {
-      publishClosure: closure,
-    })
-    const answered = yield* machineStep({
-      _tag: "FromWire",
-      id: opId,
-      event: exchange.event,
-    }, undefined, config.maxEncodedBytes)
-    if (answered.result._tag !== "Published") {
-      return yield* remoteResultError(opId, 1, answered.result, exchange)
-    }
+      const command = requested.commands[0]?.command
+      if (command === undefined || command._tag !== "PublishRoot") {
+        return yield* Effect.die(new Error("commanded publish emitted no publish command"))
+      }
+      const exchange = yield* consumeExchange(opId, 1, {
+        _tag: "Publish",
+        command,
+        closure,
+      })
+      const answered = yield* machineStep({
+        _tag: "FromWire",
+        id: opId,
+        event: exchange.event,
+      }, undefined, config.maxEncodedBytes)
+      if (answered.result._tag !== "Published") {
+        return yield* remoteResultError(opId, 1, answered.result, exchange)
+      }
+    }).pipe(Effect.onInterrupt(() => clearInFlight(
+      opId,
+      { _tag: "Interrupted" },
+      config.maxEncodedBytes,
+    )))
   })
 
   interface LocalGraphEntry {
@@ -1018,15 +1040,17 @@ export const makeRemoteAdapter = (
     const visit = (
       id: ContentId,
       isRoot: boolean,
+      resident?: CasNodeInput,
     ): Effect.Effect<void, CasError> => Effect.gen(function* () {
       if (seen.has(id)) return
-      const current = yield* localStore.load(id).pipe(
-        Effect.mapError((error): CasError => !isRoot && error._tag === "CasError/ContentNotFound"
-          ? new DanglingReference({ missing: id })
-          : error),
-      )
+      const current = resident ?? (yield* localStore.load(id).pipe(
+          Effect.mapError((error): CasError => !isRoot && error._tag === "CasError/ContentNotFound"
+            ? new DanglingReference({ missing: id })
+            : error),
+        ))
       seen.add(id)
       for (const ref of current.refs) {
+        if (seen.has(ref.id)) continue
         const child = yield* localStore.load(ref.id).pipe(
           Effect.mapError((error): CasError => error._tag === "CasError/ContentNotFound"
             ? new DanglingReference({ missing: ref.id })
@@ -1039,7 +1063,7 @@ export const makeRemoteAdapter = (
             actualTag: child.kind.tag,
           })
         }
-        yield* visit(ref.id, false)
+        yield* visit(ref.id, false, child)
       }
       entries.push({ id, node: current, bytes: encodeCasNode(current) })
     })
@@ -1082,6 +1106,18 @@ export const makeRemoteAdapter = (
       const status = planned.get(entry.id)
       if (status === "missing") {
         const opId = yield* allocateOpId
+        const confirmed = yield* SynchronizedRef.get(runtime).pipe(
+          Effect.map((current) => HashSet.has(current.machine.confirmed, entry.id)),
+        )
+        if (confirmed) {
+          return yield* remoteIntegrity(
+            config,
+            opId,
+            "remoteRejected",
+            0,
+            "response",
+          )
+        }
         yield* driveUpload(opId, 1, entry.node, entry.id, entry.bytes)
         transferred.push(entry.id)
       } else if (status === "present") {

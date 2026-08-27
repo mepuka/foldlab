@@ -84,6 +84,10 @@ export interface ScenarioRealization {
   readonly fault?: string
   readonly body?: Uint8Array
   readonly declared?: number
+  readonly reportedMissing?: ReadonlySet<string>
+  readonly acknowledgementContentType?: string
+  readonly uploadAcknowledgementBody?: Uint8Array
+  readonly publishAcknowledgementBody?: Uint8Array
 }
 
 /**

@@ -34,17 +34,30 @@ export interface RemoteTransportFailure {
   readonly sentBytes: number
 }
 
-/** Shell-only data intentionally absent from the semantic command carrier. */
-export interface RemoteIssueOptions {
-  readonly publishClosure?: ReadonlyArray<ContentId>
-}
+type RemoteCommand = Exclude<
+  Command<ContentId, Uint8Array>,
+  { readonly _tag: "QueryCommitted" | "PublishRoot" }
+>
+
+type RemotePublishCommand = Extract<
+  Command<ContentId, Uint8Array>,
+  { readonly _tag: "PublishRoot" }
+>
+
+/** Closed shell request: commands without a wire realization are unrepresentable. */
+export type RemoteIssue =
+  | { readonly _tag: "Command"; readonly command: RemoteCommand }
+  | {
+    readonly _tag: "Publish"
+    readonly command: RemotePublishCommand
+    readonly closure: ReadonlyArray<ContentId>
+  }
 
 export interface RemoteCasTransport {
   /** Execute exactly one machine command for one operation attempt. */
   readonly issue: (
     opId: OpId,
     attemptId: AttemptId,
-    command: Command<ContentId, Uint8Array>,
-    options?: RemoteIssueOptions,
+    request: RemoteIssue,
   ) => Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness>
 }

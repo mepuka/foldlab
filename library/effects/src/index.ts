@@ -1,9 +1,10 @@
 /**
  * @foldlab/effect-replay — Effect-native content-addressed record/replay.
  *
- * Implemented through M5, the typed descriptor slice, and the R2 remote
- * baseline: local and remote CAS admission with reverifying loads, streamed
- * transfer, pure replay reduction, session execution, replayable service kits,
+ * Implemented through M5, the typed descriptor slice, and the R3 remote front
+ * end: local and remote CAS admission with reverifying loads, streamed
+ * transfer, capability-sized planning, ordered root publication and graph
+ * push, pure replay reduction, session execution, replayable service kits,
  * transparent orchestration, and typed value/service projection.
  * History/witness storage and live-handler binding remain internal modules;
  * their Schemas carry no public canonicality claim. TypeScript observations

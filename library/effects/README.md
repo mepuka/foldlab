@@ -3,7 +3,7 @@
 `@foldlab/effect-replay` is a private mixed TypeScript/Lean library for
 recording explicitly described Effect service calls into a content-addressed
 history and replaying them without a live adapter. The TypeScript implementation
-is current through M5, the E2/E3 descriptor slice, and the R2 remote baseline:
+is current through M5, the E2/E3 descriptor slice, and the R3 remote front end:
 the in-memory and remote CAS adapters, pure reducer, session service,
 replayable service kit, transparent orchestration, streamed transfer service,
 and typed value/service projection are present.
@@ -81,19 +81,35 @@ the operation revision remains explicit.
 ## Remote CAS profile
 
 `Cas.layerRemote` speaks `cas-http/0`, a versioned project profile—not an HTTP
-or CAS standard. It uses `GET {authority}/cas/{hex}` for loads and
-`PUT {authority}/cas/{hex}` with a canonical node as the octet-stream body for
-uploads. A load accepts only `200` with `application/octet-stream`; `404` is
-`ContentNotFound`, `401` and `403` are typed authorization failures, `429`
-becomes rate-limited machine input, and every `3xx` remains a redirect event.
-Uploads accept `200`, `201`, or `204`; `409` is an integrity mismatch.
+or CAS standard. One authority owns three resource spaces: node bytes under
+`{authority}/cas/{hex}`, capability and missing-key documents under
+`{authority}/control/...`, and published roots under
+`{authority}/roots/{hex}`. All non-empty bodies use exact
+`application/octet-stream` binary framings; successful upload and publish
+acknowledgements are closed empty bodies. A load accepts only `200` with the
+exact media type; `404` is `ContentNotFound`, `401` and `403` are typed
+authorization failures, `429` becomes rate-limited machine input, and every
+`3xx` remains a redirect event. Uploads and publishes accept `200`, `201`, or
+`204`; `409` is an integrity mismatch.
+
+Every remote layer acquisition probes `GET /control/capabilities`; the
+eight-byte document is required and is not persisted across layers.
+`CasTransfer.missing` sends canonical, order-preserving key-list batches no
+larger than the probed key limit and returns positional planning data only—it
+never admits content or negatively caches absence. `CasTransfer.publish`
+refuses locally unless the root and declared closure are confirmed.
+`CasTransfer.push` resolves the complete local graph before operation-specific
+wire traffic, plans missing keys in capability-sized batches, uploads children
+before parents, and publishes the root last. A missing answer that contradicts
+the machine's existing confirmation fails closed as `remoteRejected`; it is
+never reported as a transfer that did not occur.
 
 The HTTP shell performs no retry and follows no redirect. The library supplies
 `redirect: "manual"` around each request, including with plain
 `FetchHttpClient` wiring, so every `3xx` reaches the machine and becomes the
 typed `redirectDenied` policy outcome. `redirectPolicy.maxRedirects` and
 `redirectPolicy.crossOrigin` are validated configuration reserved for R4;
-redirect following is not active in R2. The semantic adapter retries only a
+redirect following is not active in this slice. The semantic adapter retries only a
 `Transfer.replayable` source, up to `maxAttempts`, with the content address
 rechecked on every attempt. A retryable failure from `Transfer.oneShot`
 becomes `oneShotRetryRefused` and retains the underlying transport evidence.
@@ -113,17 +129,17 @@ The four byte budgets bind at these `cas-http/0` stages:
 | `decompressed` | No distinct codec stage exists in `cas-http/0`; it shares the response counter with `decoded`. |
 | `queued` | Bytes buffered awaiting admission, independent of transport or source rechunking. |
 
-R2 verifies downloads completely before exposing bytes, using a scoped,
+The current adapter recomputes and checks downloads completely before exposing bytes, using a scoped,
 decoded-budget-bounded in-memory spool. Filesystem spooling and authenticated
 chunk proofs are later slices. The test-side `ConformancePeer` interface is
-the named landing point for the adopted LeanServer peer; R2 provides the Node
+the named landing point for the adopted LeanServer peer; this slice provides the Node
 reference and hostile raw-socket bindings only.
 
-Cold-pull limitation (R3 boundary): a cold replica cannot yet load a
+Cold-pull limitation (deferred pull-staging boundary): a cold replica cannot yet load a
 reference-carrying parent when its children are absent locally. Parent
 admission therefore returns `RemoteFailure` wrapping `DanglingReference`;
-discovery-order closure pulling is the R3 slice. The adapter's diagnostic
-decision transcript is intentionally unbounded in R2 and is not a production
+discovery-order closure pulling remains a later slice. The adapter's diagnostic
+decision transcript is intentionally unbounded and is not a production
 telemetry buffer.
 
 ## Usage sketch

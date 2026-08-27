@@ -28,6 +28,13 @@ export type CapabilityDecodeResult =
   | { readonly _tag: "Decoded"; readonly limits: RemoteCapabilitiesType }
   | { readonly _tag: "Rejected" }
 
+export type PresenceStatus = "missing" | "present" | "failed"
+
+export interface DecodedPresenceDocument {
+  readonly presence: CasPresence
+  readonly statuses: ReadonlyArray<PresenceStatus>
+}
+
 const encodeUnchecked = (limits: RemoteCapabilitiesType): Uint8Array => {
   const bytes = new Uint8Array(8)
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
@@ -118,29 +125,36 @@ export const decodeKeyListDocument = (
 export const decodePresenceDocument = (
   keys: ReadonlyArray<ContentIdType>,
   input: Uint8Array | ReadonlyArray<number>,
-): Option.Option<CasPresence> => {
+): Option.Option<DecodedPresenceDocument> => {
   const statuses = Schema.decodeUnknownOption(ByteArray)(Array.from(input))
   if (Option.isNone(statuses) || statuses.value.length !== keys.length) return Option.none()
 
   const present: Array<ContentIdType> = []
   const missing: Array<ContentIdType> = []
   const failed: Array<ContentIdType> = []
+  const decodedStatuses: Array<PresenceStatus> = []
   for (let index = 0; index < statuses.value.length; index += 1) {
     const key = keys[index]
     if (key === undefined) return Option.none()
     switch (statuses.value[index]) {
       case 0:
         missing.push(key)
+        decodedStatuses.push("missing")
         break
       case 1:
         present.push(key)
+        decodedStatuses.push("present")
         break
       case 2:
         failed.push(key)
+        decodedStatuses.push("failed")
         break
       default:
         return Option.none()
     }
   }
-  return Option.some({ present, missing, failed })
+  return Option.some({
+    presence: { present, missing, failed },
+    statuses: decodedStatuses,
+  })
 }

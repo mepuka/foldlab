@@ -229,7 +229,9 @@ export const remoteParams: Params<RemoteKey, RemoteBytes> = {
     && toyAddr(bytes).every((byte, index) => key[index] === byte),
 }
 
-export const deriveInputs = (row: RemoteRow): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> =>
+const deriveFixtureInputs = (
+  row: RemoteRow | RemoteR3Row,
+): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> =>
   Effect.gen(function* () {
     const inputs: Array<MInput<RemoteKey, RemoteBytes>> = []
     // Lean's fixture derivation uses filterMap. The TypeScript harness dies
@@ -252,34 +254,18 @@ export const deriveInputs = (row: RemoteRow): Effect.Effect<ReadonlyArray<MInput
     return inputs
   })
 
+export const deriveInputs = (
+  row: RemoteRow,
+): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> => deriveFixtureInputs(row)
+
 export const deriveR3Inputs = (
   row: RemoteR3Row,
-): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> =>
-  Effect.gen(function* () {
-    const inputs: Array<MInput<RemoteKey, RemoteBytes>> = []
-    for (const item of row.input.sequence) {
-      if (item._tag === "OpRef") {
-        const operation = row.input.ops[item.index]
-        if (operation === undefined) {
-          return yield* Effect.die(new Error(`${row.case}: unknown operation index`))
-        }
-        inputs.push({ _tag: "Request", id: operation.id, op: operation.op })
-      } else {
-        const scheduled = row.input.schedule[item.index]
-        if (scheduled === undefined) {
-          return yield* Effect.die(new Error(`${row.case}: unknown event index`))
-        }
-        inputs.push({ _tag: "FromWire", id: scheduled.answers, event: scheduled.event })
-      }
-    }
-    return inputs
-  })
+): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> => deriveFixtureInputs(row)
 
-export const runRemoteRow = (
+const runInputs = (
   sut: RemoteStepShape,
-  row: RemoteRow,
-) => Effect.gen(function* () {
-  const inputs = yield* deriveInputs(row)
+  inputs: ReadonlyArray<MInput<RemoteKey, RemoteBytes>>,
+) => {
   let state = initialMachineState<RemoteKey, RemoteBytes>()
   const commands: Array<TaggedCommand<RemoteKey, RemoteBytes>> = []
   const decisions: Array<TaggedDecision<RemoteKey, RemoteBytes>> = []
@@ -291,6 +277,15 @@ export const runRemoteRow = (
     decisions.push(...output.decisions)
     results.push(output.result)
   }
+  return { commands, decisions, results, state }
+}
+
+export const runRemoteRow = (
+  sut: RemoteStepShape,
+  row: RemoteRow,
+) => Effect.gen(function* () {
+  const inputs = yield* deriveInputs(row)
+  const { commands, decisions, results, state } = runInputs(sut, inputs)
   return {
     commands,
     decisions,
@@ -308,17 +303,7 @@ export const runRemoteR3Row = (
   row: RemoteR3Row,
 ) => Effect.gen(function* () {
   const inputs = yield* deriveR3Inputs(row)
-  let state = initialMachineState<RemoteKey, RemoteBytes>()
-  const commands: Array<TaggedCommand<RemoteKey, RemoteBytes>> = []
-  const decisions: Array<TaggedDecision<RemoteKey, RemoteBytes>> = []
-  const results: Array<MResult<RemoteKey, RemoteBytes>> = []
-  for (const input of inputs) {
-    const output = sut.step(remoteParams, state, input)
-    state = output.state
-    commands.push(...output.commands)
-    decisions.push(...output.decisions)
-    results.push(output.result)
-  }
+  const { commands, decisions, results, state } = runInputs(sut, inputs)
   return {
     commands,
     decisions,

@@ -131,8 +131,9 @@ export const HostilePeer: ConformancePeer = {
             ]))
             return
           }
-          if (fault === "cancellationMidUpload" && isPut && stats.puts === 1) {
-            socket.destroy()
+          if (fault === "cancellationMidUpload" && isPut) {
+            if (stats.puts === 1) socket.destroy()
+            else socket.end(headers("201 Created", [["Content-Length", "0"]]))
             return
           }
 

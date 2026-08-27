@@ -57,11 +57,11 @@ export interface CasTransferShape {
   ) => Effect.Effect<ContentId, CasRemoteError | CasError>
 
   /**
-   * Return verified bytes in the caller's Scope. R2 verifies through a
+   * Return checked bytes in the caller's Scope. The current adapter uses a
    * decoded-budget-bounded in-memory whole-object spool before emitting any
    * byte. A cold reference-carrying parent whose children are absent locally
    * fails as RemoteFailure(DanglingReference); discovery-order closure pull is
-   * the documented R3 boundary. Filesystem spooling and chunk-proof early
+   * a documented deferred boundary. Filesystem spooling and chunk-proof early
    * emission are later slices.
    */
   readonly loadStream: (

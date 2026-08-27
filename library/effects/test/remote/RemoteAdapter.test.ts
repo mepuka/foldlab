@@ -2,9 +2,11 @@ import { expect, it, layer } from "@effect/vitest"
 import {
   Channel,
   Crypto,
+  Deferred,
   Effect,
   Fiber,
   Layer,
+  Ref,
   Stream,
 } from "effect"
 import { TestClock } from "effect/testing"
@@ -614,7 +616,103 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
     expect(endpoint.observe().openSockets).toBe(0)
   })))
 
-it.effect("a cold reference-carrying parent load is the documented R3 closure boundary", () =>
+it.effect("push fails closed when a missing plan contradicts machine confirmation", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const child = node([2, 3, 5], 63)
+    const childId = digest(encodeCasNode(child))
+    const parent = CasNodeInput.make({
+      kind: { version: 0, tag: 64 },
+      payload: Uint8Array.of(8, 13, 21),
+      refs: [{ id: childId, expectedTag: child.kind.tag }],
+    })
+    const parentId = digest(encodeCasNode(parent))
+    const endpoint = yield* ReferencePeer.serve({
+      reportedMissing: new Set([childId]),
+    })
+
+    yield* Effect.gen(function* () {
+      const store = yield* CasStore
+      const transfer = yield* CasTransfer
+      yield* store.put(child)
+      yield* store.put(parent)
+
+      const error = yield* transfer.push(parentId).pipe(Effect.flip)
+      expect(error).toMatchObject({
+        _tag: "CasRemoteError/Integrity",
+        code: "remoteRejected",
+      })
+      expect(endpoint.observe()).toMatchObject({
+        requests: 4,
+        gets: 0,
+        puts: 2,
+      })
+    }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
+
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("upload acknowledgements reject trailing octets", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({
+      uploadAcknowledgementBody: Uint8Array.of(0),
+    })
+    const error = yield* CasStore.use((store) => store.put(node([1, 6, 1, 8], 65))).pipe(
+      Effect.flip,
+      Effect.provide(remoteLayer(config(endpoint.authority))),
+    )
+    expect(error).toMatchObject({
+      _tag: "CasError/RemoteFailure",
+      cause: {
+        _tag: "CasRemoteError/Protocol",
+        code: "unexpectedBody",
+      },
+    })
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("upload acknowledgements reject a non-binary media type", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({
+      acknowledgementContentType: "text/plain",
+      uploadAcknowledgementBody: new Uint8Array(),
+    })
+    const error = yield* CasStore.use((store) => store.put(node([2, 7, 1, 8], 69))).pipe(
+      Effect.flip,
+      Effect.provide(remoteLayer(config(endpoint.authority))),
+    )
+    expect(error).toMatchObject({
+      _tag: "CasError/RemoteFailure",
+      cause: {
+        _tag: "CasRemoteError/Protocol",
+        code: "invalidHeaders",
+      },
+    })
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("publish acknowledgements reject trailing octets", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({
+      publishAcknowledgementBody: Uint8Array.of(0),
+    })
+    yield* Effect.gen(function* () {
+      const store = yield* CasStore
+      const transfer = yield* CasTransfer
+      const root = yield* store.put(node([3, 4, 5], 66))
+      const error = yield* transfer.publish(root, []).pipe(Effect.flip)
+      expect(error).toMatchObject({
+        _tag: "CasRemoteError/Protocol",
+        code: "unexpectedBody",
+      })
+    }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("a cold reference-carrying parent load is the deferred closure-pull boundary", () =>
   Effect.scoped(Effect.gen(function* () {
     const child = node([1, 1, 2, 3], 10)
     const childId = digest(encodeCasNode(child))
@@ -762,7 +860,8 @@ interface ScriptedExchange {
 const scriptedTransport = (script: ReadonlyArray<ScriptedExchange>): RemoteCasTransport => {
   let cursor = 0
   return {
-    issue: (_operationId, _attempt, command) => {
+    issue: (_operationId, _attempt, request) => {
+      const command = request.command
       if (command._tag === "ProbeCapabilities") {
         const bytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
         return Channel.fromArray<RemoteWireEvent>([
@@ -787,6 +886,113 @@ const scriptedTransport = (script: ReadonlyArray<ScriptedExchange>): RemoteCasTr
     },
   }
 }
+
+type BlockedControlCommand = "ProbeCapabilities" | "FindMissing" | "PublishRoot"
+
+const makeBlockingTransport = (
+  blocked: BlockedControlCommand,
+): Effect.Effect<{
+  readonly transport: RemoteCasTransport
+  readonly started: Deferred.Deferred<void>
+  readonly finalized: Ref.Ref<boolean>
+}> => Effect.gen(function* () {
+  const started = yield* Deferred.make<void>()
+  const finalized = yield* Ref.make(false)
+  const capabilityBytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
+  const complete = (
+    events: ReadonlyArray<RemoteWireEvent>,
+    sentBytes: number,
+  ): Channel.Channel<RemoteWireEvent, never, CompletionWitness> =>
+    Channel.fromArray(events).pipe(
+      Channel.concatWith(() => Channel.fromEffectDone(Effect.succeed({
+        receivedBytes: 0,
+        sentBytes,
+        terminalFraming: "complete" as const,
+      }))),
+    )
+
+  const transport: RemoteCasTransport = {
+    issue: (_operationId, _attempt, request) => {
+      const command = request.command
+      if (command._tag === blocked) {
+        return Channel.fromEffectDone(
+          Deferred.succeed(started, undefined).pipe(
+            Effect.andThen(Effect.never),
+            Effect.ensuring(Ref.set(finalized, true)),
+          ),
+        )
+      }
+      if (command._tag === "ProbeCapabilities") {
+        return complete([
+          { _tag: "ResponseStarted", declared: capabilityBytes.length },
+          { _tag: "BodyChunk", bytes: capabilityBytes },
+        ], 0)
+      }
+      if (command._tag === "Upload" || command._tag === "PublishRoot") {
+        return complete([{
+          _tag: "Event",
+          event: { _tag: "Ok", declared: 0, bytes: new Uint8Array() },
+        }], command._tag === "Upload" ? command.bytes.length : 4)
+      }
+      return Channel.fromEffectDone(Effect.die(
+        new Error(`unexpected ${command._tag} command in interruption fixture`),
+      ))
+    },
+  }
+  return { transport, started, finalized }
+})
+
+it.effect("capability probe interruption finalizes its transport", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const fixture = yield* makeBlockingTransport("ProbeCapabilities")
+    const address = yield* makeSha256Address
+    const acquiring = yield* makeRemoteAdapter(
+      config("http://127.0.0.1:1"),
+      fixture.transport,
+      address,
+    ).pipe(Effect.forkScoped)
+    yield* Deferred.await(fixture.started)
+    yield* Fiber.interrupt(acquiring)
+    expect(yield* Ref.get(fixture.finalized)).toBe(true)
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("find-missing interruption finalizes transport and clears in-flight state", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const fixture = yield* makeBlockingTransport("FindMissing")
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(
+      config("http://127.0.0.1:1"),
+      fixture.transport,
+      address,
+    )
+    const id = digest(encodeCasNode(node([1, 0, 1], 67)))
+    const running = yield* adapter.transfer.missing([id]).pipe(Effect.forkScoped)
+    yield* Deferred.await(fixture.started)
+    yield* Fiber.interrupt(running)
+    expect(yield* Ref.get(fixture.finalized)).toBe(true)
+    expect(yield* adapter.snapshot).toMatchObject({ inFlightSize: 0 })
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("publish interruption finalizes transport and clears in-flight state", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const fixture = yield* makeBlockingTransport("PublishRoot")
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(
+      config("http://127.0.0.1:1"),
+      fixture.transport,
+      address,
+    )
+    const root = yield* adapter.store.put(node([2, 0, 2], 68))
+    const running = yield* adapter.transfer.publish(root, []).pipe(Effect.forkScoped)
+    yield* Deferred.await(fixture.started)
+    yield* Fiber.interrupt(running)
+    expect(yield* Ref.get(fixture.finalized)).toBe(true)
+    expect(yield* adapter.snapshot).toMatchObject({
+      inFlightSize: 0,
+      confirmedSize: 1,
+      publishedSize: 0,
+    })
+  }).pipe(Effect.provide(TestCrypto))))
 
 layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => {
   it.effect("the adapter and pure mirror agree across the shared differential scenario table", () =>
@@ -936,11 +1142,14 @@ layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => 
         expectedState = output.state
         expectedDecisions.push(...output.decisions)
       }
+      const expectedFirstOp = expectedDecisions[0]?.op ?? 0
+      const observedFirstOp = observed.decisions[0]?.op ?? expectedFirstOp
+      const operationIdOffset = observedFirstOp - expectedFirstOp
       expect({
         scenario: scenario.name,
         decisions: observed.decisions.map((tagged) => {
           const normalized = normalizeDecision(tagged)
-          return { ...normalized, op: normalized.op - 1 }
+          return { ...normalized, op: normalized.op - operationIdOffset }
         }),
       }).toEqual({
         scenario: scenario.name,
