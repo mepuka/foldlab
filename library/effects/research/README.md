@@ -99,6 +99,13 @@ repository locations.
   transition/refinement libraries (including LeanServer); and proposes
   a weak-trace refinement plus real-transport conformance architecture.
   The model and theorem docket remain unratified G0 research.
+- [`effect4-layer-semantics-remote-service-design.md`](effect4-layer-semantics-remote-service-design.md)
+  reviews the pinned v4 layer, scope, stream, and HTTP-client semantics
+  behind the ratified four-service streaming architecture, then proposes
+  the service shapes, layer graph, typed error taxonomy, and an
+  eight-item decision docket (transport never a service key, tagged
+  upload restartability, completion witness as a typed channel terminal)
+  for the R2 slice — recommendations only, nothing ratified.
 
 ## Local external inputs
 
