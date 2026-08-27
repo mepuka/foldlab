@@ -5,6 +5,7 @@ import Effects.Conformance.Mutant
 import Effects.Conformance.Registry
 import Effects.Conformance.Obligations
 import Effects.Conformance.Generate
+import Effects.Conformance.Briefing
 
 /-!
 # Conformance schema bundles

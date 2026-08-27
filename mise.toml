@@ -55,6 +55,11 @@ description = "Regenerate the effects conformance ledger"
 dir = "{{config_root}}/library/effects"
 run = "lake exe conformance_ledger CONFORMANCE-LEDGER.md"
 
+[tasks."brief:effects"]
+description = "Print a lane briefing (pass conformance or implementation)"
+dir = "{{config_root}}/library/effects"
+run = "lake exe conformance_brief"
+
 [tasks."check:effects:ts"]
 description = "Frozen install, typecheck, and test the effects TypeScript package"
 dir = "{{config_root}}/library/effects"
