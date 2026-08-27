@@ -96,23 +96,29 @@ def cas002Row (caseId : String) (n : Node) : Value :=
 
 /-! ## The family documents -/
 
-def familyManifest (family meaning : String) (rows : List (String × Value)) :
-    Value :=
+def familyManifestAt (version family meaning : String)
+    (rows : List (String × Value)) : Value :=
   .obj [ ("family", .str family)
        , ("meaning", .str meaning)
-       , ("model", .str modelVersion)
+       , ("model", .str version)
        , ("rows", .arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
 
-def cas001Manifest : Value :=
-  familyManifest "CAS-001" cas001.sentence
-    [ ("roundtrip-smallest-000", cas001RoundtripRow)
-    , ("reject-trailing-byte-001", cas001RejectRow) ]
+def familyManifest (family meaning : String) (rows : List (String × Value)) :
+    Value :=
+  familyManifestAt modelVersion family meaning rows
 
-def cas002Manifest : Value :=
-  familyManifest "CAS-002" cas002.sentence
-    [ ("admit-resolving-ref-000", cas002Row "admit-resolving-ref-000" cas002Pos)
-    , ("reject-dangling-001", cas002Row "reject-dangling-001" cas002Neg)
-    , ("reject-wrong-kind-002", cas002Row "reject-wrong-kind-002" wrongKindNode) ]
+def cas001Rows : List (String × Value) :=
+  [ ("roundtrip-smallest-000", cas001RoundtripRow)
+  , ("reject-trailing-byte-001", cas001RejectRow) ]
+
+def cas002Rows : List (String × Value) :=
+  [ ("admit-resolving-ref-000", cas002Row "admit-resolving-ref-000" cas002Pos)
+  , ("reject-dangling-001", cas002Row "reject-dangling-001" cas002Neg)
+  , ("reject-wrong-kind-002", cas002Row "reject-wrong-kind-002" wrongKindNode) ]
+
+def cas001Manifest : Value := familyManifest "CAS-001" cas001.sentence cas001Rows
+
+def cas002Manifest : Value := familyManifest "CAS-002" cas002.sentence cas002Rows
 
 /-- The committed manifest files: name and rendered content. -/
 def files : List (String × String) :=

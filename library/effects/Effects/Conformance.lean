@@ -2,6 +2,7 @@ import Effects.Conformance.Markdown
 import Effects.Conformance.Json
 import Effects.Conformance.ModelVersion
 import Effects.Conformance.Manifest
+import Effects.Conformance.ManifestReplay
 import Effects.Conformance.Reflected
 import Effects.Conformance.Ledger
 import Effects.Conformance.Mutant

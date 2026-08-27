@@ -49,7 +49,17 @@ run = [
   "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
   "lake exe conformance_manifest conformance/manifest",
   "bun scripts/check-ledger-transitions.ts",
+  "bun scripts/check-mutant-quarantine.ts",
+  "lake exe conformance_mutation",
   "git diff --exit-code -- CONFORMANCE-LEDGER.md conformance/manifest",
+]
+
+[tasks."check:effects:mutation"]
+description = "Assert the mutant quarantine and that every declared mutant moves its attacked family's vectors"
+dir = "{{config_root}}/library/effects"
+run = [
+  "bun scripts/check-mutant-quarantine.ts",
+  "lake exe conformance_mutation",
 ]
 
 [tasks."gen:effects"]
