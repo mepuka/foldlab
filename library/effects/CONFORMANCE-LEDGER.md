@@ -17,8 +17,8 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | CMP-001 | instantiated (HOMOMORPHISM) |
 | CMP-002 | instantiated (DISTINCTNESS) |
 | CMP-003 | deferred to M7 |
-| CTX-001 | pending — TypeScript evidence at M4 |
-| CTX-002 | pending — TypeScript evidence at M4 |
+| CTX-001 | evidenced — TypeScript evidence (test/ReplaySession.test.ts) |
+| CTX-002 | evidenced — TypeScript evidence (test/ReplaySession.test.ts) |
 | ADM-001 | standing review rule |
 | BRG-001 | evidenced — differential suite (test/ReplayReducer.test.ts) |
 | BRG-002 | pending — differential evidence at M6 |

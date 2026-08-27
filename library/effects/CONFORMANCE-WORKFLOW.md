@@ -510,3 +510,29 @@ Stop and return to grilling if:
   with internal history/witness Schemas carrying no canonicality claim
   and no digest-preimage authority; the canonical history-node codec is
   a future declared plan section-7 entry.
+- **M4 acceptance (2026-08-27):** the M4 implementation delivery was
+  reviewed first-hand and accepted: every session transition drives the
+  mirrored reducer (invoke, recorded append, append-failure abort,
+  completion), the transport seam is four defect classes with the
+  session boundary converting them to the tagged session outcome, both
+  Pass A riders landed (flat `Violated`; `ContentNotFound` with
+  admission's `DanglingReference` untouched and put-collision still
+  `StoreFailure`), the kit realizes the ratified live-role/record/replay
+  shape with the runtime brand and typed double-wrap rejection, replay
+  construction closes over nothing live, tripwires surface flat
+  `Violated` outcomes with both permanent negative fixtures, and the
+  seven direction-2 mutants carry the Lean meanings verbatim with the
+  suite asserted red under each. CTX-001 and CTX-002 flip through the
+  tsSide declared-evidence list, built at this review per the Pass A
+  ruling. Observations recorded, no action owed: the
+  operation-description schema bound narrowed to service-free codecs
+  (freeze-postdating, in service of caller-facing type identity);
+  history loading carries an operational cycle guard — a load-side
+  fail-closed check, not a store-admission semantics change, so the
+  parked acyclicity question is untouched; interpreter-invariant
+  breaches map to `StoreFailure` (error-review backlog); the stored
+  witness carries a consumed count and history root rather than the
+  entry list — a representation for the witness re-freeze review to
+  weigh. The first `OutcomeInadmissible` emission arrived with this
+  milestone at outcome decode, as the M3 taxonomy-fidelity ruling
+  anticipated.

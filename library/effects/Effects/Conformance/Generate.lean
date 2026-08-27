@@ -19,9 +19,10 @@ Carrier obligations are the second evidence kind: discharged by model
 construction, with no kit-bearing instance. They flip through the declared
 discharge list below, never through the registry, so "instantiated" keeps
 meaning proved-with-kit and the evidence kinds stay visually distinct on
-the ledger. Bridge obligations are the third kind: differential-suite
-agreement across the manifest seam — G4-labeled sampled evidence, never
-proof — flipping through the declared evidence list once the operator
+the ledger. Bridge and tsSide obligations are the suite-evidenced kinds:
+differential agreement across the manifest seam and TypeScript-side
+typecheck/integration coverage — G4-labeled sampled evidence, never
+proof — flipping through the declared evidence lists once the operator
 accepts the delivery that carries the suite.
 -/
 
@@ -41,6 +42,13 @@ transition check holds `evidenced` green — it never regresses. -/
 def bridgeEvidence : List (String × String) :=
   [("BRG-001", "test/ReplayReducer.test.ts")]
 
+/-- tsSide obligations the operator has accepted as evidenced, with the
+TypeScript suite that carries the evidence. Entered only at an accepted
+delivery review; the transition check holds `evidenced` green. -/
+def tsEvidence : List (String × String) :=
+  [ ("CTX-001", "test/ReplaySession.test.ts")
+  , ("CTX-002", "test/ReplaySession.test.ts") ]
+
 def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
   match rows.find? (·.id == o.id) with
   | some e =>
@@ -56,7 +64,10 @@ def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
       match carrierDischarges.find? (·.1 == o.id) with
       | some (_, thm) => s!"discharged — carrier construction ({thm})"
       | none => s!"pending — by carrier construction at {m}"
-    | .tsSide m => s!"pending — TypeScript evidence at {m}"
+    | .tsSide m =>
+      match tsEvidence.find? (·.1 == o.id) with
+      | some (_, suite) => s!"evidenced — TypeScript evidence ({suite})"
+      | none => s!"pending — TypeScript evidence at {m}"
     | .bridge m =>
       match bridgeEvidence.find? (·.1 == o.id) with
       | some (_, suite) => s!"evidenced — differential suite ({suite})"
