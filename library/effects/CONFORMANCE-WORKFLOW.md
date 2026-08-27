@@ -109,7 +109,7 @@ The catalog (WGR-2), seeded from the obligation ledger:
 | HOMOMORPHISM | `interp (bind p k) = …` over both outcome cases | CMP-001; return/bind laws |
 | CODEC | `decode ∘ encode = some` ∧ `encode` injective on canonical forms | CAS-001 |
 | REJECTION-CLAUSE | `∀ raw, admit raw = error c ↔ Clause c raw` | CAS-002 node admission |
-| AGREEMENT | `∀ x, hyp x → observe (f x) = observe (g x)` | RMT-015 remote-load refinement; RMT-016 cache observation (added at the remote Pass A, 2026-08-27) |
+| AGREEMENT | `∀ x, hyp x → rel (observeF (f x)) (observeG (g x))` | RMT-015 remote-load refinement; RMT-016 cache observation (added at the remote Pass A, 2026-08-27; generalized to the relational form at the R1 correction — equality instances take `rel := Eq`) |
 
 Cross-cutting: every checker carries the boolean-reflection iff
 (`check x = true ↔ Prop x`) — one judgment, one decision surface, one iff.
@@ -760,6 +760,46 @@ Stop and return to grilling if:
   per-operation stream isolation. The remote context labels fill at
   this acceptance, and three entries are minted for the streaming
   planes.
+- **Layer-design ratification and the R2 conformance half
+  (2026-08-27):** the operator ratified the layer-semantics review's
+  eight-item decision docket as recommended
+  (`research/effect4-layer-semantics-remote-service-design.md`, D1–D8):
+  one `layerRemote` provides `CasStore` and `CasTransfer` from one
+  shared adapter build with `CasEvents` a separate layer and the
+  transport never a service key; one additive `CasError` member wraps
+  the typed remote error at the R2 interface re-freeze; explicit
+  Schema-validated remote configuration carries the four ruled byte
+  budgets, authority mode, and redacted credentials — no ambient
+  reference carries semantic policy; upload restartability is a tagged
+  source (`replayable`/`oneShot`) with the address recheck on every
+  attempt; downloads present one uniform verified-bytes stream in a
+  caller scope with early emission an adapter capability, never API
+  shape; the completion witness rides the internal transport channel's
+  typed terminal; concurrency is per-operation child scopes over
+  machine state keyed by operation identifier; and the differential
+  lane binds an abstract conformance-peer interface. Two operator
+  riders land with the ratification: **R2 assumes real transport** —
+  the packet stands up the real HTTP realization of the seam and real
+  TypeScript test harnesses now, not a fake-only baseline; and
+  **LeanServer is ADOPTED for real server semantics**
+  (`AfonsoBitoque/LeanServer`) — a standing adoption to plan for
+  absolutely, landing at its own slice rather than necessarily this
+  or the next one, always behind the abstract peer interface and
+  never as a standards oracle. The R2 conformance half landed with
+  the ratification: the machine gains the dedup amendment (an upload
+  naming an already-admitted key with verifying content completes as
+  success with zero wire commands and only the verification decision —
+  placed inside the verified arm so the ratified entitlement guard is
+  untouched), every R1 statement holds verbatim over the amended step,
+  and the three R1 families regenerate byte-identical, so the change
+  is additive at the unchanged declared model version. `RMT-004`
+  lands as the EXACT-STEP instance over the command-accumulating
+  state; `RMT-015` lands as the first genuinely relational AGREEMENT
+  instance — machine-delivered bytes against the logical store's
+  node, related by exact canonical encoding, on leaf admitted nodes
+  within the byte budget. Two schedule families emit additively, two
+  declared mutants join (thirteen killed), and the ledger transition
+  is two newly green, legal.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the

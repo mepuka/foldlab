@@ -905,7 +905,27 @@ declared mutant per falsification case in both directions.
   Streaming obligation candidates entering section 7 with their
   slices: fragmentation invariance, terminal completion before
   admission, interruption exclusion, budget enforcement, and
-  per-operation stream isolation.
+  per-operation stream isolation. The layer-design docket is ratified
+  (D1–D8, recorded in the workflow's section 14): one `layerRemote`
+  provides `CasStore | CasTransfer` from one shared adapter build,
+  `CasEvents` separate, the transport never a service key; one
+  additive `CasError` member wraps the typed remote error; explicit
+  Schema-validated configuration (four byte budgets, authority mode,
+  redacted credentials), never ambient; tagged upload sources
+  (`replayable`/`oneShot`) with the address recheck each attempt; one
+  uniform verified-bytes download stream in a caller scope; the
+  completion witness as the internal channel's typed terminal;
+  per-operation child scopes; the abstract conformance-peer
+  interface. By operator rider, **R2 assumes real transport**: the
+  slice includes the real `HttpClient` realization of the seam under
+  a declared project wire profile (versioned, documented, explicitly
+  not a standard) and real TypeScript harnesses — an in-process
+  reference server plus a raw-socket hostile server for framing
+  faults — with the deterministic fake-remote retained as the
+  vector-conformance carrier. The R2 Lean half is landed:
+  the machine's dedup amendment, `RMT-004` (EXACT-STEP), and
+  `RMT-015` (the first relational AGREEMENT), with their schedule
+  families and mutants.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
 - **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`. The standards bind
   the retry obligations: an HTTP retry requires application
@@ -919,6 +939,11 @@ declared mutant per falsification case in both directions.
   evidence.
 - **R6** — the live lane and one real backend layer under scoped
   acquisition; the section-4 `Scope` row amendment lands here.
+  LeanServer (`AfonsoBitoque/LeanServer`) is ADOPTED for real server
+  semantics by operator ruling — planned for absolutely, landing at
+  its own slice (not necessarily R2 or R3), always behind the
+  abstract conformance-peer interface with its audited gaps as named
+  detection targets, never a standards oracle.
 
 Exit:
 
