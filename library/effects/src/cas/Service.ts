@@ -1,11 +1,11 @@
 /** Eagerly hydrate Effect services from typed CAS value projections. */
 import { Context, Effect, Layer } from "effect"
-import type { CasStore } from "./CasStore.ts"
+import type { CasStore } from "./Store.ts"
 import type {
   CasValue,
   ProjectionError,
   Root,
-} from "./CasValue.ts"
+} from "./Value.ts"
 
 export interface CasService<Self, S, A, E = never, R = never> {
   /** Hydrate and install the public service tag. Loading, decoding, and

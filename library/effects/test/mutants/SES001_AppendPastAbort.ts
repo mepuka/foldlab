@@ -1,4 +1,4 @@
-import { appendRecord, reduce } from "../../src/Replay.ts"
+import { appendRecord, reduce } from "../../src/replay/Reducer.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice recording past an append failure — a history that is a gapped subsequence, not a truthful prefix."

@@ -18,18 +18,22 @@ ledger, and ratified manifest vectors live under their own gates. See
 The package barrel exports:
 
 - CAS node Schemas, clause-named errors, and content identifiers from
-  `CasNode.ts`;
-- the `CasStore` service and isolated in-memory adapter from `CasStore.ts`;
+  `cas/Node.ts`;
+- the `CasStore` service and isolated in-memory adapter from `cas/Store.ts`;
 - the `Cas.value` typed-value projection and `Cas.service` eager hydration
-  descriptor;
-- replay decisions and the synchronous pure reducer;
-- operation-description types plus `describeService`;
-- the `Replay` service, `ReplayShape.run`, `layerReplay`, and `session`; and
-- `replayable`, which returns the internal-live-role, record, and replay layers.
+  descriptor from `cas/Value.ts` and `cas/Service.ts`;
+- public session carriers and the synchronous pure reducer from
+  `replay/Session.ts` and `replay/Reducer.ts`;
+- operation descriptions and decisions from `replay/Operation.ts` and
+  `replay/Decision.ts`;
+- the runtime `Replay` service, `ReplayShape.run`, `layerReplay`, and `session`
+  from `replay/Replay.ts`; and
+- `replayable` from `replay/ServiceAdapter.ts`, which returns the internal-live
+  role, record, and replay layers.
 
-`ReplayStorage.ts` and `ReplayLive.ts` are internal. Their history/witness
-Schemas and binary carriers are implementation details with no public
-canonicality or stability claim.
+`internal/storage.ts` and `internal/live.ts` are never exported. Their
+history/witness Schemas, binary carriers, and live bindings are implementation
+details with no public canonicality or stability claim.
 
 `Cas.value` encodes a Schema's Encoded form as recursively key-sorted,
 finite-number-only UTF-8 JSON under an explicit kind tag and revision. Its
@@ -38,6 +42,28 @@ decoding failures are `ProjectionCodecFailure`; CAS failures retain their own
 error members. `Cas.service` loads and decodes the root and runs its constructor
 while the returned Layer is acquired, including when hydrating a replayable
 kit's internal live role with `layerAs(kit.live, root)`.
+
+## CAS value schema discipline
+
+A value descriptor chooses one stable JSON-safe Encoded representation for
+each field:
+
+- Encode bytes with `Schema.Uint8ArrayFromHex`, or with
+  `Schema.Uint8ArrayFromBase64` where size matters. Pick one representation per
+  descriptor; never accept both.
+- Encode big integers with `Schema.BigIntFromString`.
+- Encode instants with `Schema.DateTimeUtcFromMillis`; epoch numbers avoid the
+  format and zone ambiguity of ISO strings.
+- Encode options with `Schema.OptionFromNullOr`. If the inner type is itself
+  nullable, use a distinguishing representation instead because `null` cannot
+  identify both cases.
+- Encode set-like data as arrays sorted by an explicitly declared ordering;
+  insertion order is not content identity.
+
+Custom domain codecs use `Schema.decodeTo` or `Schema.encodeTo` only when their
+encode direction is deterministic and total, their Encoded type stays within
+`Schema.Json` (with finite numbers enforced at runtime), and the descriptor has
+a `put` → `get` → `put` fixture asserting that both puts return the same root.
 
 Each described service method must accept exactly one request value. Wrap
 multiple logical arguments in a request object before describing the method.

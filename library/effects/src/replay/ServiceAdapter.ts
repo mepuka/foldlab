@@ -18,7 +18,7 @@ import type {
   ServiceDescriptions,
 } from "./Operation.ts"
 import { Replay, type ReplayShape } from "./Replay.ts"
-import { bindLive } from "./ReplayLive.ts"
+import { bindLive } from "../internal/live.ts"
 
 /** Phantom identifier for the internally minted live role key: the same
  * shape as the public service, under a distinct identity, so record-mode

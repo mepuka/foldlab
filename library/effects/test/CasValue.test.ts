@@ -1,21 +1,21 @@
 import { expect, it } from "@effect/vitest"
-import { Effect, Encoding, Schema } from "effect"
+import { Effect, Encoding, Schema, SchemaGetter } from "effect"
 import { Cas } from "../src/index.ts"
 import {
   CasNodeInput,
   ContentId,
   ContentNotFound,
   UnknownKind,
-} from "../src/CasNode.ts"
+} from "../src/cas/Node.ts"
 import {
   CasStore,
   layerMemory,
   type CasAddress,
-} from "../src/CasStore.ts"
+} from "../src/cas/Store.ts"
 import {
   ProjectionCodecFailure,
   type Root,
-} from "../src/CasValue.ts"
+} from "../src/cas/Value.ts"
 
 const deterministicAddress = (): CasAddress => {
   const ids = new Map<string, ContentId>()
@@ -38,6 +38,22 @@ const Snapshot = Schema.Struct({
   items: Schema.Array(Schema.Struct({ key: Schema.String, value: Schema.Number })),
 })
 type Snapshot = typeof Snapshot.Type
+
+const DomainLabel = Schema.Struct({ value: Schema.String })
+interface DomainLabel extends Schema.Schema.Type<typeof DomainLabel> {}
+
+const DomainLabelFromString = Schema.String.pipe(
+  Schema.decodeTo(DomainLabel, {
+    decode: SchemaGetter.transform((value) => ({ value })),
+    encode: SchemaGetter.transform((label) => label.value),
+  }),
+)
+
+const CustomCodecValue = Schema.Struct({
+  bytes: Schema.Uint8ArrayFromHex,
+  label: DomainLabelFromString,
+})
+interface CustomCodecValue extends Schema.Schema.Type<typeof CustomCodecValue> {}
 
 it.effect("PRJ-001 rejects a root whose resident node has the wrong kind", () => {
   const first = Cas.value({ kindTag: 0x31, revision: 1, schema: Snapshot })
@@ -86,6 +102,27 @@ it.effect("PRJ-002 round-trips nested values and deduplicates identical projecti
   }).pipe(Effect.provide(layerMemory(deterministicAddress())))
 })
 
+it.effect("PRJ-002 custom-codec round trip returns the same root", () => {
+  const projection = Cas.value({
+    kindTag: 0x39,
+    revision: 1,
+    schema: CustomCodecValue,
+  })
+  const input: CustomCodecValue = {
+    bytes: new Uint8Array([0x00, 0x7f, 0xff]),
+    label: { value: "fixture" } satisfies DomainLabel,
+  }
+
+  return Effect.gen(function* () {
+    const first = yield* projection.put(input)
+    const restored = yield* projection.get(first)
+    const second = yield* projection.put(restored)
+
+    expect(restored).toEqual(input)
+    expect(second).toBe(first)
+  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+})
+
 it.effect("PRJ-003 reports schema decode failure as a typed projection error", () => {
   const projection = Cas.value({ kindTag: 0x34, revision: 2, schema: Snapshot })
 
@@ -119,7 +156,12 @@ it.effect("PRJ-003 passes a dangling projected root through as ContentNotFound",
 })
 
 it.effect("PRJ-003 reports non-finite encoded numbers without folding into StoreFailure", () => {
-  const projection = Cas.value({ kindTag: 0x37, revision: 1, schema: Schema.Unknown })
+  const projection = Cas.value({
+    kindTag: 0x37,
+    revision: 1,
+    // @ts-expect-error Schema.Unknown has no JSON-safe Encoded bound.
+    schema: Schema.Unknown,
+  })
 
   return Effect.gen(function* () {
     const error = yield* Effect.flip(projection.put(Number.NaN))

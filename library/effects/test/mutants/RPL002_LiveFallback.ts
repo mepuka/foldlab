@@ -1,4 +1,4 @@
-import { reduce } from "../../src/Replay.ts"
+import { reduce } from "../../src/replay/Reducer.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice a replay mismatch falling through to a live adapter — the decision trace, not a separate oracle, is what convicts the fallback."

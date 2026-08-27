@@ -6,7 +6,7 @@
  * in-memory-adapter detail with no public stability or canonicality claim.
  */
 import { Encoding, Schema } from "effect"
-import { ContentId } from "./CasNode.ts"
+import { ContentId } from "../cas/Node.ts"
 
 const ReplayMode = Schema.Literals(["record", "replay"])
 const MismatchCategory = Schema.Literals([

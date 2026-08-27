@@ -13,22 +13,22 @@ import {
   ContentId,
   StoreFailure,
   type CasError,
-} from "../src/CasNode.ts"
+} from "../src/cas/Node.ts"
 import {
   layerMemory,
   type CasAddress,
-} from "../src/CasStore.ts"
-import type { ServiceDescriptions } from "../src/Operation.ts"
+} from "../src/cas/Store.ts"
+import type { ServiceDescriptions } from "../src/replay/Operation.ts"
 import {
   layerReplay,
   Replay,
   session,
-} from "../src/Replay.ts"
+} from "../src/replay/Replay.ts"
 import {
   DoubleWrap,
   replayable,
   type Live,
-} from "../src/ServiceAdapter.ts"
+} from "../src/replay/ServiceAdapter.ts"
 
 class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>()(
   "Rates/QuoteUnavailable",

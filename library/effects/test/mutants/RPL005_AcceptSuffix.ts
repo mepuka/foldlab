@@ -1,4 +1,4 @@
-import { reduce } from "../../src/Replay.ts"
+import { reduce } from "../../src/replay/Reducer.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice a completion that hides recorded actions never re-emitted — the same final value must not mask an unconsumed suffix."

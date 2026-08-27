@@ -1,4 +1,5 @@
-import { reduce, type Outcome } from "../../src/Replay.ts"
+import { reduce } from "../../src/replay/Reducer.ts"
+import type { Outcome } from "../../src/replay/Session.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice identical invocation content collapsing into one occurrence — request-content-keyed reuse answering an occurrence."

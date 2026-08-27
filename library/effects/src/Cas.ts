@@ -1,3 +1,3 @@
 /** Namespace facade for typed CAS value and service projections. */
-export { value } from "./CasValue.ts"
-export { service } from "./CasService.ts"
+export { value } from "./cas/Value.ts"
+export { service } from "./cas/Service.ts"

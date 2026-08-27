@@ -1,21 +1,21 @@
 import { expect, it } from "@effect/vitest"
 import { Context, Effect, Layer, Schema } from "effect"
-import { ContentId } from "../src/CasNode.ts"
-import { layerMemory } from "../src/CasStore.ts"
+import { ContentId } from "../src/cas/Node.ts"
+import { layerMemory } from "../src/cas/Store.ts"
 import {
   describeService,
   type ServiceDescriptions,
-} from "../src/Operation.ts"
+} from "../src/replay/Operation.ts"
 import {
   layerReplay,
   Replay,
   session,
   type ReplayShape,
-} from "../src/Replay.ts"
+} from "../src/replay/Replay.ts"
 import {
   replayable,
   type Live,
-} from "../src/ServiceAdapter.ts"
+} from "../src/replay/ServiceAdapter.ts"
 
 class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>()(
   "Hardening/QuoteUnavailable",

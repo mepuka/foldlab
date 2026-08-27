@@ -7,14 +7,14 @@ import {
   ContentId,
   StoreFailure,
   type CasError,
-} from "../src/CasNode.ts"
+} from "../src/cas/Node.ts"
 import {
   CasStore,
   decodeCasNode,
   encodeCasNode,
   layerMemory,
   type CasAddress,
-} from "../src/CasStore.ts"
+} from "../src/cas/Store.ts"
 
 const Bytes = Schema.Array(Byte)
 const AddressBytes = Bytes.check(Schema.isLengthBetween(32, 32))

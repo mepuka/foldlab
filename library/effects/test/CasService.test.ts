@@ -1,22 +1,22 @@
 import { expect, it } from "@effect/vitest"
 import { Context, Effect, Encoding, Layer, Schema } from "effect"
 import { Cas } from "../src/index.ts"
-import { ContentId } from "../src/CasNode.ts"
+import { ContentId } from "../src/cas/Node.ts"
 import {
   layerMemory,
   type CasAddress,
-} from "../src/CasStore.ts"
-import type { Root } from "../src/CasValue.ts"
-import type { ServiceDescriptions } from "../src/Operation.ts"
+} from "../src/cas/Store.ts"
+import type { Root } from "../src/cas/Value.ts"
+import type { ServiceDescriptions } from "../src/replay/Operation.ts"
 import {
   layerReplay,
   session,
-} from "../src/Replay.ts"
+} from "../src/replay/Replay.ts"
 import {
   DoubleWrap,
   replayable,
   type Live,
-} from "../src/ServiceAdapter.ts"
+} from "../src/replay/ServiceAdapter.ts"
 
 const deterministicAddress = (): CasAddress => {
   const ids = new Map<string, ContentId>()

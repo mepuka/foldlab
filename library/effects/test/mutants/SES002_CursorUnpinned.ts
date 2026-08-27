@@ -1,4 +1,4 @@
-import { reduce } from "../../src/Replay.ts"
+import { reduce } from "../../src/replay/Reducer.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice a step that breaks session-state well-formedness — the record-mode cursor detaches from the history length."

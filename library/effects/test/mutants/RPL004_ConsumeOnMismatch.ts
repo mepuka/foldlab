@@ -1,4 +1,4 @@
-import { reduce } from "../../src/Replay.ts"
+import { reduce } from "../../src/replay/Reducer.ts"
 import type { ReplayReducer } from "../ReplayFixtures.ts"
 
 export const meaning = "Killing this mutant demonstrates the vectors notice a mismatch that fails open — consuming the occurrence it rejected instead of freezing the cursor."

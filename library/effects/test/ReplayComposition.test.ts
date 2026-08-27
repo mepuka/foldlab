@@ -6,23 +6,23 @@
  */
 import { expect, it } from "@effect/vitest"
 import { Context, Effect, Encoding, Layer, Schema } from "effect"
-import { ContentId, type CasNodeInput } from "../src/CasNode.ts"
+import { ContentId, type CasNodeInput } from "../src/cas/Node.ts"
 import {
   CasStore,
   decodeCasNode,
   layerMemory,
   type CasAddress,
   type CasStoreShape,
-} from "../src/CasStore.ts"
-import type { ServiceDescriptions } from "../src/Operation.ts"
-import { layerReplay, Replay, session } from "../src/Replay.ts"
+} from "../src/cas/Store.ts"
+import type { ServiceDescriptions } from "../src/replay/Operation.ts"
+import { layerReplay, Replay, session } from "../src/replay/Replay.ts"
 import {
   decodeHistoryEntry,
   decodeWitness,
   StoredHistoryEntry,
   StoredWitness,
-} from "../src/ReplayStorage.ts"
-import { DoubleWrap, replayable } from "../src/ServiceAdapter.ts"
+} from "../src/internal/storage.ts"
+import { DoubleWrap, replayable } from "../src/replay/ServiceAdapter.ts"
 
 class StockUnavailable extends Schema.TaggedError<StockUnavailable>()(
   "Composition/StockUnavailable",

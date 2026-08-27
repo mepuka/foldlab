@@ -19,8 +19,8 @@ import {
   UnknownKind,
   type CasError,
   type ContentId as ContentIdType,
-} from "./CasNode.ts"
-import { CasSchemeVersion, CasStore } from "./CasStore.ts"
+} from "./Node.ts"
+import { CasSchemeVersion, CasStore } from "./Store.ts"
 
 declare const RootTypeId: unique symbol
 
@@ -45,10 +45,10 @@ export class ProjectionCodecFailure
 
 export type ProjectionError = CasError | ProjectionCodecFailure
 
-export interface ValueOptions<A, I> {
+export interface ValueOptions<A> {
   readonly kindTag: typeof Byte.Type
   readonly revision: number
-  readonly schema: Schema.Codec<A, I, never, never>
+  readonly schema: Schema.Codec<A, Schema.Json, never, never>
 }
 
 export interface CasValue<A> {
@@ -175,7 +175,7 @@ const decodedEnvelope = (
 const makeRoot = <A>(id: ContentIdType): Root<A> => id as Root<A>
 
 /** Construct a typed value projection over the in-memory CAS service. */
-export const value = <A, I>(options: ValueOptions<A, I>): CasValue<A> => {
+export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
   const kindTag = Byte.make(options.kindTag)
   if (kindTag === HistoryKindTag || kindTag === WitnessKindTag) {
     throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)

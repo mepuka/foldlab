@@ -27,7 +27,7 @@ import {
   UnknownKind,
   WrongKindReference,
   type CasError,
-} from "./CasNode.ts"
+} from "./Node.ts"
 
 export interface CasStoreShape {
   /** Admit and store a node. Every referenced address must already resolve

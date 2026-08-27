@@ -1,6 +1,6 @@
 /** Private bridge between a record-mode service wrapper and Replay.invoke. */
 import type { Effect } from "effect"
-import type { AnyOperationDescription } from "./Operation.ts"
+import type { AnyOperationDescription } from "../replay/Operation.ts"
 
 type LiveHandler<D extends AnyOperationDescription> = (
   request: D["request"]["Type"],

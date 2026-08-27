@@ -1,14 +1,14 @@
 import { expect } from "@effect/vitest"
 import { Effect, Schema } from "effect"
 import { readFile } from "node:fs/promises"
-import type { Decision } from "../src/Decision.ts"
+import type { Decision } from "../src/replay/Decision.ts"
+import { reduce } from "../src/replay/Reducer.ts"
 import {
   isWellFormed,
-  reduce,
   type Input,
   type SessionState,
   type StepResult,
-} from "../src/Replay.ts"
+} from "../src/replay/Session.ts"
 
 const OutcomeSchema = Schema.Union([
   Schema.TaggedStruct("Success", { value: Schema.String }),

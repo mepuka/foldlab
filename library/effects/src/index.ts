@@ -9,15 +9,17 @@
  * and Lean model claims remain separate surfaces.
  */
 export * as Cas from "./Cas.ts"
-export * from "./CasNode.ts"
-export * from "./CasStore.ts"
-export * from "./CasValue.ts"
+export * from "./cas/Node.ts"
+export * from "./cas/Store.ts"
+export * from "./cas/Value.ts"
 export type {
   CasService,
   EffectServiceOptions,
   SyncServiceOptions,
-} from "./CasService.ts"
-export * from "./Decision.ts"
-export * from "./Operation.ts"
-export * from "./Replay.ts"
-export * from "./ServiceAdapter.ts"
+} from "./cas/Service.ts"
+export * from "./replay/Decision.ts"
+export * from "./replay/Operation.ts"
+export * from "./replay/Session.ts"
+export * from "./replay/Reducer.ts"
+export * from "./replay/Replay.ts"
+export * from "./replay/ServiceAdapter.ts"

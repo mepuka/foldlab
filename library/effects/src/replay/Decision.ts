@@ -7,7 +7,7 @@
  * "whether a live adapter was requested" is a derived projection of the
  * trace, never a separate Boolean oracle.
  */
-import type { MismatchCategory } from "./Replay.ts"
+import type { MismatchCategory } from "./Session.ts"
 
 export type Decision =
   | { readonly _tag: "LiveDelegation"; readonly operation: string; readonly at: number }
