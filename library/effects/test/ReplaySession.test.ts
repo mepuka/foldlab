@@ -120,7 +120,7 @@ interface TrackingAddress {
   readonly witnessedOutcomes: () => ReadonlyArray<StoredWitness["outcome"]>
 }
 
-const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
+const trackingAddress = (): TrackingAddress => {
   const ids = new Map<string, ContentId>()
   const historyParents = new Map<ContentId, ContentId | undefined>()
   const witnessedOutcomes: Array<StoredWitness["outcome"]> = []
@@ -128,8 +128,8 @@ const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
   let latestHistory: ContentId | undefined
   return {
     address: {
-      digest: (canonicalBytes) => {
-        const calculate = Effect.sync(() => {
+      digest: (canonicalBytes) =>
+        Effect.sync(() => {
           const key = Encoding.encodeHex(canonicalBytes)
           const resident = ids.get(key)
           if (resident !== undefined) return resident
@@ -147,11 +147,7 @@ const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
             witnessedOutcomes.push(witness.outcome)
           }
           return id
-        })
-        return yieldHistoryDigest && canonicalBytes[1] === 0x48
-          ? Effect.yieldNow.pipe(Effect.andThen(calculate))
-          : calculate
-      },
+        }),
     },
     latestHistory: () => latestHistory,
     historyDepth: (root) => {
