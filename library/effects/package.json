@@ -5,6 +5,14 @@
   "type": "module",
   "description": "Effect-native content-addressed record/replay with local and remote CAS adapters",
   "license": "Apache-2.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "PROFILE-CAS-HTTP-0.md"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run"
