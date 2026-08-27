@@ -862,6 +862,38 @@ Stop and return to grilling if:
   DEFERRED to R3, whose closure slice gains discovery-order pull
   explicitly; the fixtures' pull planner already models both orders.
   Acceptance review remains open until the correction delivery.
+- **Merkle design ratification (2026-08-27):** the operator ratified
+  the Merkle conformance and proof-infrastructure design's nine-item
+  docket as recommended
+  (`research/merkle-conformance-proof-infrastructure.md`, K1–K9) and
+  directed the MRK-1 slice — resolving K7's sequencing question as
+  MRK-1 before R3. Binding decisions: the first slice is the chunk
+  tree, inclusion proofs, and the verified-streaming decoder
+  (consistency proofs second); the model altitude is an abstract
+  address function over STRUCTURAL pre-images — domain separation
+  and position binding as constructor identity and an index field,
+  byte prefixes deferred to the codec layer with exactness proofs;
+  the collision posture is constructive witness disjuncts with no
+  collision-resistance axiom and per-obligation Level-1 hypotheses
+  only where needed; the decoder is a sans-io machine with temporal
+  trace laws; existing schema families carry the instances, and a
+  new family may be minted only through a named WGR-2 stop
+  condition; vectors are toy-digest, model-executed, with hostile
+  mutations and malleability-acceptance cases; the mechanized prior
+  art is utilized restate-and-reprove per the design's source
+  verdicts (VCVio's binding kernel and addressed position binding as
+  the primary Lean-shaped source, LambdaAuth's disjunct discipline
+  including its keeps-consuming correction, the ADS-functor merge
+  algebra, the Agda consistency template, the Dafny incremental-root
+  skeleton, and veri-auth's statement architecture); and the
+  prover/ideal/verifier triad is adopted as the statement
+  architecture, with every future proof-stream optimization a
+  verified refinement re-proving both security and correctness
+  halves. Ten MRK obligations enter plan section 7 with this record;
+  the greenfield standing (no prover has mechanized bao-style
+  streaming or the RFC 9162 verification algorithms) is recorded
+  with the splash discipline unchanged — novelty is claimed only
+  after the verifier passes.
 - **R2 correction acceptance (2026-08-27):** the correction delivery
   was reviewed first-hand — the full diff read against the ratified
   docket item by item, both gates run personally (ninety TypeScript

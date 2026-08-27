@@ -607,6 +607,16 @@ IDs are provisional planning identifiers.
 | `RMT-014` | Batch framing, capability documents, and presence indexes parse fail-closed with the same posture as node bytes | Lean FAIL-CLOSED instance and TS fixtures | malformed control state partially applied | control-state codecs |
 | `RMT-015` | A successful remote load implements the logical admitted-node load | Lean AGREEMENT instance | a remote load succeeding with a node the logical load would not produce | AGREEMENT family |
 | `RMT-016` | A local admitted-node hit is observationally equivalent to a successful remote load for immutable nodes | Lean AGREEMENT instance | a cache hit observably diverging from the remote answer | cache discipline |
+| `MRK-001` | One chunk-tree root per declared recipe and content: chunking is a lossless declared partition, and the root is a function of the recipe parameters and the bytes | Lean CODEC instance (rejoining chunks restores the bytes; chunking injective) | a recipe inferred from data, or a lossy rechunk minting a second root | declared chunking recipe |
+| `MRK-002` | The streaming decoder emits a chunk only after it verifies against its expected subtree address; against a committed chunk list, every emission matches, or a hash-collision witness exists in the consumed prefix — the decoder is not obliged to detect the collision | Lean TRACE-EXCLUDES instance plus the named soundness-with-witness theorem | an unverified chunk emitted, or a mismatched emission with no extractable collision | verified-streaming decoder |
+| `MRK-003` | No decoder run observes the length or end-of-input before the final chunk validates against the root | Lean TRACE-EXCLUDES instance (temporal over the run) | a truncated or length-tweaked run exposing length before final-chunk validation | verified-streaming decoder |
+| `MRK-004` | A complete decode determines its root: the recomputed root of the emitted output equals the expected root, so no output completely decodes under two roots | Lean carrier theorem over the decoder run | one output accepted to completion under two distinct roots | verified-streaming decoder |
+| `MRK-005` | Slice decoding agrees with the whole decode restricted to the requested range | Lean AGREEMENT instance (relational) | a slice emitting bytes the whole decode would not emit at those offsets | slice extractor and decoder |
+| `MRK-006` | The inclusion verifier accepts exactly the openings whose recomputed root matches; honestly generated paths verify; and two accepted openings of one root and index with different leaves yield a computable collision | Lean reflection iff, completeness theorem, and binding extraction | acceptance without matching recomputation, or binding violated with no extracted collision | inclusion verifier |
+| `MRK-007` | The consistency verifier accepts exactly the related root pairs, and consistency forces prefix agreement or exhibits a collision | Lean reflection iff and prefix-agreement corollary (second Merkle slice) | consistent roots whose committed prefixes diverge with no extracted collision | consistency verifier |
+| `MRK-008` | The decoder is a pure fold: runs compose over input concatenation, so transport fragmentation below the parser cannot change any emission, rejection, or terminal | Lean carrier theorem (run composition) now; TypeScript rechunk-equivalence fixtures at the implementation slice | a run whose outcome depends on input grouping | verified-streaming decoder |
+| `MRK-009` | Slice and encoding bytes are transport, never identity: only roots and decoded bytes are identity-bearing, and encoding malleability is documented rather than fought | standing review rule; negative fixtures at the implementation slice | an API comparing encodings byte-for-byte or minting identity from a slice or proof carrier | API review |
+| `MRK-010` | A chunk verifying at one index never verifies at another index under the same root, or a collision is exhibited | Lean binding extraction theorem (position binding — the target the informal source admits it lacks) | one chunk accepted at two indices with no extractable collision | inclusion verifier |
 
 ## 8. Test and evidence strategy
 
@@ -931,6 +941,29 @@ declared mutant per falsification case in both directions.
   family-binding machinery, expressed in the test library's own
   idioms with no custom runners, and the replay fixture module
   delegates compatibly.
+- **MRK-1 — the Merkle proof lane, first slice** (ratified at the
+  Merkle design ratification, sequenced before R3 by operator
+  ruling; design authority:
+  [`research/merkle-conformance-proof-infrastructure.md`](research/merkle-conformance-proof-infrastructure.md)).
+  Conformance-side only: the `Effects/Merkle/` model — structural
+  pre-images carrying domain separation and position in constructors
+  over the abstract address function; chunking as a declared lossless
+  partition; the RFC 9162-shaped root recursion and inclusion paths;
+  the executable inclusion verifier with its reflection, completeness,
+  and computable binding extraction; the verified-streaming decoder
+  as a sans-io machine with temporal laws; slice decoding. Collision
+  posture: constructive witness disjuncts, no collision-resistance
+  axiom, Level-1 `hInj` only where a statement needs it. Obligations
+  `MRK-001`–`MRK-006` and `MRK-008`–`MRK-010` with instances in
+  existing families, declared direction-1 mutants, and model-executed
+  vector families additive at the unchanged model version. The
+  implementation-side consumption (chunked `CasBlob`, early-emission
+  `CasTransfer`, TypeScript mirrors and harness lanes) is a LATER
+  slice that consumes these ratified families.
+- **MRK-2 — consistency proofs** (`MRK-007`): the RFC 9162
+  `SUBPROOF` shape over append-only hash-chained structures (session
+  histories, witnesses), with the prefix-agreement corollary.
+  Sequenced by the operator after MRK-1.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`;
   plus discovery-order pull (ruled at the R2 audit: a cold replica
   pulling a reference-carrying root must discover root-first and
