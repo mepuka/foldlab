@@ -3,10 +3,11 @@
 `@foldlab/effect-replay` is a private mixed TypeScript/Lean library for
 recording explicitly described Effect service calls into a content-addressed
 history and replaying them without a live adapter. The TypeScript implementation
-is current through M5, the E2/E3 descriptor slice, and the R3 remote front end:
-the in-memory and remote CAS adapters, pure reducer, session service,
-replayable service kit, transparent orchestration, streamed transfer service,
-and typed value/service projection are present.
+is current through M5, the E2/E3 descriptor slice, the R3 remote front end, and
+the record-mode delegation protocol at `effects-model@0.2.0`: the in-memory and
+remote CAS adapters, pure reducer, session service, replayable service kit,
+transparent orchestration, streamed transfer service, verified blob reads, and
+typed value/service projection are present.
 
 The library keeps different evidence surfaces separate. TypeScript compilation
 and tests observe the runtime implementation; the Lean model, conformance
@@ -18,14 +19,15 @@ ledger, and ratified manifest vectors live under their own gates. See
 
 The package barrel exports exactly two namespaces — `Cas` and `Replay` — one
 per plane. Inside a namespace the `Cas` prefix of internal module names drops:
-the store tag is `Cas.Store`, the transfer tag is `Cas.Transfer`, blob reads
-live under `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
+the store tag is `Cas.Store`, the transfer tag is `Cas.Transfer`, the blob
+surface is `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
 
 - `Cas` carries the node Schemas, clause-named errors, and content
   identifiers; the `Store` service tag with the isolated in-memory adapter
   (`Cas.layerMemory`) and the scheme-0 canonical node codec
   (`Cas.encodeNode`/`Cas.decodeNode`); the `value` typed-value projection and
-  `service` eager hydration descriptor; verified blob reads under `Cas.Blob`;
+  `service` eager hydration descriptor; verified blob reads and recipe-1 blob
+  construction under `Cas.Blob`;
   the `Transfer` service tag with the `restartable`/`oneShot` upload sources;
   the typed remote configuration and failure family; and `Cas.layerRemote`,
   which builds one shared `Store | Transfer` adapter and keeps the
@@ -40,18 +42,20 @@ live under `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
 Deeper module paths (`cas/*.ts`, `replay/*.ts`) remain importable for tests
 and correspondence work; the reducer's clause helpers live only there.
 
-`internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts`
-modules are never exported. Their history/witness Schemas, binary carriers,
-live bindings, remote state machine, and untrusted transport seam are
-implementation details with no public canonicality or stability claim.
+`internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts` and
+`internal/merkle*.ts` modules are never exported. Their history/witness
+Schemas, binary carriers, live bindings, remote state machine, untrusted
+transport seam, and merkle tree/proof codecs are implementation details with
+no public canonicality or stability claim.
 
 `Cas.value` encodes a Schema's Encoded form as recursively key-sorted,
 finite-number-only UTF-8 JSON under an explicit kind tag and revision. Its
 phantom `Root<A>` never skips the resident-node kind check. Encoding and
 decoding failures are `ProjectionCodecFailure`; CAS failures retain their own
-error members. `Cas.service` loads and decodes the root and runs its constructor
-while the returned Layer is acquired, including when hydrating a replayable
-kit's internal live role with `layerAs(kit.live, root)`.
+error members. `Cas.service` returns a descriptor whose `layer` and `layerAs`
+load and decode the root and run its constructor while the returned Layer is
+acquired; `descriptor.layerAs(kit.live, root)` installs that same shape under a
+replayable kit's internal live role instead of the public tag.
 
 ## CAS value schema discipline
 
@@ -117,14 +121,15 @@ wire, `local-authoritative` admits locally without a remote claim, and
 transport errors, `sentBytes` is necessarily a conservative prepared-byte
 witness because the platform does not expose the transmitted count.
 
-The four byte budgets bind at these `cas-http/0` stages:
+Four byte budgets and one key-count bound bind at these `cas-http/0` stages:
 
 | Stage | Plane and bound |
 |---|---|
 | `encoded` | Canonical upload bytes, checked by the machine before wire issue. |
 | `decoded` | Load `content-length` declaration and the running response-byte counter. |
-| `decompressed` | No distinct codec stage exists in `cas-http/0`; it shares the response counter with `decoded`. |
+| `decompressed` | Non-identity `content-encoding` is refused as `invalidHeaders`, so no codec stage ever runs; the bound is still checked against the `decoded` response counter. |
 | `queued` | Bytes buffered awaiting admission, independent of transport or source rechunking. |
+| `keys` | Batch key count, bounded by the probed `maxBatchKeys` capability rather than by configuration. |
 
 The current adapter recomputes and checks downloads completely before exposing bytes, using a scoped,
 decoded-budget-bounded in-memory spool. Filesystem spooling and authenticated
@@ -184,12 +189,14 @@ From the repository root:
 ```powershell
 mise run check:effects:ts
 mise run check:effects
+mise run check:effects:research
 ```
 
 The first performs the frozen Bun install, strict source/test typechecks, and
 Vitest suite. The second builds the Lean package under `--wfail`, regenerates
 the ledger and manifests, checks transition and mutant constraints, and asserts
-that generated conformance surfaces are byte-unchanged.
+that generated conformance surfaces are byte-unchanged. The third asserts the
+research snapshots are byte-equal to their canonical owners.
 
 Research snapshots and their ownership are indexed in
 [`research/README.md`](research/README.md). Code is licensed under the

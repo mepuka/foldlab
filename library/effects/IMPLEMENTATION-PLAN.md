@@ -177,14 +177,17 @@ layer memoization, and runtime primitive steps are not initial observations.
 
 ### Mismatch taxonomy
 
-Six ratified categories. Request-side, checked against the entry at the
+Eight ratified categories. Request-side, checked against the entry at the
 cursor: operation mismatch, revision mismatch, request mismatch, and history
 exhausted. Completion-side: unconsumed suffix. Outcome-side, checked at
-consumption: outcome inadmissible. "Order mismatch" is deliberately not a
-category — under exact positional matching it always manifests as a
-request-side case at the current position. CAS storage failures are a distinct
-typed error family, never mismatch categories; ambient-service violations are
-a distinct session-outcome case.
+consumption: outcome inadmissible. Protocol-side, checked in record mode
+against the outstanding delegation: delegation outstanding, when an invocation
+arrives while one is already in flight, and unsolicited outcome, when a
+recorded outcome arrives with no delegation outstanding or beside a different
+one. "Order mismatch" is deliberately not a category — under exact positional
+matching it always manifests as a request-side case at the current position.
+CAS storage failures are a distinct typed error family, never mismatch
+categories; ambient-service violations are a distinct session-outcome case.
 
 ### Initial equalities and distinctions
 
