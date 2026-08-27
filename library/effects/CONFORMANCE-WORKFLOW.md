@@ -1260,3 +1260,39 @@ Stop and return to grilling if:
   packaging and the report, inspection, and repository surfaces fold
   into the F2, F3, and S-lane letters. The review and its receipt
   are committed with this record.
+- **F1 acceptance (2026-08-27):** the delivery (two commits, roughly
+  twenty-two hundred lines) was reviewed first-hand against the F1
+  packet and the W1–W6 letter, and the gates run personally: one
+  hundred thirteen TypeScript tests across fifteen files with both
+  typechecks and the frozen install, the Lean tree and committed
+  manifests untouched by the delivery, and — as at R2 — zero ledger
+  transitions, since the R3 rows are Lean-primary and the delivered
+  halves complete evidence columns of rows already green. ACCEPTED.
+  The machine mirror extends arm by arm in correspondence order:
+  the four planning-and-closure state components, exact
+  request-order batch accounting by structural equality, presence
+  noting that drops found bytes and admits nothing, the key-count
+  budget, the entitlement-gated publish, total four-state wire
+  dispatch, and the cache-entitlement guard narrowed to the
+  uploading arm. The wire half follows the profile to the letter:
+  capabilities at the control plane parsed by the closed eight-byte
+  decoder with re-encode comparison, find-missing posting the
+  canonical key-list document with 413 mapping to capacity for
+  batches only, publish putting the declared closure to the root
+  registry, and acknowledgments accepting 200, 201, and 204 — with
+  204 handled as header-terminated per its standard and nonempty
+  acknowledgment bodies refused as a typed protocol violation. The
+  public surface lands the ratified letter: capabilities, missing,
+  publish, and the push composite on the streamed-transfer service;
+  presence as request-order subsequences documented as planning
+  data; push enumerating the local closure children-first with a
+  typed dangling-reference failure before any wire traffic,
+  negotiating in capability-sized batches, and publishing last; the
+  three error-vocabulary extensions exactly as ratified. Five
+  conformance fixtures consume the R3 families through closed
+  Schema envelopes with the extended state summary; five mutants
+  carry the Lean meanings byte-verbatim and run red. Observations,
+  no action owed: the capability probe per layer acquisition is an
+  early carrier for the R4 capability-discovery row; the package
+  description was updated to name the delivered scope; Q5 and the
+  F3 staging-area slice remain the open R3-adjacent work.
