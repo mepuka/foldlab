@@ -1034,10 +1034,14 @@ const makeBlockingTransport = (
 ): Effect.Effect<{
   readonly transport: RemoteCasTransport
   readonly started: Deferred.Deferred<void>
+  readonly restarted: Deferred.Deferred<void>
   readonly finalized: Ref.Ref<boolean>
+  readonly blockedIssues: () => number
 }> => Effect.gen(function* () {
   const started = yield* Deferred.make<void>()
+  const restarted = yield* Deferred.make<void>()
   const finalized = yield* Ref.make(false)
+  let blockedIssues = 0
   const capabilityBytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
   const complete = (
     events: ReadonlyArray<RemoteWireEvent>,
@@ -1055,8 +1059,9 @@ const makeBlockingTransport = (
     issue: (_operationId, _attempt, request) => {
       const command = request.command
       if (command._tag === blocked) {
+        blockedIssues += 1
         return Channel.fromEffectDone(
-          Deferred.succeed(started, undefined).pipe(
+          Deferred.succeed(blockedIssues === 1 ? started : restarted, undefined).pipe(
             Effect.andThen(Effect.never),
             Effect.ensuring(Ref.set(finalized, true)),
           ),
@@ -1079,7 +1084,7 @@ const makeBlockingTransport = (
       ))
     },
   }
-  return { transport, started, finalized }
+  return { transport, started, restarted, finalized, blockedIssues: () => blockedIssues }
 })
 
 it.effect("capability probe interruption finalizes its transport", () =>
@@ -1155,6 +1160,24 @@ it.effect("lazy capability probing remains deadline bounded", () =>
       completion: "possiblyProcessed",
     })
     expect(yield* Ref.get(fixture.finalized)).toBe(true)
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("interrupting the first lazy capability probe does not poison its cache", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const fixture = yield* makeBlockingTransport("ProbeCapabilities")
+    const remoteConfig = config("http://127.0.0.1:1", { capabilityProbe: "lazy" })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(remoteConfig, fixture.transport, address)
+
+    const first = yield* adapter.transfer.capabilities.pipe(Effect.forkScoped)
+    yield* Deferred.await(fixture.started)
+    yield* Fiber.interrupt(first)
+    expect(fixture.blockedIssues()).toBe(1)
+
+    const second = yield* adapter.transfer.capabilities.pipe(Effect.forkScoped)
+    yield* Deferred.await(fixture.restarted)
+    expect(fixture.blockedIssues()).toBe(2)
+    yield* Fiber.interrupt(second)
   }).pipe(Effect.provide(TestCrypto))))
 
 it.effect("find-missing interruption finalizes transport and clears in-flight state", () =>

@@ -1,6 +1,7 @@
 /** Verified semantic adapter between CasStore and the untrusted transport. */
 import {
   Channel,
+  Duration,
   Effect,
   Equal,
   HashMap,
@@ -741,7 +742,12 @@ export const makeRemoteAdapter = (
   })
 
   const capabilities = config.authorityMode === "remote-authoritative"
-    ? yield* Effect.cached(probeCapabilities())
+    ? yield* Effect.cachedInvalidateWithTTL(
+      probeCapabilities(),
+      Duration.infinity,
+    ).pipe(Effect.map(([cached, invalidate]) => cached.pipe(
+      Effect.onInterrupt(() => invalidate),
+    )))
     : allocateOpId.pipe(Effect.flatMap((opId) => Effect.fail(remotePolicy(
       config,
       opId,
