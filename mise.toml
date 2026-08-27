@@ -76,7 +76,7 @@ dir = "{{config_root}}/library/effects"
 run = [
   "bun install --frozen-lockfile",
   "bun run typecheck",
-  "bun test",
+  "bun run test",
 ]
 
 [tasks."check:ledger"]
