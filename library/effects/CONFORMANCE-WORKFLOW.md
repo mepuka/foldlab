@@ -894,6 +894,41 @@ Stop and return to grilling if:
   streaming or the RFC 9162 verification algorithms) is recorded
   with the splash discipline unchanged — novelty is claimed only
   after the verifier passes.
+- **MRK-1 ratification (2026-08-27):** the operator ratified the
+  landed MRK-1 slice as recommended. The five statement pairs stand —
+  chunking as a lossless declared partition with its checked inverse
+  (CODEC); the decoder's emit-only-verified gate with the run-level
+  soundness carrying the collision witness in the consumed prefix and
+  the decoder under no obligation to detect it (TRACE-EXCLUDES); the
+  final-chunk length rule (TRACE-EXCLUDES); slice–whole agreement
+  with the universal theorem as the law (relational AGREEMENT); and
+  the inclusion-verifier reflection with completeness and binding as
+  named theorems (AGREEMENT). Three carrier discharges stand:
+  complete-decode root determination (notably collision-free — the
+  decoder recomputes every address, so the theorem needs no
+  disjunct), run composition over concatenation, and position
+  binding composed from per-index binding and completeness. Two
+  design findings are recorded with the ratification: the MRK-010
+  plan row was corrected IN CYCLE before the inventory mirrored it —
+  the original "never verifies at another index" phrasing is
+  falsified by a legitimately duplicated chunk, and the true law is
+  binding per index with the anti-replay corollary — and
+  side-carrying proof formats were found to admit an injective-hash
+  counterexample, so the verifier derives combination sides from the
+  index and count (RFC 9162's own design, now with its reason
+  proved). Axioms: propext and quotient soundness throughout,
+  including the constructive collision walk, except the slice–whole
+  agreement theorem drawing classical choice through one list lemma
+  — the documented keep-std divergence class. Five vector families
+  emit additively at the unchanged model version with hostile rows
+  (tampered chunk, forged parent, truncation exposing no length, a
+  length tamper refuted by tree geometry); five declared mutants
+  join, eighteen killed; the ledger holds fifty-one rows with eight
+  newly green, legal. Four context entries are minted — chunk tree,
+  inclusion opening, verified-streaming decoder,
+  encoding-malleability boundary — and the R2-delivered transfer and
+  transport code labels fill. MRK-007 waits for the second Merkle
+  slice; MRK-009 stands as review.
 - **R2 correction acceptance (2026-08-27):** the correction delivery
   was reviewed first-hand — the full diff read against the ratified
   docket item by item, both gates run personally (ninety TypeScript

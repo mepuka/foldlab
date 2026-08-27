@@ -13,7 +13,11 @@ layer. Amended 2026-08-27 at the remote Pass A (operator-ratified):
 four entries minted — remote exchange event, wire command, fault
 schedule, remote client machine. Amended 2026-08-27 at the R1
 acceptance (operator-ratified): three entries minted — streamed
-transfer service, event notification service, remote transport. Kind:
+transfer service, event notification service, remote transport.
+Amended 2026-08-27 at the MRK-1 ratification (operator-ratified):
+four entries minted — chunk tree, inclusion opening,
+verified-streaming decoder, encoding-malleability boundary — and the
+R2-delivered transfer and transport labels filled. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -358,8 +362,9 @@ enters as an ordinary refactor proposal at that time.
   model-covered.
 
 ### Streamed transfer service
-- **Kind:** module. **Code label:** pending R2 (provisional
-  `src/cas/Transfer.ts`, `CasTransfer`).
+- **Kind:** module. **Code label:** `src/cas/Transfer.ts`
+  (`CasTransfer`), provided with the store by `Cas.layerRemote`
+  (`src/Cas.ts`).
 - **Form:** streamed upload and download mechanics above the logical
   store: `putStream` checks or computes the address incrementally and
   succeeds only after complete consumption and remote commitment; a
@@ -389,8 +394,10 @@ enters as an ordinary refactor proposal at that time.
   a data plane.
 
 ### Remote transport
-- **Kind:** module (adapter-internal). **Code label:** pending R2
-  (provisional `src/cas/internal — RemoteCasTransport`).
+- **Kind:** module (adapter-internal). **Code label:**
+  `src/internal/remoteTransport.ts` (`RemoteCasTransport`), realized
+  for the declared `cas-http/0` profile by
+  `src/internal/remoteHttp.ts`; never a `Context` service key.
 - **Form:** the raw untrusted protocol streams behind the verified
   semantic adapter: one command executed at a time, responses mapped
   into the exchange alphabet before the semantic core sees them.
@@ -401,6 +408,80 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** exposing transport streams as store results; invisible
   shell-level retry or redirect-following; credentials crossing
   redirect hosts.
+
+### Chunk tree
+- **Kind:** model concept. **Code label:**
+  `Effects/Merkle/Chunk.lean` and `Effects/Merkle/Tree.lean`
+  (TypeScript pending the Merkle implementation slice).
+- **Form:** chunking under a DECLARED recipe (a positive chunk size)
+  is a lossless partition — rejoining restores the bytes, and the
+  checked inverse accepts exactly the lists chunking produces. The
+  tree root over the chunk list uses structural pre-images — a leaf
+  carries its absolute index and bytes, a parent carries two child
+  addresses — under the abstract address function, split at the
+  largest power of two strictly below the count (the shared
+  RFC 9162 / BLAKE3 split).
+- **Obligations:** one root per recipe and content; domain
+  separation and position binding are constructor-level at the model
+  altitude — byte prefixes belong to the codec layer with exactness
+  proofs; collision cases surface as explicit witnesses, never
+  assumptions.
+- **Avoid:** inferring a recipe from data; minting identity from a
+  chunk list or encoding bytes; assuming the address function
+  injective.
+
+### Inclusion opening
+- **Kind:** model concept. **Code label:**
+  `Effects/Merkle/Verify.lean`.
+- **Form:** an index, a count, leaf bytes, a root-side-first sibling
+  list, and an expected root. The verifier DERIVES the combination
+  sides from the index and the count, so an adversary controls
+  sibling values only — the discipline that makes binding provable.
+- **Obligations:** reflection — the executable check accepts exactly
+  the recomputation judgment; completeness — honest paths verify
+  with no hypotheses beyond the index bound; binding — two accepted
+  openings of one root and index agree or a computable collision
+  walk exhibits two distinct pre-images with one address; position
+  binding — accepted bytes equal the committed chunk at that index
+  or a collision is exhibited.
+- **Avoid:** side-carrying proof formats (adversary-chosen sides
+  admit an injective-hash counterexample); reading more into
+  acceptance than the stated judgment.
+
+### Verified-streaming decoder
+- **Kind:** machine. **Code label:** `Effects/Merkle/Decoder.lean`
+  with its laws in `Effects/Merkle/Laws.lean`.
+- **Form:** a sans-io frame-stack machine over parsed nodes — parent
+  pairs, chunks, and explicit skip tokens. The stack holds expected
+  subtree addresses; consumption is pre-order, so verification order
+  equals read order with no seeking; a slice range makes
+  out-of-range subtrees skippable, their addresses already bound by
+  their parents.
+- **Obligations:** emission IS the verification branch, and against
+  a committed list every emission matches or a collision witness
+  exists in the consumed prefix — the decoder is not obliged to
+  detect the collision; the length validates exactly at the final
+  chunk; runs compose over input concatenation, which is what makes
+  transport fragmentation semantically irrelevant; a completed
+  full-range decode determines its root with no collision disjunct;
+  slices agree with the whole decode filtered to the range.
+- **Avoid:** exposing length or end-of-input before the final chunk
+  validates; treating a skip token as verified content; any logic on
+  wire chunk boundaries.
+
+### Encoding-malleability boundary
+- **Kind:** rule. **Code label:** standing review (the
+  transport-never-identity row) with the model documentation.
+- **Form:** slice and encoding bytes are transport carriers, never
+  identities: distinct encodings may decode to one output under one
+  root — trailing garbage, skipped parents — and this is documented,
+  not fought. Only roots and decoded bytes are identity-bearing.
+- **Obligations:** canonicality laws apply to NODE encodings, never
+  to proof or slice carriers; the only valid way to learn anything
+  about an encoding's content is to decode it.
+- **Avoid:** byte-comparing encodings as an equality shortcut;
+  minting identity from a proof carrier; extending the node codec's
+  canonicality discipline to slices.
 
 ### Service kit
 - **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.
