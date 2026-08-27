@@ -4,8 +4,8 @@ Generated from the obligation inventory and the instance registry; do not edit b
 
 | ID | Status |
 | --- | --- |
-| CAS-001 | pending — CODEC instance at M2 |
-| CAS-002 | pending — REJECTION-CLAUSE instance at M2 |
+| CAS-001 | instantiated (CODEC) |
+| CAS-002 | instantiated (REJECTION-CLAUSE) |
 | CAS-003 | standing review rule |
 | RPL-001 | pending — by carrier construction at M3 |
 | RPL-002 | pending — TRACE-EXCLUDES instance at M3 |
@@ -27,9 +27,13 @@ Generated from the obligation inventory and the instance registry; do not edit b
 
 Project-owned canonical node encoding has one byte representation per admitted node.
 
+**Sentence:** Canonicalization is idempotent, canonical values round-trip, and the encoding is injective on canonical forms — every admitted CAS node has exactly one byte representation: canonicalization is the identity on the admitted-node carrier, the decoder accepts nothing outside the encoder image, and trailing bytes are rejected.
+
 ## CAS-002
 
 Graph admission rejects dangling or wrong-kind references.
+
+**Sentence:** Admission rejects exactly the raw values a named clause condemns, and every rejection names its clause — a CAS node enters the store only when every typed reference resolves at its declared kind: a reference to an unbound address is rejected as dangling, and a reference whose declared kind tag disagrees with the resident node's kind tag is rejected as wrong-kind.
 
 ## CAS-003
 

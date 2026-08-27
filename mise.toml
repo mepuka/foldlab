@@ -42,11 +42,12 @@ dir = "{{config_root}}/library/machine"
 run = "lake --wfail build"
 
 [tasks."check:effects"]
-description = "Build the effects library under --wfail, regenerate the ledger, assert byte equality"
+description = "Build the effects library under --wfail, regenerate the ledger, assert transition legality and byte equality"
 dir = "{{config_root}}/library/effects"
 run = [
   "lake --wfail build",
   "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
+  "bun scripts/check-ledger-transitions.ts",
   "git diff --exit-code -- CONFORMANCE-LEDGER.md",
 ]
 
