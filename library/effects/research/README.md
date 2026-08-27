@@ -36,6 +36,10 @@ repository locations.
   separates codec exactness, CAS store algebra, structural admission,
   authenticated observation, and crash recovery, then maps theorem-bearing
   references for each layer to the current Effects and machine obligations.
+- [`fp-lean-cas-proof-obligations.md`](fp-lean-cas-proof-obligations.md)
+  maps the official *Functional Programming in Lean* treatment of strengthened
+  accumulator invariants, functional equivalence, index bounds, and termination
+  measures to the current and deferred Effects CAS proof obligations.
 - [`cas-effect-program-replay.md`](cas-effect-program-replay.md) studies how a
   content-addressed program graph, an append-only effect history, checkpoints,
   and replay witnesses must remain separate. It proposes a fail-closed replay

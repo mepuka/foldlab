@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "fp-lean-cas-proof-obligations",
+  "observedAt": "2026-08-27T00:37:53.1878664-05:00",
+  "scope": "Functional Programming in Lean chapter sources surveyed for relevance to the Effects CAS proof obligations.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4"
+  },
+  "repositoryPins": [
+    {
+      "id": "leanprover-fp-lean",
+      "repository": "https://github.com/leanprover/fp-lean",
+      "selector": "refs/tags/release-2026-08",
+      "commit": "0abeea545d560a324e2561f7210fbd6ed154fa02",
+      "rootTree": "f3569bab1424fdf4e01a4b81a92c6fba88937245",
+      "commitDate": "2026-08-13T21:31:08+02:00",
+      "artifacts": [
+        {
+          "path": "book/FPLean/ProgramsProofs.lean",
+          "role": "chapter-level-simple-specification-and-optimized-implementation-pattern",
+          "gitBlob": "163aed585ae17d2eeafa28fba78d14cf264d39c3",
+          "sha256": "579909913e2ffdd0a82dc790d19e409e3ea9979a8b84ffc0eac4e74d5115b266",
+          "bytes": 3020
+        },
+        {
+          "path": "book/FPLean/ProgramsProofs/TailRecursionProofs.lean",
+          "role": "function-extensionality-strengthened-accumulator-invariant-and-functional-induction",
+          "gitBlob": "3a06f93b85cda419add9d8f61bf7ffdf950441bb",
+          "sha256": "0822518e41566071bf10eeacd7651d3dbfd56f50853d26ccba3f36154eb4e2aa",
+          "bytes": 26257
+        },
+        {
+          "path": "book/FPLean/ProgramsProofs/ArraysTermination.lean",
+          "role": "named-index-bound-witness-and-decreasing-array-loop-measure",
+          "gitBlob": "276eed96487b8e08d874b680bad10251ed98c4fc",
+          "sha256": "043d15f478f10a39b2e7799d9ca7df9bc5ac3587996d512be6fd3773f5e9e473",
+          "bytes": 18888
+        },
+        {
+          "path": "book/lean-toolchain",
+          "role": "source-example-lean-toolchain",
+          "gitBlob": "e2a0e3569a40da8ff5e862a30d4fe7b55a337a73",
+          "sha256": "929cd8bf7ec963bd49699b4e61239aa2648351dad60b0f74eee672956c743c52",
+          "bytes": 28,
+          "content": "leanprover/lean4:v4.34.0-rc1"
+        }
+      ]
+    }
+  ],
+  "publicationPages": [
+    "https://lean-lang.org/functional_programming_in_lean/Programming___-Proving___-and-Performance/",
+    "https://lean-lang.org/functional_programming_in_lean/Programming___-Proving___-and-Performance/Proving-Equivalence/#proving-tail-rec-equiv",
+    "https://lean-lang.org/functional_programming_in_lean/Programming___-Proving___-and-Performance/Arrays-and-Termination/#array-termination"
+  ],
+  "result": "resolved-research-source-pin"
+}
