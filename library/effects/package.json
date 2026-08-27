@@ -6,13 +6,14 @@
   "description": "Effect-native CAS replay library (M1 bootstrap; contract ratified, implementation pending)",
   "license": "Apache-2.0",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "bun test"
   },
   "dependencies": {
     "effect": "4.0.0-rc.111"
   },
   "devDependencies": {
+    "@types/bun": "1.4.0",
     "typescript": "5.9.2"
   },
   "foldlab": {

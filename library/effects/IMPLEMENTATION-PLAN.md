@@ -420,9 +420,13 @@ library/effects/
   research/
 ```
 
-The npm package name, exports, compiler, `@effect/tsgo` setup, and exact Effect
-dependency remain M1 decisions. All versions must be exact and the package
-version must name the pinned Effect provenance revision it targets.
+M1 resolutions: the package is `@foldlab/effect-replay` (private), exports
+flow through `src/index.ts`, the compiler is the admitted `typescript@5.9.2`
+with `@effect/tsgo` deferred until its native port stabilizes (adoption is a
+re-admission event per the tool register's version-drift rule), and the
+Effect dependency is exact `effect@4.0.0-rc.111`, whose manifest names the
+pinned provenance revision it targets. Source and test trees typecheck under
+separate configurations, both strict.
 
 ## 6. Lean semantic plan
 
