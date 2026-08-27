@@ -32,6 +32,7 @@ import Effects.Mutants.SES002_CursorUnpinned
 import Effects.Mutants.SES003_AcceptInterleavedInvoke
 import Effects.Mutants.SES003_AcceptUnsolicited
 import Effects.Mutants.CMP002_CollapseIdentical
+import Effects.Mutants.CAS004_UnsortedKeys
 
 /-!
 Direction 1 of the ratified mutation form: for every declared mutant, the
@@ -104,6 +105,9 @@ def merkleBlobMutants : List (Mutant BlobGraphFn) :=
 
 def merkleFragMutants : List (Mutant FeedFn) :=
   [ Effects.Mutants.MRK015BoundaryDropped.mutant ]
+
+def valueRenderMutants : List (Mutant ValueRenderFn) :=
+  [ Effects.Mutants.CAS004UnsortedKeys.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/
@@ -193,7 +197,8 @@ def groups : List (IO Nat) :=
   , checkGroup merkleStreamRowsRendered realStreamDecode merkleStreamMutants
   , checkGroup merkleManifestRowsRendered realManifestDecode merkleManifestMutants
   , checkGroup merkleBlobRowsRendered blobTreeNodes merkleBlobMutants
-  , checkGroup merkleFragRowsRendered realFeed merkleFragMutants ]
+  , checkGroup merkleFragRowsRendered realFeed merkleFragMutants
+  , checkGroup cas004RowsRendered realValueRender valueRenderMutants ]
 
 /-- How many mutants the groups declare between them. -/
 def declaredCount : Nat :=
@@ -203,6 +208,7 @@ def declaredCount : Nat :=
     + merkleConsMutants.length + merkleOpeningMutants.length
     + merkleStreamMutants.length + merkleManifestMutants.length
     + merkleBlobMutants.length + merkleFragMutants.length
+    + valueRenderMutants.length
 
 def main : IO UInt32 := do
   let mut survivors := 0
