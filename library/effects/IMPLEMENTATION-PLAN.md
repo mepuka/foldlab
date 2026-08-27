@@ -585,6 +585,12 @@ IDs are provisional planning identifiers.
 | `BRG-001` | Model fixtures and TS reducer compare one declared normalized decision trace | generated manifest and differential suite | comparator drops live-delegation or mismatch decisions | manual reducer mirror |
 | `BRG-002` | Pinned Effect integration agrees on the enumerated domain | reproducible G4 observations | runtime/version/config drift | compiler, bun/node, Effect runtime |
 | `DUR-001` | No exactly-once claim crosses the live-action/history-append crash gap | contract review and fault test | external action succeeds, append fails | external system and persistence |
+| `PRJ-001` | Value-descriptor identity is explicit and checked: kind tag and revision are declared, and reading verifies the expected root kind | TypeScript typecheck and fixtures | a root of another kind decodes silently | CAS store |
+| `PRJ-002` | A value round-trips through its descriptor: get after put returns the declared domain canonicalization | TypeScript round-trip fixtures; Lean CODEC lift deferred until the declared encoding is modeled | a lossy or renormalizing read | declared canonical value encoding |
+| `PRJ-003` | A payload failing the descriptor's schema is rejected with a typed projection error distinct from the CAS error family and the mismatch taxonomy | TypeScript fixtures | a decode failure surfaced as StoreFailure or swallowed | projection codec failure taxonomy |
+| `PRJ-004` | Fixed-root hydration matches by-value construction: the layer builds the same caller-facing shape, construction errors stay on the layer, and method error unions never widen | TypeScript typecheck and integration fixtures | hydration widens a method error union or hides a construction failure | service kit and CAS store |
+| `PRJ-005` | Hydrated record construction stays non-recursive and single-wrapped: layerAs targets the internal live role only, never resolves the public wrapper, and double wrapping stays rejected | must-fail TypeScript fixtures | the wrapper resolves its public tag or accepts a wrapped live role | service kit |
+| `PRJ-006` | Equal roots imply no stronger value equality than the hash-hypothesis lattice permits | standing review rule | prose or API implying content equality from address equality | hash-hypothesis lattice |
 
 ## 8. Test and evidence strategy
 
@@ -803,6 +809,38 @@ Exit:
 - a replayed orchestration consumes the expected nested history;
 - outer opaque substitution stays on the M7 extension list and does not block
   the transparent core.
+
+### E2–E3 — ergonomics lane (descriptor slices)
+
+Ratified at the descriptor Pass A (2026-08-27) and sequenced after M5,
+before M6, so the correspondence gate documents the improved surface.
+Working design: leaf-first value descriptors over the declared canonical
+encoding; typed roots that never bypass runtime kind validation; the
+projection codec failure taxonomy outside the CAS error family; eager
+fixed-root service hydration with `layerAs` targeting the kit's internal
+live role. The implementing packet also carries the ratified
+session-result widening and the replay tracer-timing rider.
+
+E2 deliverables:
+
+- `Cas.value` with typed `put`/`get` over the in-memory store;
+- the declared canonical JSON encoding of the Schema's Encoded form —
+  documented, versioned by descriptor kind tag and revision, and making
+  no cross-claim with the Lean printer;
+- the projection codec failure taxonomy; and
+- the `PRJ-001` through `PRJ-003` fixtures.
+
+E3 deliverables:
+
+- `Cas.service` with eager `layer(root)` and `layerAs(tag, root)`;
+- hydrated record construction demonstrated against a replayable kit; and
+- the `PRJ-004` and `PRJ-005` must-fail fixtures.
+
+Exit:
+
+- `PRJ-001` through `PRJ-005` evidenced at the TypeScript interface;
+- `PRJ-006` standing; and
+- replay semantics, manifests, and the Lean model unchanged.
 
 ### M6 — correspondence and public library gate
 

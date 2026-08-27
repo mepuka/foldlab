@@ -23,6 +23,12 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | BRG-001 | evidenced — differential suite (test/ReplayReducer.test.ts) |
 | BRG-002 | pending — differential evidence at M6 |
 | DUR-001 | standing review rule |
+| PRJ-001 | pending — TypeScript evidence at E2 |
+| PRJ-002 | pending — TypeScript evidence at E2 |
+| PRJ-003 | pending — TypeScript evidence at E2 |
+| PRJ-004 | pending — TypeScript evidence at E3 |
+| PRJ-005 | pending — TypeScript evidence at E3 |
+| PRJ-006 | standing review rule |
 
 ## CAS-001
 
@@ -119,3 +125,27 @@ The pinned Effect integration agrees on the enumerated domain.
 ## DUR-001
 
 No exactly-once claim crosses the live-action/history-append crash gap.
+
+## PRJ-001
+
+Value-descriptor identity is explicit and checked: kind tag and revision are declared, and reading verifies the expected root kind.
+
+## PRJ-002
+
+A value round-trips through its descriptor: get after put returns the declared domain canonicalization.
+
+## PRJ-003
+
+A payload failing the descriptor's schema is rejected with a typed projection error distinct from the CAS error family and the mismatch taxonomy.
+
+## PRJ-004
+
+Fixed-root hydration matches by-value construction: the layer builds the same caller-facing shape, construction errors stay on the layer, and method error unions never widen.
+
+## PRJ-005
+
+Hydrated record construction stays non-recursive and single-wrapped: layerAs targets the internal live role only, never resolves the public wrapper, and double wrapping stays rejected.
+
+## PRJ-006
+
+Equal roots imply no stronger value equality than the hash-hypothesis lattice permits.

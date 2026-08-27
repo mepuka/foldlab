@@ -6,7 +6,10 @@ Store context). Amended 2026-08-26 at the M1 interface freeze
 (operator-ratified): the append-failure mechanism is a structural session
 abort through the transport seam — see the replay session entry. Amended
 2026-08-27 at the CMP-001 ratification (operator-ratified): two entries
-minted — reified program and interpretation halt. Kind:
+minted — reified program and interpretation halt. Amended 2026-08-27 at
+the descriptor Pass A (operator-ratified): four entries minted — value
+descriptor, typed root, projection codec failure, hydrated service
+layer. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -238,6 +241,60 @@ enters as an ordinary refactor proposal at that time.
   and the reachable leaf results are pinned by theorem.
 - **Avoid:** folding halt cases into a wrapped method's error type;
   reading absorbed as reachable behavior.
+
+### Value descriptor
+- **Kind:** module. **Code label:** pending E2 (provisional
+  `src/CasValue.ts`).
+- **Form:** declared kind tag and revision, a service-free value Schema,
+  and the declared canonical encoding of the Schema's Encoded form;
+  `put` admits one leaf node with no references, `get` loads, verifies
+  the expected kind, and decodes.
+- **Obligations:** identity and revision are explicit — a Schema change
+  bumps the revision, and drift is caught at read as a typed projection
+  failure; payload bytes come from the declared canonical encoding,
+  never a default JSON carrying a canonicality claim; this slice is
+  leaf-only.
+- **Avoid:** deriving graph partitioning from Schema AST shape;
+  `PrimaryKey` as a content identifier; reading equal roots as value
+  equality beyond the hash-hypothesis lattice.
+
+### Typed root
+- **Kind:** schema. **Code label:** pending E2 (provisional
+  `src/CasValue.ts`).
+- **Form:** a branded content identifier carrying the descriptor's
+  phantom value type and expected kind tag; assignable wherever a
+  content identifier is; constructed by `put`.
+- **Obligations:** the phantom never bypasses runtime kind validation —
+  every load re-checks the kind; a root is data, never proof of
+  presence: a dangling root fails closed at load.
+- **Avoid:** phantom-only trust; treating a root as a replay-compared
+  identity before the session dependency-manifest extension exists.
+
+### Projection codec failure
+- **Kind:** taxonomy. **Code label:** pending E2 (provisional
+  `src/CasValue.ts`).
+- **Form:** one typed error family for descriptor encode and decode
+  failures, carrying the direction, the content identifier where known,
+  and the issue; distinct from the CAS error family and the mismatch
+  taxonomy.
+- **Obligations:** projection codec failures are never folded into the
+  store's failure clause and never silently renormalized.
+- **Avoid:** folding into the CAS family; retry-with-renormalize.
+
+### Hydrated service layer
+- **Kind:** module. **Code label:** pending E3 (provisional
+  `src/CasService.ts`).
+- **Form:** a fixed-root service construction over a value descriptor:
+  `layer(root)` builds the public service eagerly; `layerAs(tag, root)`
+  builds the same shape under another key — the record-construction seam
+  targets the kit's internal live role.
+- **Obligations:** eager hydration by default so caller-facing method
+  types stay unchanged; construction errors stay on the layer channel;
+  live authorities stay visible in `R` and outside the content root; the
+  wrapper never resolves its public tag and double wrapping stays
+  rejected.
+- **Avoid:** lazy per-method acquisition that hides errors; a hidden
+  service root read as replay identity.
 
 ### Service kit
 - **Kind:** module. **Code label:** pending Pass B (provisional

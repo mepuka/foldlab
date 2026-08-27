@@ -96,6 +96,24 @@ def inventory : List Obligation := [
     disposition := .bridge "M6" },
   { id := "DUR-001"
     statement := "No exactly-once claim crosses the live-action/history-append crash gap."
+    disposition := .review },
+  { id := "PRJ-001"
+    statement := "Value-descriptor identity is explicit and checked: kind tag and revision are declared, and reading verifies the expected root kind."
+    disposition := .tsSide "E2" },
+  { id := "PRJ-002"
+    statement := "A value round-trips through its descriptor: get after put returns the declared domain canonicalization."
+    disposition := .tsSide "E2" },
+  { id := "PRJ-003"
+    statement := "A payload failing the descriptor's schema is rejected with a typed projection error distinct from the CAS error family and the mismatch taxonomy."
+    disposition := .tsSide "E2" },
+  { id := "PRJ-004"
+    statement := "Fixed-root hydration matches by-value construction: the layer builds the same caller-facing shape, construction errors stay on the layer, and method error unions never widen."
+    disposition := .tsSide "E3" },
+  { id := "PRJ-005"
+    statement := "Hydrated record construction stays non-recursive and single-wrapped: layerAs targets the internal live role only, never resolves the public wrapper, and double wrapping stays rejected."
+    disposition := .tsSide "E3" },
+  { id := "PRJ-006"
+    statement := "Equal roots imply no stronger value equality than the hash-hypothesis lattice permits."
     disposition := .review }
 ]
 

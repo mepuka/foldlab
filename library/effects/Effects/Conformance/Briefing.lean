@@ -41,7 +41,9 @@ def msRank : String → Nat
   | "M3" => 3
   | "M4" => 4
   | "M5" => 5
-  | "M6" => 6
+  | "E2" => 6
+  | "E3" => 7
+  | "M6" => 8
   | _ => 99
 
 def Disposition.milestone? : Disposition → Option String

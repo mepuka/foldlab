@@ -617,3 +617,27 @@ Stop and return to grilling if:
   implementation-lane rider lands; the reject-first boundary is
   otherwise unchanged, and the describe-a-Time-service recipe remains
   the principled route to deterministic time under replay.
+- **Descriptor Pass A (2026-08-27):** the operator ratified the
+  eight-item docket as recommended. Six obligations enter plan
+  section 7 and the inventory as the PRJ family — descriptor identity
+  checked at read, the descriptor round trip, the typed projection
+  rejection, hydration matching by-value construction, non-recursive
+  single-wrapped hydrated record construction, and the standing
+  equal-roots review rule — all tsSide at the new E2/E3 milestones or
+  review; no new schema family, so no WGR-2 event, and PRJ-002's Lean
+  CODEC lift stays a deferred declared disposition change. One
+  pre-ruling amendment was called and accepted: the projection error
+  taxonomy covers both codec directions (`ProjectionCodecFailure`
+  with an encode/decode direction), not decode alone. Four context
+  entries minted: value descriptor, typed root, projection codec
+  failure, hydrated service layer. The declared canonical JSON
+  encoding of the Schema's Encoded form is documented and versioned
+  by descriptor kind tag and revision, with no cross-claim against
+  the Lean printer. The record-root gap closes through the widened
+  session result — outcome plus witness id plus optional history
+  root — the third freeze-postdating widening, with the session
+  outcome taxonomy itself untouched. The ergonomics lane lands in
+  plan section 9 as E2–E3 sequenced before M6, and the briefing rank
+  map encodes that order. One implementation packet carries the R1
+  and session-result riders first, then E2, then E3; PRJ rows flip
+  through the tsSide evidence list at the delivery review.
