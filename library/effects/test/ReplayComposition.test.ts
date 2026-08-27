@@ -118,7 +118,7 @@ const orchestrationLayer: Layer.Layer<Orchestration, never, Stock | Pricing> =
       const stock = yield* Stock
       const pricing = yield* Pricing
 
-      const repeat = Effect.fnUntraced(function* (sku: string) {
+      const repeat = Effect.fn("Composition.Orchestration.repeat")(function* (sku: string) {
         const first = yield* stock.reserve(sku)
         const price = yield* pricing.quote(sku)
         const second = yield* stock.reserve(sku)
@@ -321,7 +321,7 @@ const resetLiveCounts = (fixture: CompositionFixture): void => {
   fixture.pricing.reset()
 }
 
-it.effect("CMP-001 and CMP-002 compose repeated identical leaves in one flat session", () => {
+it.effect("R1, CMP-001 and CMP-002 compose traced repeated leaves in one flat session", () => {
   const fixture = makeFixture()
   return Effect.gen(function* () {
     const store = yield* CasStore
@@ -332,7 +332,7 @@ it.effect("CMP-001 and CMP-002 compose repeated identical leaves in one flat ses
       ),
       { mode: "record" },
     )
-    expect(recorded).toEqual({
+    expect(recorded.outcome).toEqual({
       _tag: "Completed",
       terminal: {
         _tag: "Succeeded",
@@ -349,6 +349,7 @@ it.effect("CMP-001 and CMP-002 compose repeated identical leaves in one flat ses
       fixture.tracked.latestHistory(),
       "repeat history root",
     )
+    expect(recorded.history).toBe(historyRoot)
     const history = yield* observeHistory(store, historyRoot)
     expect(history.map((entry) => entry.op)).toEqual([
       "test/Composition/Stock/reserve",
@@ -359,6 +360,7 @@ it.effect("CMP-001 and CMP-002 compose repeated identical leaves in one flat ses
     expect(history[0]?.outcome).toEqual(history[2]?.outcome)
 
     const recordWitnessId = yield* latestWitness(fixture, "record repeat")
+    expect(recorded.witness).toBe(recordWitnessId)
     const recordWitness = yield* observeWitness(store, recordWitnessId)
     expect(recordWitness.consumed).toBe(3)
 
@@ -370,11 +372,13 @@ it.effect("CMP-001 and CMP-002 compose repeated identical leaves in one flat ses
       ),
       { mode: "replay", history: historyRoot },
     )
-    expect(replayed).toEqual(recorded)
+    expect(replayed.outcome).toEqual(recorded.outcome)
+    expect(replayed.history).toBe(historyRoot)
     expect(fixture.stock.calls()).toEqual([])
     expect(fixture.pricing.calls()).toEqual([])
 
     const replayWitnessId = yield* latestWitness(fixture, "replay repeat")
+    expect(replayed.witness).toBe(replayWitnessId)
     const replayWitness = yield* observeWitness(store, replayWitnessId)
     expect(replayWitness.consumed).toBe(history.length)
     expect(replayWitness.trace).toEqual([
@@ -400,7 +404,7 @@ it.effect("CMP-001 re-injects a nested leaf typed failure during replay", () => 
       ),
       { mode: "record" },
     )
-    expect(recorded).toEqual({
+    expect(recorded.outcome).toEqual({
       _tag: "Completed",
       terminal: {
         _tag: "Failed",
@@ -428,7 +432,7 @@ it.effect("CMP-001 re-injects a nested leaf typed failure during replay", () => 
       ),
       { mode: "replay", history: historyRoot },
     )
-    expect(replayed).toEqual(recorded)
+    expect(replayed.outcome).toEqual(recorded.outcome)
     expect(fixture.stock.calls()).toEqual([])
     expect(fixture.pricing.calls()).toEqual([])
 
@@ -450,7 +454,7 @@ it.effect("CMP-001 re-executes recovery control flow over substituted leaves", (
       ),
       { mode: "record" },
     )
-    expect(recorded).toEqual({
+    expect(recorded.outcome).toEqual({
       _tag: "Completed",
       terminal: {
         _tag: "Succeeded",
@@ -486,7 +490,7 @@ it.effect("CMP-001 re-executes recovery control flow over substituted leaves", (
       ),
       { mode: "replay", history: historyRoot },
     )
-    expect(replayed).toEqual(recorded)
+    expect(replayed.outcome).toEqual(recorded.outcome)
     expect(fixture.stock.calls()).toEqual([])
     expect(fixture.pricing.calls()).toEqual([])
 
@@ -514,7 +518,7 @@ it.effect("RPL-004 freezes a mid-orchestration mismatch without live fallback", 
       ),
       { mode: "record" },
     )
-    expect(recorded._tag).toBe("Completed")
+    expect(recorded.outcome._tag).toBe("Completed")
     const historyRoot = yield* requireValue(
       fixture.tracked.latestHistory(),
       "mismatch history root",
@@ -530,7 +534,7 @@ it.effect("RPL-004 freezes a mid-orchestration mismatch without live fallback", 
       ),
       { mode: "replay", history: historyRoot },
     )
-    expect(replayed).toEqual({
+    expect(replayed.outcome).toEqual({
       _tag: "Rejected",
       category: "RequestMismatch",
       at: 1,

@@ -98,12 +98,18 @@ it.effect("H3 delegates session execution through Replay.run", () => {
       Effect.andThen(program),
       Effect.match({
         onFailure: (error) => ({
-          _tag: "Completed" as const,
-          terminal: { _tag: "Failed" as const, error },
+          outcome: {
+            _tag: "Completed" as const,
+            terminal: { _tag: "Failed" as const, error },
+          },
+          witness: ContentId.make("00".repeat(32)),
         }),
         onSuccess: (value) => ({
-          _tag: "Completed" as const,
-          terminal: { _tag: "Succeeded" as const, value },
+          outcome: {
+            _tag: "Completed" as const,
+            terminal: { _tag: "Succeeded" as const, value },
+          },
+          witness: ContentId.make("00".repeat(32)),
         }),
       }),
     )
@@ -114,7 +120,7 @@ it.effect("H3 delegates session execution through Replay.run", () => {
 
   return Effect.gen(function* () {
     const outcome = yield* session(Effect.succeed(42), { mode: "record" })
-    expect(outcome).toEqual({
+    expect(outcome.outcome).toEqual({
       _tag: "Completed",
       terminal: { _tag: "Succeeded", value: 42 },
     })

@@ -168,7 +168,7 @@ it.effect("CTX-001 runs one caller program through live, record, and replay laye
       ),
       { mode: "record" },
     )
-    expect(recorded).toEqual({
+    expect(recorded.outcome).toEqual({
       _tag: "Completed",
       terminal: { _tag: "Succeeded", value: [-1, 3] },
     })
@@ -182,7 +182,7 @@ it.effect("CTX-001 runs one caller program through live, record, and replay laye
       callerProgram.pipe(Effect.provide(kit.replay)),
       { mode: "replay", history },
     )
-    expect(replayed).toEqual(recorded)
+    expect(replayed.outcome).toEqual(recorded.outcome)
     expect(fake.invocations()).toBe(4)
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })
@@ -212,7 +212,7 @@ it.effect("RPL-002 and RPL-004 reject mismatch without a live fallback", () => {
       Rates.use((rates) => rates.quote("USD")).pipe(Effect.provide(kit.replay)),
       { mode: "replay", history },
     )
-    expect(rejected).toEqual({
+    expect(rejected.outcome).toEqual({
       _tag: "Rejected",
       category: "RequestMismatch",
       at: 0,
@@ -241,7 +241,7 @@ it.effect("RPL-004 rejects an inadmissible recorded outcome at the frozen cursor
       ),
       { mode: "replay", history },
     )
-    expect(rejected).toEqual({
+    expect(rejected.outcome).toEqual({
       _tag: "Rejected",
       category: "OutcomeInadmissible",
       at: 0,
@@ -317,10 +317,10 @@ it.effect("CTX-002 surfaces Clock and Random defaults as flat Violated outcomes"
   const tracked = trackingAddress()
   return Effect.gen(function* () {
     const clock = yield* session(Clock.currentTimeMillis, { mode: "replay" })
-    expect(clock).toEqual({ _tag: "Violated", service: "Clock" })
+    expect(clock.outcome).toEqual({ _tag: "Violated", service: "Clock" })
 
     const random = yield* session(Random.next, { mode: "replay" })
-    expect(random).toEqual({ _tag: "Violated", service: "Random" })
+    expect(random.outcome).toEqual({ _tag: "Violated", service: "Random" })
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })
 
@@ -328,11 +328,11 @@ it.effect("CTX-002 keeps direct Date.now as a permanent raw-host counterexample"
   const tracked = trackingAddress()
   return Effect.gen(function* () {
     const outcome = yield* session(Effect.sync(() => Date.now()), { mode: "replay" })
-    expect(outcome._tag).toBe("Completed")
-    if (outcome._tag === "Completed") {
-      expect(outcome.terminal._tag).toBe("Succeeded")
-      if (outcome.terminal._tag === "Succeeded") {
-        expect(typeof outcome.terminal.value).toBe("number")
+    expect(outcome.outcome._tag).toBe("Completed")
+    if (outcome.outcome._tag === "Completed") {
+      expect(outcome.outcome.terminal._tag).toBe("Succeeded")
+      if (outcome.outcome.terminal._tag === "Succeeded") {
+        expect(typeof outcome.outcome.terminal.value).toBe("number")
       }
     }
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
@@ -345,6 +345,6 @@ it.effect("CTX-002 catches jittered retry through Effect default services", () =
   )
   return Effect.gen(function* () {
     const outcome = yield* session(jittered, { mode: "replay" })
-    expect(outcome).toEqual({ _tag: "Violated", service: "Clock" })
+    expect(outcome.outcome).toEqual({ _tag: "Violated", service: "Clock" })
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })

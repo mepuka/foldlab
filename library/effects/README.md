@@ -3,8 +3,9 @@
 `@foldlab/effect-replay` is a private mixed TypeScript/Lean library for
 recording explicitly described Effect service calls into a content-addressed
 history and replaying them without a live adapter. The TypeScript implementation
-is current through M5: the in-memory CAS, pure reducer, session service,
-replayable service kit, and transparent orchestration composition are present.
+is current through M5 and the E2/E3 descriptor slice: the in-memory CAS, pure
+reducer, session service, replayable service kit, transparent orchestration,
+and typed value/service projection are present.
 
 The library keeps different evidence surfaces separate. TypeScript compilation
 and tests observe the runtime implementation; the Lean model, conformance
@@ -19,6 +20,8 @@ The package barrel exports:
 - CAS node Schemas, clause-named errors, and content identifiers from
   `CasNode.ts`;
 - the `CasStore` service and isolated in-memory adapter from `CasStore.ts`;
+- the `Cas.value` typed-value projection and `Cas.service` eager hydration
+  descriptor;
 - replay decisions and the synchronous pure reducer;
 - operation-description types plus `describeService`;
 - the `Replay` service, `ReplayShape.run`, `layerReplay`, and `session`; and
@@ -27,6 +30,14 @@ The package barrel exports:
 `ReplayStorage.ts` and `ReplayLive.ts` are internal. Their history/witness
 Schemas and binary carriers are implementation details with no public
 canonicality or stability claim.
+
+`Cas.value` encodes a Schema's Encoded form as recursively key-sorted,
+finite-number-only UTF-8 JSON under an explicit kind tag and revision. Its
+phantom `Root<A>` never skips the resident-node kind check. Encoding and
+decoding failures are `ProjectionCodecFailure`; CAS failures retain their own
+error members. `Cas.service` loads and decodes the root and runs its constructor
+while the returned Layer is acquired, including when hydrating a replayable
+kit's internal live role with `layerAs(kit.live, root)`.
 
 Each described service method must accept exactly one request value. Wrap
 multiple logical arguments in a request object before describing the method.
@@ -37,8 +48,8 @@ the operation revision remains explicit.
 
 Assume `Rates`, `RatesShape`, `QuoteUnavailable`, and `liveRates` are ordinary
 Effect service declarations, and that `runtimeLayer` supplies `layerReplay`
-over one `layerMemory`. The CAS address boundary used during recording must
-retain the resulting history root for the later replay attempt.
+over one `layerMemory`. A session returns its durable witness root and, when
+present, the recorded or consumed history root alongside the outcome.
 
 ```ts
 const descriptions = describeService<RatesShape>("app/Rates")({
@@ -47,23 +58,27 @@ const descriptions = describeService<RatesShape>("app/Rates")({
 })
 const kit = replayable(Rates, descriptions, liveRates)
 const program = Rates.use((rates) => rates.quote("EUR"))
-const recorded = session(program.pipe(Effect.provide(kit.record)), { mode: "record" })
-// Run `recorded`, then obtain `history` from the recording CAS address boundary.
-const replayed = session(program.pipe(Effect.provide(kit.replay)),
-  { mode: "replay", history })
+const flow = Effect.gen(function* () {
+  const recorded = yield* session(program.pipe(Effect.provide(kit.record)),
+    { mode: "record" })
+  if (recorded.history === undefined) return yield* Effect.die("no history")
+  const replayed = yield* session(program.pipe(Effect.provide(kit.replay)),
+    { mode: "replay", history: recorded.history })
+  return { recorded: recorded.outcome, replayed: replayed.outcome }
+})
 ```
 
 Record construction uses the live adapter; replay construction has no live
 dependency. Both expose the original caller-facing method types.
 
-## Replay tracing caveat
+## Replay ambient defaults
 
 Replay mode overrides the default `Clock` and `Random` references with
-tripwires. `Effect.fn` spans consult the default `Clock`, so traced orchestration
-control can produce a `Violated` session outcome even when its described leaves
-are replayable. Use `Effect.fnUntraced` inside replayed orchestration unless the
-clock access is intentionally part of the ambient-use check. Direct host calls
-such as `Date.now()` cannot be intercepted by these Effect service defaults.
+tripwires and sets `TracerTimingEnabled` to `false`. Traced `Effect.fn`
+orchestration therefore replays without consulting the tripwire Clock, while a
+semantic `Clock` or `Random` use still produces a `Violated` session outcome.
+Direct host calls such as `Date.now()` cannot be intercepted by these Effect
+service defaults.
 
 ## Gates
 

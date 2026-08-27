@@ -17,6 +17,7 @@ import {
   Effect,
   Layer,
   Random,
+  References,
   Ref,
   Schema,
 } from "effect"
@@ -96,6 +97,16 @@ export type SessionOutcome<A, E> =
       readonly terminalSoFar?: Terminal<A, E>
     }
   | { readonly _tag: "Violated"; readonly service: AmbientService }
+
+/** The durable result of one session attempt. Every outcome carries the
+ * persisted witness root. Record mode also returns its newly appended history
+ * root when the attempt recorded at least one occurrence; replay mode returns
+ * the history root it consumed. */
+export interface SessionResult<A, E> {
+  readonly outcome: SessionOutcome<A, E>
+  readonly witness: ContentId
+  readonly history?: ContentId
+}
 
 /** A channel-preserving outcome stored in one history occurrence. */
 export type Outcome<A, E> =
@@ -361,13 +372,13 @@ export interface ReplayShape {
 
   /** Session-facing: install the per-session invocation handler and execute
    * one complete record or replay attempt. Replay mode replaces the default
-   * Clock and Random services with ambient-use tripwires. Effect.fn spans
-   * consult the default Clock, so replayed orchestration control should use
-   * Effect.fnUntraced unless a clock access is intentionally a violation. */
+   * Clock and Random services with ambient-use tripwires while disabling
+   * tracer timing, so Effect.fn spans remain usable without consulting Clock.
+   * Semantic Clock and Random use still produces a Violated outcome. */
   readonly run: <A, E, R>(
     program: Effect.Effect<A, E, R>,
     options: { readonly mode: ReplayMode; readonly history?: ContentId },
-  ) => Effect.Effect<SessionOutcome<A, E>, CasError, R>
+  ) => Effect.Effect<SessionResult<A, E>, CasError, R>
 }
 
 export class Replay extends Context.Service<Replay, ReplayShape>()(
@@ -611,7 +622,7 @@ const persistWitness = <A, E>(
   executionId: string,
   active: ActiveSession,
   outcome: SessionOutcome<A, E>,
-): Effect.Effect<void, CasError> =>
+): Effect.Effect<ContentId, CasError> =>
   Effect.gen(function* () {
     const raw = {
       mode: active.state.mode,
@@ -635,8 +646,23 @@ const persistWitness = <A, E>(
         ? []
         : [{ id: active.historyRoot, expectedTag: HistoryKindTag }],
     })
-    yield* store.put(node)
+    return yield* store.put(node)
   })
+
+const sessionResult = <A, E>(
+  active: ActiveSession,
+  outcome: SessionOutcome<A, E>,
+  witness: ContentId,
+): SessionResult<A, E> => {
+  const history = active.state.mode === "replay"
+    ? active.historyRoot
+    : active.trace.some((decision) => decision._tag === "OccurrenceAppended")
+      ? active.historyRoot
+      : undefined
+  return history === undefined
+    ? { outcome, witness }
+    : { outcome, witness, history }
+}
 
 const appendRecordedOutcome = <D extends AnyOperationDescription>(
   store: CasStoreShape,
@@ -817,7 +843,7 @@ const finishSession = <A, E>(
   executionId: string,
   activeRef: Ref.Ref<ActiveSession>,
   terminal: Terminal<A, E>,
-): Effect.Effect<SessionOutcome<A, E>, CasError> =>
+): Effect.Effect<SessionResult<A, E>, CasError> =>
   Effect.gen(function* () {
     const active = yield* Ref.get(activeRef)
     const completed = reduce(active.state, { _tag: "Complete", terminal })
@@ -846,8 +872,8 @@ const finishSession = <A, E>(
         reason: "Completion reducer returned an ambient violation",
       }))
     }
-    yield* persistWitness(store, executionId, next, outcome)
-    return outcome
+    const witness = yield* persistWitness(store, executionId, next, outcome)
+    return sessionResult(next, outcome, witness)
   })
 
 const makeReplayRun = (
@@ -857,7 +883,7 @@ const makeReplayRun = (
   const run: ReplayShape["run"] = <A, E, R>(
     program: Effect.Effect<A, E, R>,
     options: { readonly mode: ReplayMode; readonly history?: ContentId },
-  ): Effect.Effect<SessionOutcome<A, E>, CasError, R> =>
+  ): Effect.Effect<SessionResult<A, E>, CasError, R> =>
     Effect.gen(function* () {
       const executionNumber = yield* Ref.updateAndGet(executionCounter, (value) => value + 1)
       const executionId = `execution-${executionNumber}`
@@ -885,6 +911,7 @@ const makeReplayRun = (
             Effect.provideService(Replay, scopedReplay),
             Effect.provideService(Clock.Clock, tripwireClock),
             Effect.provideService(Random.Random, tripwireRandom),
+            Effect.provideService(References.TracerTimingEnabled, false),
           )
         : program.pipe(Effect.provideService(Replay, scopedReplay))
       const attempted = scopedProgram.pipe(
@@ -897,7 +924,7 @@ const makeReplayRun = (
       )
 
       return yield* attempted.pipe(
-        Effect.catchDefect((defect): Effect.Effect<SessionOutcome<A, E>, CasError> => {
+        Effect.catchDefect((defect): Effect.Effect<SessionResult<A, E>, CasError> => {
           if (defect instanceof CasTransport) return Effect.fail(defect.error)
           if (defect instanceof MismatchTransport) {
             const outcome: SessionOutcome<A, E> = {
@@ -905,22 +932,20 @@ const makeReplayRun = (
               category: defect.category,
               at: defect.at,
             }
-            return Ref.get(activeRef).pipe(
-              Effect.flatMap((active) =>
-                persistWitness(store, executionId, active, outcome)),
-              Effect.as(outcome),
-            )
+            return Ref.get(activeRef).pipe(Effect.flatMap((active) =>
+              persistWitness<A, E>(store, executionId, active, outcome).pipe(
+                Effect.map((witness) => sessionResult<A, E>(active, outcome, witness)),
+              )))
           }
           if (defect instanceof AmbientTransport) {
             const outcome: SessionOutcome<A, E> = {
               _tag: "Violated",
               service: defect.service,
             }
-            return Ref.get(activeRef).pipe(
-              Effect.flatMap((active) =>
-                persistWitness(store, executionId, active, outcome)),
-              Effect.as(outcome),
-            )
+            return Ref.get(activeRef).pipe(Effect.flatMap((active) =>
+              persistWitness<A, E>(store, executionId, active, outcome).pipe(
+                Effect.map((witness) => sessionResult<A, E>(active, outcome, witness)),
+              )))
           }
           return Effect.die(defect)
         }),
@@ -951,5 +976,5 @@ export const layerReplay: Layer.Layer<Replay, never, CasStore> = Layer.effect(
 export const session = <A, E, R>(
   program: Effect.Effect<A, E, R>,
   options: { readonly mode: ReplayMode; readonly history?: ContentId },
-): Effect.Effect<SessionOutcome<A, E>, CasError, R | Replay> =>
+): Effect.Effect<SessionResult<A, E>, CasError, R | Replay> =>
   Replay.use((replay) => replay.run(program, options))
