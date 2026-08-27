@@ -1,5 +1,6 @@
 import Effects.Conformance.Schema.FailClosed
-import Effects.Conformance.Instances.RMT001
+import Effects.Conformance.Instances.RemoteKit
+import Effects.Remote.Laws
 
 /-!
 # RMT-008 — interruption admits nothing

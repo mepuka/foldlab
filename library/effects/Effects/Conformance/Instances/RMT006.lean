@@ -1,5 +1,6 @@
 import Effects.Conformance.Schema.FailClosed
-import Effects.Conformance.Instances.RMT005
+import Effects.Conformance.Instances.RemoteKit
+import Effects.Remote.Laws
 
 /-!
 # RMT-006 — batch accounting fails closed

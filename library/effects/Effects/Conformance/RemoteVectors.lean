@@ -1,4 +1,4 @@
-import Effects.Conformance.ManifestReplay
+import Effects.Conformance.Manifest
 import Effects.Remote.Machine
 
 /-!

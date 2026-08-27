@@ -1,5 +1,5 @@
 import Effects.Conformance.Schema.TraceExcludes
-import Effects.Conformance.Instances.RMT001
+import Effects.Conformance.Instances.RemoteKit
 import Effects.Remote.Laws
 
 /-!

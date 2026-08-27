@@ -1,4 +1,5 @@
 import Effects.Conformance.RemoteVectors
+import Effects.Conformance.Instances.RMT001
 import Effects.Conformance.Instances.RMT002
 import Effects.Conformance.Instances.RMT003
 import Effects.Conformance.Instances.RMT004

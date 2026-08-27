@@ -16,6 +16,7 @@ import Effects.Conformance.Instances.RPL005
 import Effects.Conformance.Instances.SES001
 import Effects.Conformance.Instances.SES002
 import Effects.Conformance.Instances.CMP002
+import Effects.Conformance.Instances.RMT001
 import Effects.Conformance.Instances.RMT002
 import Effects.Conformance.Instances.RMT003
 import Effects.Conformance.Instances.RMT004

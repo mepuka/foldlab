@@ -89,6 +89,33 @@ theorem pow2Below_between : ∀ n m : Nat, pow2Below n < m → m < n →
       have := ih ((n + 1) / 2) (by omega) ((m + 1) / 2) hgt (by omega)
       rw [this]
 
+/-- The characterization the split point's name promises and the
+RFC 9162/BLAKE3 interop claim rests on: it is a power of two,
+strictly below the total, with the total at most its double. -/
+theorem pow2Below_spec : ∀ n : Nat, 2 ≤ n →
+    ∃ k, pow2Below n = 2 ^ k ∧ 2 ^ k < n ∧ n ≤ 2 ^ (k + 1) := by
+  intro n
+  induction n using Nat.strongRecOn with
+  | ind n ih =>
+    intro h2
+    by_cases hle : n ≤ 2
+    · refine ⟨0, ?_, ?_, ?_⟩
+      · rw [pow2Below.eq_def, if_pos hle]
+      · have h1 : (2 : Nat) ^ 0 = 1 := rfl
+        omega
+      · have h1 : (2 : Nat) ^ 1 = 2 := rfl
+        omega
+    · have hrec := pow2Below_rec n hle
+      obtain ⟨k, hk, hlt, hup⟩ := ih ((n + 1) / 2) (by omega) (by omega)
+      have hp1 : (2 : Nat) ^ (k + 1) = 2 * 2 ^ k := by
+        rw [Nat.pow_succ, Nat.mul_comm]
+      have hp2 : (2 : Nat) ^ (k + 2) = 2 * 2 ^ (k + 1) := by
+        rw [Nat.pow_succ, Nat.mul_comm]
+      refine ⟨k + 1, ?_, ?_, ?_⟩
+      · rw [hrec, hk, hp1]
+      · omega
+      · omega
+
 /-- The prefix tree's split equation: past the shared split point, the
 prefix root is the parent of the shared left subtree and the prefix of
 the right subtree. -/

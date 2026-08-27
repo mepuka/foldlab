@@ -1,5 +1,6 @@
 import Effects.Conformance.Schema.ExactStep
-import Effects.Conformance.Instances.RMT001
+import Effects.Conformance.Instances.RemoteKit
+import Effects.Remote.Laws
 
 /-!
 # RMT-004 — an already-present exact-digest upload transfers nothing
