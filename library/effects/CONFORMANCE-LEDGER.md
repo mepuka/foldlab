@@ -20,7 +20,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | CTX-001 | pending — TypeScript evidence at M4 |
 | CTX-002 | pending — TypeScript evidence at M4 |
 | ADM-001 | standing review rule |
-| BRG-001 | pending — differential evidence at M3 |
+| BRG-001 | evidenced — differential suite (test/ReplayReducer.test.ts) |
 | BRG-002 | pending — differential evidence at M6 |
 | DUR-001 | standing review rule |
 

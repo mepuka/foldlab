@@ -47,7 +47,9 @@ const oldRows = committed === null ? new Map<string, string>() : statusRows(comm
 const newRows = statusRows(working)
 
 const isGreen = (s: string) =>
-  s.startsWith("instantiated") || s.startsWith("discharged")
+  s.startsWith("instantiated") ||
+  s.startsWith("discharged") ||
+  s.startsWith("evidenced")
 const errors: string[] = []
 let flips = 0
 

@@ -71,6 +71,7 @@ def laneTargets (lane : Lane) (inv : List Obligation) (rows : List LedgerEntry) 
     List Obligation :=
   let uninstantiated := fun (o : Obligation) => rows.all (fun e => e.id != o.id)
   let undischarged := fun (o : Obligation) => carrierDischarges.all (·.1 != o.id)
+  let unevidenced := fun (o : Obligation) => bridgeEvidence.all (·.1 != o.id)
   let relevant := fun (o : Obligation) =>
     match lane, o.disposition with
     | .conformance, .schema _ _ => true
@@ -78,7 +79,8 @@ def laneTargets (lane : Lane) (inv : List Obligation) (rows : List LedgerEntry) 
     | .implementation, .tsSide _ => true
     | .implementation, .bridge _ => true
     | _, _ => false
-  (inv.filter fun o => relevant o && uninstantiated o && undischarged o)
+  (inv.filter fun o => relevant o && uninstantiated o && undischarged o
+      && unevidenced o)
     |>.mergeSort fun a b => Nat.ble a.rank b.rank
 
 def targetBlocks (o : Obligation) : List Markdown.Block :=

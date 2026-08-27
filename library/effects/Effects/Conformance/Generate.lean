@@ -18,8 +18,11 @@ surfaces it.
 Carrier obligations are the second evidence kind: discharged by model
 construction, with no kit-bearing instance. They flip through the declared
 discharge list below, never through the registry, so "instantiated" keeps
-meaning proved-with-kit and the two evidence kinds stay visually distinct
-on the ledger.
+meaning proved-with-kit and the evidence kinds stay visually distinct on
+the ledger. Bridge obligations are the third kind: differential-suite
+agreement across the manifest seam — G4-labeled sampled evidence, never
+proof — flipping through the declared evidence list once the operator
+accepts the delivery that carries the suite.
 -/
 
 namespace Effects.Conformance
@@ -30,6 +33,13 @@ every instance; the transition check holds `discharged` green — it never
 regresses. -/
 def carrierDischarges : List (String × String) :=
   [("RPL-001", "step_iff_reduce")]
+
+/-- Bridge obligations the operator has accepted as evidenced, with the
+differential suite that carries the evidence. G4-labeled sampled
+agreement, never proof; entered only at an accepted delivery review. The
+transition check holds `evidenced` green — it never regresses. -/
+def bridgeEvidence : List (String × String) :=
+  [("BRG-001", "test/ReplayReducer.test.ts")]
 
 def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
   match rows.find? (·.id == o.id) with
@@ -47,7 +57,10 @@ def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
       | some (_, thm) => s!"discharged — carrier construction ({thm})"
       | none => s!"pending — by carrier construction at {m}"
     | .tsSide m => s!"pending — TypeScript evidence at {m}"
-    | .bridge m => s!"pending — differential evidence at {m}"
+    | .bridge m =>
+      match bridgeEvidence.find? (·.1 == o.id) with
+      | some (_, suite) => s!"evidenced — differential suite ({suite})"
+      | none => s!"pending — differential evidence at {m}"
     | .review => "standing review rule"
     | .deferred t => s!"deferred to {t}"
 

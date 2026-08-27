@@ -450,3 +450,14 @@ Stop and return to grilling if:
   rules arrive with their milestones through Pass A. The replay-term code
   labels left pending in the context document were filled at this
   ratification.
+- **Bridge-evidence ruling (2026-08-27, at the accepted M3 delivery
+  review):** the operator accepted the proposed flip mechanism for bridge
+  rows — a declared evidence list in the generator naming the accepted
+  differential suite, entered only at a delivery review, mirroring the
+  carrier-discharge mechanic. BRG-001 flips to `evidenced — differential
+  suite` on the strength of the accepted M3 delivery: the line-by-line
+  correspondence review of the mirrored reducer passed rule-for-rule and
+  all seven replay families are consumed structurally. `evidenced` is
+  G4-labeled sampled agreement, never proof; the transition check holds
+  it green. The tsSide rows (CTX-*) are not covered by this ruling and
+  get their own mechanism decision when M4 delivers them.
