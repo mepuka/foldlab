@@ -99,6 +99,13 @@ repository locations.
   transition/refinement libraries (including LeanServer); and proposes
   a weak-trace refinement plus real-transport conformance architecture.
   The model and theorem docket remain unratified G0 research.
+- [`streaming-sync-cas-api-prior-art.md`](streaming-sync-cas-api-prior-art.md)
+  surveys the concrete APIs of REAPI/ByteStream, OCI, tus, `object_store`,
+  Git LFS, IPFS/IPLD/GraphSync, Nix, XET, Hypercore, Automerge, and pinned
+  Effect v4; compares them with the R2 stream-shaped whole-object baseline;
+  and proposes private wire adapters and protocol drivers beneath distinct
+  `CasTransfer`, `CasBlob`, and `CasSync` deep modules. All API shapes and
+  sequencing recommendations remain unratified G0 research.
 - [`effect4-layer-semantics-remote-service-design.md`](effect4-layer-semantics-remote-service-design.md)
   reviews the pinned v4 layer, scope, stream, and HTTP-client semantics
   behind the ratified four-service streaming architecture, then proposes

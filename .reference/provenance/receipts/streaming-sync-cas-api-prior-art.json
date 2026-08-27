@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "streaming-sync-cas-api-prior-art",
+  "observedAt": "2026-08-27T09:18:47.2586284-05:00",
+  "scope": "Primary API and protocol sources used by the conception-mode survey of streaming object transfer, resumable upload, graph synchronization, operation progress, and Effect v4 carrier choices. Repository sources are fixed to commits or peeled release tags and selected Git blobs; the XET Internet-Draft is fixed to revision 05 and its archived bytes. This receipt admits research-source pins only, not an implementation, protocol conformance result, dependency, or Source Lock entry.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4"
+  },
+  "repositoryPins": [
+    {
+      "id": "bazel-remote-apis",
+      "repository": "https://github.com/bazelbuild/remote-apis",
+      "commit": "becdd8f9ff811df88a22d3eadd6341753d51d167",
+      "artifacts": [
+        {
+          "path": "build/bazel/remote/execution/v2/remote_execution.proto",
+          "role": "cas-batch-tree-and-capability-api",
+          "sha256": "f0b237af779fd1de3a9a3a851915a09de3288538856bc5f5199701e0030cb70d",
+          "bytes": 115765
+        }
+      ]
+    },
+    {
+      "id": "google-bytestream",
+      "repository": "https://github.com/googleapis/googleapis",
+      "commit": "de3c0d362adbaafc7a0cd1254a8cd49a528505ee",
+      "artifacts": [
+        {
+          "path": "google/bytestream/bytestream.proto",
+          "role": "range-resume-and-completion-api",
+          "sha256": "961b833f35f4bdc51df4bca017cffdba299893e89762bf8041465560106dd3d6",
+          "bytes": 7524
+        }
+      ]
+    },
+    {
+      "id": "oci-distribution-spec",
+      "repository": "https://github.com/opencontainers/distribution-spec",
+      "selector": "refs/tags/v1.1.1",
+      "tagObject": "b5c693e819628420cc04ba7d9263628276d8ca0f",
+      "commit": "a139cc423184af6078077b9b7ee336eddbd03f8f",
+      "artifacts": [
+        {
+          "path": "spec.md",
+          "role": "chunked-upload-range-status-and-publication",
+          "gitBlob": "26e64b967d9a1e38e508f3f450500b5c0cf21a30"
+        }
+      ]
+    },
+    {
+      "id": "tus-resumable-upload-protocol",
+      "repository": "https://github.com/tus/tus-resumable-upload-protocol",
+      "commit": "c6a11fa3d7b6198e00e4aa5289ccb71314162b84",
+      "edition": "1.0.0 (2016-03-25)",
+      "artifacts": [
+        {
+          "path": "protocol.md",
+          "role": "resumable-upload-session-state-machine",
+          "gitBlob": "97f63cdba0a3911f956e1c66002b0187cec5aa4b"
+        }
+      ]
+    },
+    {
+      "id": "git-lfs",
+      "repository": "https://github.com/git-lfs/git-lfs",
+      "commit": "09705b99b15cff34b4afb64e468d29f6a77b8b21",
+      "artifacts": [
+        {
+          "path": "docs/custom-transfers.md",
+          "role": "adapter-lifecycle-progress-and-verification-ownership",
+          "gitBlob": "c9e475f812ea8d0bb59f66ef0e6ff60fe8bbce44"
+        }
+      ]
+    },
+    {
+      "id": "ipfs-boxo",
+      "repository": "https://github.com/ipfs/boxo",
+      "commit": "63cae36adc96260c55d1e3b8bf5b9f4b78fd7080",
+      "artifacts": [
+        {
+          "path": "blockstore/blockstore.go",
+          "role": "minimal-blockstore-and-terminal-enumeration-error-api",
+          "gitBlob": "3e12ea5c35ea0a34b96fb897723a8b8f1453e4c2"
+        },
+        {
+          "path": "blockstore/validating_blockstore.go",
+          "role": "cid-validating-read-wrapper",
+          "gitBlob": "2e7480dc437c1f43ddbf7d5c790aeecb81d76fdf"
+        }
+      ]
+    },
+    {
+      "id": "ipld-specs",
+      "repository": "https://github.com/ipld/specs",
+      "commit": "a7b9376ebd43aeabba7d78487db3d9df456b7714",
+      "documentStatus": "Prescriptive-Draft",
+      "artifacts": [
+        {
+          "path": "selectors/selectors.md",
+          "role": "bounded-selector-data-model-prior-art",
+          "gitBlob": "cd02236667bb17cd9b7869ee61121d515d7d537d"
+        }
+      ]
+    },
+    {
+      "id": "go-graphsync",
+      "repository": "https://github.com/ipfs/go-graphsync",
+      "commit": "12cbffae99eb011ab3da82c5b74e29ec8dc1c6e0",
+      "artifacts": [
+        {
+          "path": "graphsync.go",
+          "role": "root-selector-request-progress-cancel-and-limit-api",
+          "gitBlob": "0e374250f107ca53b12c23c3c36bce25aa789014"
+        }
+      ]
+    },
+    {
+      "id": "arrow-rs-object-store",
+      "repository": "https://github.com/apache/arrow-rs-object-store",
+      "commit": "b07471e2bc341278f86e30cf80a850d56cbe2c67",
+      "artifacts": [
+        {
+          "path": "src/lib.rs",
+          "role": "whole-object-range-vectored-and-conditional-api",
+          "gitBlob": "7138bdb3a024416c7ba93c0c62e03160e0553de7"
+        },
+        {
+          "path": "src/upload.rs",
+          "role": "multipart-complete-abort-and-capacity-api",
+          "gitBlob": "d7d50b1e31d053e43d9d3a4113aed5e5c2c61dc7"
+        }
+      ]
+    },
+    {
+      "id": "nix",
+      "repository": "https://github.com/NixOS/nix",
+      "selector": "refs/tags/2.35.2",
+      "tagObject": "a400e1f45939a4e0521f66e76470eea9e8ea666b",
+      "commit": "2c73b59da29606068c0c98db015dd3a66955525d",
+      "artifacts": [
+        {
+          "path": "src/libstore/binary-cache-store.cc",
+          "role": "hash-compress-and-data-before-metadata-publication",
+          "gitBlob": "5294ee7a0330fb247ae268b232d1bbdd52a82a68"
+        },
+        {
+          "path": "src/libstore/include/nix/store/binary-cache-store.hh",
+          "role": "restartable-source-and-binary-cache-api",
+          "gitBlob": "0cc5d1f3ff3f12c3ba33afb4e2ea35b4bd3bcbec"
+        },
+        {
+          "path": "src/libstore/build/substitution-goal.cc",
+          "role": "closure-realization-and-substituter-fallback",
+          "gitBlob": "90273493e28803f63cadaeb19f95fbcf5fb2ac5d"
+        },
+        {
+          "path": "doc/manual/source/protocols/binary-cache/narinfo.md",
+          "role": "published-cache-metadata-fields",
+          "gitBlob": "e2e2efac0eeb11f3da5d858e3645dac765e1e33a"
+        }
+      ]
+    },
+    {
+      "id": "xet-draft-source",
+      "repository": "https://github.com/jedisct1/draft-denis-xet",
+      "commit": "b29b7d1564b382245aabb65ede5fc9cfc8e93d4c",
+      "artifacts": [
+        {
+          "path": "draft-denis-xet.md",
+          "role": "chunk-shard-range-layout-and-privacy-prior-art",
+          "gitBlob": "c8fed40144e3a77eb90bf85558ebb9ffefc3d791"
+        }
+      ]
+    },
+    {
+      "id": "hypercore",
+      "repository": "https://github.com/holepunchto/hypercore",
+      "commit": "affec09a56d5f164292c9a3305fbfcde7a40bb85",
+      "artifacts": [
+        {
+          "path": "README.md",
+          "role": "range-live-snapshot-session-and-replication-api",
+          "gitBlob": "f39f10632c6d9d746d197e7e0941f2a950dad80a"
+        }
+      ]
+    },
+    {
+      "id": "automerge",
+      "repository": "https://github.com/automerge/automerge",
+      "commit": "47908d6c04a0ce3fea0fa1d6b7f5ce6ba3e5792e",
+      "artifacts": [
+        {
+          "path": "rust/automerge/src/sync.rs",
+          "role": "transport-independent-sync-conversation-api",
+          "gitBlob": "83377e4bf9549633f60fa6a878b958f82cc8cd5c"
+        },
+        {
+          "path": "rust/automerge/src/sync/state.rs",
+          "role": "per-peer-sync-state",
+          "gitBlob": "e85f28c62001da64f57763063035bb040a124d39"
+        }
+      ]
+    },
+    {
+      "id": "effect",
+      "repository": "https://github.com/Effect-TS/effect",
+      "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+      "correspondingPackage": "effect@4.0.0-rc.111",
+      "artifacts": [
+        {
+          "path": "packages/effect/src/Stream.ts",
+          "role": "direct-stream-and-scoped-acquisition-carrier",
+          "gitBlob": "4c2f749ac2bba62b41364aff8fa7e674829f3362"
+        },
+        {
+          "path": "packages/effect/src/Sink.ts",
+          "role": "incremental-consumer-with-result",
+          "gitBlob": "2d5b7ddd8e3de3f6f754f4e5a79dc393b82ea292"
+        },
+        {
+          "path": "packages/effect/src/Channel.ts",
+          "role": "streamed-output-with-typed-terminal-result",
+          "gitBlob": "cbd1247629c76703a37e8a36371306e43cacc384"
+        },
+        {
+          "path": "packages/effect/src/Scope.ts",
+          "role": "operation-resource-lifetime",
+          "gitBlob": "12e1c6b1bf1a196ef64f4593e36de2b01c6e8e5c"
+        },
+        {
+          "path": "packages/effect/src/Graph.ts",
+          "role": "runtime-graph-planning-projection",
+          "gitBlob": "4a099e3056fc93ba7bec8ad7596a32b5186e4aab"
+        },
+        {
+          "path": "packages/effect/src/unstable/http/HttpIncomingMessage.ts",
+          "role": "incoming-http-byte-stream",
+          "gitBlob": "1b915334fad875213e71a337e7a463c3de547f37"
+        },
+        {
+          "path": "packages/effect/src/unstable/http/HttpBody.ts",
+          "role": "stream-and-ranged-file-http-bodies",
+          "gitBlob": "ae9db9374cbc217a932b6b8dc15438717dcf8330"
+        },
+        {
+          "path": "packages/effect/src/unstable/rpc/RpcClient.ts",
+          "role": "streaming-rpc-and-bounded-queue-client",
+          "gitBlob": "641e17a60cc1aef172748e131db2988bb2310337"
+        },
+        {
+          "path": "packages/effect/src/unstable/socket/Socket.ts",
+          "role": "scoped-duplex-socket-adapter",
+          "gitBlob": "13eba59fd6c881a0d8100d66ad621e7ec2d5dc5d"
+        },
+        {
+          "path": "packages/effect/src/unstable/eventlog/EventLogRemote.ts",
+          "role": "nearby-authenticated-remote-stream-and-queue-idiom",
+          "gitBlob": "dc76e650e0151ceb502288d3e36d5eaa95180c8f"
+        }
+      ]
+    }
+  ],
+  "publicationPins": [
+    {
+      "id": "draft-denis-xet-05",
+      "url": "https://www.ietf.org/archive/id/draft-denis-xet-05.txt",
+      "published": "2026-06-29",
+      "status": "individual-internet-draft",
+      "sha256": "474d64988f0e28a561403807379e19cfe2c046a43ce39f210c9fdaf55b098a03",
+      "bytes": 101863
+    }
+  ],
+  "standing": {
+    "status": "resolved-research-source-pins",
+    "sourceLockPromotion": "pending",
+    "claimGate": "G0",
+    "note": "The report supports conception and later grilling only. Progressive transfer, range authenticity, receipt meaning, graph closure, peer convergence, implementation refinement, and transport conformance remain pending exact judgments and evidence."
+  },
+  "result": "resolved-research-source-pins"
+}
