@@ -121,6 +121,25 @@ export const decodeKeyListDocument = (
     : Option.none()
 }
 
+const presenceByte: Record<PresenceStatus, number> = {
+  missing: 0,
+  present: 1,
+  failed: 2,
+}
+
+/** Encode the closed positional status document, one byte per requested key. */
+export const encodePresenceDocument = (
+  statuses: ReadonlyArray<PresenceStatus>,
+): Uint8Array => {
+  const bytes = new Uint8Array(statuses.length)
+  let offset = 0
+  for (const status of statuses) {
+    bytes[offset] = presenceByte[status]
+    offset += 1
+  }
+  return bytes
+}
+
 /** Decode the closed positional status document for the requested keys. */
 export const decodePresenceDocument = (
   keys: ReadonlyArray<ContentIdType>,
