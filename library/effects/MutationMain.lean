@@ -6,6 +6,12 @@ import Effects.Mutants.RMT002_OversizeAccepted
 import Effects.Mutants.RMT003_RetryUnchangedBytes
 import Effects.Mutants.RMT004_DuplicateUploadTransfers
 import Effects.Mutants.RMT015_SubstitutedDelivery
+import Effects.Conformance.ManifestMerkle
+import Effects.Mutants.MRK001_LossyChunk
+import Effects.Mutants.MRK002_EmitUnverified
+import Effects.Mutants.MRK003_ValidateEarly
+import Effects.Mutants.MRK005_SkipEmitsGhost
+import Effects.Mutants.MRK006_AcceptAnyRoot
 import Effects.Mutants.RPL002_LiveFallback
 import Effects.Mutants.RPL003_SkipAdvance
 import Effects.Mutants.RPL004_ConsumeOnMismatch
@@ -46,6 +52,17 @@ def remoteMutants : List (Mutant RStep) :=
   , Effects.Mutants.RMT003RetryUnchangedBytes.mutant
   , Effects.Mutants.RMT004DuplicateUploadTransfers.mutant
   , Effects.Mutants.RMT015SubstitutedDelivery.mutant ]
+
+def merkleChunkMutants : List (Mutant ChunkFn) :=
+  [ Effects.Mutants.MRK001LossyChunk.mutant ]
+
+def merkleStepMutants : List (Mutant MStep) :=
+  [ Effects.Mutants.MRK002EmitUnverified.mutant
+  , Effects.Mutants.MRK003ValidateEarly.mutant
+  , Effects.Mutants.MRK005SkipEmitsGhost.mutant ]
+
+def merkleVerifyMutants : List (Mutant VerifyFn) :=
+  [ Effects.Mutants.MRK006AcceptAnyRoot.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/
@@ -104,8 +121,35 @@ def main : IO UInt32 := do
       survivors := survivors + 1
     else
       IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleChunkMutants do
+    let model := merkleChunkRowsRendered realChunk
+    let mutated := merkleChunkRowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleStepMutants do
+    let model := merkleDecoderRowsRendered realMStep m.attacks
+    let mutated := merkleDecoderRowsRendered m.mutant m.attacks
+    if model.isEmpty then
+      IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"
+      survivors := survivors + 1
+    else if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
+  for m in merkleVerifyMutants do
+    let model := merkleVerifyRowsRendered realVerify
+    let mutated := merkleVerifyRowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
   if survivors > 0 then
     IO.eprintln s!"{survivors} mutation survivor(s); a survivor fails the task"
     return 1
-  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length} declared mutants killed"
+  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length} declared mutants killed"
   return 0

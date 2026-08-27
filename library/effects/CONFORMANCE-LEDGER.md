@@ -45,6 +45,16 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RMT-014 | pending — FAIL-CLOSED instance at R3 |
 | RMT-015 | instantiated (AGREEMENT) |
 | RMT-016 | pending — AGREEMENT instance at R4 |
+| MRK-001 | instantiated (CODEC) |
+| MRK-002 | instantiated (TRACE-EXCLUDES) |
+| MRK-003 | instantiated (TRACE-EXCLUDES) |
+| MRK-004 | discharged — carrier construction (complete\_decode\_root) |
+| MRK-005 | instantiated (AGREEMENT) |
+| MRK-006 | instantiated (AGREEMENT) |
+| MRK-007 | pending — AGREEMENT instance at MRK-2 |
+| MRK-008 | discharged — carrier construction (drun\_append) |
+| MRK-009 | standing review rule |
+| MRK-010 | discharged — carrier construction (opening\_binds\_committed) |
 
 ## CAS-001
 
@@ -239,3 +249,53 @@ A successful remote load implements the logical admitted-node load.
 ## RMT-016
 
 A local admitted-node hit is observationally equivalent to a successful remote load for immutable nodes.
+
+## MRK-001
+
+One chunk-tree root per declared recipe and content: chunking is a lossless declared partition, and the root is a function of the recipe parameters and the bytes.
+
+**Sentence:** Chunking under the declared recipe is a lossless partition: rejoining the chunks restores the bytes exactly, two different contents never chunk alike, and the checked inverse accepts exactly the lists chunking produces — the recipe is declared, never inferred, so one root exists per recipe and content and no rechunk can mint a second identity.
+
+## MRK-002
+
+The streaming decoder emits a chunk only after it verifies against its expected subtree address; against a committed chunk list, every emission matches, or a hash-collision witness exists in the consumed prefix.
+
+**Sentence:** When the pending input is not entitled to emit — the decoder is not active on an in-range leaf frame whose expected address the input chunk's leaf pre-image hashes to — no step ever emits: emission IS verification, and against a committed list every emission matches the committed chunk at its index or a hash-collision witness exists in the consumed prefix, the decoder being under no obligation to detect the collision.
+
+## MRK-003
+
+No decoder run observes the length or end-of-input before the final chunk validates against the root.
+
+**Sentence:** When the pending input is not a verified final chunk, no step ever validates the length: the declared length is exposed to the caller only when the final chunk itself validates against the root, so a truncated or length-tweaked stream can never make the decoder vouch for a length it did not verify.
+
+## MRK-004
+
+A complete decode determines its root: the recomputed root of the emitted output equals the expected root, so no output completely decodes under two roots.
+
+## MRK-005
+
+Slice decoding agrees with the whole decode restricted to the requested range.
+
+**Sentence:** On nonempty chunk lists and any requested range, the slice decode over the range extractor's stream and the whole decode filtered to the range agree at their emission lists — a slice emits exactly the bytes the whole decode would emit at those offsets, never more, so slice and encoding carriers stay transport while roots and decoded bytes stay the identity.
+
+## MRK-006
+
+The inclusion verifier accepts exactly the openings whose recomputed root matches; honestly generated paths verify; and two accepted openings of one root and index with different leaves yield a computable collision.
+
+**Sentence:** On every opening — an index, a count, leaf bytes, a sibling list, and an expected root — the executable inclusion verifier and the decided inclusion judgment agree at the boolean: the verifier accepts exactly the openings whose derived-side recomputation reaches the expected root, honestly generated paths verify, and two accepted openings of one root and index carry the same bytes or exhibit a computable hash collision.
+
+## MRK-007
+
+The consistency verifier accepts exactly the related root pairs, and consistency forces prefix agreement or exhibits a collision.
+
+## MRK-008
+
+The decoder is a pure fold: runs compose over input concatenation, so transport fragmentation below the parser cannot change any emission, rejection, or terminal.
+
+## MRK-009
+
+Slice and encoding bytes are transport, never identity: only roots and decoded bytes are identity-bearing, and encoding malleability is documented rather than fought.
+
+## MRK-010
+
+An accepted opening binds its index's committed chunk: bytes accepted at an index equal the chunk the tree commits at that index, or a collision is exhibited.

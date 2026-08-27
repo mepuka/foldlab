@@ -20,6 +20,11 @@ import Effects.Remote.Event
 import Effects.Remote.Command
 import Effects.Remote.Machine
 import Effects.Remote.Laws
+import Effects.Merkle.Chunk
+import Effects.Merkle.Tree
+import Effects.Merkle.Verify
+import Effects.Merkle.Decoder
+import Effects.Merkle.Laws
 import Effects.Conformance
 
 /-!

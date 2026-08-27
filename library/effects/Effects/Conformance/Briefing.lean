@@ -45,11 +45,13 @@ def msRank : String → Nat
   | "E3" => 7
   | "R1" => 8
   | "R2" => 9
-  | "R3" => 10
-  | "R4" => 11
-  | "R5" => 12
-  | "R6" => 13
-  | "M6" => 14
+  | "MRK-1" => 10
+  | "MRK-2" => 11
+  | "R3" => 12
+  | "R4" => 13
+  | "R5" => 14
+  | "R6" => 15
+  | "M6" => 16
   | _ => 99
 
 def Disposition.milestone? : Disposition → Option String
