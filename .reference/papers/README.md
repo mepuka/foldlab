@@ -44,3 +44,19 @@ A file added here does not enter the catalog by being present. It enters when
 the generator assigns it a cluster, which is also the only way the lock will
 accept it — see
 [../provenance/README-papers.md](../provenance/README-papers.md).
+
+## Local text extractions
+
+Full-text extractions derived from local PDFs live under `extracted/` with the
+same filename stem and a `.md` extension. That directory is gitignored for the
+same redistribution reason as the PDFs. These files are reading aids only:
+the PDF named and digested by the paper lock remains the evidence, and a new
+PDF or extraction does not enter the corpus until the lock and catalog are
+regenerated through the documented procedure.
+
+The house command is:
+
+```text
+liteparse parse <paper.pdf> --output extracted/<paper>.md \
+  --format markdown --image-mode placeholder --no-ocr --quiet
+```

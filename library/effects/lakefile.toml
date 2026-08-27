@@ -1,0 +1,5 @@
+name = "effects"
+defaultTargets = ["Effects"]
+
+[[lean_lib]]
+name = "Effects"
