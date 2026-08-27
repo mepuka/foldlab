@@ -605,3 +605,15 @@ Stop and return to grilling if:
   recover from their own address boundary — a named API gap for a
   future ruling (the natural home is the descriptor slice or a widened
   record-mode result).
+- **R1 ratification (2026-08-27):** the operator ratified the
+  scope-and-ambient analysis's first recommendation: replay
+  construction provides `TracerTimingEnabled = false` alongside the
+  tripwire Clock and Random. Span timing is thereby reclassified from
+  ambient use to disabled instrumentation — spans still exist and
+  propagate, the runtime never consults the Clock for them (verified
+  at the pin: the timing reads are guarded by exactly that
+  reference), and genuinely semantic Clock use still trips the wire
+  as ratified. This supersedes the `fnUntraced` caveat once the
+  implementation-lane rider lands; the reject-first boundary is
+  otherwise unchanged, and the describe-a-Time-service recipe remains
+  the principled route to deterministic time under replay.
