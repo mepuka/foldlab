@@ -1,8 +1,14 @@
 /**
- * @foldlab/effect-replay — M1 bootstrap.
+ * @foldlab/effect-replay — M1 interface freeze.
  *
- * The public surface arrives with the M2–M4 slices under the ratified
- * contract; nothing exported here is a claim. Interface freeze status is
- * tracked in IMPLEMENTATION-PLAN.md section 9.
+ * Declarations only: the boundary Schemas, service interfaces, and kit
+ * signatures frozen at M1 under the ratified contract. Implementations
+ * arrive with the M2–M4 slices; history and witness Schemas stay internal
+ * until the M3 re-freeze. Nothing exported here is a claim.
  */
-export {}
+export * from "./CasNode.ts"
+export * from "./CasStore.ts"
+export * from "./Decision.ts"
+export * from "./Operation.ts"
+export * from "./Replay.ts"
+export * from "./ServiceAdapter.ts"
