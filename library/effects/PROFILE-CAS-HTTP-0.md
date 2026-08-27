@@ -157,12 +157,13 @@ budget stages (the key-count budget); `publishUnconfirmed` joins the
 policy codes (the local ordering refusal). Publish and batch
 transport failures classify through the existing classes by cause.
 
-## 9. Authentication (ratified)
+## 9. Authentication (implemented client-side; server clauses await
+the reference server)
 
 The credential model at `/0` is deliberately minimal: an OPAQUE
-bearer credential per authority, supplied in layer configuration and
-sent as `Authorization: Bearer <credential>` on every request to
-exactly that authority. Rules:
+bearer credential per authority (the `credentials` configuration
+field, a Redacted string), sent as `Authorization: Bearer
+<credential>` on every request to exactly that authority. Rules:
 
 - A credential is scoped to its one configured authority and never
   accompanies a request anywhere else; combined with the standing
@@ -180,20 +181,23 @@ exactly that authority. Rules:
   independent of authorization for object upload; credential
   comparison is constant-time where the platform provides it.
 
-## 10. Deadlines (ratified)
+## 10. Deadlines (implemented)
 
 Every wire operation carries a client-side deadline from layer
-configuration (`requestTimeout`, default thirty seconds), covering
-the full exchange — request issue through acknowledgment or complete
-body. Expiry resolves the in-flight operation as the machine's
-SILENCE event with the typed `timeout` reason: no new alphabet, no
-retry decided at the shell, and the semantic core sees exactly the
-event it already handles. Deadlines are wall-clock shell concerns and
-never enter the model. Node bodies are budget-bounded, so one
-per-request deadline suffices at `/0`; streaming responses will carry
-an idle-progress deadline defined with the proof plane, not this
-one. The deadline is validated positive and finite; opting out is an
-explicit configuration value, never an accidental zero.
+configuration — the REQUIRED `operationDeadlineMs` field, validated
+a positive integer, so a deadline-free client cannot be constructed
+and no default is needed (amended at the scheme-slice review to the
+shipped letter, which is stricter than the originally drafted
+optional-with-default form). The deadline covers the full exchange —
+request issue through acknowledgment or complete body. Expiry
+resolves the in-flight operation as the machine's SILENCE event with
+the typed `timeout` reason and spends no retry attempt: no new
+alphabet, no retry decided at the shell, and the semantic core sees
+exactly the event it already handles. Deadlines are wall-clock shell
+concerns and never enter the model. Node bodies are budget-bounded,
+so one per-operation deadline suffices at `/0`; streaming responses
+will carry an idle-progress deadline defined with the proof plane,
+not this one.
 
 ## 11. Namespacing rule (standing)
 

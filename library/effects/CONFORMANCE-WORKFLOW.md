@@ -1403,6 +1403,41 @@ Stop and return to grilling if:
   in-flight CasScheme0 slice must reconcile its CasHash service
   with that existing seam rather than minting a parallel one,
   flagged for that delivery's review.
+- **F4 acceptance — scheme evidence and policy tests
+  (2026-08-27):** the redirected scheme-slice delivery was reviewed
+  first-hand in its worktree and merged; gates run personally, one
+  hundred fifty-six tests across twenty-two files on main. Test
+  tree only, sources untouched, exactly as re-scoped after the
+  discovery that the digest seam, bearer header, and deadline had
+  shipped since the R2-era slices. Landed: known-answer fixtures
+  generated through the SHIPPED SHA-256 address path (eight
+  vectors — five raw pre-images and three canonical node
+  re-encodings agreeing with the committed manifest bytes),
+  anchored on all three published FIPS 180-2 reference digests,
+  with a regeneration-equality gate verified non-vacuous by
+  mutation and a CRLF-normalized byte compare for the Windows
+  working tree; the authentication clause's FIRST test evidence
+  (credential on every request, absent header without one, 401
+  terminal, structural redaction with positive controls); and the
+  two uncovered deadline gates (stall-before-headers,
+  inside-deadline with clean machine state). Profile amendments
+  landed with this record: section 10 amended to the shipped
+  letter — `operationDeadlineMs`, REQUIRED with no default, which
+  is stricter than the drafted optional-with-default form — and
+  section 9 names the `credentials` field. TWO DEFECTS the
+  delivery surfaced, queued on Track B: the credential field was
+  UNCONSTRUCTIBLE as shipped — the schema's Redacted label option
+  demands an undocumented label at construction, so the ratified
+  auth clause had shipped entirely unexercised (fix: export a
+  credential constructor or drop the label) — and the package
+  ships NO crypto layer, so scheme-0 is a caller obligation rather
+  than the shipped default the hash docket requires (fix: ship the
+  WebCrypto SHA-256 layer as the production default; also surface
+  a wrong-width digest as a typed store failure, not a die).
+  Process note recorded: the agent's worktree had branched
+  thirty-five commits behind and was fast-forwarded cleanly before
+  work; worktree bases should be pinned to the intended commit at
+  spawn.
 - **Four-lens code review consolidated; Track A landed
   (2026-08-27):** four read-only reviews (runtime correctness, test
   quality, the Lean tree, cross-surface coherence — eighty-eight
