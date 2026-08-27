@@ -123,6 +123,19 @@ repository locations.
   assertions, and TestClock as the R4 deterministic-time hook — an
   eight-item decision docket, nothing implemented while R2 is in
   flight.
+- [`merkle-conformance-proof-infrastructure.md`](merkle-conformance-proof-infrastructure.md)
+  designs the Merkle-structure conformance and proof infrastructure:
+  the bao verified-streaming spec and RFC 9162's proof algorithms
+  worked first-hand into ten MRK obligation candidates (emission
+  soundness with the keeps-consuming correction, the final-chunk
+  temporal rule, no decoding collisions, slice–whole agreement,
+  verifier reflections, position binding), a sans-io decoder machine
+  over structural pre-images with constructive collision-witness
+  disjuncts, and a mechanized-prior utilization map anchored on
+  veri-auth's collision-free logic and VCVio's computable collision
+  extraction — with the absence result that no prover has mechanized
+  bao streaming or the RFC 9162 algorithms. A nine-item decision
+  docket; nothing ratified.
 - [`leanserver-adoption.md`](leanserver-adoption.md) is the formal
   adoption record for LeanServer at its ratified pin: the
   materialized gitignored clone, blob-level digest verification
