@@ -6,7 +6,7 @@
  * correspondence review can align both files rule by rule. This module owns
  * no Effect service and performs no I/O.
  */
-import { HashMap, HashSet, Option } from "effect"
+import { Equal, HashMap, HashSet, Option } from "effect"
 
 export interface Budgets {
   readonly maxBytes: number
@@ -23,11 +23,15 @@ export type OpId = number
 
 export type OpState<K, B> =
   | { readonly _tag: "Loading"; readonly key: K }
+  | { readonly _tag: "FindingMissing"; readonly keys: ReadonlyArray<K> }
   | { readonly _tag: "Uploading"; readonly key: K; readonly bytes: B }
+  | { readonly _tag: "Publishing"; readonly key: K }
 
 export type Op<K, B> =
   | { readonly _tag: "Load"; readonly key: K }
+  | { readonly _tag: "FindMissing"; readonly keys: ReadonlyArray<K> }
   | { readonly _tag: "Upload"; readonly key: K; readonly bytes: B }
+  | { readonly _tag: "PublishRoot"; readonly key: K; readonly closure: ReadonlyArray<K> }
 
 export type KeyStatus<K, B> =
   | { readonly _tag: "Found"; readonly key: K; readonly bytes: B }
@@ -76,6 +80,13 @@ export type MResult<K, B> =
   | { readonly _tag: "TransportFailed"; readonly key: K }
   | { readonly _tag: "AuthFailed"; readonly key: K }
   | { readonly _tag: "DuplicateId" }
+  | { readonly _tag: "BatchAnswered"; readonly found: ReadonlyArray<K>; readonly missing: ReadonlyArray<K> }
+  | { readonly _tag: "BatchRejected" }
+  | { readonly _tag: "BatchFailed" }
+  | { readonly _tag: "KeyBudgetRejected" }
+  | { readonly _tag: "Published"; readonly key: K }
+  | { readonly _tag: "OrderingRefused"; readonly key: K }
+  | { readonly _tag: "PublishFailed"; readonly key: K }
   | { readonly _tag: "Absorbed" }
 
 export type RDecision<K, B> =
@@ -87,6 +98,11 @@ export type RDecision<K, B> =
   | { readonly _tag: "IntegrityRejected"; readonly key: K }
   | { readonly _tag: "RepeatRefused"; readonly key: K }
   | { readonly _tag: "GaveUp"; readonly key: K }
+  | { readonly _tag: "PresenceNoted"; readonly found: ReadonlyArray<K>; readonly missing: ReadonlyArray<K> }
+  | { readonly _tag: "BatchRejected" }
+  | { readonly _tag: "BatchGaveUp" }
+  | { readonly _tag: "Published"; readonly key: K }
+  | { readonly _tag: "OrderingRefused"; readonly key: K }
 
 export interface TaggedCommand<K, B> {
   readonly op: OpId
@@ -102,6 +118,10 @@ export interface MachineState<K, B> {
   readonly inFlight: HashMap.HashMap<OpId, OpState<K, B>>
   readonly cache: HashSet.HashSet<K>
   readonly rejected: HashSet.HashSet<readonly [K, B]>
+  readonly reportedPresent: HashSet.HashSet<K>
+  readonly reportedMissing: HashSet.HashSet<K>
+  readonly confirmed: HashSet.HashSet<K>
+  readonly published: HashSet.HashSet<K>
 }
 
 export interface StepOut<K, B> {
@@ -122,6 +142,10 @@ export const initialMachineState = <K, B>(): MachineState<K, B> => ({
   inFlight: HashMap.empty(),
   cache: HashSet.empty(),
   rejected: HashSet.empty(),
+  reportedPresent: HashSet.empty(),
+  reportedMissing: HashSet.empty(),
+  confirmed: HashSet.empty(),
+  published: HashSet.empty(),
 })
 
 /** Absorb an uncorrelated or unexpected input. */
@@ -159,6 +183,7 @@ export const loadEvent = <K, B>(
           ...state,
           inFlight: HashMap.remove(state.inFlight, id),
           cache: HashSet.add(state.cache, key),
+          confirmed: HashSet.add(state.confirmed, key),
         },
         commands: [],
         decisions: [
@@ -231,6 +256,7 @@ export const uploadEvent = <K, B>(
           ...state,
           inFlight: HashMap.remove(state.inFlight, id),
           cache: HashSet.add(state.cache, key),
+          confirmed: HashSet.add(state.confirmed, key),
         },
         commands: [],
         decisions: [{ op: id, decision: { _tag: "Cached", key } }],
@@ -293,6 +319,124 @@ export const uploadEvent = <K, B>(
   }
 }
 
+/** Whether batch results account for the requested keys exactly, in request order. */
+export const accountsFor = <K, B>(
+  keys: ReadonlyArray<K>,
+  results: ReadonlyArray<KeyStatus<K, B>>,
+): boolean => {
+  if (keys.length !== results.length) return false
+  return keys.every((key, index) => {
+    const result = results[index]
+    return result !== undefined && Equal.equals(key, result.key)
+  })
+}
+
+/** Record advisory presence data without admitting or negatively caching anything. */
+export const notePresence = <K, B>(
+  state: MachineState<K, B>,
+  results: ReadonlyArray<KeyStatus<K, B>>,
+): {
+  readonly state: MachineState<K, B>
+  readonly found: ReadonlyArray<K>
+  readonly missing: ReadonlyArray<K>
+} => {
+  let reportedPresent = state.reportedPresent
+  let reportedMissing = state.reportedMissing
+  const found: Array<K> = []
+  const missing: Array<K> = []
+
+  for (const result of results) {
+    if (result._tag === "Found") {
+      reportedPresent = HashSet.add(reportedPresent, result.key)
+      found.push(result.key)
+    } else if (result._tag === "Missing") {
+      reportedMissing = HashSet.add(reportedMissing, result.key)
+      missing.push(result.key)
+    }
+  }
+
+  return {
+    state: { ...state, reportedPresent, reportedMissing },
+    found,
+    missing,
+  }
+}
+
+/** Handle a find-missing operation's correlated wire event. */
+export const batchEvent = <K, B>(
+  state: MachineState<K, B>,
+  id: OpId,
+  keys: ReadonlyArray<K>,
+  event: Event<K, B>,
+): StepOut<K, B> => {
+  if (event._tag === "BatchResult") {
+    if (accountsFor(keys, event.results)) {
+      const noted = notePresence(state, event.results)
+      return {
+        result: { _tag: "BatchAnswered", found: noted.found, missing: noted.missing },
+        state: {
+          ...noted.state,
+          inFlight: HashMap.remove(noted.state.inFlight, id),
+        },
+        commands: [],
+        decisions: [{
+          op: id,
+          decision: { _tag: "PresenceNoted", found: noted.found, missing: noted.missing },
+        }],
+      }
+    }
+    return {
+      result: { _tag: "BatchRejected" },
+      state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
+      commands: [],
+      decisions: [{ op: id, decision: { _tag: "BatchRejected" } }],
+    }
+  }
+
+  return {
+    result: { _tag: "BatchFailed" },
+    state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
+    commands: [],
+    decisions: [{ op: id, decision: { _tag: "BatchGaveUp" } }],
+  }
+}
+
+/** Handle a publish operation's correlated wire event. */
+export const publishEvent = <K, B>(
+  state: MachineState<K, B>,
+  id: OpId,
+  key: K,
+  event: Event<K, B>,
+): StepOut<K, B> => {
+  if (event._tag === "Ok") {
+    return {
+      result: { _tag: "Published", key },
+      state: {
+        ...state,
+        inFlight: HashMap.remove(state.inFlight, id),
+        published: HashSet.add(state.published, key),
+      },
+      commands: [],
+      decisions: [{ op: id, decision: { _tag: "Published", key } }],
+    }
+  }
+
+  return {
+    result: { _tag: "PublishFailed", key },
+    state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
+    commands: [],
+    decisions: [{ op: id, decision: { _tag: "GaveUp", key } }],
+  }
+}
+
+/** Whether a root and every member of its declared closure stand confirmed. */
+export const publishEntitled = <K, B>(
+  state: MachineState<K, B>,
+  key: K,
+  closure: ReadonlyArray<K>,
+): boolean => HashSet.has(state.confirmed, key)
+  && closure.every((member) => HashSet.has(state.confirmed, member))
+
 /** The total remote client step. */
 export const step = <K, B>(
   params: Params<K, B>,
@@ -320,61 +464,112 @@ export const step = <K, B>(
       }
     }
 
-    const { bytes, key } = input.op
-    if (params.size(bytes) > params.budgets.maxBytes) {
-      return {
-        result: { _tag: "BudgetRejected", key },
-        state,
-        commands: [],
-        decisions: [{ op: input.id, decision: { _tag: "BudgetRejected", key } }],
-      }
-    }
-    if (HashSet.has(state.rejected, [key, bytes] as const)) {
-      return {
-        result: { _tag: "RepeatRefused", key },
-        state,
-        commands: [],
-        decisions: [{ op: input.id, decision: { _tag: "RepeatRefused", key } }],
-      }
-    }
-    if (params.verify(key, bytes)) {
-      if (HashSet.has(state.cache, key)) {
+    if (input.op._tag === "FindMissing") {
+      if (input.op.keys.length > params.budgets.maxKeys) {
         return {
-          result: { _tag: "Uploaded", key },
+          result: { _tag: "KeyBudgetRejected" },
           state,
           commands: [],
-          decisions: [{ op: input.id, decision: { _tag: "Verified", key } }],
+          decisions: [{ op: input.id, decision: { _tag: "BatchRejected" } }],
         }
       }
-      const command: Command<K, B> = { _tag: "Upload", key, bytes }
+      const command: Command<K, B> = { _tag: "FindMissing", keys: input.op.keys }
       return {
         result: { _tag: "Commanded" },
         state: {
           ...state,
           inFlight: HashMap.set(state.inFlight, input.id, {
-            _tag: "Uploading",
-            key,
-            bytes,
+            _tag: "FindingMissing",
+            keys: input.op.keys,
           }),
         },
         commands: [{ op: input.id, command }],
+        decisions: [{ op: input.id, decision: { _tag: "Issued", command } }],
+      }
+    }
+
+    if (input.op._tag === "Upload") {
+      const { bytes, key } = input.op
+      if (params.size(bytes) > params.budgets.maxBytes) {
+        return {
+          result: { _tag: "BudgetRejected", key },
+          state,
+          commands: [],
+          decisions: [{ op: input.id, decision: { _tag: "BudgetRejected", key } }],
+        }
+      }
+      if (HashSet.has(state.rejected, [key, bytes] as const)) {
+        return {
+          result: { _tag: "RepeatRefused", key },
+          state,
+          commands: [],
+          decisions: [{ op: input.id, decision: { _tag: "RepeatRefused", key } }],
+        }
+      }
+      if (params.verify(key, bytes)) {
+        if (HashSet.has(state.cache, key)) {
+          return {
+            result: { _tag: "Uploaded", key },
+            state,
+            commands: [],
+            decisions: [{ op: input.id, decision: { _tag: "Verified", key } }],
+          }
+        }
+        const command: Command<K, B> = { _tag: "Upload", key, bytes }
+        return {
+          result: { _tag: "Commanded" },
+          state: {
+            ...state,
+            inFlight: HashMap.set(state.inFlight, input.id, {
+              _tag: "Uploading",
+              key,
+              bytes,
+            }),
+          },
+          commands: [{ op: input.id, command }],
+          decisions: [
+            { op: input.id, decision: { _tag: "Verified", key } },
+            { op: input.id, decision: { _tag: "Issued", command } },
+          ],
+        }
+      }
+      return {
+        result: { _tag: "IntegrityRejected", key },
+        state: {
+          ...state,
+          rejected: HashSet.add(state.rejected, [key, bytes] as const),
+        },
+        commands: [],
         decisions: [
-          { op: input.id, decision: { _tag: "Verified", key } },
-          { op: input.id, decision: { _tag: "Issued", command } },
+          { op: input.id, decision: { _tag: "IntegrityRejected", key } },
+          { op: input.id, decision: { _tag: "GaveUp", key } },
         ],
       }
     }
+
+    if (!publishEntitled(state, input.op.key, input.op.closure)) {
+      return {
+        result: { _tag: "OrderingRefused", key: input.op.key },
+        state,
+        commands: [],
+        decisions: [{
+          op: input.id,
+          decision: { _tag: "OrderingRefused", key: input.op.key },
+        }],
+      }
+    }
+    const command: Command<K, B> = { _tag: "PublishRoot", key: input.op.key }
     return {
-      result: { _tag: "IntegrityRejected", key },
+      result: { _tag: "Commanded" },
       state: {
         ...state,
-        rejected: HashSet.add(state.rejected, [key, bytes] as const),
+        inFlight: HashMap.set(state.inFlight, input.id, {
+          _tag: "Publishing",
+          key: input.op.key,
+        }),
       },
-      commands: [],
-      decisions: [
-        { op: input.id, decision: { _tag: "IntegrityRejected", key } },
-        { op: input.id, decision: { _tag: "GaveUp", key } },
-      ],
+      commands: [{ op: input.id, command }],
+      decisions: [{ op: input.id, decision: { _tag: "Issued", command } }],
     }
   }
 
@@ -383,14 +578,20 @@ export const step = <K, B>(
   if (current.value._tag === "Loading") {
     return loadEvent(params, state, input.id, current.value.key, input.event)
   }
-  return uploadEvent(
-    params,
-    state,
-    input.id,
-    current.value.key,
-    current.value.bytes,
-    input.event,
-  )
+  if (current.value._tag === "FindingMissing") {
+    return batchEvent(state, input.id, current.value.keys, input.event)
+  }
+  if (current.value._tag === "Uploading") {
+    return uploadEvent(
+      params,
+      state,
+      input.id,
+      current.value.key,
+      current.value.bytes,
+      input.event,
+    )
+  }
+  return publishEvent(state, input.id, current.value.key, input.event)
 }
 
 /** RMT-001's entitlement guard. */
@@ -406,7 +607,8 @@ export const entitledToCache = <K, B>(
     return !(input.event.declared > params.budgets.maxBytes)
       && params.verify(current.value.key, input.event.bytes)
   }
-  return params.verify(current.value.key, current.value.bytes)
+  return current.value._tag === "Uploading"
+    && params.verify(current.value.key, current.value.bytes)
 }
 
 /** RMT-002's declared-budget guard. */

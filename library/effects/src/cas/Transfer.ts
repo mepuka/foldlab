@@ -2,9 +2,18 @@
 import { Context, Effect, Stream } from "effect"
 import type { Scope } from "effect"
 import type { CasError, CasNodeInput, CasReference, ContentId, NodeKind } from "./Node.ts"
-import { oneShot, replayable, type CasRemoteError, type UploadSource } from "./Remote.ts"
+import {
+  oneShot,
+  replayable,
+  type CasPresence,
+  type CasPushReport,
+  type CasRemoteError,
+  type RemoteCapabilities,
+  type UploadSource,
+} from "./Remote.ts"
 
 export { oneShot, replayable, type UploadSource }
+export type { CasPresence, CasPushReport, RemoteCapabilities }
 
 export interface PutStreamOptions {
   readonly kind: NodeKind
@@ -13,6 +22,31 @@ export interface PutStreamOptions {
 }
 
 export interface CasTransferShape {
+  /** Capabilities probed once while the remote layer is acquired. */
+  readonly capabilities: Effect.Effect<RemoteCapabilities, CasRemoteError>
+
+  /**
+   * Query one request-order batch. Presence is advisory planning data only:
+   * it never admits content and absence is never cached.
+   */
+  readonly missing: (
+    keys: ReadonlyArray<ContentId>,
+  ) => Effect.Effect<CasPresence, CasRemoteError>
+
+  /** Publish only after the root and its declared closure stand confirmed. */
+  readonly publish: (
+    root: ContentId,
+    closure: ReadonlyArray<ContentId>,
+  ) => Effect.Effect<void, CasRemoteError>
+
+  /**
+   * Enumerate a complete local graph children-first, negotiate in capability-
+   * sized batches, transfer only missing nodes, and publish the root last.
+   */
+  readonly push: (
+    root: ContentId,
+  ) => Effect.Effect<CasPushReport, CasRemoteError | CasError>
+
   /**
    * Consume the complete source, verify its computed address on every
    * attempt, and succeed only after a verified remote acknowledgement.

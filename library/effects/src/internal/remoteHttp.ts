@@ -7,6 +7,7 @@ import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
 import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse"
 import type { CasRemoteConfig } from "../cas/Remote.ts"
 import type { ContentId } from "../cas/Node.ts"
+import { encodeKeyListDocument } from "./remoteControl.ts"
 import type { Command, Event } from "./remoteMachine.ts"
 import type {
   CompletionWitness,
@@ -114,27 +115,19 @@ const sharedStatusCases = (sentBytes: number) => ({
   401: () => responseEvent({ _tag: "Unauthenticated" }, sentBytes),
   403: () => responseEvent({ _tag: "Denied" }, sentBytes),
   429: (limited: HttpClientResponse.HttpClientResponse) => rateLimitedEvent(limited, sentBytes),
+  503: () => responseEvent({ _tag: "Capacity" }, sentBytes),
+  507: () => responseEvent({ _tag: "Capacity" }, sentBytes),
   "3xx": () => responseEvent({ _tag: "Redirected" }, sentBytes),
 })
 
-const loadResponse = (
+const binaryBody = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
-  const selected = HttpClientResponse.matchStatus(response, {
-    ...sharedStatusCases(sentBytes),
-    200: () => undefined,
-    404: () => responseEvent({ _tag: "Absent" }, sentBytes),
-    orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
-  })
-  if (selected !== undefined) return selected
-
   const contentType = response.headers["content-type"]
   const declared = parseNonNegativeInteger(response.headers["content-length"])
-  const mediaType = contentType?.split(";", 1)[0]?.trim()
   if (declared === "invalid"
-    || contentType === undefined
-    || mediaType !== "application/octet-stream") {
+    || contentType !== "application/octet-stream") {
     return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
   }
 
@@ -167,6 +160,35 @@ const loadResponse = (
   return Channel.succeed(started).pipe(Channel.concatWith(() => bodyChannel))
 }
 
+const loadResponse = (
+  response: HttpClientResponse.HttpClientResponse,
+  sentBytes: number,
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
+  const selected = HttpClientResponse.matchStatus(response, {
+    ...sharedStatusCases(sentBytes),
+    200: () => undefined,
+    404: () => responseEvent({ _tag: "Absent" }, sentBytes),
+    orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
+  })
+  return selected === undefined ? binaryBody(response, sentBytes) : selected
+}
+
+const controlResponse = (
+  response: HttpClientResponse.HttpClientResponse,
+  sentBytes: number,
+  acceptsPayloadTooLarge: boolean,
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
+  const selected = HttpClientResponse.matchStatus(response, {
+    ...sharedStatusCases(sentBytes),
+    200: () => undefined,
+    ...(acceptsPayloadTooLarge
+      ? { 413: () => responseEvent({ _tag: "Capacity" }, sentBytes) }
+      : {}),
+    orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
+  })
+  return selected === undefined ? binaryBody(response, sentBytes) : selected
+}
+
 const uploadResponse = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
@@ -181,17 +203,56 @@ const uploadResponse = (
   })
 }
 
+const publishResponse = (
+  response: HttpClientResponse.HttpClientResponse,
+  sentBytes: number,
+): Channel.Channel<RemoteWireEvent, never, CompletionWitness> =>
+  HttpClientResponse.matchStatus(response, {
+    ...sharedStatusCases(sentBytes),
+    200: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
+    201: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
+    204: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
+    409: () => responseEvent({ _tag: "IntegrityMismatch" }, sentBytes),
+    orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
+  })
+
 const commandRequest = (
   config: CasRemoteConfig,
-  command: Extract<Command<ContentId, Uint8Array>, { readonly _tag: "Load" | "Upload" }>,
+  command: Exclude<Command<ContentId, Uint8Array>, { readonly _tag: "QueryCommitted" }>,
+  publishClosure: ReadonlyArray<ContentId>,
 ): { readonly request: HttpClientRequest.HttpClientRequest; readonly sentBytes: number } => {
-  const url = `${config.authority}/cas/${command.key}`
-  let request = command._tag === "Load"
-    ? HttpClientRequest.get(url)
-    : HttpClientRequest.put(url).pipe(HttpClientRequest.bodyUint8Array(
-      command.bytes,
-      "application/octet-stream",
-    ))
+  let request: HttpClientRequest.HttpClientRequest
+  let sentBytes = 0
+  switch (command._tag) {
+    case "ProbeCapabilities":
+      request = HttpClientRequest.get(`${config.authority}/control/capabilities`)
+      break
+    case "Load":
+      request = HttpClientRequest.get(`${config.authority}/cas/${command.key}`)
+      break
+    case "FindMissing": {
+      const body = encodeKeyListDocument(command.keys)
+      sentBytes = body.length
+      request = HttpClientRequest.post(`${config.authority}/control/missing`).pipe(
+        HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
+      )
+      break
+    }
+    case "Upload":
+      sentBytes = command.bytes.length
+      request = HttpClientRequest.put(`${config.authority}/cas/${command.key}`).pipe(
+        HttpClientRequest.bodyUint8Array(command.bytes, "application/octet-stream"),
+      )
+      break
+    case "PublishRoot": {
+      const body = encodeKeyListDocument(publishClosure)
+      sentBytes = body.length
+      request = HttpClientRequest.put(`${config.authority}/roots/${command.key}`).pipe(
+        HttpClientRequest.bodyUint8Array(body, "application/octet-stream"),
+      )
+      break
+    }
+  }
   request = request.pipe(
     HttpClientRequest.setHeader("accept", "application/octet-stream"),
     HttpClientRequest.setHeader("cas-profile", PROFILE),
@@ -201,7 +262,7 @@ const commandRequest = (
   }
   return {
     request,
-    sentBytes: command._tag === "Upload" ? command.bytes.length : 0,
+    sentBytes,
   }
 }
 
@@ -218,21 +279,37 @@ export const makeRemoteHttp = (
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
 
     return {
-      issue: (_opId, _attemptId, command) => {
-        if (command._tag !== "Load" && command._tag !== "Upload") {
+      issue: (_opId, _attemptId, command, options) => {
+        if (command._tag === "QueryCommitted") {
           return Channel.fromEffectDone(Effect.die(
-            new Error(`remote HTTP transport received impossible command: ${command._tag}`),
+            new Error("query-committed has no cas-http/0 R3 realization"),
           ))
         }
-        const prepared = commandRequest(config, command)
+        if (command._tag === "PublishRoot" && options?.publishClosure === undefined) {
+          return Channel.fromEffectDone(Effect.die(
+            new Error("publish command missing declared closure"),
+          ))
+        }
+        const prepared = commandRequest(config, command, options?.publishClosure ?? [])
 
         return Channel.unwrap(
           client.execute(prepared.request).pipe(
             Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
             Effect.mapError((error) => transportFailure(error, prepared.sentBytes)),
-            Effect.map((response) => command._tag === "Load"
-              ? loadResponse(response, prepared.sentBytes)
-              : uploadResponse(response, prepared.sentBytes)),
+            Effect.map((response) => {
+              switch (command._tag) {
+                case "ProbeCapabilities":
+                  return controlResponse(response, prepared.sentBytes, false)
+                case "Load":
+                  return loadResponse(response, prepared.sentBytes)
+                case "FindMissing":
+                  return controlResponse(response, prepared.sentBytes, true)
+                case "Upload":
+                  return uploadResponse(response, prepared.sentBytes)
+                case "PublishRoot":
+                  return publishResponse(response, prepared.sentBytes)
+              }
+            }),
           ),
         )
       },

@@ -1,7 +1,12 @@
 import { Deferred, Effect } from "effect"
 import type { Scope } from "effect"
 import { createServer, type Socket } from "node:net"
-import type { PeerObservation } from "./ConformancePeer.ts"
+import {
+  registerSocketReleaseHook,
+  socketReleaseHook,
+  type PeerObservation,
+} from "./ConformancePeer.ts"
+import { encodeCapabilityDocument } from "../../../src/internal/remoteControl.ts"
 
 export interface GatedEndpoint {
   readonly authority: string
@@ -29,18 +34,38 @@ export const serveGatedPeer = (body: Uint8Array): Effect.Effect<GatedEndpoint, n
         }
         const server = createServer((socket) => {
           sockets.add(socket)
-          const ordinal = stats.requests + 1
+          let ordinal: 1 | 2 | undefined
           socket.on("error", () => undefined)
           socket.once("close", () => {
             sockets.delete(socket)
-            const closed = ordinal === 1 ? firstClosed : secondClosed
-            Effect.runFork(Deferred.succeed(closed, undefined))
+            if (ordinal !== undefined) {
+              const closed = ordinal === 1 ? firstClosed : secondClosed
+              Effect.runFork(Deferred.succeed(closed, undefined))
+            }
           })
           let handled = false
           socket.on("data", (chunk) => {
-            stats.bodyBytesReceived += chunk.length
-            if (handled || !chunk.toString("latin1").includes("\r\n\r\n")) return
+            const text = chunk.toString("latin1")
+            if (handled || !text.includes("\r\n\r\n")) return
             handled = true
+            if (text.startsWith("GET /control/capabilities ")) {
+              const capabilities = encodeCapabilityDocument({
+                maxBatchKeys: 4,
+                maxBlobBytes: 4096,
+              })
+              socket.write([
+                "HTTP/1.1 200 OK",
+                "Connection: close",
+                "Content-Type: application/octet-stream",
+                `Content-Length: ${capabilities.length}`,
+                "",
+                "",
+              ].join("\r\n"))
+              socket.end(capabilities)
+              return
+            }
+            stats.bodyBytesReceived += chunk.length
+            ordinal = (stats.requests + 1) as 1 | 2
             stats.requests += 1
             stats.gets += 1
             const started = stats.requests === 1 ? firstStarted : secondStarted
@@ -72,13 +97,15 @@ export const serveGatedPeer = (body: Uint8Array): Effect.Effect<GatedEndpoint, n
             sockets.clear()
             server.close(() => closed(Effect.void))
           })
-          resume(Effect.succeed({
-            endpoint: {
+          const endpoint: GatedEndpoint = {
               authority: `http://127.0.0.1:${address.port}`,
               observe: () => ({ ...stats, openSockets: sockets.size }),
               awaitRequest: (count) => Deferred.await(count === 1 ? firstStarted : secondStarted),
               awaitClosed: (count) => Deferred.await(count === 1 ? firstClosed : secondClosed),
-            },
+          }
+          registerSocketReleaseHook(endpoint, socketReleaseHook(sockets))
+          resume(Effect.succeed({
+            endpoint,
             close,
           }))
         })

@@ -1,8 +1,12 @@
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import { createHash } from "node:crypto"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import type { Socket } from "node:net"
 import { registerSocketReleaseHook, socketReleaseHook } from "./ConformancePeer.ts"
+import {
+  decodeKeyListDocument,
+  encodeCapabilityDocument,
+} from "../../../src/internal/remoteControl.ts"
 import type {
   ConformancePeer,
   PeerEndpoint,
@@ -36,6 +40,7 @@ export const ReferencePeer: ConformancePeer = {
   serve: (realization: ScenarioRealization) => Effect.acquireRelease(
     Effect.callback<{ readonly endpoint: PeerEndpoint; readonly close: Effect.Effect<void> }>((resume) => {
       const nodes = new Map(realization.nodes ?? [])
+      const roots = new Set<string>()
       const sockets = new Set<Socket>()
       const stats = {
         requests: 0,
@@ -48,8 +53,76 @@ export const ReferencePeer: ConformancePeer = {
       const handler = (request: IncomingMessage, response: ServerResponse) => {
         response.setHeader("connection", "close")
         stats.requests += 1
+        if (request.headers["cas-profile"] !== "cas-http/0") {
+          response.writeHead(400).end()
+          return
+        }
+        if (request.url === "/control/capabilities") {
+          if (request.method !== "GET") {
+            response.writeHead(405).end()
+            return
+          }
+          const bytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4096 })
+          response.writeHead(200, {
+            "content-length": bytes.length,
+            "content-type": "application/octet-stream",
+          })
+          response.end(bytes)
+          return
+        }
+        if (request.url === "/control/missing") {
+          if (request.method !== "POST"
+            || request.headers["content-type"] !== "application/octet-stream") {
+            response.writeHead(400).end()
+            return
+          }
+          void readRequest(request).then((body) => {
+            stats.bodyBytesReceived += body.length
+            const decoded = decodeKeyListDocument(body)
+            if (Option.isNone(decoded)) {
+              response.writeHead(400).end()
+              return
+            }
+            const statuses = Uint8Array.from(decoded.value, (key) => nodes.has(key) ? 1 : 0)
+            stats.bodyBytesWritten += statuses.length
+            response.writeHead(200, {
+              "content-length": statuses.length,
+              "content-type": "application/octet-stream",
+            })
+            response.end(statuses)
+          }, () => response.destroy())
+          return
+        }
+        const rootMatch = /^\/roots\/([0-9a-f]{64})$/.exec(request.url ?? "")
+        if (rootMatch !== null) {
+          if (request.method !== "PUT"
+            || request.headers["content-type"] !== "application/octet-stream") {
+            response.writeHead(400).end()
+            return
+          }
+          const root = rootMatch[1]
+          if (root === undefined) {
+            response.writeHead(400).end()
+            return
+          }
+          void readRequest(request).then((body) => {
+            stats.bodyBytesReceived += body.length
+            const closure = decodeKeyListDocument(body)
+            if (Option.isNone(closure)) {
+              response.writeHead(400).end()
+              return
+            }
+            if (!nodes.has(root) || closure.value.some((key) => !nodes.has(key))) {
+              response.writeHead(409).end()
+              return
+            }
+            roots.add(root)
+            response.writeHead(204).end()
+          }, () => response.destroy())
+          return
+        }
         const match = /^\/cas\/([0-9a-f]{64})$/.exec(request.url ?? "")
-        if (match === null || request.headers["cas-profile"] !== "cas-http/0") {
+        if (match === null) {
           response.writeHead(400).end()
           return
         }

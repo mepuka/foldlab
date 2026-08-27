@@ -1,6 +1,7 @@
 import { Effect, Option, Schema } from "effect"
 import { createServer, type Socket } from "node:net"
 import { registerSocketReleaseHook, socketReleaseHook } from "./ConformancePeer.ts"
+import { encodeCapabilityDocument } from "../../../src/internal/remoteControl.ts"
 import type {
   ConformancePeer,
   PeerEndpoint,
@@ -21,6 +22,9 @@ export const HostileFault = Schema.Literals([
   "cancellationMidDownload",
   "cancellationMidUpload",
   "redirect",
+  "capabilitiesMissing",
+  "capabilitiesTruncated",
+  "missingMalformed",
 ])
 export type HostileFault = typeof HostileFault.Type
 
@@ -70,6 +74,41 @@ export const HostilePeer: ConformancePeer = {
           if (separator < 0) return
           handled = true
           stats.requests += 1
+          if (text.startsWith("GET /control/capabilities ")) {
+            if (fault === "capabilitiesMissing") {
+              socket.end(headers("404 Not Found", [["Content-Length", "0"]]))
+              return
+            }
+            if (fault === "capabilitiesTruncated") {
+              const truncated = Uint8Array.of(0, 0, 0, 4, 0)
+              socket.write(headers("200 OK", [
+                ["Content-Type", "application/octet-stream"],
+                ["Content-Length", String(truncated.length)],
+              ]))
+              socket.end(truncated)
+              return
+            }
+            const capabilities = encodeCapabilityDocument({
+              maxBatchKeys: 4,
+              maxBlobBytes: 4096,
+            })
+            socket.write(headers("200 OK", [
+              ["Content-Type", "application/octet-stream"],
+              ["Content-Length", String(capabilities.length)],
+            ]))
+            socket.end(capabilities)
+            return
+          }
+          if (text.startsWith("POST /control/missing ") && fault === "missingMalformed") {
+            stats.gets += 1
+            const malformed = Uint8Array.of(3)
+            socket.write(headers("200 OK", [
+              ["Content-Type", "application/octet-stream"],
+              ["Content-Length", String(malformed.length)],
+            ]))
+            socket.end(malformed)
+            return
+          }
           const isPut = text.startsWith("PUT ")
           if (isPut) stats.puts += 1
           else stats.gets += 1

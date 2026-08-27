@@ -1,4 +1,4 @@
-import { layer } from "@effect/vitest"
+import { it, layer } from "@effect/vitest"
 import { Effect } from "effect"
 import { step } from "../../src/internal/remoteMachine.ts"
 import {
@@ -9,8 +9,14 @@ import {
 import {
   assertRemoteGuards,
   remoteBinding,
+  remoteR3Binding,
   runRemoteRow,
+  runRemoteR3Row,
 } from "./MachineFixtures.ts"
+import { controlBinding, runControlRow } from "./ControlFixtures.ts"
+
+it.effect("RMT-014 consumes every ratified capability-codec row structurally", () =>
+  assertFamilyRows(controlBinding, runControlRow))
 
 layer(remoteStepLayer(step))("direction 1 remote machine mirror", (it) => {
   it.effect("RMT-001 consumes every ratified remote-admission row structurally", () =>
@@ -41,6 +47,30 @@ layer(remoteStepLayer(step))("direction 1 remote machine mirror", (it) => {
     RemoteStepSUT.use((sut) => assertFamilyRows(
       remoteBinding("RMT-015"),
       (row) => runRemoteRow(sut, row),
+    )))
+
+  it.effect("RMT-005 consumes every ratified presence-planning row structurally", () =>
+    RemoteStepSUT.use((sut) => assertFamilyRows(
+      remoteR3Binding("RMT-005"),
+      (row) => runRemoteR3Row(sut, row),
+    )))
+
+  it.effect("RMT-006 consumes every ratified batch-accounting row structurally", () =>
+    RemoteStepSUT.use((sut) => assertFamilyRows(
+      remoteR3Binding("RMT-006"),
+      (row) => runRemoteR3Row(sut, row),
+    )))
+
+  it.effect("RMT-007 consumes every ratified closure-gated publish row structurally", () =>
+    RemoteStepSUT.use((sut) => assertFamilyRows(
+      remoteR3Binding("RMT-007"),
+      (row) => runRemoteR3Row(sut, row),
+    )))
+
+  it.effect("RMT-008 consumes every ratified interruption row structurally", () =>
+    RemoteStepSUT.use((sut) => assertFamilyRows(
+      remoteR3Binding("RMT-008"),
+      (row) => runRemoteR3Row(sut, row),
     )))
 
   it.effect("remote admission and budget guards agree with their manifest consumers", () =>

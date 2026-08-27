@@ -1,6 +1,6 @@
 /** Typed remote-CAS policy and failure surface. */
 import { Schema, type Stream } from "effect"
-import type { CasError } from "./Node.ts"
+import type { CasError, ContentId } from "./Node.ts"
 
 export const RemoteAuthority = Schema.String.check(
   Schema.makeFilter((value) => {
@@ -42,12 +42,34 @@ export const RemoteBudgetStage = Schema.Literals([
   "decoded",
   "decompressed",
   "queued",
+  "keys",
 ])
 export type RemoteBudgetStage = typeof RemoteBudgetStage.Type
 
 const Count = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
 const PositiveCount = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))
 const AttemptId = Schema.optionalKey(PositiveCount)
+const Uint32 = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xffff_ffff }))
+
+/** Canonical server capability document carried by the cas-http/0 control plane. */
+export const RemoteCapabilities = Schema.Struct({
+  maxBatchKeys: Uint32,
+  maxBlobBytes: Uint32,
+})
+export type RemoteCapabilities = typeof RemoteCapabilities.Type
+
+/** Advisory request-order subsequences from one find-missing operation. */
+export interface CasPresence {
+  readonly present: ReadonlyArray<ContentId>
+  readonly missing: ReadonlyArray<ContentId>
+  readonly failed: ReadonlyArray<ContentId>
+}
+
+/** Completed graph push accounting. Presence remains planning data only. */
+export interface CasPushReport {
+  readonly transferred: ReadonlyArray<ContentId>
+  readonly alreadyPresent: ReadonlyArray<ContentId>
+}
 
 export const RemoteIntegrityCode = Schema.Literals([
   "addressMismatch",
@@ -63,6 +85,7 @@ export const RemoteProtocolCode = Schema.Literals([
   "truncatedBody",
   "unexpectedBody",
   "invalidAcknowledgement",
+  "batchMisaligned",
 ])
 
 export const RemoteUnavailableCode = Schema.Literals([
@@ -82,6 +105,7 @@ export const RemotePolicyCode = Schema.Literals([
   "redirectDenied",
   "oneShotRetryRefused",
   "attemptLimit",
+  "publishUnconfirmed",
 ])
 
 export class RemoteIntegrityError extends Schema.TaggedError<RemoteIntegrityError>()(

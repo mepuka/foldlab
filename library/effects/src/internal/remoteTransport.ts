@@ -34,11 +34,17 @@ export interface RemoteTransportFailure {
   readonly sentBytes: number
 }
 
+/** Shell-only data intentionally absent from the semantic command carrier. */
+export interface RemoteIssueOptions {
+  readonly publishClosure?: ReadonlyArray<ContentId>
+}
+
 export interface RemoteCasTransport {
   /** Execute exactly one machine command for one operation attempt. */
   readonly issue: (
     opId: OpId,
     attemptId: AttemptId,
     command: Command<ContentId, Uint8Array>,
+    options?: RemoteIssueOptions,
   ) => Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness>
 }

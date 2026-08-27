@@ -24,6 +24,7 @@ import {
 import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
 import { makeRemoteAdapter, type RemoteAdapter } from "../../src/internal/remote.ts"
+import { encodeCapabilityDocument } from "../../src/internal/remoteControl.ts"
 import { makeRemoteHttp } from "../../src/internal/remoteHttp.ts"
 import {
   initialMachineState,
@@ -56,9 +57,17 @@ const normalizeInput = (
   input: MInput<ContentId, Uint8Array>,
 ): MInput<RemoteKey, RemoteBytes> => {
   if (input._tag === "Request") {
-    return input.op._tag === "Load"
-      ? { _tag: "Request", id: input.id, op: { _tag: "Load", key: keyBytes(input.op.key) } }
-      : {
+    switch (input.op._tag) {
+      case "Load":
+        return { _tag: "Request", id: input.id, op: { _tag: "Load", key: keyBytes(input.op.key) } }
+      case "FindMissing":
+        return {
+          _tag: "Request",
+          id: input.id,
+          op: { _tag: "FindMissing", keys: input.op.keys.map(keyBytes) },
+        }
+      case "Upload":
+        return {
         _tag: "Request",
         id: input.id,
         op: {
@@ -67,6 +76,17 @@ const normalizeInput = (
           bytes: Array.from(input.op.bytes),
         },
       }
+      case "PublishRoot":
+        return {
+          _tag: "Request",
+          id: input.id,
+          op: {
+            _tag: "PublishRoot",
+            key: keyBytes(input.op.key),
+            closure: input.op.closure.map(keyBytes),
+          },
+        }
+    }
   }
   if (input.event._tag === "Ok") {
     return {
@@ -104,7 +124,32 @@ const normalizeDecision = (
         bytes: Array.from(command.bytes),
       } } }
     }
+    if (command._tag === "FindMissing") {
+      return { op: tagged.op, decision: { _tag: "Issued" as const, command: {
+        _tag: "FindMissing" as const,
+        keys: command.keys.map(keyBytes),
+      } } }
+    }
+    if (command._tag === "PublishRoot") {
+      return { op: tagged.op, decision: { _tag: "Issued" as const, command: {
+        _tag: "PublishRoot" as const,
+        key: keyBytes(command.key),
+      } } }
+    }
     throw new Error(`differential scenario contains unsupported command ${command._tag}`)
+  }
+  if (decision._tag === "PresenceNoted") {
+    return {
+      op: tagged.op,
+      decision: {
+        _tag: "PresenceNoted" as const,
+        found: decision.found.map(keyBytes),
+        missing: decision.missing.map(keyBytes),
+      },
+    }
+  }
+  if (decision._tag === "BatchRejected" || decision._tag === "BatchGaveUp") {
+    return { op: tagged.op, decision: { _tag: decision._tag } }
   }
   return {
     op: tagged.op,
@@ -417,7 +462,155 @@ it.effect("queued admission budgeting is invariant under one-chunk and many-chun
       { _tag: "CasRemoteError/Budget", stage: "queued", observed: 4, bound: 3 },
       { _tag: "CasRemoteError/Budget", stage: "queued", observed: 4, bound: 3 },
     ])
-    expect(endpoint.observe().requests).toBe(0)
+    // Layer acquisition performs the required capability probe; the rejected
+    // uploads themselves still issue no wire request.
+    expect(endpoint.observe().requests).toBe(1)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("capability acquisition is mandatory and capability documents fail closed", () =>
+  Effect.scoped(Effect.gen(function* () {
+    for (const fixture of [
+      { fault: "capabilitiesMissing" as const, code: "invalidStatus" as const },
+      { fault: "capabilitiesTruncated" as const, code: "invalidFraming" as const },
+    ]) {
+      const endpoint = yield* HostilePeer.serve({ fault: fixture.fault })
+      const error = yield* CasTransfer.use((transfer) => transfer.capabilities).pipe(
+        Effect.provide(remoteLayer(config(endpoint.authority))),
+        Effect.flip,
+      )
+      expect(error).toMatchObject({
+        _tag: "CasRemoteError/Protocol",
+        code: fixture.code,
+      })
+      yield* awaitPeerSocketsReleased(endpoint)
+      expect(endpoint.observe().openSockets).toBe(0)
+    }
+  })))
+
+it.effect("capabilities and find-missing remain planning data only", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const resident = node([2, 3, 5, 7], 31)
+    const residentBytes = encodeCasNode(resident)
+    const residentId = digest(residentBytes)
+    const absent = node([11, 13], 32)
+    const absentId = digest(encodeCasNode(absent))
+    const endpoint = yield* ReferencePeer.serve({
+      nodes: new Map([[residentId, residentBytes]]),
+    })
+
+    yield* Effect.gen(function* () {
+      const transfer = yield* CasTransfer
+      const store = yield* CasStore
+
+      expect(yield* transfer.capabilities).toEqual({
+        maxBatchKeys: 4,
+        maxBlobBytes: 4_096,
+      })
+      expect(yield* transfer.missing([residentId, absentId])).toEqual({
+        present: [residentId],
+        missing: [absentId],
+        failed: [],
+      })
+      expect(endpoint.observe()).toMatchObject({ requests: 2, gets: 0 })
+
+      const refused = yield* transfer.publish(residentId, []).pipe(Effect.flip)
+      expect(refused).toMatchObject({
+        _tag: "CasRemoteError/Policy",
+        code: "publishUnconfirmed",
+      })
+      expect(endpoint.observe().requests).toBe(2)
+
+      expect(yield* store.load(residentId)).toEqual(resident)
+      expect(endpoint.observe().gets).toBe(1)
+      yield* transfer.publish(residentId, [])
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const notFound = yield* store.load(absentId).pipe(Effect.flip)
+        expect(notFound).toMatchObject({
+          _tag: "CasError/ContentNotFound",
+          id: absentId,
+        })
+      }
+      expect(endpoint.observe().gets).toBe(3)
+    }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
+
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("find-missing rejects the probed key budget before issue", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({})
+    const keys = [0, 1, 2, 3, 4].map((value) =>
+      digest(encodeCasNode(node([value], 40 + value))))
+
+    const error = yield* CasTransfer.use((transfer) => transfer.missing(keys)).pipe(
+      Effect.provide(remoteLayer(config(endpoint.authority))),
+      Effect.flip,
+    )
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Budget",
+      stage: "keys",
+      observed: 5,
+      bound: 4,
+    })
+    expect(endpoint.observe().requests).toBe(1)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("malformed positional presence fails the whole batch closed", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* HostilePeer.serve({ fault: "missingMalformed" })
+    const id = digest(encodeCasNode(node([89], 51)))
+    const error = yield* CasTransfer.use((transfer) => transfer.missing([id])).pipe(
+      Effect.provide(remoteLayer(config(endpoint.authority))),
+      Effect.flip,
+    )
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Protocol",
+      code: "invalidFraming",
+    })
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  })))
+
+it.effect("push negotiates a complete graph children-first and publishes last", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({})
+    const child = node([1, 2, 3], 61)
+    const childId = digest(encodeCasNode(child))
+    const parent = CasNodeInput.make({
+      kind: { version: 0, tag: 62 },
+      payload: Uint8Array.of(5, 8, 13),
+      refs: [{ id: childId, expectedTag: child.kind.tag }],
+    })
+    const parentId = digest(encodeCasNode(parent))
+
+    yield* Effect.gen(function* () {
+      const store = yield* CasStore
+      const transfer = yield* CasTransfer
+      expect(yield* store.put(child)).toBe(childId)
+      expect(yield* store.put(parent)).toBe(parentId)
+
+      expect(yield* transfer.push(parentId)).toEqual({
+        transferred: [],
+        alreadyPresent: [childId, parentId],
+      })
+      expect(endpoint.observe()).toMatchObject({
+        requests: 7,
+        gets: 2,
+        puts: 2,
+      })
+
+      // The registry PUT is idempotent for an identical root and closure.
+      yield* transfer.publish(parentId, [childId])
+      expect(endpoint.observe().requests).toBe(8)
+    }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
+
+    yield* awaitPeerSocketsReleased(endpoint)
     expect(endpoint.observe().openSockets).toBe(0)
   })))
 
@@ -472,6 +665,7 @@ it.effect("a mid-download deadline surfaces typed completion evidence and releas
         yield* Fiber.join(second)
         yield* endpoint.awaitClosed(2)
         expect(endpoint.observe().gets).toBe(2)
+        yield* awaitPeerSocketsReleased(endpoint)
         expect(endpoint.observe().openSockets).toBe(0)
       })).pipe(Effect.provide(layer))
     })))
@@ -568,7 +762,20 @@ interface ScriptedExchange {
 const scriptedTransport = (script: ReadonlyArray<ScriptedExchange>): RemoteCasTransport => {
   let cursor = 0
   return {
-    issue: () => {
+    issue: (_operationId, _attempt, command) => {
+      if (command._tag === "ProbeCapabilities") {
+        const bytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
+        return Channel.fromArray<RemoteWireEvent>([
+          { _tag: "ResponseStarted", declared: bytes.length },
+          { _tag: "BodyChunk", bytes },
+        ]).pipe(
+          Channel.concatWith(() => Channel.fromEffectDone(Effect.succeed({
+            receivedBytes: bytes.length,
+            sentBytes: 0,
+            terminalFraming: "complete" as const,
+          }))),
+        )
+      }
       const exchange = script[cursor]
       cursor += 1
       if (exchange === undefined) {
@@ -731,7 +938,10 @@ layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => 
       }
       expect({
         scenario: scenario.name,
-        decisions: observed.decisions.map(normalizeDecision),
+        decisions: observed.decisions.map((tagged) => {
+          const normalized = normalizeDecision(tagged)
+          return { ...normalized, op: normalized.op - 1 }
+        }),
       }).toEqual({
         scenario: scenario.name,
         decisions: expectedDecisions,

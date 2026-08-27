@@ -16,6 +16,7 @@ export * from "./cas/Value.ts"
 export {
   CasRemoteConfig,
   CasRemoteError,
+  RemoteCapabilities,
   RedirectPolicy,
   RemoteAuthority,
   RemoteAuthorityMode,
@@ -32,8 +33,13 @@ export {
   RemoteUnavailableCode,
   RemoteUnavailableError,
 } from "./cas/Remote.ts"
+export type { CasPresence, CasPushReport } from "./cas/Remote.ts"
 export { CasTransfer } from "./cas/Transfer.ts"
-export type { CasTransferShape, PutStreamOptions, UploadSource } from "./cas/Transfer.ts"
+export type {
+  CasTransferShape,
+  PutStreamOptions,
+  UploadSource,
+} from "./cas/Transfer.ts"
 export * as Transfer from "./cas/Transfer.ts"
 export type {
   CasService,

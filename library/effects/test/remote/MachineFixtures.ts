@@ -31,10 +31,50 @@ const UploadSchema = Schema.Struct({
 const OperationSchema = Schema.Union([LoadSchema, UploadSchema])
 const CommandSchema = OperationSchema
 
+const FindMissingSchema = Schema.Struct({
+  _tag: Schema.Literal("FindMissing"),
+  keys: Schema.Array(KeySchema),
+})
+const PublishRootSchema = Schema.Struct({
+  _tag: Schema.Literal("PublishRoot"),
+  closure: Schema.Array(KeySchema),
+  key: KeySchema,
+})
+const PublishRootCommandSchema = Schema.Struct({
+  _tag: Schema.Literal("PublishRoot"),
+  key: KeySchema,
+})
+const R3OperationSchema = Schema.Union([
+  LoadSchema,
+  FindMissingSchema,
+  UploadSchema,
+  PublishRootSchema,
+])
+const R3CommandSchema = Schema.Union([
+  LoadSchema,
+  FindMissingSchema,
+  UploadSchema,
+  PublishRootCommandSchema,
+])
+
 const EventSchema = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("Ok"), bytes: BytesSchema, declared: Schema.Number }),
   Schema.Struct({ _tag: Schema.Literal("Absent") }),
   Schema.Struct({ _tag: Schema.Literal("IntegrityMismatch") }),
+])
+
+const KeyStatusSchema = Schema.Union([
+  Schema.Struct({ _tag: Schema.Literal("Found"), bytes: BytesSchema, key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Missing"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Failed"), key: KeySchema }),
+])
+
+const R3EventSchema = Schema.Union([
+  Schema.Struct({ _tag: Schema.Literal("Ok"), bytes: BytesSchema, declared: Schema.Number }),
+  Schema.Struct({ _tag: Schema.Literal("Absent") }),
+  Schema.Struct({ _tag: Schema.Literal("IntegrityMismatch") }),
+  Schema.Struct({ _tag: Schema.Literal("BatchResult"), results: Schema.Array(KeyStatusSchema) }),
+  Schema.Struct({ _tag: Schema.Literal("Interrupted") }),
 ])
 
 const DecisionSchema = Schema.Union([
@@ -56,6 +96,51 @@ const ResultSchema = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("BudgetRejected"), key: KeySchema }),
   Schema.Struct({ _tag: Schema.Literal("IntegrityRejected"), key: KeySchema }),
   Schema.Struct({ _tag: Schema.Literal("RepeatRefused"), key: KeySchema }),
+])
+
+const R3DecisionSchema = Schema.Union([
+  Schema.Struct({ _tag: Schema.Literal("Issued"), command: R3CommandSchema }),
+  Schema.Struct({ _tag: Schema.Literal("Verified"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Cached"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Returned"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("BudgetRejected"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("IntegrityRejected"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("RepeatRefused"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("GaveUp"), key: KeySchema }),
+  Schema.Struct({
+    _tag: Schema.Literal("PresenceNoted"),
+    found: Schema.Array(KeySchema),
+    missing: Schema.Array(KeySchema),
+  }),
+  Schema.Struct({ _tag: Schema.Literal("BatchRejected") }),
+  Schema.Struct({ _tag: Schema.Literal("BatchGaveUp") }),
+  Schema.Struct({ _tag: Schema.Literal("Published"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("OrderingRefused"), key: KeySchema }),
+])
+
+const R3ResultSchema = Schema.Union([
+  Schema.Struct({ _tag: Schema.Literal("Commanded") }),
+  Schema.Struct({ _tag: Schema.Literal("Delivered"), bytes: BytesSchema, key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Uploaded"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("NotFound"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("BudgetRejected"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("IntegrityRejected"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("RepeatRefused"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("TransportFailed"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("AuthFailed"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("DuplicateId") }),
+  Schema.Struct({ _tag: Schema.Literal("Absorbed") }),
+  Schema.Struct({
+    _tag: Schema.Literal("BatchAnswered"),
+    found: Schema.Array(KeySchema),
+    missing: Schema.Array(KeySchema),
+  }),
+  Schema.Struct({ _tag: Schema.Literal("BatchRejected") }),
+  Schema.Struct({ _tag: Schema.Literal("BatchFailed") }),
+  Schema.Struct({ _tag: Schema.Literal("KeyBudgetRejected") }),
+  Schema.Struct({ _tag: Schema.Literal("Published"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("OrderingRefused"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("PublishFailed"), key: KeySchema }),
 ])
 
 const TaggedCommandSchema = Schema.Struct({ command: CommandSchema, op: Schema.Number })
@@ -85,7 +170,32 @@ export const RemoteRowSchema = Schema.Struct({
 })
 export type RemoteRow = typeof RemoteRowSchema.Type
 
+export const RemoteR3RowSchema = Schema.Struct({
+  case: Schema.String,
+  expect: Schema.Struct({
+    commands: Schema.Array(Schema.Struct({ command: R3CommandSchema, op: Schema.Number })),
+    decisions: Schema.Array(Schema.Struct({ decision: R3DecisionSchema, op: Schema.Number })),
+    results: Schema.Array(R3ResultSchema),
+    state: Schema.Struct({
+      cacheSize: Schema.Number,
+      confirmedSize: Schema.Number,
+      inFlightSize: Schema.Number,
+      publishedSize: Schema.Number,
+      rejectedSize: Schema.Number,
+      reportedMissingSize: Schema.Number,
+      reportedPresentSize: Schema.Number,
+    }),
+  }),
+  input: Schema.Struct({
+    ops: Schema.Array(Schema.Struct({ id: Schema.Number, op: R3OperationSchema })),
+    schedule: Schema.Array(Schema.Struct({ answers: Schema.Number, event: R3EventSchema })),
+    sequence: Schema.Array(SequenceItemSchema),
+  }),
+})
+export type RemoteR3Row = typeof RemoteR3RowSchema.Type
+
 export type RemoteFamily = "RMT-001" | "RMT-002" | "RMT-003" | "RMT-004" | "RMT-015"
+export type RemoteR3Family = "RMT-005" | "RMT-006" | "RMT-007" | "RMT-008"
 
 export const RemoteOracle = "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter."
 
@@ -93,6 +203,14 @@ export const remoteBinding = <Family extends RemoteFamily>(family: Family) => ({
   family,
   model: ManifestModel,
   row: RemoteRowSchema,
+  hasOracle: true as const,
+  oracle: RemoteOracle,
+})
+
+export const remoteR3Binding = <Family extends RemoteR3Family>(family: Family) => ({
+  family,
+  model: ManifestModel,
+  row: RemoteR3RowSchema,
   hasOracle: true as const,
   oracle: RemoteOracle,
 })
@@ -116,6 +234,29 @@ export const deriveInputs = (row: RemoteRow): Effect.Effect<ReadonlyArray<MInput
     const inputs: Array<MInput<RemoteKey, RemoteBytes>> = []
     // Lean's fixture derivation uses filterMap. The TypeScript harness dies
     // loudly instead so a malformed committed index cannot silently vanish.
+    for (const item of row.input.sequence) {
+      if (item._tag === "OpRef") {
+        const operation = row.input.ops[item.index]
+        if (operation === undefined) {
+          return yield* Effect.die(new Error(`${row.case}: unknown operation index`))
+        }
+        inputs.push({ _tag: "Request", id: operation.id, op: operation.op })
+      } else {
+        const scheduled = row.input.schedule[item.index]
+        if (scheduled === undefined) {
+          return yield* Effect.die(new Error(`${row.case}: unknown event index`))
+        }
+        inputs.push({ _tag: "FromWire", id: scheduled.answers, event: scheduled.event })
+      }
+    }
+    return inputs
+  })
+
+export const deriveR3Inputs = (
+  row: RemoteR3Row,
+): Effect.Effect<ReadonlyArray<MInput<RemoteKey, RemoteBytes>>> =>
+  Effect.gen(function* () {
+    const inputs: Array<MInput<RemoteKey, RemoteBytes>> = []
     for (const item of row.input.sequence) {
       if (item._tag === "OpRef") {
         const operation = row.input.ops[item.index]
@@ -158,6 +299,38 @@ export const runRemoteRow = (
       cacheSize: HashSet.size(state.cache),
       inFlightSize: HashMap.size(state.inFlight),
       rejectedSize: HashSet.size(state.rejected),
+    },
+  }
+})
+
+export const runRemoteR3Row = (
+  sut: RemoteStepShape,
+  row: RemoteR3Row,
+) => Effect.gen(function* () {
+  const inputs = yield* deriveR3Inputs(row)
+  let state = initialMachineState<RemoteKey, RemoteBytes>()
+  const commands: Array<TaggedCommand<RemoteKey, RemoteBytes>> = []
+  const decisions: Array<TaggedDecision<RemoteKey, RemoteBytes>> = []
+  const results: Array<MResult<RemoteKey, RemoteBytes>> = []
+  for (const input of inputs) {
+    const output = sut.step(remoteParams, state, input)
+    state = output.state
+    commands.push(...output.commands)
+    decisions.push(...output.decisions)
+    results.push(output.result)
+  }
+  return {
+    commands,
+    decisions,
+    results,
+    state: {
+      cacheSize: HashSet.size(state.cache),
+      confirmedSize: HashSet.size(state.confirmed),
+      inFlightSize: HashMap.size(state.inFlight),
+      publishedSize: HashSet.size(state.published),
+      rejectedSize: HashSet.size(state.rejected),
+      reportedMissingSize: HashSet.size(state.reportedMissing),
+      reportedPresentSize: HashSet.size(state.reportedPresent),
     },
   }
 })
