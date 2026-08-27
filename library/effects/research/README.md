@@ -63,6 +63,12 @@ repository locations.
   emitter: the `Represent` projection typeclass and arity-checked tables,
   re-expressed in an owned module whose default path escapes (route (b),
   ruled 2026-08-26).
+- [`effect-scope-and-ambient-tripwire-analysis.md`](effect-scope-and-ambient-tripwire-analysis.md)
+  answers, against the pinned runtime source, whether Scope APIs are
+  warranted for CAS behavior (not in the in-memory slice; two named
+  adoption points) and how the tracing/Clock ambient trap resolves
+  (`TracerTimingEnabled = false` in replay construction; deterministic
+  time by describing it), without ratifying any change.
 
 ## Local external inputs
 
