@@ -18,7 +18,13 @@ import {
   PlatformError,
   SynchronizedRef,
 } from "effect"
+import { judgeAdmission, type AdmissionFacts } from "../internal/admission.ts"
 import { bytesEqual } from "../internal/bytes.ts"
+import {
+  CasSchemeVersion,
+  decodeCasNode,
+  encodeCasNode,
+} from "../internal/casCodec.ts"
 import {
   AddressMismatch,
   CasNodeInput,
@@ -45,9 +51,6 @@ export class CasStore extends Context.Service<CasStore, CasStoreShape>()(
   "foldlab/effect-replay/CasStore",
 ) {}
 
-/** The only scheme version currently admitted by the runtime adapter. */
-export const CasSchemeVersion = 0
-
 /** Abstract address function. The model quantifies over this function; the
  * default runtime adapter below supplies SHA-256. */
 export interface CasAddress {
@@ -56,76 +59,7 @@ export interface CasAddress {
   ) => Effect.Effect<ContentId, StoreFailure>
 }
 
-const writeNat32 = (target: Uint8Array, offset: number, value: number): void => {
-  target[offset] = (value >>> 24) & 0xff
-  target[offset + 1] = (value >>> 16) & 0xff
-  target[offset + 2] = (value >>> 8) & 0xff
-  target[offset + 3] = value & 0xff
-}
-
-const readNat32 = (source: Uint8Array, offset: number): number =>
-  (source[offset] ?? 0) * 0x1000000
-  + (source[offset + 1] ?? 0) * 0x10000
-  + (source[offset + 2] ?? 0) * 0x100
-  + (source[offset + 3] ?? 0)
-
-/** Project-owned canonical encoder mirrored from `Effects/Cas/Codec.lean`.
- * Schema encoding is deliberately absent from this digest pre-image. */
-export const encodeCasNode = (node: CasNodeInput): Uint8Array => {
-  const size = 10 + node.payload.length + node.refs.length * 33
-  const bytes = new Uint8Array(size)
-  bytes[0] = node.kind.version
-  bytes[1] = node.kind.tag
-  writeNat32(bytes, 2, node.payload.length)
-  bytes.set(node.payload, 6)
-
-  let offset = 6 + node.payload.length
-  writeNat32(bytes, offset, node.refs.length)
-  offset += 4
-
-  for (const ref of node.refs) {
-    const address = ContentId.make(ref.id)
-    const addressBytes = Encoding.decodeHex(address)
-    if (addressBytes._tag === "Failure") {
-      throw new Error("validated ContentId failed hex decoding")
-    }
-    bytes[offset] = ref.expectedTag
-    bytes.set(addressBytes.success, offset + 1)
-    offset += 33
-  }
-
-  return bytes
-}
-
-/** Closed decoder: parses exactly one canonical node and rejects every
- * truncation, malformed count, or trailing byte. Returns `Option` like
- * every other closed decoder in the package. */
-export const decodeCasNode = (bytes: Uint8Array): Option.Option<CasNodeInput> => {
-  if (bytes.length < 10) return Option.none()
-
-  const payloadLength = readNat32(bytes, 2)
-  const countOffset = 6 + payloadLength
-  if (countOffset + 4 > bytes.length) return Option.none()
-
-  const refCount = readNat32(bytes, countOffset)
-  const refsOffset = countOffset + 4
-  if (refsOffset + refCount * 33 !== bytes.length) return Option.none()
-
-  const refs: Array<{ readonly id: ContentId; readonly expectedTag: number }> = []
-  let offset = refsOffset
-  for (let index = 0; index < refCount; index += 1) {
-    const expectedTag = bytes[offset] ?? 0
-    const id = ContentId.make(Encoding.encodeHex(bytes.subarray(offset + 1, offset + 33)))
-    refs.push({ id, expectedTag })
-    offset += 33
-  }
-
-  return Option.some(CasNodeInput.make({
-    kind: { version: bytes[0] ?? 0, tag: bytes[1] ?? 0 },
-    payload: bytes.slice(6, countOffset),
-    refs,
-  }))
-}
+export { CasSchemeVersion, decodeCasNode, encodeCasNode } from "../internal/casCodec.ts"
 
 const cloneNode = (node: CasNodeInput): CasNodeInput =>
   CasNodeInput.make({
@@ -155,25 +89,23 @@ interface StoredNode {
 
 type MemoryState = ReadonlyMap<ContentId, StoredNode>
 
-const checkReferences = (
+/** Answer the admission core's facts from the in-memory map: the actual
+ * kind tag per reference, and any bytes resident at the candidate id. */
+const memoryFacts = (
   state: MemoryState,
   node: CasNodeInput,
-): DanglingReference | WrongKindReference | undefined => {
-  for (const ref of node.refs) {
+  id: ContentId,
+): AdmissionFacts => ({
+  refTags: node.refs.map((ref) => {
     const resident = state.get(ref.id)
-    if (resident === undefined) {
-      return new DanglingReference({ missing: ref.id })
-    }
-    if (resident.node.kind.tag !== ref.expectedTag) {
-      return new WrongKindReference({
-        ref: ref.id,
-        expectedTag: ref.expectedTag,
-        actualTag: resident.node.kind.tag,
-      })
-    }
-  }
-  return undefined
-}
+    return resident === undefined
+      ? Option.none()
+      : Option.some(resident.node.kind.tag)
+  }),
+  resident: ((resident) => resident === undefined
+    ? Option.none()
+    : Option.some(resident.canonicalBytes))(state.get(id)),
+})
 
 /** Resolve SHA-256 through Effect's platform-independent Crypto service. The
  * host runtime supplies the native implementation; this module never reaches
@@ -222,25 +154,40 @@ export const makeMemoryCasStore = (
         readonly [ContentId, MemoryState],
         StoreFailure | DanglingReference | WrongKindReference
       > => {
-        const admissionError = checkReferences(current, node)
-        if (admissionError !== undefined) return Effect.fail(admissionError)
-
-        const resident = current.get(id)
-        if (resident !== undefined) {
-          if (bytesEqual(resident.canonicalBytes, canonicalBytes)) {
+        // One admission law for every backend: the shared pure judge
+        // over facts this map answers.
+        const verdict = judgeAdmission(canonicalBytes, memoryFacts(current, node, id))
+        switch (verdict._tag) {
+          case "DanglingReference":
+            return Effect.fail(new DanglingReference({ missing: verdict.missing }))
+          case "WrongKindReference":
+            return Effect.fail(new WrongKindReference({
+              ref: verdict.ref,
+              expectedTag: verdict.expectedTag,
+              actualTag: verdict.actualTag,
+            }))
+          case "Collision":
+            return Effect.fail(new StoreFailure({
+              reason: `Content identifier collision at ${id}`,
+            }))
+          case "AlreadyResident":
             return Effect.succeed([id, current] as const)
+          case "NonCanonical":
+          case "UnknownKind":
+            // Unreachable for a validated, freshly encoded node; kept
+            // typed so a codec regression cannot admit silently.
+            return Effect.fail(new StoreFailure({
+              reason: `Admission refused own encoding: ${verdict._tag}`,
+            }))
+          case "Admit": {
+            const next = new Map(current)
+            next.set(id, {
+              canonicalBytes: canonicalBytes.slice(),
+              node: cloneNode(node),
+            })
+            return Effect.succeed([id, next] as const)
           }
-          return Effect.fail(new StoreFailure({
-            reason: `Content identifier collision at ${id}`,
-          }))
         }
-
-        const next = new Map(current)
-        next.set(id, {
-          canonicalBytes: canonicalBytes.slice(),
-          node: cloneNode(node),
-        })
-        return Effect.succeed([id, next] as const)
       }
 
       return yield* SynchronizedRef.modifyEffect(state, update)
