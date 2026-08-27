@@ -1687,3 +1687,34 @@ Stop and return to grilling if:
   nondeterminism) is reserved as its own designed milestone, per
   the plan's standing line — the refusal is the boundary, not the
   end state.
+- **Worktree delivery accepted: profile letter, presence encoder,
+  export surface (2026-08-27, merged @bb9f4272):** a three-commit
+  worktree delivery reviewed first-hand hunk-by-hunk, every claim
+  verified against the shipped letter, and merged. (1) The profile
+  gains four rules that were in force but unrecorded — a third
+  party writing a server from the profile alone would have failed
+  against the shipping client: `cas-profile` and `accept` on every
+  request (the reference peer answers 400 without the profile
+  header, verified); `retry-after` honored only as an integer count
+  of seconds with the date form dropped rather than a violation —
+  an asymmetry now stated explicitly against `content-length`,
+  whose malformed value IS a violation on both body and
+  acknowledgment paths (verified in both); and acknowledgment
+  closure sharpened — content-type may be absent but never
+  different, non-zero declared length or any body byte is the
+  unexpected-body violation (matches the shipped checks exactly).
+  No exchange changed meaning; `/0` stands, no bump. The known
+  pin-7 gap (204 bypassing the encoding guard) is neither
+  introduced nor claimed fixed. (2) `encodePresenceDocument`
+  completes the control plane's orphan codec pair, total over the
+  status alphabet, with a round-trip test carrying the exactness
+  direction, length-exactness both ways, and alphabet closure; the
+  reference peer deliberately KEEPS its independent hand-rolled
+  writer — the differential side must not adopt the implementation
+  under test. (3) The package declares a root-only export surface
+  shipping the source and the wire authority, consistent with the
+  one-front-door ruling; the multi-subpath map was correctly
+  skipped as prejudging the server-core shape. Delivery predates
+  the 0.2.0 slice; the merge composed cleanly with zero file
+  overlap — one hundred eighty-eight tests across twenty-four
+  files on the merged tree.
