@@ -38,7 +38,10 @@ def carrierDischarges : List (String × String) :=
   , ("MRK-008", "drun_append")
   , ("MRK-010", "opening_binds_committed")
   , ("MRK-013", "ranged_generation_complete")
-  , ("MRK-014", "blob_root_addr") ]
+  , ("MRK-014", "blob_root_addr")
+  , ("MRK-015", "parse_fragmentation_invariant")
+  , ("MRK-016", "ranged_binding")
+  , ("MRK-019", "response_trailing_rejected") ]
 
 /-- Bridge obligations the operator has accepted as evidenced, with the
 differential suite that carries the evidence. G4-labeled sampled

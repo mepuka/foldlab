@@ -94,4 +94,85 @@ theorem readNat32_some (bytes : List UInt8) (n : Nat)
       rfl
     · omega
 
+/-- The encoding sees only the low 32 bits. -/
+theorem nat32_mod (n : Nat) : nat32 (n % 4294967296) = nat32 n := by
+  unfold nat32
+  congr 1
+  · apply UInt8.toNat_inj.mp
+    simp only [UInt8.toNat_ofNat', Nat.shiftRight_eq_div_pow]
+    omega
+  congr 1
+  · apply UInt8.toNat_inj.mp
+    simp only [UInt8.toNat_ofNat', Nat.shiftRight_eq_div_pow]
+    omega
+  congr 1
+  · apply UInt8.toNat_inj.mp
+    simp only [UInt8.toNat_ofNat', Nat.shiftRight_eq_div_pow]
+    omega
+  congr 1
+  apply UInt8.toNat_inj.mp
+  simp only [UInt8.toNat_ofNat']
+  omega
+
+/-- Big-endian 64-bit encoding: two 32-bit halves. -/
+def nat64 (n : Nat) : List UInt8 :=
+  nat32 (n >>> 32) ++ nat32 n
+
+def readNat64 (bs : List UInt8) : Option (Nat × List UInt8) :=
+  match readNat32 bs with
+  | none => none
+  | some (hi, rest) =>
+    match readNat32 rest with
+    | none => none
+    | some (lo, rest') => some (hi * 4294967296 + lo, rest')
+
+theorem nat64_length (n : Nat) : (nat64 n).length = 8 := by
+  simp [nat64, nat32]
+
+theorem readNat64_nat64 (n : Nat) (h : n < 18446744073709551616)
+    (rest : List UInt8) : readNat64 (nat64 n ++ rest) = some (n, rest) := by
+  have hhi : n >>> 32 < 4294967296 := by
+    simp only [Nat.shiftRight_eq_div_pow]
+    omega
+  have hlo : n % 4294967296 < 4294967296 := Nat.mod_lt _ (by omega)
+  unfold readNat64 nat64
+  rw [List.append_assoc, readNat32_nat32 (n >>> 32) hhi]
+  dsimp only
+  rw [← nat32_mod n, readNat32_nat32 (n % 4294967296) hlo]
+  dsimp only
+  simp only [Option.some.injEq, Prod.mk.injEq]
+  refine ⟨?_, trivial⟩
+  simp only [Nat.shiftRight_eq_div_pow]
+  omega
+
+theorem readNat64_some (bytes : List UInt8) (n : Nat)
+    (rest : List UInt8) (h : readNat64 bytes = some (n, rest)) :
+    bytes = nat64 n ++ rest ∧ n < 18446744073709551616 := by
+  unfold readNat64 at h
+  split at h
+  · exact nomatch h
+  · rename_i hi r1 hr1
+    split at h
+    · exact nomatch h
+    · rename_i lo r2 hr2
+      injection h with h
+      injection h with hn hrest
+      obtain ⟨hb1, hlt1⟩ := readNat32_some bytes hi r1 hr1
+      obtain ⟨hb2, hlt2⟩ := readNat32_some r1 lo r2 hr2
+      subst hrest
+      subst hn
+      constructor
+      · rw [hb1, hb2, ← List.append_assoc]
+        unfold nat64
+        have hhi : (hi * 4294967296 + lo) >>> 32 = hi := by
+          simp only [Nat.shiftRight_eq_div_pow]
+          omega
+        have hlow : nat32 (hi * 4294967296 + lo) = nat32 lo := by
+          rw [← nat32_mod (hi * 4294967296 + lo)]
+          have : (hi * 4294967296 + lo) % 4294967296 = lo % 4294967296 := by
+            omega
+          rw [this, nat32_mod]
+        rw [hhi, hlow]
+      · omega
+
 end Effects.Wire

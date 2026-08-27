@@ -1296,3 +1296,43 @@ Stop and return to grilling if:
   early carrier for the R4 capability-discovery row; the package
   description was updated to name the delivered scope; Q5 and the
   F3 staging-area slice remain the open R3-adjacent work.
+- **MRK-3 conformance half landed; proof lane pauses for
+  development (2026-08-27):** four of the five ratified items built
+  and landed in one cycle, and the operator directed a pause on the
+  proof lane after this set — working code takes priority. V1: the
+  four-kind manifest graph — chunk data content-addressed WITHOUT
+  position (cross-position dedup restored), leaves binding index and
+  length over a chunk reference, the manifest committing recipe id,
+  total bytes (a 64-bit wire field, added to the shared tools), and
+  leaf count — with the composed address function, the root-address
+  tie, node well-formedness, the two-layer collision transfer, and
+  the recipe-gated closed manifest codec; chunk data and manifests
+  carry their own kind tags while parents and leaves share the tree
+  tag with structural separation, the constraint recorded at MRK-2
+  now scoped to the tree plane. V4: the adversarial ranged binding —
+  ANY accepted trace for a root and range emits exactly the
+  committed ranged emissions or exhibits a computable collision —
+  proved over the trace-general consumption decomposition with the
+  named accepted-prefix judgment, the honest-generator half kept
+  separate as ratified. V3: the incremental frame parser — front
+  classification into complete frame, valid prefix, or malformed;
+  greedy drain; fold-over-fragments equal to single-shot parse of
+  the flattened bytes; completion agreeing exactly with the
+  whole-string reader, so a truncation leaves a remainder or reads
+  as a strictly different document. V5: the response framer —
+  acceptance is exactly one complete decode with done first reached
+  at the last item, nonempty trailing content after an accepted
+  response refused (the machine's absorb-after-done stays an
+  internal convenience), the linear amplification bound (an honest
+  stream is at most twice the leaf count minus one), and a decidable
+  anti-vacuity example. Ledger: MRK-015, MRK-016, and MRK-019
+  discharge by carrier construction, MRK-018 flips through its
+  CODEC instance with a vector family and a killed
+  guess-unknown-recipe mutant; twenty-seven declared mutants killed.
+  DEFERRED under the development directive: MRK-017 (byte-range
+  slicing, V2) stays pending at MRK-3, and the Q5 key-list codec
+  exactness stays open — both resume when the proof lane does. The
+  conformance lane's next work is development-facing: the F2b
+  CasBlob packet on the landed manifest graph, the S1 reference
+  server, and the profile's proof-plane clauses promoted from
+  planned to ratified as the implementation consumes them.

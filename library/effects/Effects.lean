@@ -30,6 +30,8 @@ import Effects.Merkle.Laws
 import Effects.Merkle.Consistency
 import Effects.Merkle.ProofCodec
 import Effects.Merkle.Blob
+import Effects.Merkle.Manifest
+import Effects.Merkle.Parser
 import Effects.Conformance
 
 /-!

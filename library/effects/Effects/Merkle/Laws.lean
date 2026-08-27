@@ -1088,4 +1088,112 @@ theorem ranged_generation_complete (P : HP A) (lo hi : Nat)
     exact emissionsOf_honestDecs ⟨P, chunks.length, root P 0 chunks, lo, hi⟩
       chunks 0
 
+/-- One frame's accepted consumption against the committed subtree it
+claims: the emissions are the owed ranged emissions, or two distinct
+pre-images with one address are exhibited. The walk compares the
+consumption derivation with the committed tree level by level. -/
+theorem consumes_binds_ranged (D : DParams A) :
+    ∀ {f : Frame A} {ins : List (DInput A)} {es : List (Nat × Bytes)},
+      Consumes D f ins es →
+      ∀ (chunks : List Bytes), 0 < chunks.length →
+      f.count = chunks.length →
+      f.expected = root D.P f.base chunks →
+      es = rangedEmissions D.lo D.hi f.base chunks ∨ Collision D.P := by
+  intro f ins es h
+  induction h with
+  | @skip f hd =>
+    intro chunks hpos hcount hroot
+    left
+    rw [rangedEmissions_skip D.lo D.hi f.base chunks (by
+      simp only [DParams.disjoint] at hd
+      omega)]
+  | @leaf f c hd hc hh =>
+    intro chunks hpos hcount hroot
+    have h1 : chunks.length ≤ 1 := by omega
+    have hleaf : root D.P f.base chunks =
+        D.P.H (.leaf f.base (chunks.headD [])) := by
+      conv => lhs; rw [root.eq_def]
+      rw [dif_pos h1]
+    by_cases hpre : (Pre.leaf f.base c : Pre A) =
+        .leaf f.base (chunks.headD [])
+    · left
+      injection hpre with hbase hbytes
+      rw [rangedEmissions_leaf D.lo D.hi f.base chunks (by
+          simp only [DParams.disjoint] at hd
+          omega) h1]
+      rw [hbytes]
+    · right
+      exact ⟨_, _, hpre, hh.trans (hroot.trans hleaf)⟩
+  | @node f l r in₁ in₂ es₁ es₂ hd hc hh h₁ h₂ ih₁ ih₂ =>
+    intro chunks hpos hcount hroot
+    have h1 : ¬ chunks.length ≤ 1 := by omega
+    have hk_lt := pow2Below_lt chunks.length (by omega)
+    have hk_pos := pow2Below_pos chunks.length
+    have hkeq : pow2Below f.count = pow2Below chunks.length := by
+      rw [hcount]
+    rw [root_split D.P f.base chunks h1] at hroot
+    by_cases hpre : (Pre.parent l r : Pre A) =
+        .parent (root D.P f.base (chunks.take (pow2Below chunks.length)))
+          (root D.P (f.base + pow2Below chunks.length)
+            (chunks.drop (pow2Below chunks.length)))
+    · injection hpre with hl hr
+      have htake_len : (chunks.take (pow2Below chunks.length)).length =
+          pow2Below chunks.length := by
+        simp only [List.length_take]
+        omega
+      have hdrop_len : (chunks.drop (pow2Below chunks.length)).length =
+          chunks.length - pow2Below chunks.length := by
+        simp only [List.length_drop]
+      have hbind₁ := ih₁ (chunks.take (pow2Below chunks.length))
+        (by omega) (by simpa [htake_len] using hkeq)
+        (by simpa using hl)
+      have hbind₂ := ih₂ (chunks.drop (pow2Below chunks.length))
+        (by omega) (by simp only [hdrop_len]; omega)
+        (by simpa [hkeq] using hr)
+      rcases hbind₁ with he₁ | hcol
+      · rcases hbind₂ with he₂ | hcol
+        · left
+          rw [rangedEmissions_node D.lo D.hi f.base chunks (by
+              simp only [DParams.disjoint] at hd
+              omega) h1]
+          simp only [hkeq] at he₂
+          rw [he₁, he₂]
+        · exact Or.inr hcol
+      · exact Or.inr hcol
+    · right
+      exact ⟨_, _, hpre, hh.trans hroot⟩
+
+/-- The judgment a runtime claims when it reports a root-checked
+range: the decoder accepted the trace to its done status. -/
+def PrefixAccepted [DecidableEq A] (D : DParams A)
+    (inputs : List (DInput A)) : Prop :=
+  (drun D (initState D) inputs).1.status = .done
+
+/-- MRK-016 carrier — the adversarial ranged binding: ANY input trace
+accepted for a root and range emits exactly the committed ranged
+emissions at those positions, or the trace exhibits a computable hash
+collision. Never a collision-resistance assumption; the
+honest-generator half is `ranged_generation_complete`, a separate
+theorem, and the expected root's provenance is the caller's declared
+trust path — the theorem binds emissions to the root it was GIVEN. -/
+theorem ranged_binding (D : DParams A) (chunks : List Bytes)
+    (hroot : D.expectedRoot = root D.P 0 chunks)
+    (htotal : D.total = chunks.length) (hpos : 0 < chunks.length)
+    (inputs : List (DInput A))
+    (hacc : PrefixAccepted D inputs) :
+    emissionsOf (drun D (initState D) inputs).2 =
+      rangedEmissions D.lo D.hi 0 chunks ∨ Collision D.P := by
+  unfold PrefixAccepted at hacc
+  simp only [initState] at hacc ⊢
+  obtain ⟨used, extra, hin, hcs⟩ :=
+    drun_done_consumesStack D inputs [⟨D.expectedRoot, 0, D.total⟩] hacc
+  generalize hes : emissionsOf
+    (drun D ⟨[⟨D.expectedRoot, 0, D.total⟩], .active⟩ inputs).2 = es
+    at hcs ⊢
+  rcases hcs with _ | @⟨_, _, in₁, in₂, es₁, es₂, h₁, hnil⟩
+  cases hnil
+  have := consumes_binds_ranged D h₁ chunks hpos (by simpa using htotal)
+    (by simpa using hroot)
+  simpa using this
+
 end Effects.Merkle

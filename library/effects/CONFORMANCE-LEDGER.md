@@ -59,11 +59,11 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | MRK-012 | instantiated (CODEC) |
 | MRK-013 | discharged — carrier construction (ranged\_generation\_complete) |
 | MRK-014 | discharged — carrier construction (blob\_root\_addr) |
-| MRK-015 | pending — by carrier construction at MRK-3 |
-| MRK-016 | pending — by carrier construction at MRK-3 |
+| MRK-015 | discharged — carrier construction (parse\_fragmentation\_invariant) |
+| MRK-016 | discharged — carrier construction (ranged\_binding) |
 | MRK-017 | pending — by carrier construction at MRK-3 |
-| MRK-018 | pending — CODEC instance at MRK-3 |
-| MRK-019 | pending — by carrier construction at MRK-3 |
+| MRK-018 | instantiated (CODEC) |
+| MRK-019 | discharged — carrier construction (response\_trailing\_rejected) |
 | SRV-001 | pending — by carrier construction at S-M1 |
 | SRV-002 | pending — by carrier construction at S-M1 |
 | SRV-003 | pending — TypeScript evidence at S-M2 |
@@ -362,6 +362,8 @@ Successful byte-range slicing equals the flattened whole restricted to the reque
 ## MRK-018
 
 A blob manifest commits recipe identity, total bytes, and leaf count; readers select semantics from the recipe id and unknown ids fail closed; changing any identity-affecting recipe parameter changes the manifest id.
+
+**Sentence:** Blob-manifest contents parse fail-closed and exactly: the canonical sixteen-byte payload commits the recipe identity, the total byte length, and the leaf count; truncation, trailing content, and UNKNOWN RECIPE IDENTIFIERS are all rejected at decode, so a reader selects semantics from the registered recipe id and never guesses, and changing any identity-affecting recipe parameter changes the manifest identity.
 
 ## MRK-019
 

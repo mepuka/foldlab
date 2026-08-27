@@ -7,6 +7,7 @@ import Effects.Conformance.Instances.MRK006
 import Effects.Conformance.Instances.MRK007
 import Effects.Conformance.Instances.MRK011
 import Effects.Conformance.Instances.MRK012
+import Effects.Conformance.Instances.MRK018
 
 /-!
 # The Merkle manifest families
@@ -59,6 +60,7 @@ abbrev ConsFn := Nat → Nat → Addr32 → Addr32 → List Addr32 → Bool
 abbrev OpeningDecodeFn := List UInt8 → Option OpeningDoc
 abbrev StreamDecodeFn :=
   List UInt8 → Option (StreamHeader × List (DInput Addr32))
+abbrev ManifestDecodeFn := List UInt8 → Option ManifestContent
 
 def realChunk : ChunkFn := mrkRecipe.chunk
 def realMStep : MStep := fun D s i => dstep D s i
@@ -67,6 +69,7 @@ def realConsVerify : ConsFn :=
   fun m n o nw p => verifyConsistency merkleH m n o nw p
 def realOpeningDecode : OpeningDecodeFn := decodeOpening?
 def realStreamDecode : StreamDecodeFn := decodeStream?
+def realManifestDecode : ManifestDecodeFn := decodeManifest?
 
 /-! ## Wire encodings -/
 
@@ -261,6 +264,32 @@ def mrk012Rows (dF : StreamDecodeFn) : List (String × Value) :=
       (encodeStream ⟨1, 0, 1⟩ [] ++ [1, 0, 0, 0, 5, 9])
   , streamRow dF "trailing-skip-extends-items-004" (streamKit ++ [0]) ]
 
+def manifestRow (dF : ManifestDecodeFn) (caseId : String)
+    (bytes : List UInt8) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", match dF bytes with
+             | some m =>
+                 .obj [ ("_tag", .str "Decoded")
+                      , ("manifest", .obj
+                          [ ("leafCount", .nat m.leafCount)
+                          , ("recipeId", .nat m.recipeId)
+                          , ("totalBytes", .nat m.totalBytes) ]) ]
+             | none => .obj [("_tag", .str "Rejected")])
+         , ("input", .obj [("bytes", bytesJson bytes)]) ] )
+
+def mrk018Rows (dF : ManifestDecodeFn) : List (String × Value) :=
+  [ manifestRow dF "canonical-manifest-decodes-000"
+      (encodeManifest ⟨recipeReferencedChunk, 5, 3⟩)
+  , manifestRow dF "inline-recipe-decodes-001"
+      (encodeManifest ⟨recipeInlineLeaf, 2, 1⟩)
+  , manifestRow dF "unknown-recipe-rejected-002"
+      (encodeManifest ⟨9, 5, 3⟩)
+  , manifestRow dF "truncated-rejected-003"
+      ((encodeManifest ⟨recipeReferencedChunk, 5, 3⟩).take 10)
+  , manifestRow dF "trailing-rejected-004"
+      (encodeManifest ⟨recipeReferencedChunk, 5, 3⟩ ++ [0]) ]
+
 /-- The declared oracle, named in every Merkle family document. -/
 def merkleOracle : String :=
   "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice."
@@ -283,7 +312,8 @@ def merkleFamilies : List (String × String × List (String × Value)) :=
   , ("MRK-006", mrk006.sentence, mrk006Rows realVerify)
   , ("MRK-007", mrk007.sentence, mrk007Rows realConsVerify)
   , ("MRK-011", mrk011.sentence, mrk011Rows realOpeningDecode)
-  , ("MRK-012", mrk012.sentence, mrk012Rows realStreamDecode) ]
+  , ("MRK-012", mrk012.sentence, mrk012Rows realStreamDecode)
+  , ("MRK-018", mrk018.sentence, mrk018Rows realManifestDecode) ]
 
 private def renderRows (rows : List (String × Value)) : String :=
   Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
@@ -314,6 +344,10 @@ def merkleOpeningRowsRendered (dF : OpeningDecodeFn) : String :=
 /-- Rendered rows of the stream-codec family under a decoder. -/
 def merkleStreamRowsRendered (dF : StreamDecodeFn) : String :=
   renderRows (mrk012Rows dF)
+
+/-- Rendered rows of the manifest-codec family under a decoder. -/
+def merkleManifestRowsRendered (dF : ManifestDecodeFn) : String :=
+  renderRows (mrk018Rows dF)
 
 /-- The committed Merkle manifest files, additive at the declared model
 version. -/
