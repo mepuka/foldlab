@@ -93,6 +93,12 @@ repository locations.
   fits, the four-lane evidence architecture, the staged R ladder, and
   the remote Pass A docket skeleton — hypotheses only, nothing
   promoted.
+- [`remote-transport-standards-and-lean-models.md`](remote-transport-standards-and-lean-models.md)
+  maps current HTTP/1.1–3, gRPC, JSON-RPC, SSE, and WebSocket standards
+  to remote-CAS client obligations; audits Lean protocol runtimes and
+  transition/refinement libraries (including LeanServer); and proposes
+  a weak-trace refinement plus real-transport conformance architecture.
+  The model and theorem docket remain unratified G0 research.
 
 ## Local external inputs
 

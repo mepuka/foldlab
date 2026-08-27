@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "remote-transport-standards-and-lean-models",
+  "observedAt": "2026-08-27T07:13:09.0569583-05:00",
+  "scope": "Primary transport standards, exact project specifications, and Lean protocol/model sources used by the conception-mode remote-CAS transport and conformance survey. RFC editions are immutable publication pins; mutable repositories are fixed to commits. No dependency or source-lock admission is implied.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4"
+  },
+  "rfcPins": [
+    {
+      "rfc": 9110,
+      "title": "HTTP Semantics",
+      "sha256Text": "21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a",
+      "bytes": 502941
+    },
+    {
+      "rfc": 9111,
+      "title": "HTTP Caching",
+      "sha256Text": "aeb52adb3279d5f23dae34f68af11bd5cef0a0aff7ffcd014c9ca93c5302cf3e",
+      "bytes": 84477
+    },
+    {
+      "rfc": 9112,
+      "title": "HTTP/1.1",
+      "sha256Text": "e4f426bac6206b67fdf9e0da826154f70588db2133a0a86b15cde4ff725d8937",
+      "bytes": 109913
+    },
+    {
+      "rfc": 9113,
+      "title": "HTTP/2",
+      "sha256Text": "a00ef91b64e111a282e77ec66980f5242e77c0bb5e33e0927e3b6757080506de",
+      "bytes": 191811
+    },
+    {
+      "rfc": 9114,
+      "title": "HTTP/3",
+      "sha256Text": "6b84555c88eeebcf5d2b2e1d9d7b58630abc97ab877b2cf62dee4cd635db34e4",
+      "bytes": 155206
+    },
+    {
+      "rfc": 9530,
+      "title": "Digest Fields",
+      "sha256Text": "544dbb7d9afceafa8c9931d9924ca6cff2b4807274166d7ed2483342ef2cdd6a",
+      "bytes": 67152
+    },
+    {
+      "rfc": 6455,
+      "title": "The WebSocket Protocol",
+      "sha256Text": "765775326aee0ecca9b04bde3fd1f52932d498e33e34e428bd61b8a24da0fa3b",
+      "bytes": 162067
+    },
+    {
+      "rfc": 8441,
+      "title": "Bootstrapping WebSockets with HTTP/2",
+      "sha256Text": "209ea84eae8866098587726a9a78e3d513539afe71fd4fd7cbcffe133a83d535",
+      "bytes": 16639
+    },
+    {
+      "rfc": 9220,
+      "title": "Bootstrapping WebSockets with HTTP/3",
+      "sha256Text": "4bac5e1368db199468345dbd2d31ebb4abb7509732b1ae08108cc4860e8967db",
+      "bytes": 6619
+    }
+  ],
+  "additionalImmutableEditions": [
+    "RFC 9931",
+    "RFC 8470",
+    "RFC 9457",
+    "RFC 7692",
+    "RFC 7936",
+    "RFC 8307"
+  ],
+  "publicationPins": [
+    {
+      "id": "json-rpc-2.0",
+      "url": "https://www.jsonrpc.org/specification",
+      "published": "2010-03-26",
+      "updated": "2013-01-04",
+      "sha256ResponseBody": "8fe1edfdca511d309e712e47447457ea5159b728ec02071a84593aed692aefeb"
+    }
+  ],
+  "repositoryPins": [
+    {
+      "id": "whatwg-html",
+      "repository": "https://github.com/whatwg/html",
+      "commit": "9ead9de8f6751ccb98e91972e580ed6e3314c64a",
+      "artifacts": [
+        {
+          "path": "source",
+          "role": "server-sent-events-living-standard-source",
+          "sha256": "7d476cb1f051eebab37aebd63a0f4195832e43ea13c3e7ef0fff3040ac7b6360",
+          "bytes": 7905591
+        }
+      ]
+    },
+    {
+      "id": "grpc",
+      "repository": "https://github.com/grpc/grpc",
+      "commit": "7ef6a9efc3a1518d838dfb250cffe520a59185ac",
+      "artifacts": [
+        {
+          "path": "doc/PROTOCOL-HTTP2.md",
+          "role": "grpc-over-http2-protocol",
+          "sha256": "b51ea1b8cee67ad3477e73152bb60ac3ebf6e164962b46ba79434e980739256f",
+          "bytes": 16105
+        },
+        {
+          "path": "doc/http-grpc-status-mapping.md",
+          "role": "http-to-grpc-status-fallback"
+        },
+        {
+          "path": "doc/connection-backoff.md",
+          "role": "connection-backoff"
+        }
+      ]
+    },
+    {
+      "id": "grpc-proposal",
+      "repository": "https://github.com/grpc/proposal",
+      "commit": "59404cb421b52ecc563dfe51db3917aaa5ced410",
+      "artifacts": [
+        {
+          "path": "A6-client-retries.md",
+          "role": "implemented-client-retry-design",
+          "sha256": "1e91cf4afc1e900d4cbe88f6cd0e3642db9c0b06fd1599ff360459dcc97de657",
+          "bytes": 33277
+        },
+        {
+          "path": "G2-http3-protocol.md",
+          "role": "grpc-over-http3-project-proposal"
+        }
+      ]
+    },
+    {
+      "id": "polyfun",
+      "repository": "https://github.com/Verified-zkEVM/PolyFun",
+      "commit": "bb7e1003544b8461e3d484fc51c61b2ff865250f",
+      "license": "Apache-2.0",
+      "artifacts": [
+        {
+          "path": "PolyFun/Control/Bisimulation.lean",
+          "role": "lts-weak-simulation-and-bisimulation"
+        },
+        {
+          "path": "PolyFun/Control/LTS/Trace.lean",
+          "role": "finite-weak-traces-and-trace-inclusion"
+        },
+        {
+          "path": "PolyFun/ITree/Basic.lean",
+          "role": "coinductive-interaction-trees"
+        },
+        {
+          "path": "PolyFun/ITree/Sim/Defs.lean",
+          "role": "handler-simulation"
+        }
+      ]
+    },
+    {
+      "id": "lean4-std-http",
+      "repository": "https://github.com/leanprover/lean4",
+      "commit": "819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+      "license": "Apache-2.0",
+      "artifacts": [
+        {
+          "path": "src/Std/Http/Protocol/H1.lean",
+          "role": "executable-http1-machine"
+        },
+        {
+          "path": "src/Std/Http/Transport.lean",
+          "role": "transport-class-and-in-memory-mock"
+        }
+      ]
+    },
+    {
+      "id": "lean-grpc",
+      "repository": "https://github.com/RileyBetts/lean-grpc",
+      "selector": "refs/tags/v1.1.0",
+      "commit": "0887548b7fdfea9fe76d645514f42e8206cee270",
+      "license": "Apache-2.0",
+      "artifacts": [
+        {
+          "path": "docs/conformance.md",
+          "role": "runtime-h2spec-and-interop-evidence"
+        },
+        {
+          "path": "docs/proofs.md",
+          "role": "proof-scope-and-exclusions"
+        }
+      ]
+    },
+    {
+      "id": "leanserver",
+      "repository": "https://github.com/AfonsoBitoque/LeanServer",
+      "commit": "24b916aaa6ae4a20732536494904d0699fac7ec7",
+      "license": "Apache-2.0",
+      "artifacts": [
+        {
+          "path": "LeanServer/Protocol/GRPC.lean",
+          "role": "grpc-implementation-audit",
+          "sha256": "0aa65bca8bd2f4252cc6582bfd4dfc5576ba3c8081070ad8e3a4ad078c8ba1c7",
+          "bytes": 9254
+        },
+        {
+          "path": "LeanServer/Protocol/HTTP2.lean",
+          "role": "http2-implementation-audit",
+          "sha256": "f16685587f0c5fa7019678c5adc7cd72799b3fa25b9dbd2c8f84086558195bf3",
+          "bytes": 59072
+        },
+        {
+          "path": "LeanServer/Protocol/WebSocket.lean",
+          "role": "websocket-implementation-audit",
+          "sha256": "ed577eec5acb988f09b4413d85bb370f1238194b8d55c1a44c48ef7cf5f9cecd",
+          "bytes": 19736
+        }
+      ]
+    },
+    {
+      "id": "veil",
+      "repository": "https://github.com/verse-lab/veil",
+      "commit": "300c305e945750ab3fb62de4a79c23161b24da39",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "telltale",
+      "repository": "https://github.com/hxrts/telltale",
+      "commit": "d5bed45ea0e5b3ad1be032f113e644121879c61a",
+      "license": "MIT"
+    },
+    {
+      "id": "hitrees",
+      "repository": "https://git.ista.ac.at/plv/hitrees",
+      "commit": "3ddf725488a8b2e83af391a1c6ad77796c904865",
+      "license": "BSD-3-Clause"
+    }
+  ],
+  "techniquePriorArt": [
+    {
+      "title": "From C to Interaction Trees: Specifying, Verifying, and Testing a Networked Server",
+      "doi": "10.1145/3293880.3294106",
+      "role": "layered-network-server-refinement-and-model-based-testing"
+    },
+    {
+      "title": "Verifying an HTTP Key-Value Server with Interaction Trees and VST",
+      "doi": "10.4230/LIPIcs.ITP.2021.32",
+      "artifactDoi": "10.5281/zenodo.4697379",
+      "role": "http-subset-socket-event-to-c-server-refinement"
+    }
+  ],
+  "standing": {
+    "status": "resolved-research-source-pins",
+    "sourceLockPromotion": "pending",
+    "note": "The report is G0 conception research. Runtime conformance, protocol refinement, remote durability, and end-to-end CAS claims remain pending their exact judgments and evidence gates."
+  },
+  "result": "resolved-research-source-pins"
+}
