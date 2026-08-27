@@ -46,6 +46,9 @@ const StoredSessionOutcome = Schema.Union([
   Schema.TaggedStruct("Violated", {
     service: Schema.Literals(["Clock", "Random"]),
   }),
+  Schema.TaggedStruct("Aborted", {
+    reason: Schema.Literals(["Defect", "Interrupted"]),
+  }),
 ])
 
 const StoredDecision = Schema.Union([
@@ -211,6 +214,10 @@ const writeValue = (writer: Writer, value: unknown): void => {
     return
   }
   if (typeof value === "object") {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new InternalStorageError("Stored objects must have a plain prototype")
+    }
     writer.byte(8)
     const entries = Object.entries(value).sort(([left], [right]) =>
       left < right ? -1 : left > right ? 1 : 0)

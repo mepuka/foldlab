@@ -46,7 +46,7 @@ export type Event<K, B> =
   | { readonly _tag: "Silence" }
   | { readonly _tag: "Unauthenticated" }
   | { readonly _tag: "Denied" }
-  | { readonly _tag: "RateLimited"; readonly retryAfter: number }
+  | { readonly _tag: "RateLimited"; readonly retryAfter?: number }
   | { readonly _tag: "Capacity" }
   | { readonly _tag: "Redirected" }
   | { readonly _tag: "IntegrityMismatch" }

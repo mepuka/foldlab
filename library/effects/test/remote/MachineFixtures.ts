@@ -320,10 +320,10 @@ export const runRemoteR3Row = (
   }
 })
 
-export const assertRemoteGuards = (family: RemoteFamily) => Effect.gen(function* () {
-  const manifest = yield* loadFamily(remoteBinding(family))
-  for (const row of manifest.rows) {
-    const inputs = yield* deriveInputs(row)
+const assertInputGuards = (
+  caseName: string,
+  inputs: ReadonlyArray<MInput<RemoteKey, RemoteBytes>>,
+) => Effect.gen(function* () {
     let state = initialMachineState<RemoteKey, RemoteBytes>()
     for (const input of inputs) {
       const entitled = entitledToCache(remoteParams, state, input)
@@ -332,12 +332,28 @@ export const assertRemoteGuards = (family: RemoteFamily) => Effect.gen(function*
       const cachedOrReturned = output.decisions.some(({ decision }) =>
         decision._tag === "Cached" || decision._tag === "Returned")
       if (!entitled && cachedOrReturned) {
-        return yield* Effect.die(new Error(`${row.case}: unentitled input cached or returned`))
+        return yield* Effect.die(new Error(`${caseName}: unentitled input cached or returned`))
       }
       if (budgeted && output.result._tag !== "BudgetRejected") {
-        return yield* Effect.die(new Error(`${row.case}: over-budget input was not rejected`))
+        return yield* Effect.die(new Error(`${caseName}: over-budget input was not rejected`))
       }
       state = output.state
     }
+})
+
+export const assertRemoteGuards = (
+  family: RemoteFamily | RemoteR3Family,
+) => Effect.gen(function* () {
+  if (family === "RMT-005" || family === "RMT-006"
+    || family === "RMT-007" || family === "RMT-008") {
+    const manifest = yield* loadFamily(remoteR3Binding(family))
+    for (const row of manifest.rows) {
+      yield* assertInputGuards(row.case, yield* deriveR3Inputs(row))
+    }
+    return
+  }
+  const manifest = yield* loadFamily(remoteBinding(family))
+  for (const row of manifest.rows) {
+    yield* assertInputGuards(row.case, yield* deriveInputs(row))
   }
 })

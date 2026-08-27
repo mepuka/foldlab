@@ -75,7 +75,17 @@ layer(remoteStepLayer(step))("direction 1 remote machine mirror", (it) => {
 
   it.effect("remote admission and budget guards agree with their manifest consumers", () =>
     Effect.forEach(
-      ["RMT-001", "RMT-002", "RMT-003", "RMT-004", "RMT-015"] as const,
+      [
+        "RMT-001",
+        "RMT-002",
+        "RMT-003",
+        "RMT-004",
+        "RMT-015",
+        "RMT-005",
+        "RMT-006",
+        "RMT-007",
+        "RMT-008",
+      ] as const,
       assertRemoteGuards,
       { discard: true },
     ))

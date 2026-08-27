@@ -5,12 +5,18 @@ import {
   Deferred,
   Effect,
   Fiber,
+  HashMap,
+  HashSet,
   Layer,
   Ref,
   Stream,
 } from "effect"
 import { TestClock } from "effect/testing"
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
+import * as HttpClient from "effect/unstable/http/HttpClient"
+import * as HttpClientError from "effect/unstable/http/HttpClientError"
+import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
+import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse"
 import { createHash, randomBytes } from "node:crypto"
 import * as Cas from "../../src/Cas.ts"
 import {
@@ -367,15 +373,15 @@ it.effect("hostile cas-http/0 admits a complete content-length response and reus
       expect(endpoint.observe().openSockets).toBe(0)
     })))
 
-const hostileCases: ReadonlyArray<readonly [HostileFault, string, string]> = [
-  ["truncated", "truncated fixed-length response", "CasRemoteError/Protocol"],
-  ["contentLengthLarger", "overstated content length", "CasRemoteError/Protocol"],
-  ["underreportedOversize", "understated content length", "CasRemoteError/Integrity"],
-  ["wrongBytes", "substituted bytes", "CasRemoteError/Integrity"],
-  ["resetMidBody", "connection reset mid-body", "CasRemoteError/Protocol"],
+const hostileCases: ReadonlyArray<readonly [HostileFault, string, string, string]> = [
+  ["truncated", "truncated fixed-length response", "CasRemoteError/Protocol", "truncatedBody"],
+  ["contentLengthLarger", "overstated content length", "CasRemoteError/Protocol", "truncatedBody"],
+  ["underreportedOversize", "understated content length", "CasRemoteError/Integrity", "nonCanonicalBytes"],
+  ["wrongBytes", "substituted bytes", "CasRemoteError/Integrity", "addressMismatch"],
+  ["resetMidBody", "connection reset mid-body", "CasRemoteError/Protocol", "truncatedBody"],
 ]
 
-for (const [fault, title, expectedTag] of hostileCases) {
+for (const [fault, title, expectedTag, expectedCode] of hostileCases) {
   it.effect(`hostile cas-http/0 ${title} fails typed, admits nothing, and releases its socket`, () =>
       Effect.scoped(Effect.gen(function* () {
         const bytes = encodeCasNode(node([7, 7, 7, 7]))
@@ -388,6 +394,10 @@ for (const [fault, title, expectedTag] of hostileCases) {
           expect(first._tag).toBe("CasError/RemoteFailure")
           if (first._tag === "CasError/RemoteFailure") {
             expect(first.cause._tag).toBe(expectedTag)
+            if (!("code" in first.cause)) {
+              return yield* Effect.die(`hostile case ${fault} returned no typed code`)
+            }
+            expect(first.cause.code).toBe(expectedCode)
             if ("completion" in first.cause) {
               expect(first.cause.completion).toBe("possiblyProcessed")
             }
@@ -399,6 +409,56 @@ for (const [fault, title, expectedTag] of hostileCases) {
           expect(endpoint.observe().openSockets).toBe(0)
         }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
       })))
+}
+
+for (const fault of ["contentEncoding", "contentEncodingAck"] as const) {
+  it.effect(`hostile cas-http/0 rejects non-identity content-encoding on ${fault === "contentEncoding" ? "loads" : "acknowledgements"}`, () =>
+    Effect.scoped(Effect.gen(function* () {
+      const resident = node([4, 2, 4, 2])
+      const bytes = encodeCasNode(resident)
+      const endpoint = yield* HostilePeer.serve({ fault, body: bytes })
+      const error = fault === "contentEncoding"
+        ? yield* CasStore.use((store) => store.load(digest(bytes))).pipe(
+            Effect.flip,
+            Effect.provide(remoteLayer(config(endpoint.authority))),
+          )
+        : yield* CasStore.use((store) => store.put(resident)).pipe(
+            Effect.flip,
+            Effect.provide(remoteLayer(config(endpoint.authority))),
+          )
+      expect(error).toMatchObject({
+        _tag: "CasError/RemoteFailure",
+        cause: { _tag: "CasRemoteError/Protocol", code: "invalidHeaders" },
+      })
+      yield* awaitPeerSocketsReleased(endpoint)
+      expect(endpoint.observe().openSockets).toBe(0)
+    })))
+}
+
+for (const fixture of [
+  { fault: "rateLimitedAbsent" as const, retryAfter: undefined },
+  { fault: "rateLimitedDate" as const, retryAfter: undefined },
+  { fault: "rateLimitedNumeric" as const, retryAfter: 17 },
+]) {
+  it.effect(`rate-limit ${fixture.fault} preserves only delta-seconds retry evidence`, () =>
+    Effect.scoped(Effect.gen(function* () {
+      const bytes = encodeCasNode(node([4, 2, 9]))
+      const endpoint = yield* HostilePeer.serve({ fault: fixture.fault, body: bytes })
+      const error = yield* CasStore.use((store) => store.load(digest(bytes))).pipe(
+        Effect.flip,
+        Effect.provide(remoteLayer(config(endpoint.authority))),
+      )
+      expect(error).toMatchObject({
+        _tag: "CasError/RemoteFailure",
+        cause: { _tag: "CasRemoteError/Unavailable", code: "rateLimited" },
+      })
+      if (error._tag === "CasError/RemoteFailure"
+        && error.cause._tag === "CasRemoteError/Unavailable") {
+        expect(error.cause.retryAfter).toBe(fixture.retryAfter)
+      }
+      yield* awaitPeerSocketsReleased(endpoint)
+      expect(endpoint.observe().openSockets).toBe(0)
+    })))
 }
 
 it.effect("hostile cas-http/0 maps 404 to ContentNotFound without remote fallback", () =>
@@ -594,6 +654,8 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
     yield* Effect.gen(function* () {
       const store = yield* CasStore
       const transfer = yield* CasTransfer
+      const putOffset = endpoint.observe().putIds?.length ?? 0
+      const eventOffset = endpoint.observe().events?.length ?? 0
       expect(yield* store.put(child)).toBe(childId)
       expect(yield* store.put(parent)).toBe(parentId)
 
@@ -606,6 +668,12 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
         gets: 2,
         puts: 2,
       })
+      expect(endpoint.observe().putIds?.slice(putOffset)).toEqual([childId, parentId])
+      expect(endpoint.observe().events?.slice(eventOffset)).toEqual([
+        `put:${childId}`,
+        `put:${parentId}`,
+        `publish:${parentId}`,
+      ])
 
       // The registry PUT is idempotent for an identical root and closure.
       yield* transfer.publish(parentId, [childId])
@@ -1151,9 +1219,27 @@ layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => 
           const normalized = normalizeDecision(tagged)
           return { ...normalized, op: normalized.op - operationIdOffset }
         }),
+        state: {
+          cacheSize: observed.cacheSize,
+          confirmedSize: observed.confirmedSize,
+          inFlightSize: observed.inFlightSize,
+          publishedSize: observed.publishedSize,
+          rejectedSize: observed.rejectedSize,
+          reportedMissingSize: observed.reportedMissingSize,
+          reportedPresentSize: observed.reportedPresentSize,
+        },
       }).toEqual({
         scenario: scenario.name,
         decisions: expectedDecisions,
+        state: {
+          cacheSize: HashSet.size(expectedState.cache),
+          confirmedSize: HashSet.size(expectedState.confirmed),
+          inFlightSize: HashMap.size(expectedState.inFlight),
+          publishedSize: HashSet.size(expectedState.published),
+          rejectedSize: HashSet.size(expectedState.rejected),
+          reportedMissingSize: HashSet.size(expectedState.reportedMissing),
+          reportedPresentSize: HashSet.size(expectedState.reportedPresent),
+        },
       })
     }
     }).pipe(Effect.provide(TestCrypto)))
@@ -1203,6 +1289,56 @@ it.effect("rate-limit evidence retains the Schema-decoded retry-after value", ()
       },
     })
   }).pipe(Effect.provide(TestCrypto)))
+
+it.effect("nested fetch causes retain connection-reset classification", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const remoteConfig = config("http://127.0.0.1:1")
+    const client = HttpClient.make((request) => Effect.fail(
+      new HttpClientError.HttpClientError({
+        reason: new HttpClientError.TransportError({
+          request,
+          cause: Object.assign(new TypeError("fetch failed"), {
+            cause: { code: "ECONNRESET" },
+          }),
+        }),
+      }),
+    ))
+    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
+      Effect.provideService(HttpClient.HttpClient, client),
+    )
+    const address = yield* makeSha256Address
+    const error = yield* makeRemoteAdapter(remoteConfig, transport, address).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Unavailable",
+      code: "connectionReset",
+    })
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("a non-fetch client cannot return a response from another origin", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const remoteConfig = config("http://127.0.0.1:1")
+    const capabilities = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
+    const foreignRequest = HttpClientRequest.get("https://foreign.invalid/control/capabilities")
+    const client = HttpClient.make(() => Effect.succeed(HttpClientResponse.fromWeb(
+      foreignRequest,
+      new Response(null, {
+        status: 200,
+        headers: {
+          "content-type": "application/octet-stream",
+          "content-length": String(capabilities.length),
+        },
+      }),
+    )))
+    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
+      Effect.provideService(HttpClient.HttpClient, client),
+    )
+    const address = yield* makeSha256Address
+    const error = yield* makeRemoteAdapter(remoteConfig, transport, address).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Protocol",
+      code: "invalidHeaders",
+    })
+  }).pipe(Effect.provide(TestCrypto))))
 
 it.effect("offline puts are observably distinct from local-authoritative admission", () => {
   const authority = RemoteAuthority.make("http://127.0.0.1:1")

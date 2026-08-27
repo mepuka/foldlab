@@ -596,7 +596,7 @@ export const makeRemoteAdapter = (
     attemptId: number,
     result: MResult<ContentId, Uint8Array>,
     exchange: Exchange | undefined,
-    budget?: {
+    budget: {
       readonly stage: RemoteBudgetError["stage"]
       readonly observed: number
       readonly bound: number
@@ -610,11 +610,9 @@ export const makeRemoteAdapter = (
         return Effect.fail(remoteBudget(
           config,
           opId,
-          budget?.stage ?? "decoded",
-          budget?.observed ?? (exchange?.event._tag === "Ok"
-            ? exchange.event.declared
-            : config.maxDecodedBytes + 1),
-          budget?.bound ?? config.maxDecodedBytes,
+          budget.stage,
+          budget.observed,
+          budget.bound,
           attemptId,
         ))
       case "IntegrityRejected":
@@ -646,9 +644,9 @@ export const makeRemoteAdapter = (
         return Effect.fail(remoteBudget(
           config,
           opId,
-          budget?.stage ?? "keys",
-          budget?.observed ?? 0,
-          budget?.bound ?? 0,
+          budget.stage,
+          budget.observed,
+          budget.bound,
           attemptId,
         ))
       case "BatchRejected":
@@ -666,7 +664,13 @@ export const makeRemoteAdapter = (
       case "BatchFailed":
         return failureFromExchange(opId, attemptId, exchange)
       case "OrderingRefused":
-        return Effect.fail(remotePolicy(config, opId, "publishUnconfirmed"))
+        return Effect.fail(remotePolicy(
+          config,
+          opId,
+          "publishUnconfirmed",
+          "knownUnprocessed",
+          attemptId,
+        ))
       case "PublishFailed":
         return exchange?.event._tag === "IntegrityMismatch"
           ? Effect.fail(remoteIntegrity(
@@ -695,7 +699,7 @@ export const makeRemoteAdapter = (
     attemptId: number,
     result: MResult<ContentId, Uint8Array>,
     exchange: Exchange | undefined,
-    budget?: {
+    budget: {
       readonly stage: RemoteBudgetError["stage"]
       readonly observed: number
       readonly bound: number
@@ -815,7 +819,11 @@ export const makeRemoteAdapter = (
     }, { key, bytes, valid: rechecked === key }, config.maxEncodedBytes)
 
     if (answered.result._tag !== "Uploaded") {
-      return yield* resultError(opId, attemptId, answered.result, exchange)
+      return yield* resultError(opId, attemptId, answered.result, exchange, {
+        stage: "encoded",
+        observed: bytes.length,
+        bound: config.maxEncodedBytes,
+      })
     }
     const admitted = yield* localStore.put(node)
     if (admitted !== key) {
@@ -838,7 +846,11 @@ export const makeRemoteAdapter = (
       op: { _tag: "Load", key: id },
     }, undefined, config.maxDecodedBytes)
     if (requested.result._tag !== "Commanded") {
-      return yield* resultError(opId, 1, requested.result, undefined)
+      return yield* resultError(opId, 1, requested.result, undefined, {
+        stage: "decoded",
+        observed: 0,
+        bound: config.maxDecodedBytes,
+      })
     }
 
     const command = requested.commands[0]?.command
@@ -856,7 +868,11 @@ export const makeRemoteAdapter = (
         id: opId,
         event: exchange.event,
       }, undefined, config.maxDecodedBytes)
-      return yield* resultError(opId, 1, answered.result, exchange)
+      return yield* resultError(opId, 1, answered.result, exchange, {
+        stage: "decoded",
+        observed: exchange.witness.receivedBytes,
+        bound: config.maxDecodedBytes,
+      })
     }
 
     const bytes = exchange.event.bytes
@@ -900,7 +916,11 @@ export const makeRemoteAdapter = (
       event: exchange.event,
     }, { key: id, bytes, valid: true }, config.maxDecodedBytes)
     if (answered.result._tag !== "Delivered") {
-      return yield* resultError(opId, 1, answered.result, exchange)
+      return yield* resultError(opId, 1, answered.result, exchange, {
+        stage: "decoded",
+        observed: bytes.length,
+        bound: config.maxDecodedBytes,
+      })
     }
     return decoded
   }).pipe(Effect.onInterrupt(() => clearInFlight(
@@ -950,7 +970,11 @@ export const makeRemoteAdapter = (
         event: exchange.event,
       }, undefined, config.maxDecodedBytes, limits.maxBatchKeys)
       if (answered.result._tag !== "BatchAnswered" || exchange.event._tag !== "BatchResult") {
-        return yield* remoteResultError(opId, 1, answered.result, exchange)
+        return yield* remoteResultError(opId, 1, answered.result, exchange, {
+          stage: "keys",
+          observed: keys.length,
+          bound: limits.maxBatchKeys,
+        })
       }
 
       if (exchange.presence !== undefined) return exchange.presence
@@ -998,7 +1022,11 @@ export const makeRemoteAdapter = (
         op: { _tag: "PublishRoot", key: root, closure },
       }, undefined, config.maxEncodedBytes)
       if (requested.result._tag !== "Commanded") {
-        return yield* remoteResultError(opId, 1, requested.result, undefined)
+        return yield* remoteResultError(opId, 1, requested.result, undefined, {
+          stage: "encoded",
+          observed: 4 + 32 * closure.length,
+          bound: config.maxEncodedBytes,
+        })
       }
 
       const command = requested.commands[0]?.command
@@ -1016,7 +1044,11 @@ export const makeRemoteAdapter = (
         event: exchange.event,
       }, undefined, config.maxEncodedBytes)
       if (answered.result._tag !== "Published") {
-        return yield* remoteResultError(opId, 1, answered.result, exchange)
+        return yield* remoteResultError(opId, 1, answered.result, exchange, {
+          stage: "encoded",
+          observed: 4 + 32 * closure.length,
+          bound: config.maxEncodedBytes,
+        })
       }
     }).pipe(Effect.onInterrupt(() => clearInFlight(
       opId,
@@ -1050,7 +1082,6 @@ export const makeRemoteAdapter = (
         ))
       seen.add(id)
       for (const ref of current.refs) {
-        if (seen.has(ref.id)) continue
         const child = yield* localStore.load(ref.id).pipe(
           Effect.mapError((error): CasError => error._tag === "CasError/ContentNotFound"
             ? new DanglingReference({ missing: ref.id })
@@ -1063,6 +1094,7 @@ export const makeRemoteAdapter = (
             actualTag: child.kind.tag,
           })
         }
+        if (seen.has(ref.id)) continue
         yield* visit(ref.id, false, child)
       }
       entries.push({ id, node: current, bytes: encodeCasNode(current) })
@@ -1173,13 +1205,13 @@ export const makeRemoteAdapter = (
             attemptId,
           ))
         }
-        if (buffered > config.maxDecodedBytes) {
+        if (buffered > config.maxEncodedBytes) {
           return Effect.fail(remoteBudget(
             config,
             opId,
-            "decoded",
+            "encoded",
             buffered,
-            config.maxDecodedBytes,
+            config.maxEncodedBytes,
             attemptId,
           ))
         }

@@ -7,7 +7,11 @@ import {
   type SessionState,
   type StepResult,
 } from "../src/replay/Session.ts"
-import { assertFamilyRows, ManifestModel } from "./conformance/harness.ts"
+import {
+  assertFamilyRows,
+  ManifestModel,
+  type FamilyBinding,
+} from "./conformance/harness.ts"
 
 const OutcomeSchema = Schema.Union([
   Schema.TaggedStruct("Success", { value: Schema.String }),
@@ -111,7 +115,7 @@ const StateSummarySchema = Schema.Struct({
   wellFormed: Schema.Boolean,
 })
 
-const ReplayRowSchema = Schema.Struct({
+export const ReplayRowSchema = Schema.Struct({
   case: Schema.String,
   expect: Schema.Struct({
     decisions: Schema.Array(DecisionSchema),
@@ -135,7 +139,7 @@ export type ReplayFamily =
 
 export type ReplayReducer = typeof reduce
 
-const runFixture = (
+export const runReplayFixture = (
   reducer: ReplayReducer,
   initialState: SessionState,
   inputs: ReadonlyArray<Input>,
@@ -163,16 +167,24 @@ const runFixture = (
   }
 }
 
+export const replayFamilyBinding = (
+  family: ReplayFamily,
+): FamilyBinding<ReplayFamily, typeof ReplayRowSchema> => ({
+  family,
+  model: ManifestModel,
+  row: ReplayRowSchema,
+  hasOracle: false,
+})
+
+export const replayRowEvaluator = (reducer: ReplayReducer) =>
+  (row: typeof ReplayRowSchema.Type) => Effect.succeed(
+    runReplayFixture(reducer, row.input.state, row.input.inputs),
+  )
+
 /** Decode the pinned family and compare its trace, per-step results, and
- * final state summary structurally. A supplied reducer lets the direction-2
- * suite prove that each declared mutant makes this same comparator red. */
+ * final state summary structurally. Green and direction-2 lanes deliberately
+ * share replayRowEvaluator, so a mutant can only turn the same comparator red. */
 export const assertFamily = (
   family: ReplayFamily,
   reducer: ReplayReducer = reduce,
-) =>
-  assertFamilyRows({
-    family,
-    model: ManifestModel,
-    row: ReplayRowSchema,
-    hasOracle: false,
-  }, (row) => Effect.succeed(runFixture(reducer, row.input.state, row.input.inputs)))
+) => assertFamilyRows(replayFamilyBinding(family), replayRowEvaluator(reducer))

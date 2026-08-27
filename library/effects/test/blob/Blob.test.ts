@@ -342,6 +342,8 @@ const registerRemoteFixtures = (
         bytes.set([3, 1, 4], CasBlob.ChunkSize * 2)
 
         const putOffset = endpoint.observe().putIds?.length ?? 0
+        const publishOffset = endpoint.observe().publishedRoots?.length ?? 0
+        const eventOffset = endpoint.observe().events?.length ?? 0
         const ref = yield* CasBlob.put(source(bytes, [7, 65_529, 4, 65_532]))
         const root = ContentId.make(ref)
         const graph = new Map<ContentId, CasNodeInput>()
@@ -388,8 +390,8 @@ const registerRemoteFixtures = (
         expect(report.transferred).toEqual([])
         expect(new Set(report.alreadyPresent)).toEqual(new Set(graph.keys()))
         expect(endpoint.observe().puts).toBe(beforePush.puts)
-        expect(endpoint.observe().publishedRoots).toEqual([root])
-        expect(endpoint.observe().events?.at(-1)).toBe(`publish:${root}`)
+        expect(endpoint.observe().publishedRoots?.slice(publishOffset)).toEqual([root])
+        expect(endpoint.observe().events?.slice(eventOffset).at(-1)).toBe(`publish:${root}`)
         yield* awaitPeerSocketsReleased(endpoint)
         expect(endpoint.observe().openSockets).toBe(0)
       }))
@@ -428,4 +430,6 @@ it.effect("remote push refuses a recipe-1 graph when the peer node-body capabili
       bound: CasBlob.ChunkSize + 9,
     })
     expect(result.endpoint.observe().requests).toBe(result.before)
+    yield* awaitPeerSocketsReleased(result.endpoint)
+    expect(result.endpoint.observe().openSockets).toBe(0)
   })))

@@ -1,6 +1,5 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Encoding, Schema } from "effect"
-import { readFile } from "node:fs/promises"
 import {
   Byte,
   CasNodeInput,
@@ -15,6 +14,7 @@ import {
   layerMemory,
   type CasAddress,
 } from "../src/cas/Store.ts"
+import { assertFamilyRows, ManifestModel } from "./conformance/harness.ts"
 
 const Bytes = Schema.Array(Byte)
 const AddressBytes = Bytes.check(Schema.isLengthBetween(32, 32))
@@ -30,11 +30,7 @@ const ManifestNode = Schema.Struct({
 })
 type ManifestNode = typeof ManifestNode.Type
 
-const CAS001Manifest = Schema.Struct({
-  family: Schema.Literal("CAS-001"),
-  meaning: Schema.String,
-  model: Schema.Literal("effects-model@0.1.0"),
-  rows: Schema.Array(Schema.Union([
+const CAS001Row = Schema.Union([
     Schema.Struct({
       case: Schema.String,
       expect: Schema.Struct({ decoded: Schema.Null }),
@@ -45,14 +41,9 @@ const CAS001Manifest = Schema.Struct({
       expect: Schema.Struct({ bytes: Bytes, roundtrip: Schema.Boolean }),
       input: Schema.Struct({ node: ManifestNode }),
     }),
-  ])),
-})
+  ])
 
-const CAS002Manifest = Schema.Struct({
-  family: Schema.Literal("CAS-002"),
-  meaning: Schema.String,
-  model: Schema.Literal("effects-model@0.1.0"),
-  rows: Schema.Array(Schema.Struct({
+const CAS002Row = Schema.Struct({
     case: Schema.String,
     expect: Schema.Union([
       Schema.Struct({ admitted: Schema.Literal(true) }),
@@ -76,8 +67,21 @@ const CAS002Manifest = Schema.Struct({
         node: ManifestNode,
       })),
     }),
-  })),
-})
+  })
+
+const CAS001Binding = {
+  family: "CAS-001",
+  model: ManifestModel,
+  row: CAS001Row,
+  hasOracle: false,
+} as const
+
+const CAS002Binding = {
+  family: "CAS-002",
+  model: ManifestModel,
+  row: CAS002Row,
+  hasOracle: false,
+} as const
 
 const contentIdFromBytes = (bytes: ReadonlyArray<number>): ContentId =>
   ContentId.make(Encoding.encodeHex(Uint8Array.from(bytes)))
@@ -98,7 +102,7 @@ const decodeManifestNode = (node: ManifestNode) =>
       id: contentIdFromBytes(ref.addr),
       expectedTag: ref.expectedTag,
     })),
-  })
+  }).pipe(Effect.orDie)
 
 const manifestNodeFromCas = (node: CasNodeInput): ManifestNode => ({
   payload: Array.from(node.payload),
@@ -161,21 +165,9 @@ const mappedAddress = (
   },
 })
 
-const readJson = (url: URL): Effect.Effect<unknown> =>
-  Effect.promise(async () => {
-    const text = await readFile(url, "utf8")
-    const json: unknown = JSON.parse(text)
-    return json
-  })
-
 it.effect("CAS-001 consumes every ratified CODEC row structurally", () =>
-  Effect.gen(function* () {
-    const json = yield* readJson(
-      new URL("../conformance/manifest/CAS-001.json", import.meta.url),
-    )
-    const manifest = yield* Schema.decodeUnknownEffect(CAS001Manifest)(json)
-
-    for (const row of manifest.rows) {
+  assertFamilyRows(CAS001Binding, (row) =>
+    Effect.gen(function* () {
       if ("node" in row.input) {
         const node = yield* decodeManifestNode(row.input.node)
         const encoded = encodeCasNode(node)
@@ -184,31 +176,19 @@ it.effect("CAS-001 consumes every ratified CODEC row structurally", () =>
           bytes: Array.from(encoded),
           roundtrip: decoded !== undefined && nodesEqual(decoded, node),
         }
-        expect({ case: row.case, result: actual }).toEqual({
-          case: row.case,
-          result: row.expect,
-        })
+        return actual
       } else {
         const decoded = decodeCasNode(Uint8Array.from(row.input.bytes))
         const actual = {
           decoded: decoded === undefined ? null : manifestNodeFromCas(decoded),
         }
-        expect({ case: row.case, result: actual }).toEqual({
-          case: row.case,
-          result: row.expect,
-        })
+        return actual
       }
-    }
-  }))
+    })))
 
 it.effect("CAS-002 consumes every ratified REJECTION-CLAUSE row structurally", () =>
-  Effect.gen(function* () {
-    const json = yield* readJson(
-      new URL("../conformance/manifest/CAS-002.json", import.meta.url),
-    )
-    const manifest = yield* Schema.decodeUnknownEffect(CAS002Manifest)(json)
-
-    for (const [rowIndex, row] of manifest.rows.entries()) {
+  assertFamilyRows(CAS002Binding, (row) =>
+    Effect.gen(function* () {
       const candidate = yield* decodeManifestNode(row.input.node)
       const residents: Array<{
         readonly id: ContentId
@@ -227,13 +207,13 @@ it.effect("CAS-002 consumes every ratified REJECTION-CLAUSE row structurally", (
       }
       addresses.set(
         Encoding.encodeHex(encodeCasNode(candidate)),
-        contentIdFromBytes(Array(32).fill(rowIndex + 2)),
+        contentIdFromBytes(Array(32).fill(0xfe)),
       )
 
       const actual = yield* Effect.gen(function* () {
         const store = yield* CasStore
         for (const resident of residents) {
-          const id = yield* store.put(resident.node)
+          const id = yield* store.put(resident.node).pipe(Effect.orDie)
           expect(id).toBe(resident.id)
         }
         return yield* store.put(candidate).pipe(Effect.match({
@@ -242,12 +222,8 @@ it.effect("CAS-002 consumes every ratified REJECTION-CLAUSE row structurally", (
         }))
       }).pipe(Effect.provide(layerMemory(mappedAddress(addresses))))
 
-      expect({ case: row.case, result: actual }).toEqual({
-        case: row.case,
-        result: row.expect,
-      })
-    }
-  }))
+      return actual
+    })))
 
 it.effect("the in-memory adapter re-verifies load and names caller-requested misses", () => {
   const firstId = contentIdFromBytes(Array(32).fill(0x11))

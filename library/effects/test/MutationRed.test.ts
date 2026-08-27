@@ -1,10 +1,12 @@
 import { expect, it } from "@effect/vitest"
 import { Effect } from "effect"
 import {
-  assertFamily,
+  replayFamilyBinding,
+  replayRowEvaluator,
   type ReplayFamily,
   type ReplayReducer,
 } from "./ReplayFixtures.ts"
+import { assertFamilyRed } from "./conformance/harness.ts"
 import {
   meaning as cmp002Meaning,
   mutant as cmp002,
@@ -38,30 +40,34 @@ const assertRed = (
   family: ReplayFamily,
   meaning: string,
   mutant: ReplayReducer,
+  namedWitness: string,
 ) =>
   Effect.gen(function* () {
     expect(meaning.length).toBeGreaterThan(0)
-    const exit = yield* Effect.exit(assertFamily(family, mutant))
-    expect(exit._tag).toBe("Failure")
+    const witnesses = yield* assertFamilyRed(
+      replayFamilyBinding(family),
+      replayRowEvaluator(mutant),
+    )
+    expect(witnesses).toContain(namedWitness)
   })
 
 it.effect("RPL-002 mutant suite is RED under live fallback", () =>
-  assertRed("RPL-002", rpl002Meaning, rpl002))
+  assertRed("RPL-002", rpl002Meaning, rpl002, "replay-mismatch-stays-hermetic-001"))
 
 it.effect("RPL-003 mutant suite is RED under zero consumption", () =>
-  assertRed("RPL-003", rpl003Meaning, rpl003))
+  assertRed("RPL-003", rpl003Meaning, rpl003, "exact-match-consumes-one-000"))
 
 it.effect("RPL-004 mutant suite is RED under mismatch consumption", () =>
-  assertRed("RPL-004", rpl004Meaning, rpl004))
+  assertRed("RPL-004", rpl004Meaning, rpl004, "reject-operation-mismatch-000"))
 
 it.effect("RPL-005 mutant suite is RED under suffix acceptance", () =>
-  assertRed("RPL-005", rpl005Meaning, rpl005))
+  assertRed("RPL-005", rpl005Meaning, rpl005, "suffix-rejected-with-terminal-000"))
 
 it.effect("SES-001 mutant suite is RED under append past abort", () =>
-  assertRed("SES-001", ses001Meaning, ses001))
+  assertRed("SES-001", ses001Meaning, ses001, "append-failure-truncates-000"))
 
 it.effect("SES-002 mutant suite is RED under cursor unpinning", () =>
-  assertRed("SES-002", ses002Meaning, ses002))
+  assertRed("SES-002", ses002Meaning, ses002, "wf-preserved-record-000"))
 
 it.effect("CMP-002 mutant suite is RED under identical occurrence collapse", () =>
-  assertRed("CMP-002", cmp002Meaning, cmp002))
+  assertRed("CMP-002", cmp002Meaning, cmp002, "repeated-occurrence-distinct-000"))

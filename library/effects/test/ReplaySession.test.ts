@@ -2,10 +2,13 @@ import { expect, it } from "@effect/vitest"
 import {
   Clock,
   Context,
+  Deferred,
   Effect,
   Encoding,
+  Fiber,
   Layer,
   Random,
+  Ref,
   Schedule,
   Schema,
 } from "effect"
@@ -15,6 +18,7 @@ import {
   type CasError,
 } from "../src/cas/Node.ts"
 import {
+  decodeCasNode,
   layerMemory,
   type CasAddress,
 } from "../src/cas/Store.ts"
@@ -29,6 +33,10 @@ import {
   replayable,
   type Live,
 } from "../src/replay/ServiceAdapter.ts"
+import {
+  decodeWitness,
+  StoredWitness,
+} from "../src/internal/storage.ts"
 
 class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>()(
   "Rates/QuoteUnavailable",
@@ -108,26 +116,56 @@ const callerProgram: Effect.Effect<
 interface TrackingAddress {
   readonly address: CasAddress
   readonly latestHistory: () => ContentId | undefined
+  readonly historyDepth: (root: ContentId) => number
+  readonly witnessedOutcomes: () => ReadonlyArray<StoredWitness["outcome"]>
 }
 
-const trackingAddress = (): TrackingAddress => {
+const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
   const ids = new Map<string, ContentId>()
+  const historyParents = new Map<ContentId, ContentId | undefined>()
+  const witnessedOutcomes: Array<StoredWitness["outcome"]> = []
   let next = 1n
   let latestHistory: ContentId | undefined
   return {
     address: {
-      digest: (canonicalBytes) =>
-        Effect.sync(() => {
+      digest: (canonicalBytes) => {
+        const calculate = Effect.sync(() => {
           const key = Encoding.encodeHex(canonicalBytes)
           const resident = ids.get(key)
           if (resident !== undefined) return resident
           const id = ContentId.make((next++).toString(16).padStart(64, "0"))
           ids.set(key, id)
-          if (canonicalBytes[1] === 0x48) latestHistory = id
+          const decoded = decodeCasNode(canonicalBytes)
+          if (decoded?.kind.tag === 0x48) {
+            latestHistory = id
+            historyParents.set(id, decoded.refs[0]?.id)
+          }
+          if (decoded?.kind.tag === 0x57) {
+            const witness = Schema.decodeUnknownSync(StoredWitness)(
+              decodeWitness(decoded.payload),
+            )
+            witnessedOutcomes.push(witness.outcome)
+          }
           return id
-        }),
+        })
+        return yieldHistoryDigest && canonicalBytes[1] === 0x48
+          ? Effect.yieldNow.pipe(Effect.andThen(calculate))
+          : calculate
+      },
     },
     latestHistory: () => latestHistory,
+    historyDepth: (root) => {
+      let depth = 0
+      let current: ContentId | undefined = root
+      const seen = new Set<ContentId>()
+      while (current !== undefined && !seen.has(current)) {
+        seen.add(current)
+        depth += 1
+        current = historyParents.get(current)
+      }
+      return depth
+    },
+    witnessedOutcomes: () => witnessedOutcomes,
   }
 }
 
@@ -184,6 +222,125 @@ it.effect("CTX-001 runs one caller program through live, record, and replay laye
     )
     expect(replayed.outcome).toEqual(recorded.outcome)
     expect(fake.invocations()).toBe(4)
+  }).pipe(Effect.provide(runtimeLayer(tracked.address)))
+})
+
+it.effect("concurrent record appends serialize one durable two-occurrence history", () => {
+  const tracked = trackingAddress(true)
+  const kit = replayable(Rates, RatesDescriptions)
+
+  return Effect.gen(function* () {
+    const bothStarted = yield* Deferred.make<void>()
+    const starts = yield* Ref.make(0)
+    const live = Rates.of({
+      quote: () => Effect.gen(function* () {
+        const count = yield* Ref.updateAndGet(starts, (value) => value + 1)
+        if (count === 2) yield* Deferred.succeed(bothStarted, undefined)
+        yield* Deferred.await(bothStarted)
+        return 3
+      }),
+    })
+    const concurrent = Rates.use((rates) =>
+      Effect.all([
+        rates.quote("EUR"),
+        rates.quote("EUR"),
+      ], { concurrency: 2 }))
+
+    const recorded = yield* session(concurrent.pipe(
+      Effect.provide(kit.record),
+      Effect.provideService(kit.live, live),
+    ), { mode: "record" })
+    if (recorded.history === undefined) {
+      return yield* Effect.die("concurrent recording returned no history")
+    }
+    expect(tracked.historyDepth(recorded.history)).toBe(2)
+
+    const replayed = yield* session(
+      concurrent.pipe(Effect.provide(kit.replay)),
+      { mode: "replay", history: recorded.history },
+    )
+    expect(replayed.outcome).toEqual(recorded.outcome)
+    expect(replayed.history).toBe(recorded.history)
+  }).pipe(Effect.provide(runtimeLayer(tracked.address)))
+})
+
+it.effect("defects and caller interruption persist aborted-attempt witnesses", () => {
+  const tracked = trackingAddress()
+  const kit = replayable(Rates, RatesDescriptions, makeFake().service)
+
+  return Effect.gen(function* () {
+    const defectExit = yield* session(
+      Rates.use((rates) => rates.quote("EUR")).pipe(
+        Effect.andThen(Effect.die("handler-after-record defect")),
+        Effect.provide(kit.record),
+      ),
+      { mode: "record" },
+    ).pipe(Effect.exit)
+    expect(defectExit._tag).toBe("Failure")
+
+    const parked = yield* Deferred.make<void>()
+    const interruptible = session(
+      Rates.use((rates) => rates.quote("USD")).pipe(
+        Effect.tap(() => Deferred.succeed(parked, undefined)),
+        Effect.andThen(Effect.never),
+        Effect.provide(kit.record),
+      ),
+      { mode: "record" },
+    )
+    const fiber = yield* interruptible.pipe(Effect.forkChild)
+    yield* Deferred.await(parked)
+    yield* Fiber.interrupt(fiber)
+    const interrupted = yield* Fiber.await(fiber)
+    expect(interrupted._tag).toBe("Failure")
+    expect(tracked.witnessedOutcomes()).toEqual([
+      { _tag: "Aborted", reason: "Defect" },
+      { _tag: "Aborted", reason: "Interrupted" },
+    ])
+  }).pipe(Effect.provide(runtimeLayer(tracked.address)))
+})
+
+interface HostValueShape {
+  readonly value: (kind: string) => Effect.Effect<unknown>
+}
+
+class HostValue extends Context.Service<HostValue, HostValueShape>()(
+  "test/effect-replay/HostValue",
+) {}
+
+const HostValueDescriptions = {
+  value: {
+    id: "test/HostValue/value",
+    revision: 0,
+    request: Schema.String,
+    success: Schema.Unknown,
+    failure: Schema.Never,
+    leafReplay: "substitutable",
+  },
+} satisfies ServiceDescriptions<HostValueShape>
+
+it.effect("recording rejects Date, Map, and Set values before a replay artifact is admitted", () => {
+  const tracked = trackingAddress()
+  const values = new Map<string, unknown>([
+    ["Date", new Date(0)],
+    ["Map", new Map([["key", "value"]])],
+    ["Set", new Set(["value"])],
+  ])
+  const kit = replayable(HostValue, HostValueDescriptions, HostValue.of({
+    value: (kind) => Effect.succeed(values.get(kind)),
+  }))
+
+  return Effect.gen(function* () {
+    for (const kind of values.keys()) {
+      const failure = yield* session(
+        HostValue.use((service) => service.value(kind)).pipe(Effect.provide(kit.record)),
+        { mode: "record" },
+      ).pipe(Effect.flip)
+      expect(failure).toMatchObject({
+        _tag: "CasError/StoreFailure",
+        reason: expect.stringContaining("plain prototype"),
+      })
+    }
+    expect(tracked.latestHistory()).toBeUndefined()
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })
 

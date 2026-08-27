@@ -22,6 +22,11 @@ export const HostileFault = Schema.Literals([
   "cancellationMidDownload",
   "cancellationMidUpload",
   "redirect",
+  "contentEncoding",
+  "contentEncodingAck",
+  "rateLimitedAbsent",
+  "rateLimitedDate",
+  "rateLimitedNumeric",
   "capabilitiesMissing",
   "capabilitiesTruncated",
   "missingMalformed",
@@ -124,6 +129,28 @@ export const HostilePeer: ConformancePeer = {
             ]))
             return
           }
+          if (fault === "rateLimitedAbsent"
+            || fault === "rateLimitedDate"
+            || fault === "rateLimitedNumeric") {
+            const retryAfter = fault === "rateLimitedDate"
+              ? [["Retry-After", "Wed, 21 Oct 2015 07:28:00 GMT"]] as const
+              : fault === "rateLimitedNumeric"
+              ? [["Retry-After", "17"]] as const
+              : []
+            socket.end(headers("429 Too Many Requests", [
+              ["Content-Length", "0"],
+              ...retryAfter,
+            ]))
+            return
+          }
+          if (fault === "contentEncodingAck" && isPut) {
+            socket.end(headers("201 Created", [
+              ["Content-Type", "application/octet-stream"],
+              ["Content-Encoding", "gzip"],
+              ["Content-Length", "0"],
+            ]))
+            return
+          }
           if (fault === "declaredOversize") {
             socket.end(headers("200 OK", [
               ["Content-Type", "application/octet-stream"],
@@ -203,6 +230,9 @@ export const HostilePeer: ConformancePeer = {
           stats.bodyBytesWritten += payload.length
           socket.write(headers("200 OK", [
             ["Content-Type", "application/octet-stream"],
+            ...(fault === "contentEncoding"
+              ? [["Content-Encoding", "gzip"]] as const
+              : []),
             ["Content-Length", String(declared)],
           ]))
           socket.end(payload)

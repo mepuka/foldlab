@@ -10,6 +10,7 @@
  * modeled defect semantics.
  */
 import {
+  Cause,
   Clock,
   Context,
   Data,
@@ -19,6 +20,7 @@ import {
   References,
   Ref,
   Schema,
+  Semaphore,
 } from "effect"
 import {
   CasNodeInput,
@@ -288,10 +290,17 @@ const makeStoredTerminal = <A, E>(
         _tag: "Succeeded" as const,
         value: encodeStoredValue(terminal.value),
       }))
-    : storageEffect("Witness terminal encoding failed", () => ({
-        _tag: "Failed" as const,
-        error: encodeStoredValue(terminal.error),
-      }))
+    : storageEffect("Witness terminal encoding failed", () => {
+        const error = terminal.error instanceof Error
+            && "_tag" in terminal.error
+            && typeof terminal.error._tag === "string"
+          ? Object.fromEntries(Object.entries(terminal.error))
+          : terminal.error
+        return {
+          _tag: "Failed" as const,
+          error: encodeStoredValue(error),
+        }
+      })
 
 const makeStoredOutcome = <A, E>(
   outcome: SessionOutcome<A, E>,
@@ -348,6 +357,38 @@ const persistWitness = <A, E>(
     return yield* store.put(node)
   })
 
+const persistAbortedWitness = (
+  store: CasStoreShape,
+  executionId: string,
+  active: ActiveSession,
+  reason: "Defect" | "Interrupted",
+): Effect.Effect<ContentId, CasError> =>
+  Effect.gen(function* () {
+    const witness = yield* StoredWitness.makeEffect({
+      mode: active.state.mode,
+      executionId,
+      consumed: active.state.cursor,
+      trace: active.trace,
+      outcome: { _tag: "Aborted", reason },
+      ...(active.historyRoot === undefined ? {} : { historyRoot: active.historyRoot }),
+    }).pipe(
+      Effect.mapError((issue) => new StoreFailure({
+        reason: `Aborted witness validation failed: ${String(issue)}`,
+      })),
+    )
+    const payload = yield* storageEffect(
+      "Aborted witness encoding failed",
+      () => encodeWitness(witness),
+    )
+    return yield* store.put(CasNodeInput.make({
+      kind: { version: 0, tag: WitnessKindTag },
+      payload,
+      refs: active.historyRoot === undefined
+        ? []
+        : [{ id: active.historyRoot, expectedTag: HistoryKindTag }],
+    }))
+  })
+
 const sessionResult = <A, E>(
   active: ActiveSession,
   outcome: SessionOutcome<A, E>,
@@ -366,13 +407,14 @@ const sessionResult = <A, E>(
 const appendRecordedOutcome = <D extends AnyOperationDescription>(
   store: CasStoreShape,
   activeRef: Ref.Ref<ActiveSession>,
+  appendLock: Semaphore.Semaphore,
   operation: D,
   invocation: Invocation<string, string>,
   outcome:
     | { readonly _tag: "Success"; readonly value: D["success"]["Type"] }
     | { readonly _tag: "Failure"; readonly error: D["failure"]["Type"] },
 ): Effect.Effect<void> =>
-  Effect.gen(function* () {
+  appendLock.withPermit(Effect.gen(function* () {
     const active = yield* Ref.get(activeRef)
     let stored: Outcome<string, string>
     if (outcome._tag === "Success") {
@@ -435,11 +477,13 @@ const appendRecordedOutcome = <D extends AnyOperationDescription>(
       activeRef,
       appendDecisions(active, appended.state, appended.decisions, root),
     )
-  })
+  }))
 
 const invokeInSession = <D extends AnyOperationDescription>(
   store: CasStoreShape,
   activeRef: Ref.Ref<ActiveSession>,
+  appendLock: Semaphore.Semaphore,
+  replayLock: Semaphore.Semaphore,
   operation: D,
   request: D["request"]["Type"],
 ): Effect.Effect<D["success"]["Type"], D["failure"]["Type"]> =>
@@ -455,16 +499,19 @@ const invokeInSession = <D extends AnyOperationDescription>(
     }
 
     if (active.state.mode === "record") {
-      const invoked = reduce(active.state, { _tag: "Invoke", invocation })
+      const invoked = yield* Ref.modify(activeRef, (current) => {
+        const transition = reduce(current.state, { _tag: "Invoke", invocation })
+        return [transition, appendDecisions(
+          current,
+          transition.state,
+          transition.decisions,
+        )] as const
+      })
       if (invoked.result._tag !== "Delegated") {
         return yield* Effect.die(new RuntimeTransport({
           reason: `Record invocation produced ${invoked.result._tag}`,
         }))
       }
-      yield* Ref.set(
-        activeRef,
-        appendDecisions(active, invoked.state, invoked.decisions),
-      )
 
       const handler = liveHandler(operation)
       if (handler === undefined) {
@@ -476,12 +523,12 @@ const invokeInSession = <D extends AnyOperationDescription>(
       return yield* handler(request).pipe(
         Effect.matchEffect({
           onFailure: (error) =>
-            appendRecordedOutcome(store, activeRef, operation, invocation, {
+            appendRecordedOutcome(store, activeRef, appendLock, operation, invocation, {
               _tag: "Failure",
               error,
             }).pipe(Effect.andThen(Effect.fail(error))),
           onSuccess: (value) =>
-            appendRecordedOutcome(store, activeRef, operation, invocation, {
+            appendRecordedOutcome(store, activeRef, appendLock, operation, invocation, {
               _tag: "Success",
               value,
             }).pipe(Effect.as(value)),
@@ -489,52 +536,55 @@ const invokeInSession = <D extends AnyOperationDescription>(
       )
     }
 
-    const replayed = reduce(active.state, { _tag: "Invoke", invocation })
-    if (replayed.result._tag === "Rejected") {
+    return yield* replayLock.withPermit(Effect.gen(function* () {
+      const current = yield* Ref.get(activeRef)
+      const replayed = reduce(current.state, { _tag: "Invoke", invocation })
+      if (replayed.result._tag === "Rejected") {
+        yield* Ref.set(
+          activeRef,
+          appendDecisions(current, replayed.state, replayed.decisions),
+        )
+        return yield* Effect.die(new MismatchTransport({
+          category: replayed.result.category,
+          at: replayed.result.at,
+        }))
+      }
+      if (replayed.result._tag !== "Substituted") {
+        return yield* Effect.die(new RuntimeTransport({
+          reason: `Replay invocation produced ${replayed.result._tag}`,
+        }))
+      }
+
+      const recorded = replayed.result.outcome
+      const encoded = recorded._tag === "Success" ? recorded.value : recorded.error
+      if (typeof encoded !== "string") {
+        return yield* rejectForMismatch(activeRef, current, "OutcomeInadmissible")
+      }
+
+      if (recorded._tag === "Success") {
+        const value = yield* rejectOnCasFailure(
+          decodeOperationValue(operation.success, encoded),
+          activeRef,
+          current,
+        )
+        yield* Ref.set(
+          activeRef,
+          appendDecisions(current, replayed.state, replayed.decisions),
+        )
+        return value
+      }
+
+      const error = yield* rejectOnCasFailure(
+        decodeOperationValue(operation.failure, encoded),
+        activeRef,
+        current,
+      )
       yield* Ref.set(
         activeRef,
-        appendDecisions(active, replayed.state, replayed.decisions),
+        appendDecisions(current, replayed.state, replayed.decisions),
       )
-      return yield* Effect.die(new MismatchTransport({
-        category: replayed.result.category,
-        at: replayed.result.at,
-      }))
-    }
-    if (replayed.result._tag !== "Substituted") {
-      return yield* Effect.die(new RuntimeTransport({
-        reason: `Replay invocation produced ${replayed.result._tag}`,
-      }))
-    }
-
-    const recorded = replayed.result.outcome
-    const encoded = recorded._tag === "Success" ? recorded.value : recorded.error
-    if (typeof encoded !== "string") {
-      return yield* rejectForMismatch(activeRef, active, "OutcomeInadmissible")
-    }
-
-    if (recorded._tag === "Success") {
-      const value = yield* rejectOnCasFailure(
-        decodeOperationValue(operation.success, encoded),
-        activeRef,
-        active,
-      )
-      yield* Ref.set(
-        activeRef,
-        appendDecisions(active, replayed.state, replayed.decisions),
-      )
-      return value
-    }
-
-    const error = yield* rejectOnCasFailure(
-      decodeOperationValue(operation.failure, encoded),
-      activeRef,
-      active,
-    )
-    yield* Ref.set(
-      activeRef,
-      appendDecisions(active, replayed.state, replayed.decisions),
-    )
-    return yield* Effect.fail(error)
+      return yield* Effect.fail(error)
+    }))
   })
 
 const finishSession = <A, E>(
@@ -599,10 +649,12 @@ const makeReplayRun = (
         historyRoot: options.history,
         trace: [],
       })
+      const appendLock = yield* Semaphore.make(1)
+      const replayLock = yield* Semaphore.make(1)
 
       const scopedReplay = Replay.of({
         invoke: (operation, request) =>
-          invokeInSession(store, activeRef, operation, request),
+          invokeInSession(store, activeRef, appendLock, replayLock, operation, request),
         run,
       })
       const scopedProgram = options.mode === "replay"
@@ -622,7 +674,7 @@ const makeReplayRun = (
           finishSession(store, executionId, activeRef, terminal)),
       )
 
-      return yield* attempted.pipe(
+      const handled = attempted.pipe(
         Effect.catchDefect((defect): Effect.Effect<SessionResult<A, E>, CasError> => {
           if (defect instanceof CasTransport) return Effect.fail(defect.error)
           if (defect instanceof MismatchTransport) {
@@ -647,6 +699,25 @@ const makeReplayRun = (
               )))
           }
           return Effect.die(defect)
+        }),
+      )
+
+      return yield* handled.pipe(
+        Effect.onExit((exit) => {
+          if (exit._tag === "Success") return Effect.void
+          if (!Cause.hasDies(exit.cause) && !Cause.hasInterrupts(exit.cause)) {
+            return Effect.void
+          }
+          const reason = Cause.hasInterrupts(exit.cause)
+            ? "Interrupted" as const
+            : "Defect" as const
+          return Effect.uninterruptible(
+            Ref.get(activeRef).pipe(
+              Effect.flatMap((active) =>
+                persistAbortedWitness(store, executionId, active, reason)),
+              Effect.asVoid,
+            ),
+          )
         }),
       )
     })

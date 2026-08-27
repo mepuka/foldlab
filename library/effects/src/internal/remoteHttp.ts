@@ -33,13 +33,14 @@ const transportFailure = (
       sentBytes: 0,
     }
   }
-  const cause = "cause" in error.reason ? error.reason.cause : undefined
-  const causeCode = typeof cause === "object" && cause !== null && "code" in cause
-    ? cause.code
-    : undefined
-  const causeName = typeof cause === "object" && cause !== null && "name" in cause
-    ? cause.name
-    : undefined
+  let current: unknown = "cause" in error.reason ? error.reason.cause : undefined
+  let causeCode: unknown
+  let causeName: unknown
+  for (let depth = 0; depth < 2 && typeof current === "object" && current !== null; depth += 1) {
+    if (causeCode === undefined && "code" in current) causeCode = current.code
+    if (causeName === undefined && "name" in current) causeName = current.name
+    current = "cause" in current ? current.cause : undefined
+  }
   const code: RemoteTransportFailure["code"] = causeCode === "ECONNRESET"
     ? "connectionReset"
     : causeCode === "ETIMEDOUT"
@@ -90,6 +91,10 @@ const parseNonNegativeInteger = (value: string | undefined): number | undefined 
   return Option.isSome(decoded) && Number.isSafeInteger(decoded.value) ? decoded.value : "invalid"
 }
 
+const unsupportedContentEncoding = (value: string | undefined): boolean =>
+  value !== undefined && value.split(",").some((coding) =>
+    coding.trim().toLowerCase() !== "identity")
+
 const responseEvent = (
   event: Event<ContentId, Uint8Array>,
   sentBytes: number,
@@ -106,10 +111,12 @@ const rateLimitedEvent = (
   sentBytes: number,
 ) => {
   const retryAfter = parseNonNegativeInteger(response.headers["retry-after"])
-  return responseEvent({
-    _tag: "RateLimited",
-    retryAfter: typeof retryAfter === "number" ? retryAfter : 0,
-  }, sentBytes)
+  return responseEvent(
+    typeof retryAfter === "number"
+      ? { _tag: "RateLimited", retryAfter }
+      : { _tag: "RateLimited" },
+    sentBytes,
+  )
 }
 
 const sharedStatusCases = (sentBytes: number) => ({
@@ -126,9 +133,11 @@ const binaryBody = (
   sentBytes: number,
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
   const contentType = response.headers["content-type"]
+  const contentEncoding = response.headers["content-encoding"]
   const declared = parseNonNegativeInteger(response.headers["content-length"])
   if (declared === "invalid"
-    || contentType !== "application/octet-stream") {
+    || contentType !== "application/octet-stream"
+    || unsupportedContentEncoding(contentEncoding)) {
     return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
   }
 
@@ -153,7 +162,6 @@ const binaryBody = (
     ? { _tag: "ResponseStarted" }
     : { _tag: "ResponseStarted", declared }
   const bodyChannel = Channel.flattenArray(body.channel).pipe(
-    Channel.mapError((error) => transportFailure(error, sentBytes, receivedBytes)),
     Channel.concatWith(() => Channel.fromEffectDone(Effect.sync(() =>
       terminal(receivedBytes, sentBytes, framing)
     ))),
@@ -196,8 +204,10 @@ const emptyAcknowledgement = (
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
   const declared = parseNonNegativeInteger(response.headers["content-length"])
   const contentType = response.headers["content-type"]
+  const contentEncoding = response.headers["content-encoding"]
   if (declared === "invalid"
-    || (contentType !== undefined && contentType !== "application/octet-stream")) {
+    || (contentType !== undefined && contentType !== "application/octet-stream")
+    || unsupportedContentEncoding(contentEncoding)) {
     return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
   }
   if (declared !== undefined && declared !== 0) {
@@ -307,6 +317,15 @@ export const makeRemoteHttp = (
             Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
             Effect.mapError((error) => transportFailure(error, prepared.sentBytes)),
             Effect.map((response) => {
+              const expectedOrigin = new URL(config.authority).origin
+              const responseOrigin = new URL(response.request.url).origin
+              if (responseOrigin !== expectedOrigin) {
+                return responseEvent(
+                  { _tag: "Reset" },
+                  prepared.sentBytes,
+                  "invalidHeaders",
+                )
+              }
               switch (command._tag) {
                 case "ProbeCapabilities":
                   return controlResponse(response, prepared.sentBytes, false)
