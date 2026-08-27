@@ -1079,3 +1079,45 @@ Stop and return to grilling if:
   "pending" qualifiers on shipped surfaces (operation descriptions,
   the service kit, the four descriptor entries) were filled with their
   real labels at this review.
+- **R3 ratification (2026-08-27):** the operator ratified the R3
+  opening docket P1–P8 as recommended — presence as planning, closure
+  through the `confirmed` set with gated publish, exact order-sensitive
+  batch accounting, first-class interruption, the key-count budget,
+  the closed capability-document codec, the extended R3 state summary,
+  and the TypeScript discovery-order pull staging area — and the
+  conformance half landed in the same cycle. The machine grew the four
+  R3 state components and the find-missing/publish operations with the
+  R1/R2 arms untouched, so the five committed families regenerate
+  byte-identical; every prior law re-proved over the extended machine.
+  New named theorems: presence never admits (cache, confirmed, and
+  published frozen across any batch-answering event, with the cached,
+  returned, and issued-publish decisions excluded), batch misalignment
+  fails the whole batch closed, no publish issues without the root and
+  its declared closure confirmed (full case-bash exclusion over all
+  inputs), a publish acknowledgment confirms nothing, and interruption
+  admits nothing while erasing the in-flight entry. `ControlCodec`
+  carries the closed capability codec with decode-of-encode identity
+  on representable fields and the exactness theorem — a successful
+  decode's input IS the canonical encoding of its result — whose
+  contrapositive is the RMT-014 fail-closed law. Five schema
+  instances (RMT-005 TRACE-EXCLUDES, RMT-006 FAIL-CLOSED, RMT-007
+  TRACE-EXCLUDES over the entitlement mode, RMT-008 FAIL-CLOSED over
+  interruptions, RMT-014 FAIL-CLOSED over the codec) enter the
+  registry; four schedule families run under the extended renderer
+  (planning, confirmed, and published sizes in the state summary) and
+  the codec family carries its own declared oracle; five mutants
+  (presence-admits, partial-batch, publish-unconfirmed,
+  interrupt-admits, accept-truncated) are declared and killed. Design
+  choices carried in the ratified letter and worth restating: batch
+  accounting is exact ORDER-SENSITIVE per-key accounting — a
+  reordered answer rejects, deliberately, because the request order
+  is the only alignment witness the client controls; a `found`
+  answer's bytes are dropped unverified rather than opportunistically
+  admitted; and the interrupted-at-upload path leaves the terminal
+  rejection memory untouched (interruption is not an integrity
+  verdict). The R3 codex packet — the discovery-order pull staging
+  area as centerpiece, the machine-mirror catch-up, the control-
+  document Schema codecs, and the adapter counterparts — is owed
+  next; RMT rows 005–008 and 014 flip green on the Lean side at this
+  landing with their TypeScript evidence columns filling at the
+  delivery review.

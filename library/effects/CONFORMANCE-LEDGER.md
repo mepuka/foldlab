@@ -33,16 +33,16 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RMT-002 | instantiated (FAIL-CLOSED) |
 | RMT-003 | instantiated (TRACE-EXCLUDES) |
 | RMT-004 | instantiated (EXACT-STEP) |
-| RMT-005 | pending — TRACE-EXCLUDES instance at R3 |
-| RMT-006 | pending — FAIL-CLOSED instance at R3 |
-| RMT-007 | pending — TRACE-EXCLUDES instance at R3 |
-| RMT-008 | pending — FAIL-CLOSED instance at R3 |
+| RMT-005 | instantiated (TRACE-EXCLUDES) |
+| RMT-006 | instantiated (FAIL-CLOSED) |
+| RMT-007 | instantiated (TRACE-EXCLUDES) |
+| RMT-008 | instantiated (FAIL-CLOSED) |
 | RMT-009 | pending — FAIL-CLOSED instance at R4 |
 | RMT-010 | pending — TRACE-EXCLUDES instance at R4 |
 | RMT-011 | pending — TypeScript evidence at R4 |
 | RMT-012 | pending — TypeScript evidence at R4 |
 | RMT-013 | standing review rule |
-| RMT-014 | pending — FAIL-CLOSED instance at R3 |
+| RMT-014 | instantiated (FAIL-CLOSED) |
 | RMT-015 | instantiated (AGREEMENT) |
 | RMT-016 | pending — AGREEMENT instance at R4 |
 | MRK-001 | instantiated (CODEC) |
@@ -204,17 +204,25 @@ An already-present exact-digest upload resolves as success with zero additional 
 
 No admission or publication decision is taken on a presence answer alone, and absence is never negatively cached by default.
 
+**Sentence:** When the pending input answers an in-flight find-missing operation, no step ever caches: a presence answer is planning data that steers upload scheduling and nothing else — it admits nothing, returns nothing, publishes nothing, and absence is never negatively cached, because no admission reading of the reported-missing set exists at all.
+
 ## RMT-006
 
 A batch response accounts for every requested key per-key; an unaccounted or misaligned key fails the batch closed with no cross-key substitution.
+
+**Sentence:** When a batch response fails exact per-key accounting — every requested key answered once, in request order, nothing extra — the whole batch is rejected with the typed batch rejection and the cache, confirmed, and published sets stay exactly as they were: no per-key answer is partially applied and no answer substitutes across keys.
 
 ## RMT-007
 
 Children upload before parents and the root publishes last; server acceptance of a parent never implies closure.
 
+**Sentence:** When the pending input is not an entitled publish request — the root and every key of its declared closure confirmed by verified acknowledgments or loads, on a free identifier — no step ever issues a publish command: children upload before parents, the root publishes last, the refusal is a typed ordering refusal, and server acceptance of any upload confirms exactly that key, never its children.
+
 ## RMT-008
 
 At any declared interruption point, no partial node is admitted, no root is published, and resources are closed.
+
+**Sentence:** When an interruption arrives for an operation in flight, the step resolves as a typed give-up with the cache, confirmed, and published sets exactly as they were — no partial node is admitted, no root is published, and the in-flight entry is cleared so resources release without semantic residue.
 
 ## RMT-009
 
@@ -239,6 +247,8 @@ Presence-style operations carry a namespace; no global existence query exists on
 ## RMT-014
 
 Batch framing, capability documents, and presence indexes parse fail-closed with the same posture as node bytes.
+
+**Sentence:** When capability-document bytes are not the canonical encoding of representable limits, the closed decoder returns nothing — truncation, oversize fields, and trailing bytes are all rejected with the same fail-closed posture as node bytes, and a successful decode's input is exactly the canonical encoding of its result.
 
 ## RMT-015
 

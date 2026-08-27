@@ -5,6 +5,11 @@ import Effects.Mutants.RMT001_CacheBeforeAdmission
 import Effects.Mutants.RMT002_OversizeAccepted
 import Effects.Mutants.RMT003_RetryUnchangedBytes
 import Effects.Mutants.RMT004_DuplicateUploadTransfers
+import Effects.Mutants.RMT005_PresenceAdmits
+import Effects.Mutants.RMT006_PartialBatch
+import Effects.Mutants.RMT007_PublishUnconfirmed
+import Effects.Mutants.RMT008_InterruptAdmits
+import Effects.Mutants.RMT014_AcceptTruncated
 import Effects.Mutants.RMT015_SubstitutedDelivery
 import Effects.Conformance.ManifestMerkle
 import Effects.Mutants.MRK001_LossyChunk
@@ -51,7 +56,15 @@ def remoteMutants : List (Mutant RStep) :=
   , Effects.Mutants.RMT002OversizeAccepted.mutant
   , Effects.Mutants.RMT003RetryUnchangedBytes.mutant
   , Effects.Mutants.RMT004DuplicateUploadTransfers.mutant
+  , Effects.Mutants.RMT005PresenceAdmits.mutant
+  , Effects.Mutants.RMT006PartialBatch.mutant
+  , Effects.Mutants.RMT007PublishUnconfirmed.mutant
+  , Effects.Mutants.RMT008InterruptAdmits.mutant
   , Effects.Mutants.RMT015SubstitutedDelivery.mutant ]
+
+def controlCodecMutants :
+    List (Mutant (List UInt8 → Option Effects.Remote.Limits)) :=
+  [ Effects.Mutants.RMT014AcceptTruncated.mutant ]
 
 def merkleChunkMutants : List (Mutant ChunkFn) :=
   [ Effects.Mutants.MRK001LossyChunk.mutant ]
@@ -121,6 +134,14 @@ def main : IO UInt32 := do
       survivors := survivors + 1
     else
       IO.println s!"killed {m.id} ({m.attacks})"
+  for m in controlCodecMutants do
+    let model := rmt014RowsRendered Effects.Remote.decodeLimits?
+    let mutated := rmt014RowsRendered m.mutant
+    if model == mutated then
+      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+      survivors := survivors + 1
+    else
+      IO.println s!"killed {m.id} ({m.attacks})"
   for m in merkleChunkMutants do
     let model := merkleChunkRowsRendered realChunk
     let mutated := merkleChunkRowsRendered m.mutant
@@ -151,5 +172,5 @@ def main : IO UInt32 := do
   if survivors > 0 then
     IO.eprintln s!"{survivors} mutation survivor(s); a survivor fails the task"
     return 1
-  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length} declared mutants killed"
+  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + controlCodecMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length} declared mutants killed"
   return 0

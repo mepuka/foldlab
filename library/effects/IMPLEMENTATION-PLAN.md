@@ -969,7 +969,31 @@ declared mutant per falsification case in both directions.
   pulling a reference-carrying root must discover root-first and
   admit children-first — the R2 adapter documents this as a named
   limitation, and the sync-load fixtures' pull planner already
-  models both orders).
+  models both orders). Ratified docket (P1–P8): **P1** presence is
+  planning — batch answers land in advisory `reportedPresent`/
+  `reportedMissing` sets that no admission state ever derives from,
+  a `found` answer's wire bytes are dropped unverified, and no
+  negative cache exists; **P2** closure via `confirmed` — a set grown
+  ONLY by verified upload acknowledgments and verified loads, with
+  publish gated on the root and its declared closure standing
+  confirmed and a publish acknowledgment growing `published` only
+  (server acceptance never implies closure); **P3** batch accounting
+  is exact and order-sensitive — results answer the requested keys
+  one for one in request order, anything else rejects the whole
+  batch closed; **P4** interruption is a first-class wire event
+  resolving any in-flight operation as its typed failure with the
+  in-flight entry erased and every admission component frozen;
+  **P5** the key-count budget checks `findMissing` requests before
+  issue, as a typed rejection; **P6** the capability-document codec
+  is closed and exact (`ControlCodec`: big-endian 32-bit fields,
+  decode-of-encode identity, decode's image IS the canonical
+  encoding); **P7** the R3 vector families run under an extended
+  state summary carrying the planning, confirmed, and published
+  sizes while the R1/R2 families keep the original renderer
+  verbatim; **P8** the TypeScript half stages discovery-order pull
+  on the mirrored machine — root-first discovery, children-first
+  admission through a staging area that never touches the CAS until
+  closure admits.
 - **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`. The standards bind
   the retry obligations: an HTTP retry requires application
   idempotency or evidence the original request was not applied

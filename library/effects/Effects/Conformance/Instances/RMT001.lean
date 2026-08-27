@@ -33,7 +33,8 @@ def rmtParams : Params Nat (List UInt8) :=
 
 /-- The machine state with nothing in flight, cached, or rejected. -/
 def rmtEmpty : MachineState Nat (List UInt8) :=
-  { inFlight := ∅, cache := ∅, rejected := ∅ }
+  { inFlight := ∅, cache := ∅, rejected := ∅, reportedPresent := ∅
+    reportedMissing := ∅, confirmed := ∅, published := ∅ }
 
 private abbrev StI :=
   MachineState Nat (List UInt8) × MInput Nat (List UInt8)

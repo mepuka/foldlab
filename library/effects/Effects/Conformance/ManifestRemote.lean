@@ -2,6 +2,11 @@ import Effects.Conformance.RemoteVectors
 import Effects.Conformance.Instances.RMT002
 import Effects.Conformance.Instances.RMT003
 import Effects.Conformance.Instances.RMT004
+import Effects.Conformance.Instances.RMT005
+import Effects.Conformance.Instances.RMT006
+import Effects.Conformance.Instances.RMT007
+import Effects.Conformance.Instances.RMT008
+import Effects.Conformance.Instances.RMT014
 import Effects.Conformance.Instances.RMT015
 
 /-!
@@ -26,6 +31,13 @@ refinement obligation. The event encoder is total: batch results and
 capability limits encode fully even though no R1 row emits them. State
 summaries carry sizes only — never carrier iteration order — so
 regeneration is byte-stable by construction.
+
+The R3 families run under an EXTENDED row renderer whose state summary
+also carries the presence planning sets, the confirmed set, and the
+published set; the R1/R2 families keep the original renderer verbatim
+so their committed documents regenerate byte-identical. RMT-014 is a
+codec family — input bytes against the closed capability-document
+decoder — with its own declared oracle.
 -/
 
 namespace Effects.Conformance.Manifest
@@ -94,6 +106,13 @@ def opJson : Op Addr32 Bytes → Value
   | .upload key bytes =>
       .obj [ ("_tag", .str "Upload"), ("bytes", bytesJson bytes)
            , ("key", addrJson32 key) ]
+  | .findMissing keys =>
+      .obj [ ("_tag", .str "FindMissing")
+           , ("keys", .arr (keys.map addrJson32)) ]
+  | .publishRoot key closure =>
+      .obj [ ("_tag", .str "PublishRoot")
+           , ("closure", .arr (closure.map addrJson32))
+           , ("key", addrJson32 key) ]
 
 def commandJson : Command Addr32 Bytes → Value
   | .probeCapabilities => .obj [("_tag", .str "ProbeCapabilities")]
@@ -122,6 +141,15 @@ def rDecisionJson : RDecision Addr32 Bytes → Value
   | .repeatRefused key =>
       .obj [("_tag", .str "RepeatRefused"), ("key", addrJson32 key)]
   | .gaveUp key => .obj [("_tag", .str "GaveUp"), ("key", addrJson32 key)]
+  | .presenceNoted found missing =>
+      .obj [ ("_tag", .str "PresenceNoted")
+           , ("found", .arr (found.map addrJson32))
+           , ("missing", .arr (missing.map addrJson32)) ]
+  | .batchRejected => .obj [("_tag", .str "BatchRejected")]
+  | .batchGaveUp => .obj [("_tag", .str "BatchGaveUp")]
+  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson32 key)]
+  | .orderingRefused key =>
+      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson32 key)]
 
 def taggedDecisionJson (d : OpId × RDecision Addr32 Bytes) : Value :=
   .obj [("decision", rDecisionJson d.2), ("op", .nat d.1)]
@@ -148,6 +176,18 @@ def rResultJson : MResult Addr32 Bytes → Value
       .obj [("_tag", .str "AuthFailed"), ("key", addrJson32 key)]
   | .duplicateId => .obj [("_tag", .str "DuplicateId")]
   | .absorbed => .obj [("_tag", .str "Absorbed")]
+  | .batchAnswered found missing =>
+      .obj [ ("_tag", .str "BatchAnswered")
+           , ("found", .arr (found.map addrJson32))
+           , ("missing", .arr (missing.map addrJson32)) ]
+  | .batchRejected => .obj [("_tag", .str "BatchRejected")]
+  | .batchFailed => .obj [("_tag", .str "BatchFailed")]
+  | .keyBudgetRejected => .obj [("_tag", .str "KeyBudgetRejected")]
+  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson32 key)]
+  | .orderingRefused key =>
+      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson32 key)]
+  | .publishFailed key =>
+      .obj [("_tag", .str "PublishFailed"), ("key", addrJson32 key)]
 
 def seqRefJson : SeqRef → Value
   | .opRef index => .obj [("_tag", .str "OpRef"), ("index", .nat index)]
@@ -175,7 +215,8 @@ def remoteRowWith (stepF : RStep) (caseId : String) (sc : Scenario) :
         let o := stepF acc.1 i
         (o.state, acc.2.1 ++ [o.result], acc.2.2.1 ++ o.decisions,
           acc.2.2.2 ++ o.commands))
-      ({ inFlight := ∅, cache := ∅, rejected := ∅ }, [], [], []))
+      ({ inFlight := ∅, cache := ∅, rejected := ∅, reportedPresent := ∅,
+         reportedMissing := ∅, confirmed := ∅, published := ∅ }, [], [], []))
   ( caseId
   , .obj [ ("case", .str caseId)
          , ("expect", .obj
@@ -257,6 +298,148 @@ def rmt015Rows (stepF : RStep) : List (String × Value) :=
         schedule := [(1, .ok smallBytes.length smallBytes)]
         sequence := [.opRef 0, .eventRef 0] } ]
 
+/-! ## R3 rows: the extended renderer and the streaming-sync families -/
+
+/-- One R3 schedule row: identical to `remoteRowWith` except the state
+summary also carries the presence planning sets, the confirmed set,
+and the published set. The R1/R2 renderer stays verbatim so committed
+documents regenerate byte-identical. -/
+def remoteRowWithR3 (stepF : RStep) (caseId : String) (sc : Scenario) :
+    String × Value :=
+  let inputs := sc.inputs
+  let (final, results, decisions, commands) :=
+    (inputs.foldl
+      (fun (acc : RSt × List (MResult Addr32 Bytes) ×
+          List (OpId × RDecision Addr32 Bytes) ×
+          List (OpId × Command Addr32 Bytes)) i =>
+        let o := stepF acc.1 i
+        (o.state, acc.2.1 ++ [o.result], acc.2.2.1 ++ o.decisions,
+          acc.2.2.2 ++ o.commands))
+      ({ inFlight := ∅, cache := ∅, rejected := ∅, reportedPresent := ∅,
+         reportedMissing := ∅, confirmed := ∅, published := ∅ }, [], [], []))
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", .obj
+             [ ("commands", .arr (commands.map taggedCommandJson))
+             , ("decisions", .arr (decisions.map taggedDecisionJson))
+             , ("results", .arr (results.map rResultJson))
+             , ("state", .obj
+                 [ ("cacheSize", .nat final.cache.size)
+                 , ("confirmedSize", .nat final.confirmed.size)
+                 , ("inFlightSize", .nat final.inFlight.size)
+                 , ("publishedSize", .nat final.published.size)
+                 , ("rejectedSize", .nat final.rejected.size)
+                 , ("reportedMissingSize", .nat final.reportedMissing.size)
+                 , ("reportedPresentSize", .nat final.reportedPresent.size) ]) ])
+         , ("input", .obj
+             [ ("ops", .arr (sc.ops.map taggedOpJson))
+             , ("schedule", .arr (sc.schedule.map taggedEventJson))
+             , ("sequence", .arr (sc.sequence.map seqRefJson)) ]) ] )
+
+def rmt005Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWithR3 stepF "batch-missing-noted-not-cached-000"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.missing kGood, .missing kSmall])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "batch-found-bytes-dropped-001"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.found kGood goodBytes, .missing kSmall])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "reported-missing-load-still-issues-002"
+      { ops := [(1, .findMissing [kGood]), (2, .load kGood)]
+        schedule := [(1, .batchResult [.missing kGood])]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1] } ]
+
+def rmt006Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWithR3 stepF "batch-wrong-key-rejected-000"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.missing kBig, .missing kSmall])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "batch-short-answer-rejected-001"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.missing kGood])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "batch-reordered-rejected-002"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.missing kSmall, .missing kGood])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "batch-exact-answered-003"
+      { ops := [(1, .findMissing [kGood, kSmall])]
+        schedule := [(1, .batchResult [.missing kGood, .missing kSmall])]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "batch-over-key-budget-refused-004"
+      { ops := [(1, .findMissing [kGood, kSmall, kBig, kGood, kSmall])]
+        schedule := []
+        sequence := [.opRef 0] } ]
+
+def rmt007Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWithR3 stepF "publish-unconfirmed-root-refused-000"
+      { ops := [(1, .publishRoot kGood [kSmall])]
+        schedule := []
+        sequence := [.opRef 0] }
+  , remoteRowWithR3 stepF "publish-after-closure-confirmed-001"
+      { ops := [ (1, .upload kSmall smallBytes), (2, .upload kGood goodBytes)
+               , (3, .publishRoot kGood [kSmall]) ]
+        schedule := [(1, .ok 0 []), (2, .ok 0 []), (3, .ok 0 [])]
+        sequence := [ .opRef 0, .eventRef 0, .opRef 1, .eventRef 1
+                    , .opRef 2, .eventRef 2 ] }
+  , remoteRowWithR3 stepF "publish-partial-closure-refused-002"
+      { ops := [(1, .upload kGood goodBytes), (2, .publishRoot kGood [kSmall])]
+        schedule := [(1, .ok 0 [])]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1] }
+  , remoteRowWithR3 stepF "publish-ack-confirms-nothing-003"
+      { ops := [ (1, .upload kSmall smallBytes), (2, .publishRoot kSmall [])
+               , (3, .publishRoot kGood [kSmall]) ]
+        schedule := [(1, .ok 0 []), (2, .ok 0 [])]
+        sequence := [ .opRef 0, .eventRef 0, .opRef 1, .eventRef 1
+                    , .opRef 2 ] } ]
+
+def rmt008Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWithR3 stepF "interrupt-load-in-flight-000"
+      { ops := [(1, .load kGood)]
+        schedule := [(1, .interrupted)]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "interrupt-upload-in-flight-001"
+      { ops := [(1, .upload kGood goodBytes)]
+        schedule := [(1, .interrupted)]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "interrupt-batch-in-flight-002"
+      { ops := [(1, .findMissing [kGood])]
+        schedule := [(1, .interrupted)]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWithR3 stepF "interrupt-publish-in-flight-003"
+      { ops := [(1, .upload kSmall smallBytes), (2, .publishRoot kSmall [])]
+        schedule := [(1, .ok 0 []), (2, .interrupted)]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1, .eventRef 1] }
+  , remoteRowWithR3 stepF "interrupt-free-id-absorbed-004"
+      { ops := []
+        schedule := [(9, .interrupted)]
+        sequence := [.eventRef 0] } ]
+
+/-! ## RMT-014 rows: the capability-document codec family -/
+
+/-- One codec row: input bytes against the decoder under test. -/
+def limitsRowWith (decodeF : List UInt8 → Option Limits)
+    (caseId : String) (bytes : List UInt8) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", match decodeF bytes with
+             | some l =>
+                 .obj [("_tag", .str "Decoded"), ("limits", limitsJson l)]
+             | none => .obj [("_tag", .str "Rejected")])
+         , ("input", .obj [("bytes", bytesJson bytes)]) ] )
+
+def rmt014Rows (decodeF : List UInt8 → Option Limits) :
+    List (String × Value) :=
+  [ limitsRowWith decodeF "canonical-decodes-000" (encodeLimits ⟨4, 40⟩)
+  , limitsRowWith decodeF "truncated-rejected-001"
+      ((encodeLimits ⟨4, 40⟩).take 5)
+  , limitsRowWith decodeF "trailing-rejected-002"
+      (encodeLimits ⟨4, 40⟩ ++ [0])
+  , limitsRowWith decodeF "empty-rejected-003" []
+  , limitsRowWith decodeF "max-fields-decode-004"
+      (encodeLimits ⟨4294967295, 4294967295⟩) ]
+
 /-- The declared oracle, named in every remote family document. -/
 def remoteOracle : String :=
   "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter."
@@ -269,6 +452,10 @@ def remoteFamilyManifestAt (version family meaning : String)
        , ("oracle", .str remoteOracle)
        , ("rows", .arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
 
+/-- The capability-document codec oracle. -/
+def controlOracle : String :=
+  "Capability documents are eight canonical bytes — two big-endian 32-bit naturals, the key-count limit then the blob-byte limit — parsed by a closed decoder that rejects truncation and trailing content; a successful decode's input is exactly the canonical encoding of its result."
+
 /-- The remote families with their instance-projected sentences. -/
 def remoteFamilies (stepF : RStep) :
     List (String × String × List (String × Value)) :=
@@ -276,6 +463,10 @@ def remoteFamilies (stepF : RStep) :
   , ("RMT-002", rmt002.sentence, rmt002Rows stepF)
   , ("RMT-003", rmt003.sentence, rmt003Rows stepF)
   , ("RMT-004", rmt004.sentence, rmt004Rows stepF)
+  , ("RMT-005", rmt005.sentence, rmt005Rows stepF)
+  , ("RMT-006", rmt006.sentence, rmt006Rows stepF)
+  , ("RMT-007", rmt007.sentence, rmt007Rows stepF)
+  , ("RMT-008", rmt008.sentence, rmt008Rows stepF)
   , ("RMT-015", rmt015.sentence, rmt015Rows stepF) ]
 
 /-- Rendered rows of one remote family under a step function — the
@@ -286,12 +477,29 @@ def remoteFamilyRowsRendered (stepF : RStep) (family : String) : String :=
       Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
   | none => ""
 
+/-- Rendered rows of the capability-codec family under a decoder — the
+mutation task's comparison unit for RMT-014. -/
+def rmt014RowsRendered (decodeF : List UInt8 → Option Limits) : String :=
+  Json.document (.arr
+    (((rmt014Rows decodeF).mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
+
+/-- The capability-codec family manifest. -/
+def rmt014Manifest : Value :=
+  .obj [ ("family", .str "RMT-014")
+       , ("meaning", .str rmt014.sentence)
+       , ("model", .str modelVersion)
+       , ("oracle", .str controlOracle)
+       , ("rows", .arr
+           (((rmt014Rows decodeLimits?).mergeSort
+             fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
+
 /-- The committed remote manifest files, additive at the declared model
 version. -/
 def remoteFiles : List (String × String) :=
   (remoteFamilies (Effects.Remote.step vecParams)).map
-    fun (family, meaning, rows) =>
+    (fun (family, meaning, rows) =>
       (family ++ ".json", Json.document
-        (remoteFamilyManifestAt modelVersion family meaning rows))
+        (remoteFamilyManifestAt modelVersion family meaning rows)))
+  ++ [("RMT-014.json", Json.document rmt014Manifest)]
 
 end Effects.Conformance.Manifest

@@ -39,7 +39,9 @@ def vecParams : Params Addr32 Bytes :=
     verify := fun k b => decide (toyAddr b = k) }
 
 /-- The machine state with nothing in flight, cached, or rejected. -/
-def vecEmpty : RSt := { inFlight := ∅, cache := ∅, rejected := ∅ }
+def vecEmpty : RSt :=
+  { inFlight := ∅, cache := ∅, rejected := ∅, reportedPresent := ∅
+    reportedMissing := ∅, confirmed := ∅, published := ∅ }
 
 /-! ## Canonical-byte fixtures (from the ratified CAS codec) -/
 

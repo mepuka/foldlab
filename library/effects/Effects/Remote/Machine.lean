@@ -39,6 +39,22 @@ terminal-rejection guards, and emits only the verification decision:
 nothing is newly cached and nothing is delivered, so the ratified
 entitlement guard is untouched. No pre-existing vector row reaches the
 branch; the R1 families regenerate byte-identical.
+
+R3 amendment (batching and closure, per the ratified P-docket):
+presence answers are PLANNING DATA, never admission state — the
+reported-present and reported-missing sets drive upload planning only,
+and no cache, return, or publish decision ever derives from them; a
+batch response must account for every requested key exactly and in
+request order, else the whole batch fails closed with no partial
+application; the `confirmed` set grows ONLY at verified upload
+acknowledgments and verified loads — server acceptance of a parent
+confirms exactly that key, never its children; a root publish issues
+its wire command only when the root and its declared closure are all
+confirmed, else a typed ordering refusal; the interrupted event clears
+the in-flight operation and admits, confirms, and publishes nothing;
+and the key-count budget binds find-missing requests, completing the
+count half the RMT-002 sentence always covered. Old input paths are
+unchanged and the pre-existing families regenerate byte-identical.
 -/
 
 namespace Effects.Remote
@@ -60,12 +76,16 @@ abbrev OpId := Nat
 inductive OpState (K B : Type) where
   | loading (key : K)
   | uploading (key : K) (bytes : B)
+  | findingMissing (keys : List K)
+  | publishing (key : K)
   deriving DecidableEq
 
 /-- A caller-requested operation. -/
 inductive Op (K B : Type) where
   | load (key : K)
   | upload (key : K) (bytes : B)
+  | findMissing (keys : List K)
+  | publishRoot (key : K) (closure : List K)
   deriving DecidableEq
 
 /-- Machine input: a caller request or a scheduled wire event, each
@@ -88,6 +108,13 @@ inductive MResult (K B : Type) where
   | authFailed (key : K)
   | duplicateId
   | absorbed
+  | batchAnswered (found missing : List K)
+  | batchRejected
+  | batchFailed
+  | keyBudgetRejected
+  | published (key : K)
+  | orderingRefused (key : K)
+  | publishFailed (key : K)
   deriving DecidableEq
 
 /-- The decision trace vocabulary. Issued commands are mirrored into the
@@ -103,6 +130,11 @@ inductive RDecision (K B : Type) where
   | integrityRejected (key : K)
   | repeatRefused (key : K)
   | gaveUp (key : K)
+  | presenceNoted (found missing : List K)
+  | batchRejected
+  | batchGaveUp
+  | published (key : K)
+  | orderingRefused (key : K)
   deriving DecidableEq
 
 /-- The tag projection for TRACE-EXCLUDES instances. -/
@@ -120,6 +152,11 @@ inductive RTag where
   | integrityRejected
   | repeatRefused
   | gaveUp
+  | presenceNoted
+  | batchRejected
+  | batchGaveUp
+  | published
+  | orderingRefused
   deriving DecidableEq
 
 def RDecision.tag {K B : Type} : RDecision K B → RTag
@@ -136,15 +173,27 @@ def RDecision.tag {K B : Type} : RDecision K B → RTag
   | .integrityRejected _ => .integrityRejected
   | .repeatRefused _ => .repeatRefused
   | .gaveUp _ => .gaveUp
+  | .presenceNoted _ _ => .presenceNoted
+  | .batchRejected => .batchRejected
+  | .batchGaveUp => .batchGaveUp
+  | .published _ => .published
+  | .orderingRefused _ => .orderingRefused
 
-/-- Machine state: the in-flight operations, the admitted cache, and the
-set of integrity-rejected key-content pairs — the terminal-integrity
-memory, which only ever grows. -/
+/-- Machine state: the in-flight operations, the admitted cache, the
+set of integrity-rejected key-content pairs (the terminal-integrity
+memory, which only ever grows), the presence PLANNING sets (advisory —
+no admission state ever derives from them), the `confirmed` set (grown
+ONLY by verified upload acknowledgments and verified loads), and the
+published roots. -/
 structure MachineState (K B : Type)
     [BEq K] [Hashable K] [BEq B] [Hashable B] where
   inFlight : Std.HashMap OpId (OpState K B)
   cache : Std.HashSet K
   rejected : Std.HashSet (K × B)
+  reportedPresent : Std.HashSet K
+  reportedMissing : Std.HashSet K
+  confirmed : Std.HashSet K
+  published : Std.HashSet K
 
 /-- One step's output: the result, the successor state, and the
 identifier-tagged commands and decisions. -/
@@ -176,7 +225,9 @@ def loadEvent (P : Params K B) (s : MachineState K B) (id : OpId)
         decisions := [(id, .budgetRejected key), (id, .gaveUp key)] }
     else if P.verify key bytes then
       { result := .delivered key bytes
-        state := { s with inFlight := s.inFlight.erase id, cache := s.cache.insert key }
+        state := { s with inFlight := s.inFlight.erase id,
+                          cache := s.cache.insert key,
+                          confirmed := s.confirmed.insert key }
         commands := []
         decisions := [(id, .verified key), (id, .cached key),
                       (id, .returned key)] }
@@ -211,7 +262,9 @@ def uploadEvent (P : Params K B) (s : MachineState K B) (id : OpId)
   | .ok _ _ =>
       if P.verify key bytes then
         { result := .uploaded key
-          state := { s with inFlight := s.inFlight.erase id, cache := s.cache.insert key }
+          state := { s with inFlight := s.inFlight.erase id,
+                            cache := s.cache.insert key,
+                            confirmed := s.confirmed.insert key }
           commands := []
           decisions := [(id, .cached key)] }
       else
@@ -237,6 +290,78 @@ def uploadEvent (P : Params K B) (s : MachineState K B) (id : OpId)
         state := { s with inFlight := s.inFlight.erase id }
         commands := [], decisions := [(id, .gaveUp key)] }
 
+/-- Exact per-key batch accounting: the results answer the requested
+keys one for one, in request order — anything else is misalignment. -/
+def accountsFor [BEq K] : List K → List (KeyStatus K B) → Bool
+  | [], [] => true
+  | k :: ks, r :: rs =>
+    (match r with
+     | .found key _ => key == k
+     | .missing key => key == k
+     | .failed key => key == k) && accountsFor ks rs
+  | _, _ => false
+
+/-- Fold an accounted batch into the presence planning sets and the
+found/missing summary. A `found` answer's bytes are UNVERIFIED wire
+bytes and are deliberately dropped — presence is planning, never
+admission. -/
+def notePresence [BEq K] [Hashable K] (s : MachineState K B) :
+    List (KeyStatus K B) →
+      MachineState K B × List K × List K
+  | [] => (s, [], [])
+  | r :: rs =>
+    let rest := notePresence s rs
+    match r with
+    | .found key _ =>
+        ({ rest.1 with reportedPresent := rest.1.reportedPresent.insert key },
+          key :: rest.2.1, rest.2.2)
+    | .missing key =>
+        ({ rest.1 with reportedMissing := rest.1.reportedMissing.insert key },
+          rest.2.1, key :: rest.2.2)
+    | .failed _ => rest
+
+/-- A find-missing operation's wire event: exact accounting or the
+whole batch fails closed with no partial application. -/
+def batchEvent (s : MachineState K B) (id : OpId)
+    (keys : List K) : Event K B → StepOut K B
+  | .batchResult results =>
+    if accountsFor keys results then
+      let noted := notePresence { s with inFlight := s.inFlight.erase id } results
+      { result := .batchAnswered noted.2.1 noted.2.2
+        state := noted.1
+        commands := []
+        decisions := [(id, .presenceNoted noted.2.1 noted.2.2)] }
+    else
+      { result := .batchRejected
+        state := { s with inFlight := s.inFlight.erase id }
+        commands := []
+        decisions := [(id, .batchRejected)] }
+  | _ =>
+      { result := .batchFailed
+        state := { s with inFlight := s.inFlight.erase id }
+        commands := [], decisions := [(id, .batchGaveUp)] }
+
+/-- A publish operation's wire event: acceptance publishes exactly the
+root — it confirms nothing (server acceptance never implies closure). -/
+def publishEvent (s : MachineState K B) (id : OpId)
+    (key : K) : Event K B → StepOut K B
+  | .ok _ _ =>
+      { result := .published key
+        state := { s with inFlight := s.inFlight.erase id,
+                          published := s.published.insert key }
+        commands := []
+        decisions := [(id, .published key)] }
+  | _ =>
+      { result := .publishFailed key
+        state := { s with inFlight := s.inFlight.erase id }
+        commands := [], decisions := [(id, .gaveUp key)] }
+
+/-- Whether a publish request is entitled to issue: the root and every
+key of its declared closure stand confirmed. -/
+def publishEntitled (s : MachineState K B) (key : K)
+    (closure : List K) : Bool :=
+  s.confirmed.contains key && closure.all (s.confirmed.contains ·)
+
 /-- The total remote client step. -/
 def step (P : Params K B) (s : MachineState K B) :
     MInput K B → StepOut K B
@@ -252,6 +377,25 @@ def step (P : Params K B) (s : MachineState K B) :
             state := { s with inFlight := s.inFlight.insert id (.loading key) }
             commands := [(id, .load key)]
             decisions := [(id, .issued (.load key))] }
+      | .findMissing keys =>
+        if keys.length > P.budgets.maxKeys then
+          { result := .keyBudgetRejected, state := s
+            commands := [], decisions := [(id, .batchRejected)] }
+        else
+          { result := .commanded
+            state := { s with
+                       inFlight := s.inFlight.insert id (.findingMissing keys) }
+            commands := [(id, .findMissing keys)]
+            decisions := [(id, .issued (.findMissing keys))] }
+      | .publishRoot key closure =>
+        if publishEntitled s key closure then
+          { result := .commanded
+            state := { s with inFlight := s.inFlight.insert id (.publishing key) }
+            commands := [(id, .publishRoot key)]
+            decisions := [(id, .issued (.publishRoot key))] }
+        else
+          { result := .orderingRefused key, state := s
+            commands := [], decisions := [(id, .orderingRefused key)] }
       | .upload key bytes =>
         if P.size bytes > P.budgets.maxBytes then
           { result := .budgetRejected key, state := s
@@ -280,6 +424,8 @@ def step (P : Params K B) (s : MachineState K B) :
     | none => absorbOut s
     | some (.loading key) => loadEvent P s id key event
     | some (.uploading key bytes) => uploadEvent P s id key bytes event
+    | some (.findingMissing keys) => batchEvent s id keys event
+    | some (.publishing key) => publishEvent s id key event
 
 /-- Whether this state-and-input pair is entitled to cache or return:
 the wire event answers an in-flight operation with bytes that pass the
@@ -292,6 +438,7 @@ def entitledToCache (P : Params K B) (s : MachineState K B) :
     | some (.loading key) =>
         !(declared > P.budgets.maxBytes) && P.verify key bytes
     | some (.uploading key bytes') => P.verify key bytes'
+    | some _ => false
     | none => false
   | _ => false
 
@@ -306,15 +453,20 @@ def overBudget (P : Params K B) (s : MachineState K B) :
     match s.inFlight[id]? with
     | none => P.size bytes > P.budgets.maxBytes
     | some _ => false
+  | .request id (.findMissing keys) =>
+    match s.inFlight[id]? with
+    | none => keys.length > P.budgets.maxKeys
+    | some _ => false
   | .fromWire id (.ok declared _) =>
     match s.inFlight[id]? with
     | some (.loading _) => declared > P.budgets.maxBytes
     | _ => false
   | _ => false
 
-/-- Whether a result is the budget rejection. -/
+/-- Whether a result is a budget rejection — byte or key count. -/
 def MResult.isBudgetRejection : MResult K B → Bool
   | .budgetRejected _ => true
+  | .keyBudgetRejected => true
   | _ => false
 
 /-- Run the machine over an input list, collecting per-step results,

@@ -43,6 +43,12 @@ theorem RMT_001_no_cache_or_return_without_admission (P : Params K B)
           · split
             · split <;> simp [RDecision.tag]
             · simp [RDecision.tag]
+      | findMissing keys =>
+        simp only [step, hm]
+        split <;> simp [RDecision.tag]
+      | publishRoot key closure =>
+        simp only [step, hm]
+        split <;> simp [RDecision.tag]
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -70,6 +76,14 @@ theorem RMT_001_no_cache_or_return_without_admission (P : Params K B)
             simp [entitledToCache, hm, hverify] at h
           · simp [RDecision.tag]
         | _ => simp [step, hm, uploadEvent, RDecision.tag]
+      | findingMissing keys =>
+        cases e with
+        | batchResult results =>
+          simp only [step, hm, batchEvent]
+          split <;> simp [RDecision.tag]
+        | _ => simp [step, hm, batchEvent, RDecision.tag]
+      | publishing key =>
+        cases e <;> simp [step, hm, publishEvent, RDecision.tag]
 
 /-- RMT-002, rejection half: an over-budget declaration is rejected. -/
 theorem RMT_002_budget_rejects (P : Params K B)
@@ -86,6 +100,13 @@ theorem RMT_002_budget_rejects (P : Params K B)
       | none =>
         simp [overBudget, hm] at h
         simp [step, hm, h, MResult.isBudgetRejection]
+    | findMissing keys =>
+      cases hm : s.inFlight[id]? with
+      | some st => simp [overBudget, hm] at h
+      | none =>
+        simp [overBudget, hm] at h
+        simp [step, hm, h, MResult.isBudgetRejection]
+    | publishRoot key closure => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -96,6 +117,8 @@ theorem RMT_002_budget_rejects (P : Params K B)
         case ok declared bytes =>
           simp [step, hm, loadEvent, h, MResult.isBudgetRejection]
       | uploading key bytes => cases e <;> simp [overBudget, hm] at h
+      | findingMissing keys => cases e <;> simp [overBudget, hm] at h
+      | publishing key => cases e <;> simp [overBudget, hm] at h
 
 /-- RMT-002, exclusion half — the form the obligation means by "before
 any hashing or decoding" at the model's altitude: after an over-budget
@@ -119,6 +142,13 @@ theorem RMT_002_budget_excludes (P : Params K B)
       | none =>
         simp [overBudget, hm] at h
         simp [step, hm, h, RDecision.tag]
+    | findMissing keys =>
+      cases hm : s.inFlight[id]? with
+      | some st => simp [overBudget, hm] at h
+      | none =>
+        simp [overBudget, hm] at h
+        simp [step, hm, h, RDecision.tag]
+    | publishRoot key closure => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -129,6 +159,8 @@ theorem RMT_002_budget_excludes (P : Params K B)
         case ok declared bytes =>
           simp [step, hm, loadEvent, h, RDecision.tag]
       | uploading key bytes => cases e <;> simp [overBudget, hm] at h
+      | findingMissing keys => cases e <;> simp [overBudget, hm] at h
+      | publishing key => cases e <;> simp [overBudget, hm] at h
 
 /-- RMT-002, frozen half: an over-budget declaration leaves the cache
 exactly the prior cache — nothing was admitted. -/
@@ -146,6 +178,13 @@ theorem RMT_002_budget_frozen (P : Params K B)
       | none =>
         simp [overBudget, hm] at h
         simp [step, hm, h]
+    | findMissing keys =>
+      cases hm : s.inFlight[id]? with
+      | some st => simp [overBudget, hm] at h
+      | none =>
+        simp [overBudget, hm] at h
+        simp [step, hm, h]
+    | publishRoot key closure => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -156,6 +195,8 @@ theorem RMT_002_budget_frozen (P : Params K B)
         case ok declared bytes =>
           simp [step, hm, loadEvent, h]
       | uploading key bytes => cases e <;> simp [overBudget, hm] at h
+      | findingMissing keys => cases e <;> simp [overBudget, hm] at h
+      | publishing key => cases e <;> simp [overBudget, hm] at h
 
 /-- RMT-004: an upload request naming a key already admitted in the
 cache, with content that verifies for it — within budget, not
@@ -174,6 +215,36 @@ theorem RMT_004_present_upload_needs_no_transfer (P : Params K B)
       { result := .uploaded key, state := s, commands := []
         decisions := [(id, .verified key)] } := by
   simp [step, hflight, hsize, hrej, hver, hcache]
+
+/-- Noting presence touches the planning sets only: the projections
+every other component keeps. -/
+theorem notePresence_rejected (s : MachineState K B)
+    (rs : List (KeyStatus K B)) :
+    ((notePresence s rs).1).rejected = s.rejected := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih => cases r <;> simp [notePresence, ih]
+
+theorem notePresence_cache (s : MachineState K B)
+    (rs : List (KeyStatus K B)) :
+    ((notePresence s rs).1).cache = s.cache := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih => cases r <;> simp [notePresence, ih]
+
+theorem notePresence_confirmed (s : MachineState K B)
+    (rs : List (KeyStatus K B)) :
+    ((notePresence s rs).1).confirmed = s.confirmed := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih => cases r <;> simp [notePresence, ih]
+
+theorem notePresence_published (s : MachineState K B)
+    (rs : List (KeyStatus K B)) :
+    ((notePresence s rs).1).published = s.published := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih => cases r <;> simp [notePresence, ih]
 
 /-- RMT-003, per-step half: once a key-content pair stands
 integrity-rejected, no step issues an upload command carrying that
@@ -212,6 +283,12 @@ theorem RMT_003_no_repeat_after_integrity [LawfulBEq K] [LawfulBEq B]
                   exact absurd (Std.HashSet.contains_iff_mem.mpr h) (by
                     simpa using hguard)
             · simp
+      | findMissing keys =>
+        simp only [step, hm]
+        split <;> simp
+      | publishRoot key closure =>
+        simp only [step, hm]
+        split <;> simp
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -231,6 +308,14 @@ theorem RMT_003_no_repeat_after_integrity [LawfulBEq K] [LawfulBEq B]
           simp only [step, hm, uploadEvent]
           split <;> simp
         | _ => simp [step, hm, uploadEvent]
+      | findingMissing keys =>
+        cases e with
+        | batchResult results =>
+          simp only [step, hm, batchEvent]
+          split <;> simp
+        | _ => simp [step, hm, batchEvent]
+      | publishing key =>
+        cases e <;> simp [step, hm, publishEvent]
 
 /-- RMT-003, monotonicity half: the rejection memory only ever grows —
 no step forgets a rejected pair. -/
@@ -255,6 +340,12 @@ theorem RMT_003_rejection_monotone [LawfulBEq K] [LawfulBEq B]
           · split
             · split <;> simpa using h
             · simp [h]
+      | findMissing keys =>
+        simp only [step, hm]
+        split <;> simpa using h
+      | publishRoot key closure =>
+        simp only [step, hm]
+        split <;> simpa using h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simpa [step, hm, absorbOut] using h
@@ -278,6 +369,16 @@ theorem RMT_003_rejection_monotone [LawfulBEq K] [LawfulBEq B]
         | integrityMismatch =>
           simp [step, hm, uploadEvent, h]
         | _ => simpa [step, hm, uploadEvent] using h
+      | findingMissing keys =>
+        cases e with
+        | batchResult results =>
+          simp only [step, hm, batchEvent]
+          split
+          · simpa [notePresence_rejected] using h
+          · simpa using h
+        | _ => simpa [step, hm, batchEvent] using h
+      | publishing key =>
+        cases e <;> simpa [step, hm, publishEvent] using h
 
 /-- RMT-003, temporal corollary: over any whole run from a state where
 a pair stands rejected, no step of the run ever issues that upload —
@@ -295,5 +396,152 @@ theorem RMT_003_terminal_over_run [LawfulBEq K] [LawfulBEq B]
     · exact RMT_003_no_repeat_after_integrity P s i k b h id' hstep
     · exact ih (step P s i).state
         (RMT_003_rejection_monotone P s i k b h) hrest
+
+/-- RMT-005: presence is planning, never admission — any wire event
+answering a find-missing operation leaves the cache, the confirmed
+set, and the published set exactly as they were, and emits no cache,
+return, or publish decision. -/
+theorem RMT_005_presence_never_admits (P : Params K B)
+    (s : MachineState K B) (id : OpId) (keys : List K) (e : Event K B)
+    (hm : s.inFlight[id]? = some (.findingMissing keys)) :
+    (step P s (.fromWire id e)).state.cache = s.cache ∧
+      (step P s (.fromWire id e)).state.confirmed = s.confirmed ∧
+      (step P s (.fromWire id e)).state.published = s.published ∧
+      RTag.cached ∉ ((step P s (.fromWire id e)).decisions.map
+        fun d => d.2.tag) ∧
+      RTag.returned ∉ ((step P s (.fromWire id e)).decisions.map
+        fun d => d.2.tag) ∧
+      RTag.issuedPublish ∉ ((step P s (.fromWire id e)).decisions.map
+        fun d => d.2.tag) := by
+  cases e with
+  | batchResult results =>
+    simp only [step, hm, batchEvent]
+    split <;>
+      simp [notePresence_cache, notePresence_confirmed,
+        notePresence_published, RDecision.tag]
+  | _ => simp [step, hm, batchEvent, RDecision.tag]
+
+/-- RMT-006: a misaligned batch fails closed — the exact rejection
+output, with no partial application of any per-key answer. -/
+theorem RMT_006_batch_fail_closed (P : Params K B)
+    (s : MachineState K B) (id : OpId) (keys : List K)
+    (results : List (KeyStatus K B))
+    (hm : s.inFlight[id]? = some (.findingMissing keys))
+    (hacc : accountsFor keys results = false) :
+    step P s (.fromWire id (.batchResult results)) =
+      { result := .batchRejected
+        state := { s with inFlight := s.inFlight.erase id }
+        commands := []
+        decisions := [(id, .batchRejected)] } := by
+  simp [step, hm, batchEvent, hacc]
+
+/-- RMT-007, request half: no publish command issues without the root
+and its declared closure confirmed — the refusal is typed and the
+state untouched. -/
+theorem RMT_007_no_publish_without_closure (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (closure : List K)
+    (hm : s.inFlight[id]? = none)
+    (hent : publishEntitled s key closure = false) :
+    step P s (.request id (.publishRoot key closure)) =
+      { result := .orderingRefused key, state := s
+        commands := []
+        decisions := [(id, .orderingRefused key)] } := by
+  simp [step, hm, hent]
+
+/-- RMT-007, acknowledgment half: server acceptance never implies
+closure — a publish acknowledgment grows the published set only; the
+confirmed set is untouched by every publish event. -/
+theorem RMT_007_publish_confirms_nothing (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (e : Event K B)
+    (hm : s.inFlight[id]? = some (.publishing key)) :
+    (step P s (.fromWire id e)).state.confirmed = s.confirmed := by
+  cases e <;> simp [step, hm, publishEvent]
+
+/-- Whether the pending input is an entitled publish request: a free
+identifier requesting a root whose closure stands confirmed. The
+guard RMT-007's trace instance excludes against. -/
+def publishRequestEntitled (s : MachineState K B) :
+    MInput K B → Bool
+  | .request id (.publishRoot key closure) =>
+    (s.inFlight[id]?).isNone && publishEntitled s key closure
+  | _ => false
+
+/-- RMT-007, exclusion form: no step issues a publish command unless
+the pending input is an entitled publish request. -/
+theorem RMT_007_publish_only_entitled (P : Params K B)
+    (s : MachineState K B) (i : MInput K B)
+    (h : publishRequestEntitled s i = false) :
+    RTag.issuedPublish ∉ ((step P s i).decisions.map fun d => d.2.tag) := by
+  cases i with
+  | request id op =>
+    cases hm : s.inFlight[id]? with
+    | some st => simp [step, hm]
+    | none =>
+      cases op with
+      | load key => simp [step, hm, RDecision.tag]
+      | upload key bytes =>
+        simp only [step, hm]
+        split
+        · simp [RDecision.tag]
+        · split
+          · simp [RDecision.tag]
+          · split
+            · split <;> simp [RDecision.tag]
+            · simp [RDecision.tag]
+      | findMissing keys =>
+        simp only [step, hm]
+        split <;> simp [RDecision.tag]
+      | publishRoot key closure =>
+        simp only [step, hm]
+        split
+        · rename_i hent
+          exfalso
+          simp [publishRequestEntitled, hm, hent] at h
+        · simp [RDecision.tag]
+  | fromWire id e =>
+    cases hm : s.inFlight[id]? with
+    | none => simp [step, hm, absorbOut]
+    | some st =>
+      cases st with
+      | loading key =>
+        cases e with
+        | ok declared bytes =>
+          simp only [step, hm, loadEvent]
+          split
+          · simp [RDecision.tag]
+          · split <;> simp [RDecision.tag]
+        | _ => simp [step, hm, loadEvent, RDecision.tag]
+      | uploading key bytes =>
+        cases e with
+        | ok declared bytes' =>
+          simp only [step, hm, uploadEvent]
+          split <;> simp [RDecision.tag]
+        | _ => simp [step, hm, uploadEvent, RDecision.tag]
+      | findingMissing keys =>
+        cases e with
+        | batchResult results =>
+          simp only [step, hm, batchEvent]
+          split <;> simp [RDecision.tag]
+        | _ => simp [step, hm, batchEvent, RDecision.tag]
+      | publishing key =>
+        cases e <;> simp [step, hm, publishEvent, RDecision.tag]
+
+/-- RMT-008: an interruption clears the operation and admits, confirms,
+publishes, and rejects nothing — every admission component is frozen
+and only the in-flight entry goes. -/
+theorem RMT_008_interrupt_admits_nothing (P : Params K B)
+    (s : MachineState K B) (id : OpId) (st : OpState K B)
+    (hm : s.inFlight[id]? = some st) :
+    (step P s (.fromWire id .interrupted)).state.cache = s.cache ∧
+      (step P s (.fromWire id .interrupted)).state.confirmed =
+        s.confirmed ∧
+      (step P s (.fromWire id .interrupted)).state.published =
+        s.published ∧
+      (step P s (.fromWire id .interrupted)).state.rejected =
+        s.rejected ∧
+      (step P s (.fromWire id .interrupted)).state.inFlight =
+        s.inFlight.erase id := by
+  cases st <;>
+    simp [step, hm, loadEvent, uploadEvent, batchEvent, publishEvent]
 
 end Effects.Remote

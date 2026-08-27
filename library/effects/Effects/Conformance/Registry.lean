@@ -19,6 +19,11 @@ import Effects.Conformance.Instances.CMP002
 import Effects.Conformance.Instances.RMT002
 import Effects.Conformance.Instances.RMT003
 import Effects.Conformance.Instances.RMT004
+import Effects.Conformance.Instances.RMT005
+import Effects.Conformance.Instances.RMT006
+import Effects.Conformance.Instances.RMT007
+import Effects.Conformance.Instances.RMT008
+import Effects.Conformance.Instances.RMT014
 import Effects.Conformance.Instances.RMT015
 import Effects.Conformance.Instances.MRK001
 import Effects.Conformance.Instances.MRK002
@@ -43,20 +48,23 @@ def registry : List LedgerEntry :=
   , rpl002.entry, rpl003.entry, rpl004.entry, rpl005.entry
   , ses001.entry, ses002.entry, cmp001.entry, cmp002.entry
   , rmt001.entry, rmt002.entry, rmt003.entry
-  , rmt004.entry, rmt015.entry
+  , rmt004.entry, rmt005.entry, rmt006.entry, rmt007.entry
+  , rmt008.entry, rmt014.entry, rmt015.entry
   , mrk001.entry, mrk002.entry, mrk003.entry
   , mrk005.entry, mrk006.entry ]
 
 #guard registry.map (·.id) ==
   ["CAS-001", "CAS-002", "RPL-002", "RPL-003", "RPL-004", "RPL-005",
    "SES-001", "SES-002", "CMP-001", "CMP-002", "RMT-001", "RMT-002",
-   "RMT-003", "RMT-004", "RMT-015", "MRK-001", "MRK-002", "MRK-003",
+   "RMT-003", "RMT-004", "RMT-005", "RMT-006", "RMT-007", "RMT-008",
+   "RMT-014", "RMT-015", "MRK-001", "MRK-002", "MRK-003",
    "MRK-005", "MRK-006"]
 #guard registry.map (·.family) ==
   ["CODEC", "REJECTION-CLAUSE", "TRACE-EXCLUDES", "EXACT-STEP",
    "FAIL-CLOSED", "FAIL-CLOSED", "TRACE-EXCLUDES", "WF-PRESERVE",
    "HOMOMORPHISM", "DISTINCTNESS", "TRACE-EXCLUDES", "FAIL-CLOSED",
-   "TRACE-EXCLUDES", "EXACT-STEP", "AGREEMENT", "CODEC",
+   "TRACE-EXCLUDES", "EXACT-STEP", "TRACE-EXCLUDES", "FAIL-CLOSED",
+   "TRACE-EXCLUDES", "FAIL-CLOSED", "FAIL-CLOSED", "AGREEMENT", "CODEC",
    "TRACE-EXCLUDES", "TRACE-EXCLUDES", "AGREEMENT", "AGREEMENT"]
 #guard (emitLedger registry).take 20 == "# Conformance ledger"
 

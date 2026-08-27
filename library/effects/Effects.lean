@@ -20,6 +20,7 @@ import Effects.Remote.Event
 import Effects.Remote.Command
 import Effects.Remote.Machine
 import Effects.Remote.Laws
+import Effects.Remote.ControlCodec
 import Effects.Merkle.Chunk
 import Effects.Merkle.Tree
 import Effects.Merkle.Verify
