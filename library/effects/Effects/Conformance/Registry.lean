@@ -8,6 +8,7 @@ import Effects.Conformance.Schema.Codec
 import Effects.Conformance.Schema.RejectionClause
 import Effects.Conformance.Instances.CAS001
 import Effects.Conformance.Instances.CAS002
+import Effects.Conformance.Instances.CMP001
 import Effects.Conformance.Instances.RPL002
 import Effects.Conformance.Instances.RPL003
 import Effects.Conformance.Instances.RPL004
@@ -31,15 +32,15 @@ namespace Effects.Conformance
 def registry : List LedgerEntry :=
   [ cas001.entry, cas002.entry
   , rpl002.entry, rpl003.entry, rpl004.entry, rpl005.entry
-  , ses001.entry, ses002.entry, cmp002.entry ]
+  , ses001.entry, ses002.entry, cmp001.entry, cmp002.entry ]
 
 #guard registry.map (·.id) ==
   ["CAS-001", "CAS-002", "RPL-002", "RPL-003", "RPL-004", "RPL-005",
-   "SES-001", "SES-002", "CMP-002"]
+   "SES-001", "SES-002", "CMP-001", "CMP-002"]
 #guard registry.map (·.family) ==
   ["CODEC", "REJECTION-CLAUSE", "TRACE-EXCLUDES", "EXACT-STEP",
    "FAIL-CLOSED", "FAIL-CLOSED", "TRACE-EXCLUDES", "WF-PRESERVE",
-   "DISTINCTNESS"]
+   "HOMOMORPHISM", "DISTINCTNESS"]
 #guard (emitLedger registry).take 20 == "# Conformance ledger"
 
 end Effects.Conformance

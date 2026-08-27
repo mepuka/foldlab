@@ -14,6 +14,8 @@ import Effects.Replay.Relation
 import Effects.Replay.Laws
 import Effects.Replay.Run
 import Effects.Replay.Witness
+import Effects.Replay.Program
+import Effects.Replay.Interp
 import Effects.Conformance
 
 /-!

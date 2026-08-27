@@ -14,7 +14,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RPL-005 | instantiated (FAIL-CLOSED) |
 | SES-001 | instantiated (TRACE-EXCLUDES) |
 | SES-002 | instantiated (WF-PRESERVE) |
-| CMP-001 | pending — HOMOMORPHISM instance at M5 |
+| CMP-001 | instantiated (HOMOMORPHISM) |
 | CMP-002 | instantiated (DISTINCTNESS) |
 | CMP-003 | deferred to M7 |
 | CTX-001 | pending — TypeScript evidence at M4 |
@@ -83,6 +83,8 @@ Every reducer step preserves session-state well-formedness.
 ## CMP-001
 
 Sequential interpretation threads replay state compositionally across success and typed-failure outcomes.
+
+**Sentence:** Interpretation respects return and sequential bind across both outcome cases — sequential interpretation threads the replay session state compositionally: a returned value consumes nothing, a nested program continues from exactly the state its prefix reached, and both halting cases — the program's own typed failure and the session's typed rejection — short-circuit carrying the state they stopped at, so the cursor neither resets nor forks across composition; the recorded outcome envelope reaches the leaf continuation on both channels, so recovery fires exactly as it did live.
 
 ## CMP-002
 

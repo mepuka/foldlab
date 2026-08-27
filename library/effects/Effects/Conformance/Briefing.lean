@@ -2,6 +2,7 @@ import Effects.Conformance.Obligations
 import Effects.Conformance.Registry
 import Effects.Conformance.ModelVersion
 import Effects.Conformance.Generate
+import Effects.Conformance.ManifestReplay
 
 /-!
 # The lane briefing (phase 1)
@@ -138,9 +139,13 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
               else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
       else
         let versions := String.intercalate ", " ratifiedManifestVersions
+        let manifestNames :=
+          (Manifest.files ++ Manifest.replayFiles).map (·.1)
+        let consumable :=
+          rows.filter fun e => manifestNames.contains (e.id ++ ".json")
         [ Markdown.Block.h2 "Consume the ratified manifests"
         , .p [.text s!"Families under conformance/manifest/, bound to {versions}. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
-        , .ul (rows.map fun e => [.text s!"{e.id} ({e.family})"]) ]
+        , .ul (consumable.map fun e => [.text s!"{e.id} ({e.family})"]) ]
           ++ nextGroupBlocks targets
   let rules := [Markdown.Block.h2 "Standing rules in scope", .ul (laneRules lane)]
   (title :: identity :: work) ++ rules
