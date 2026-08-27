@@ -401,3 +401,19 @@ Stop and return to grilling if:
   artifacts; grep route retained for TS-side) and the plain-meaning rule
   (sentence source is the typed `sentence`/`represents` field; docstrings
   carry templates) without changing either rule's substance.
+- **M2 ratification (2026-08-27, manifest version `effects-model@0.1.0`):**
+  the operator ratified the CAS-001 (CODEC) and CAS-002 (REJECTION-CLAUSE)
+  statement-and-sentence pairs — including CAS-001's identity-canon reading
+  (the carrier's declared equivalence is equality, so canonicality lives in
+  decoder exactness) and CAS-002's fixed kit store with the `Unit` admitted
+  carrier — the `effects-model@0.1.0` declaration with the
+  append-to-`ratifiedManifestVersions` committed-document mechanic, and the
+  five first vectors. Riders: the fixed kit-store semantics are re-examined
+  when application-level Effect testing brings real contexts, which may be
+  different things; vector growth is a declared next-cycle task under the
+  unchanged version (row additions change no statement, so they do not
+  re-fire ratification); family digests on the ledger are deferred to the
+  implementation-lane consumption step, where a manifest consumer exists to
+  digest for. The CAS node, content identifier, and node admission code
+  labels left pending in the context document were filled at this
+  ratification.

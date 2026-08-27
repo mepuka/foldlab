@@ -53,8 +53,9 @@ enters as an ordinary refactor proposal at that time.
   identities with different revisions as matchable.
 
 ### CAS node
-- **Kind:** model (carrier). **Code label:** pending Pass B (provisional
-  `src/CasNode.ts`, `Effects/Cas.lean`).
+- **Kind:** model (carrier). **Code label:** `Effects/Cas/Node.lean`
+  (carrier) and `Effects/Cas/Codec.lean` (canonical codec); provisional
+  `src/CasNode.ts`.
 - **Form:** versioned kind, canonical payload bytes, and ordered typed
   references — the data-plus-references pattern. References live inside the
   framed body as full-length address bytes in declared order.
@@ -65,7 +66,9 @@ enters as an ordinary refactor proposal at that time.
   participate in identity.
 
 ### Content identifier
-- **Kind:** model (function with premises). **Code label:** pending Pass B.
+- **Kind:** model (function with premises). **Code label:**
+  `Effects/Cas/Address.lean` (address function and lattice levels) and
+  `Effects/Cas/Separation.lean` (kind/version separation).
 - **Form:** digest of the project-owned pre-image
   `versionByte ++ kindTag ++ frame(encode(canon node))`. The hash `H` is
   abstract in the model; the concrete digest is an injected adapter (first:
@@ -81,7 +84,9 @@ enters as an ordinary refactor proposal at that time.
   without its lattice level; "hashing proves identity."
 
 ### Node admission
-- **Kind:** model (judgment). **Code label:** pending Pass B.
+- **Kind:** model (judgment). **Code label:** `Effects/Cas/Admission.lean`
+  (judgment and checked put) with the store carrier in
+  `Effects/Cas/Store.lean`; provisional `src/CasStore.ts`.
 - **Form:** raw node to admitted node or clause-named typed CAS error
   (address mismatch, non-canonical bytes, unknown kind, dangling or wrong-kind
   reference). Closure and kind-typing are checked at `put`; `load` verifies

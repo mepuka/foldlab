@@ -16,7 +16,9 @@ namespace Effects.Conformance
 def modelVersion : String := "effects-model@0.1.0"
 
 /-- Manifest versions the operator has ratified. Empty means the
-implementation lane has nothing to consume. -/
-def ratifiedManifestVersions : List String := []
+implementation lane has nothing to consume. Appending here is the
+ratification event; each append is recorded in the workflow's
+ratification record. -/
+def ratifiedManifestVersions : List String := ["effects-model@0.1.0"]
 
 end Effects.Conformance

@@ -131,7 +131,12 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
         , .p [.text "No ratified manifest exists, so this lane has nothing to consume. The first unblocking is the M2 slice: CODEC and REJECTION-CLAUSE manifest families for the canonical node codec and node admission."] ]
           ++ (if targets.isEmpty then []
               else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
-      else nextGroupBlocks targets
+      else
+        let versions := String.intercalate ", " ratifiedManifestVersions
+        [ Markdown.Block.h2 "Consume the ratified manifests"
+        , .p [.text s!"Families under conformance/manifest/, bound to {versions}. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
+        , .ul (rows.map fun e => [.text s!"{e.id} ({e.family})"]) ]
+          ++ nextGroupBlocks targets
   let rules := [Markdown.Block.h2 "Standing rules in scope", .ul (laneRules lane)]
   (title :: identity :: work) ++ rules
 
