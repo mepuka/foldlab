@@ -15,8 +15,18 @@ export interface GatedEndpoint {
   readonly awaitClosed: (count: 1 | 2) => Effect.Effect<void>
 }
 
+/**
+ * Where the peer stops answering a data-plane request: after writing the
+ * response headers and half the body, before writing anything at all, or not
+ * at all — a complete response inside whatever deadline the caller set.
+ */
+export type GatedStall = "afterHeaders" | "beforeHeaders" | "none"
+
 /** A raw peer whose partial responses expose deterministic Deferred gates. */
-export const serveGatedPeer = (body: Uint8Array): Effect.Effect<GatedEndpoint, never, Scope.Scope> =>
+export const serveGatedPeer = (
+  body: Uint8Array,
+  stall: GatedStall = "afterHeaders",
+): Effect.Effect<GatedEndpoint, never, Scope.Scope> =>
   Effect.gen(function* () {
     const firstStarted = yield* Deferred.make<void>()
     const secondStarted = yield* Deferred.make<void>()
@@ -69,6 +79,25 @@ export const serveGatedPeer = (body: Uint8Array): Effect.Effect<GatedEndpoint, n
             stats.requests += 1
             stats.gets += 1
             const started = stats.requests === 1 ? firstStarted : secondStarted
+            if (stall === "none") {
+              stats.bodyBytesWritten += body.length
+              socket.write([
+                "HTTP/1.1 200 OK",
+                "Connection: close",
+                "Content-Type: application/octet-stream",
+                `Content-Length: ${body.length}`,
+                "",
+                "",
+              ].join("\r\n"))
+              socket.end(body)
+              Effect.runFork(Deferred.succeed(started, undefined))
+              return
+            }
+            if (stall === "beforeHeaders") {
+              // The request is received and nothing is ever written back.
+              Effect.runFork(Deferred.succeed(started, undefined))
+              return
+            }
             socket.write([
               "HTTP/1.1 200 OK",
               "Connection: close",
