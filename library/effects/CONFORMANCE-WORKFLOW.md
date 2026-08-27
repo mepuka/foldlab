@@ -1220,3 +1220,43 @@ Stop and return to grilling if:
   seconds, and the dependent-match decoder construction hit a
   kernel recursion limit that the admitted-node decoder's
   bind-and-recheck shape avoids entirely.
+- **Prior-art review adopted; MRK-3 and S-M ratified (2026-08-27):**
+  the operator's G0 prior-art and usability review of the server
+  target (Unison newly pinned with per-blob digests; the CAS wire and
+  streaming sources reused through standing receipts) was reviewed
+  first-hand, its claims about this estate verified against the
+  landed sources, and adopted as the development priority. One
+  reconciliation recorded: the review's first blocking finding — the
+  range wire alphabet contradicting the decoder's input language —
+  had already been caught and discharged in the MRK-2 landing hours
+  earlier (parent frames mandatory, skip bare, exactness theorems,
+  vectors, and a lenient-tags mutant committed); the review evaluated
+  the design sketch, not the landed slice, and its tag-numbering
+  variant is declined in favor of the committed vectors. Everything
+  else stands and is minted: MRK-015 through MRK-019 (incremental
+  fragmentation-invariant frame parsing; the adversarial
+  ranged-binding theorem whose conclusion stays
+  expected-bytes-or-collision until a hash assumption is declared;
+  byte-range slicing as flatten-drop-take; the blob manifest
+  committing recipe id, total bytes, and leaf count with unknown
+  recipes failing closed; response-framer closure and
+  proof-amplification budgets) and SRV-001 through SRV-006 (the
+  server transition system with publication correctness — a client
+  publish theorem is never a server theorem; the admission pipeline;
+  three-outcome write-if-absent with same-address-different-bytes an
+  integrity fault; capability truth as the five-way intersection;
+  declared durability classes; compare-and-set root heads). The
+  blob-representation ruling: the four-kind manifest graph with
+  REFERENCED content chunks is the headline recipe — restoring
+  cross-position dedup and authenticating the totals the decoder
+  alone cannot — with the landed inline-leaf tie retained as the
+  first frozen recipe and the collision-transfer substrate; F2 was
+  gated on this ruling and is now unblocked, building `CasBlob` on
+  the manifest graph only. Cheap corrections landed with this
+  record: the profile documents the second capability field as the
+  node-body bound renaming at `/1`; the shared-codec
+  drift-impossibility claim is softened to the honest form; the
+  review's hostile-fixture list joins the vector backlog; subpath
+  packaging and the report, inspection, and repository surfaces fold
+  into the F2, F3, and S-lane letters. The review and its receipt
+  are committed with this record.

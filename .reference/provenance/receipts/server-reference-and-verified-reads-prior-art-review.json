@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "server-reference-and-verified-reads-prior-art-review",
+  "observedAt": "2026-08-27",
+  "scope": "Exact Unison source artifacts newly admitted for the G0 server-reference, blob, verified-partial-read, storage-adapter, and developer-experience review. Other CAS systems, RFCs, and the Effect source are reused through the named existing receipts and source lock; they are not repinned here.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4"
+  },
+  "repositoryPins": [
+    {
+      "id": "unison",
+      "repository": "https://github.com/unisonweb/unison",
+      "commit": "84b95a623711b57b9ff7163f124b214d626b81e4",
+      "rootTree": "ebfc54745fac4588fff9e5175b90871a477b2d91",
+      "artifacts": [
+        {
+          "path": "unison-hashing-v2/src/Unison/Hashing/V2/Tokenizable.hs",
+          "role": "hash-version-and-logical-token-preimage",
+          "gitBlob": "5543f83000dbb74b0c111e65dccd1b2173f0ca8f",
+          "sha256": "1f9bf5401ca5fa8432cf43415a3baa869eb90ed443da0ddefe8897d358970b23",
+          "bytes": 6403
+        },
+        {
+          "path": "unison-hashing-v2/src/Unison/Hashing/V2/ABT.hs",
+          "role": "alpha-insensitive-and-cycle-aware-logical-hashing",
+          "gitBlob": "111e87f49e2fa8cfb55da1c8ac6dca6fb35a759c",
+          "sha256": "0952248eb9d8b0dc7965617c08aa0106ad887d3af0e59bffbafa7a5858f58120",
+          "bytes": 9311
+        },
+        {
+          "path": "unison-hashing-v2/src/Unison/Hashing/V2/DataDeclaration.hs",
+          "role": "constructor-domain-tagging-and-known-hash-risk-evidence",
+          "gitBlob": "d9a72d4d7791ba7ae82ba87219a4393d27724ec4",
+          "sha256": "9e7236ee30d6f9f9104866846d6cfe08692c926ac891a36771fbcbe2933e19c5",
+          "bytes": 5321
+        },
+        {
+          "path": "codebase2/core/Unison/ShortHash.hs",
+          "role": "human-short-hash-query-syntax",
+          "gitBlob": "5bef3a342222d12c14569989fe5ec68f9bb223df",
+          "sha256": "85bfe5feb47ccd55e37d34844e7133a652d08d05604dd8c1c62d8f3a8905c3ce",
+          "bytes": 4896
+        },
+        {
+          "path": "codebase2/codebase/U/Codebase/Causal.hs",
+          "role": "content-addressed-history-carrier",
+          "gitBlob": "74e4c1fcf05e71e97b20cf1902049ec7d3669842",
+          "sha256": "c646cf2b926b8f27659a7ea1b0f511963720ad3b283d606ed3306965f8d3b3f7",
+          "bytes": 1033
+        },
+        {
+          "path": "codebase2/codebase-sync/U/Codebase/Sync.hs",
+          "role": "dependency-first-sync-worklist",
+          "gitBlob": "a88b290ad868703075548bb361b003b06bf17204",
+          "sha256": "6abbd1f5ce6e3ac5b3bbd8500b766ef082e68c3bf269baaa47067062737c4a9b",
+          "bytes": 1635
+        },
+        {
+          "path": "unison-share-api/src/Unison/Sync/Types.hs",
+          "role": "typed-sync-entity-and-direct-dependency-interface",
+          "gitBlob": "514b59a1b87bce3af8b3f8fb16c78dd6fdc4ca69",
+          "sha256": "e77f172d96a2da673c67ccdefda25ecc199b554b1929dbb5d61eb1fcb98f9208",
+          "bytes": 32069
+        },
+        {
+          "path": "unison-share-api/src/Unison/Sync/EntityValidation.hs",
+          "role": "recompute-before-admission-entity-validation",
+          "gitBlob": "5607c0ac733163e7fa5ab102cc8a6903a22abc94",
+          "sha256": "d6ae39d8825aac621e57a81dc4cd273b63e23cf7bc7998965a42a42ab46754fa",
+          "bytes": 7627
+        },
+        {
+          "path": "unison-cli/src/Unison/Share/SyncV2.hs",
+          "role": "parallel-validation-transactional-commit-and-dependency-sorted-streaming",
+          "gitBlob": "b4da357f39ec9cf30521818b65576f1fa9477a71",
+          "sha256": "efc16359bf3e062389a2242138645c00a80809432bdf11dbd64a5424d046b596",
+          "bytes": 34225
+        },
+        {
+          "path": "codebase2/codebase-sqlite/U/Codebase/Sqlite/HashHandle.hs",
+          "role": "logical-hash-to-storage-seam-and-validation-errors",
+          "gitBlob": "66f9cc593d8f0280657442e88b43cb798d674302",
+          "sha256": "7fb1acbef335f36167c487a919bb3d24e5818d42bb77a346a6db149c7b5acd0f",
+          "bytes": 3951
+        },
+        {
+          "path": "codebase2/codebase-sqlite/U/Codebase/Sqlite/Queries.hs",
+          "role": "hash-object-indirection-schema-version-temp-entity-and-query-index-operations",
+          "gitBlob": "5d56461713561d23a7796fa2ee0784d65a7d27d6",
+          "sha256": "5afb3f646884b23635529a86d90bf519171df28e57481fb40cbbb1f0a026a0ed",
+          "bytes": 160463
+        },
+        {
+          "path": "codebase2/codebase-sqlite/sql/create.sql",
+          "role": "hash-object-indirection-prefix-dependency-name-and-causal-index-schema",
+          "gitBlob": "a213a41d9c8dcae6ed2a9255db7209b3a38b0471",
+          "sha256": "ee53eaaa2dd0743d4cb9660c91a489dbd0dad8525b8233170e696e810885a749",
+          "bytes": 15493
+        },
+        {
+          "path": "codebase2/codebase-sqlite/sql/018-add-derived-dependents-by-dependency-index.sql",
+          "role": "dependency-query-index-migration",
+          "gitBlob": "3139bb6a116330d7de8b29f652d19e75fedacc01",
+          "sha256": "eb323d7089feb4697aa860f75feef07ea93ab0c96772ea14da2a5049f9be64bd",
+          "bytes": 122
+        }
+      ]
+    }
+  ],
+  "reusedProvenance": {
+    "receipts": [
+      "remote-cas-wire-sweep-sources",
+      "remote-transport-standards-and-lean-models",
+      "streaming-sync-cas-api-prior-art",
+      "draft-denis-xet-05"
+    ],
+    "sourceLocks": [
+      "effect@0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07"
+    ]
+  },
+  "standing": {
+    "status": "resolved-research-source-pins",
+    "sourceLockPromotion": "pending",
+    "claimGate": "G0",
+    "note": "The review is conception evidence. No Unison property, external conformance result, storage durability claim, Lean theorem, or implementation-refinement claim transfers to Foldlab. Proposed server, blob, range, adapter, and DX decisions remain pending ratification and their named obligations."
+  },
+  "result": "resolved-research-source-pins"
+}

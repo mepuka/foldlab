@@ -31,9 +31,11 @@ end-to-end against the reference server.
 
 - `CasServer.layer(config)` composes platform HTTP-API handlers from
   the SAME closed codecs the client uses — one codec module serves
-  both directions, so the conformance vectors bind both sides at
-  once and drift between client and server framing is structurally
-  impossible.
+  both directions. (Corrected at the prior-art review: this reduces
+  intra-package mismatch; it does not make drift impossible — a
+  client and server can agree on the same wrong implementation, so
+  the exactness theorems, generated vectors, and refinement gates
+  independently constrain the shared codec.)
 - `CasServerStore` — the storage backend service (memory and
   filesystem ship; anything else is user-provided). The server core
   enforces admission on upload: a conforming server verifies

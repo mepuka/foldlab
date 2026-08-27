@@ -54,7 +54,12 @@ Order is significant and preserved.
 
 `GET {authority}/control/capabilities` → `200` with a body of exactly
 the eight canonical bytes: big-endian u32 `maxBatchKeys`, then
-big-endian u32 `maxBlobBytes`. The closed capability decoder governs:
+big-endian u32 `maxBlobBytes`. The second field's wire meaning is the
+maximum canonical NODE body accepted by `/0` — the name predates the
+blob abstraction, whose chunked content deliberately exceeds it; the
+field renames to `maxNodeBytes` at `/1`, and range, proof, and
+manifest limits publish independently there. The closed capability
+decoder governs:
 any other length or a non-canonical body is a typed protocol
 violation. Clients re-probe per layer acquisition and never persist
 capabilities across sessions. The endpoint is REQUIRED before any

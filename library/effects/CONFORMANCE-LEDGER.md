@@ -59,6 +59,17 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | MRK-012 | instantiated (CODEC) |
 | MRK-013 | discharged — carrier construction (ranged\_generation\_complete) |
 | MRK-014 | discharged — carrier construction (blob\_root\_addr) |
+| MRK-015 | pending — by carrier construction at MRK-3 |
+| MRK-016 | pending — by carrier construction at MRK-3 |
+| MRK-017 | pending — by carrier construction at MRK-3 |
+| MRK-018 | pending — CODEC instance at MRK-3 |
+| MRK-019 | pending — by carrier construction at MRK-3 |
+| SRV-001 | pending — by carrier construction at S-M1 |
+| SRV-002 | pending — by carrier construction at S-M1 |
+| SRV-003 | pending — TypeScript evidence at S-M2 |
+| SRV-004 | pending — by carrier construction at S-M1 |
+| SRV-005 | pending — TypeScript evidence at S-M2 |
+| SRV-006 | pending — by carrier construction at S-M2 |
 
 ## CAS-001
 
@@ -335,3 +346,47 @@ Ranged stream generation is complete: for any requested range the honest extract
 ## MRK-014
 
 The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision.
+
+## MRK-015
+
+Byte-level frame parsing is incremental and fragmentation-invariant: all fragmentations of one complete body yield the same parsed inputs and terminal, and truncation never yields completion.
+
+## MRK-016
+
+Every input trace accepted for a root and range emits exactly the committed bytes at those positions or supplies a collision witness; honest-generator completeness is a separate theorem.
+
+## MRK-017
+
+Successful byte-range slicing equals the flattened whole restricted to the requested byte window under the declared bounds.
+
+## MRK-018
+
+A blob manifest commits recipe identity, total bytes, and leaf count; readers select semantics from the recipe id and unknown ids fail closed; changing any identity-affecting recipe parameter changes the manifest id.
+
+## MRK-019
+
+A proof response is exactly one complete decode: trailing content after the machine's done status is rejected at the framer, and responses are bounded by declared output and proof-amplification budgets.
+
+## SRV-001
+
+A successful root-head transition implies the manifest and selected closure were admitted at that transition under its compare-and-set precondition, and no failed transition changes the visible head; crash survival is a distinct adapter property.
+
+## SRV-002
+
+Server admission runs bounded receive, closed decode, address recomputation, and reference checks before write-if-absent, and loads revalidate bytes before crossing the semantic seam.
+
+## SRV-003
+
+Write-if-absent distinguishes stored, already-present-identical, and same-address-different-bytes; the third is an integrity fault that fails, is observable, and blocks publication.
+
+## SRV-004
+
+Served capabilities are the intersection of implementation, principal policy, store properties, registry properties, and configured limits; a served capability never exceeds an enforced one.
+
+## SRV-005
+
+Adapters declare a durability class and success claims never exceed the declaration; the memory adapter is volatile, and crash-persistent claims carry platform-pinned write, rename, and flush evidence.
+
+## SRV-006
+
+Root heads move only by compare-and-set; concurrent publishers serialize; stale expectations fail with the standard precondition semantics.

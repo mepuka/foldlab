@@ -621,6 +621,17 @@ IDs are provisional planning identifiers.
 | `MRK-012` | Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: unknown tags and truncated items are rejected, and a successful decode's input is exactly the canonical encoding of its result | Lean CODEC instance over the bounded stream carrier | a malformed stream byte string decoding as items | proof-document codec |
 | `MRK-013` | Ranged stream generation is complete: for any requested range the honest extractor's stream decodes to its done status and emits exactly the owed ranged emissions | Lean carrier theorem (ranged generation completeness) | an in-range request whose generated stream rejects or under-emits | range extractor |
 | `MRK-014` | The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision | Lean carrier theorems (root-address tie; collision transfer) | a blob root that is not the address of its materialized root node | blob node graph |
+| `MRK-015` | Byte-level frame parsing is incremental and fragmentation-invariant: all fragmentations of one complete body yield the same parsed inputs and terminal, and truncation never yields completion | Lean incremental-parser carrier theorems; TypeScript channel-framer fixtures | a parse outcome depending on fragment boundaries, or a truncated body completing | incremental frame parser |
+| `MRK-016` | Every input trace accepted for a root and range emits exactly the committed bytes at those positions or supplies a collision witness; honest-generator completeness is a separate theorem | Lean carrier theorem (adversarial ranged binding) | an accepted hostile trace emitting foreign bytes with no extractable collision | ranged decoder |
+| `MRK-017` | Successful byte-range slicing equals the flattened whole restricted to the requested byte window under the declared bounds | Lean carrier theorem over the byte-slice planner | a byte slice emitting bytes outside the window or disagreeing with the whole | byte-slice planner |
+| `MRK-018` | A blob manifest commits recipe identity, total bytes, and leaf count; readers select semantics from the recipe id and unknown ids fail closed; changing any identity-affecting recipe parameter changes the manifest id | Lean manifest model and CODEC rows | a reader guessing semantics for an unknown recipe, or totals trusted from an unauthenticated channel | blob manifest |
+| `MRK-019` | A proof response is exactly one complete decode: trailing content after the machine's done status is rejected at the framer, and responses are bounded by declared output and proof-amplification budgets | Lean framer-closure carrier theorem and budget rows | trailing frames absorbed after completion, or a tiny range licensing unbounded proof bytes | response framer |
+| `SRV-001` | A successful root-head transition implies the manifest and selected closure were admitted at that transition under its compare-and-set precondition, and no failed transition changes the visible head; crash survival is a distinct adapter property | Lean server transition model | a visible head whose closure was never admitted, or a failed publish mutating the head | server machine |
+| `SRV-002` | Server admission runs bounded receive, closed decode, address recomputation, and reference checks before write-if-absent, and loads revalidate bytes before crossing the semantic seam | Lean server model; adapter contract suite | bytes stored or served without recomputation | admission pipeline |
+| `SRV-003` | Write-if-absent distinguishes stored, already-present-identical, and same-address-different-bytes; the third is an integrity fault that fails, is observable, and blocks publication | adapter contract suite over the declared outcomes | a corrupt resident silently reported as already present | object-store contract |
+| `SRV-004` | Served capabilities are the intersection of implementation, principal policy, store properties, registry properties, and configured limits; a served capability never exceeds an enforced one | Lean derivation model; fixtures | a served capability the backend cannot honor | capability derivation |
+| `SRV-005` | Adapters declare a durability class and success claims never exceed the declaration; the memory adapter is volatile, and crash-persistent claims carry platform-pinned write, rename, and flush evidence | adapter contract suite per declared class | a durability claim without its declared-class evidence | storage adapters |
+| `SRV-006` | Root heads move only by compare-and-set; concurrent publishers serialize; stale expectations fail with the standard precondition semantics | Lean server model; registry contract suite | a lost or torn head update | root registry |
 
 ## 8. Test and evidence strategy
 
@@ -985,6 +996,34 @@ declared mutant per falsification case in both directions.
   observation — deliberately waits for the F1 delivery so committed
   manifests do not move mid-slice. Design authority:
   [`research/server-reference-and-verified-reads.md`](research/server-reference-and-verified-reads.md).
+- **MRK-3 — verified-reads hardening** (`MRK-015`–`MRK-019`; ratified
+  2026-08-27 on the prior-art review's blocking findings): the
+  four-kind blob manifest graph with REFERENCED content chunks as the
+  headline recipe (manifest committing recipe id, total bytes, and
+  leaf count; the landed inline-leaf tie retained as the first frozen
+  recipe and the collision-transfer substrate); public byte-range
+  semantics over an internal leaf-interval planner; the incremental
+  sans-io frame parser with fragmentation invariance; the adversarial
+  ranged-binding theorem with the named accepted-prefix judgment and
+  root-provenance framing; response-framer closure and
+  proof-amplification budgets. Review authority:
+  [`research/server-reference-and-verified-reads-prior-art-review.md`](research/server-reference-and-verified-reads-prior-art-review.md).
+  F2 was gated on the blob-representation ruling and is now
+  unblocked: the F2 packet builds `CasBlob` on the manifest graph,
+  never the inline-leaf recipe.
+- **S-M — the server model, pulled forward** (`SRV-001`–`SRV-006`):
+  **S-M1** the server transition system — staged bytes, admitted
+  objects, protected roots, mutable heads, declared durability
+  classes — with publication correctness (a client publish theorem is
+  never a server durability or closure theorem), the admission
+  pipeline, and capability truth as the five-way intersection;
+  **S-M2** the object-store and root-registry contracts (three-outcome
+  write-if-absent with same-address-different-bytes as an integrity
+  fault, declared durability classes, compare-and-set heads, the
+  first filesystem adapter append-only to postpone the
+  garbage-collection race, maintenance operations separated and never
+  remotely reachable by default). The reference server is built only
+  on this model.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`;
   plus discovery-order pull (ruled at the R2 audit: a cold replica
   pulling a reference-carrying root must discover root-first and

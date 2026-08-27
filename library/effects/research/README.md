@@ -146,6 +146,16 @@ repository locations.
   range-stream wire language is exactly the verified-streaming
   decoder's input alphabet, and the Q1–Q5 / F2 / S-lane dockets —
   dockets pending ratification, target sections non-normative.
+- [`server-reference-and-verified-reads-prior-art-review.md`](server-reference-and-verified-reads-prior-art-review.md)
+  is the G0 prior-art and usability review of the server target
+  design against revision-pinned sources (Unison newly pinned;
+  Git/OCI/REAPI/ByteStream/Nix/Boxo/IPLD/XET/Bao reused through
+  standing receipts): four blocking corrections (wire alphabet,
+  server-publication versus client-publication, the blob manifest
+  envelope, storage-contract underspecification), the
+  deep-module architecture (`CasBlob`, `CasRepository`,
+  `CasServerCore`, object-store and root-registry seams), and the
+  O-obligation list adopted as the MRK-3 and S-M dockets.
 - [`leanserver-adoption.md`](leanserver-adoption.md) is the formal
   adoption record for LeanServer at its ratified pin: the
   materialized gitignored clone, blob-level digest verification
