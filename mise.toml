@@ -89,6 +89,7 @@ run = "bun scripts/sync-research.ts"
 description = "Frozen install, typecheck, and test the effects TypeScript package"
 dir = "{{config_root}}/library/effects"
 run = [
+  "bun scripts/check-src-purity.ts",
   "bun install --frozen-lockfile",
   "bun run typecheck",
   "bun run test",

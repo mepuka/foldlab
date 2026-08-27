@@ -55,6 +55,10 @@ const REGISTRY: Record<string, Binding> = {
   "MRK-014": { status: "bound", by: "blob/Blob.test.ts" },
   "MRK-015": { status: "bound", by: "merkle/Merkle.test.ts" },
   "MRK-018": { status: "bound", by: "blob/Blob.test.ts" },
+  "MRK-020": {
+    status: "leads",
+    until: "optimization packet follow-up — bind the read planner's access set through a load-counting store after the shared read plan lands",
+  },
   "RMT-001": { status: "bound", by: "remote/Machine.test.ts" },
   "RMT-002": { status: "bound", by: "remote/Machine.test.ts" },
   "RMT-003": { status: "bound", by: "remote/Machine.test.ts" },

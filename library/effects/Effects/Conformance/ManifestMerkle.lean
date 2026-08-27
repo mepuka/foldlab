@@ -519,6 +519,104 @@ def mrk015FragManifest : Value :=
     "Byte-level frame parsing is incremental and fragmentation-invariant: all fragmentations of one complete body yield the same parsed inputs and terminal, and truncation never yields completion."
     (some fragOracle) (mrk015FragRows realFeed)
 
+/-! ## The ranged-access family (MRK-020): the model computes the
+performance expectation
+
+A ranged read's cost IS conformance: for each (chunk list, range) the
+model materializes the exact set of node addresses an honest reader
+may load — the manifest, the parents on paths intersecting the range,
+the intersecting leaves, and their chunk data. A linear walk that
+touches an out-of-range subtree, or a reader that skips a boundary
+leaf, moves the vectors. This makes access complexity a red row
+rather than a benchmark. -/
+
+/-- The access walk under test: chunks, base index, and half-open
+range in; the addresses an honest ranged reader loads, in descent
+order, out. -/
+abbrev RangedAccessFn := List Bytes → Nat → Nat → Nat → List Addr32
+
+/-- The model walk, mirroring the materializer's structure: a subtree
+is entered exactly when its index interval intersects the range. -/
+def rangedAccess (chunks : List Bytes) (base lo hi : Nat) :
+    List Addr32 :=
+  if _h : chunks.length ≤ 1 then
+    if lo < base + 1 ∧ base < hi then
+      let c := chunkDataNode (chunks.headD [])
+      let l := leafRefNode base (chunks.headD []).length (blobNodeAddr c)
+      [blobNodeAddr l, blobNodeAddr c]
+    else []
+  else
+    if lo < base + chunks.length ∧ base < hi then
+      let k := pow2Below chunks.length
+      let left := blobTreeNodes (chunks.take k) base
+      let right := blobTreeNodes (chunks.drop k) (base + k)
+      let p := parentRefNode left.2 right.2
+      blobNodeAddr p
+        :: (rangedAccess (chunks.take k) base lo hi
+          ++ rangedAccess (chunks.drop k) (base + k) lo hi)
+    else []
+termination_by chunks.length
+decreasing_by
+  · have hk := pow2Below_lt chunks.length (by omega)
+    simp only [List.length_take]
+    omega
+  · have hk := pow2Below_pos chunks.length
+    simp only [List.length_drop]
+    omega
+
+def realRangedAccess : RangedAccessFn := rangedAccess
+
+/-- Eight one-byte chunks: a three-level tree whose access sets make
+the logarithmic spine visible. -/
+def mrk020Chunks : List Bytes :=
+  [[0], [1], [2], [3], [4], [5], [6], [7]]
+
+def rangedAccessRow (accessF : RangedAccessFn) (caseId : String)
+    (chunks : List Bytes) (lo hi : Nat) : String × Value :=
+  let manifest := manifestNode recipeReferencedChunk chunks.flatten.length
+    chunks.length (blobTreeNodes chunks 0).2
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", .obj
+             [ ("access", .arr ((accessF chunks 0 lo hi).map addrJson))
+             , ("manifest", addrJson (blobNodeAddr manifest)) ])
+         , ("input", .obj
+             [ ("chunks", .arr (chunks.map bytesJson))
+             , ("hi", .nat hi)
+             , ("lo", .nat lo) ]) ] )
+
+def mrk020Rows (accessF : RangedAccessFn) : List (String × Value) :=
+  [ rangedAccessRow accessF "single-chunk-mid-spine-000" mrk020Chunks 3 4
+  , rangedAccessRow accessF "left-edge-chunk-001" mrk020Chunks 0 1
+  , rangedAccessRow accessF "right-edge-chunk-002" mrk020Chunks 7 8
+  , rangedAccessRow accessF "straddle-the-root-split-003" mrk020Chunks 3 5
+  , rangedAccessRow accessF "full-range-touches-all-004" mrk020Chunks 0 8
+  , rangedAccessRow accessF "one-chunk-blob-005" [[9, 9]] 0 1
+  , rangedAccessRow accessF "ragged-five-chunk-suffix-006"
+      [[1], [2], [3], [4], [5]] 3 5 ]
+
+/-- Rendered rows of the ranged-access family under a walk. -/
+def merkleAccessRowsRendered (accessF : RangedAccessFn) : String :=
+  renderRows (mrk020Rows accessF)
+
+-- The spine is logarithmic, not linear: a one-chunk slice of eight
+-- touches the manifest-side spine only — three parents, one leaf, one
+-- chunk — and the full range touches every node exactly once.
+#guard (rangedAccess mrk020Chunks 0 3 4).length = 5
+#guard (rangedAccess mrk020Chunks 0 0 8).length
+  = (blobTreeNodes mrk020Chunks 0).1.length
+
+/-- The ranged-access oracle. -/
+def accessOracle : String :=
+  "Access sets are node addresses under the declared toy digest (the 32-lane byte fold, not cryptographic) over canonical node encodings, listed in descent order: an implementation binds its read planner by recording which content identifiers a ranged read loads against a counting store and comparing the set — touching an out-of-range subtree or skipping a boundary leaf both move the vectors, so read complexity is conformance, never a benchmark."
+
+/-- The ranged-access family document, attached to the MRK-020 row as
+its model half. -/
+def mrk020AccessManifest : Value :=
+  familyDocAt modelVersion "MRK-020"
+    "A ranged blob read touches exactly the proof-necessary nodes: the manifest, the parents on intersecting paths, the intersecting leaves, and their chunk data — never a node outside the range's spine."
+    (some accessOracle) (mrk020Rows realRangedAccess)
+
 /-- The committed Merkle manifest files, additive at the declared model
 version. -/
 def merkleFiles : List (String × String) :=
@@ -526,6 +624,7 @@ def merkleFiles : List (String × String) :=
     (family ++ ".json", Json.document
       (merkleFamilyManifestAt modelVersion family meaning rows)))
   ++ [ ("MRK-014.json", Json.document mrk014BlobManifest)
-     , ("MRK-015.json", Json.document mrk015FragManifest) ]
+     , ("MRK-015.json", Json.document mrk015FragManifest)
+     , ("MRK-020.json", Json.document mrk020AccessManifest) ]
 
 end Effects.Conformance.Manifest

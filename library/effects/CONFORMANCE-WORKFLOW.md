@@ -1810,3 +1810,38 @@ Stop and return to grilling if:
   ninety-six tests across twenty-six files, with the in-flight
   optimization delivery's caller-supplied execution identity
   composing cleanly.
+- **Guaranteed-teeth conformance batch: access-set family, format
+  goldens, purity gate (2026-08-27):** three enforcement classes
+  landed under the operator's directive that tests be provably able
+  to catch bad behavior — teeth demonstrated by a killed mutant, a
+  golden byte, or a mechanical scan, never by assertion of intent.
+  (1) MRK-020 minted plan-§7-first: READ COMPLEXITY IS CONFORMANCE
+  — for each chunk list and range the model materializes the exact
+  address set an honest ranged read may load (manifest, parents on
+  intersecting paths, intersecting leaves, their chunk data), so a
+  linear walk or a skipped boundary leaf is a red vector row, not a
+  benchmark; compile-time guards pin the spine arithmetic (a
+  one-chunk slice of eight touches five nodes; the full range
+  touches every node exactly once), and the FULL-WALK mutant is
+  declared and killed — thirty-three mutants. The family leads its
+  binding, declared in the index registry until the shared read
+  plan lands. (2) The internal storage format is pinned by GOLDEN
+  BYTES: histories and witnesses are durable CAS content, so the
+  recorded hex of a representative witness (covering the new
+  protocol categories and optional fields), history entry, and
+  nested stored value must encode and decode exactly forever — an
+  encoder change that would strand existing artifacts turns red
+  before it lands — plus a sixty-four-seed structural round-trip
+  sweep beyond the fixtures. Captured against the just-optimized
+  encoder, so the optimization is now permanently guarded. (3) The
+  SRC PURITY GATE: nothing under src/ may run an Effect
+  (runSync/runPromise/runFork/unsafe forms) — runtime execution
+  belongs to callers — enforced as the first step of the
+  TypeScript task. Queued with specs for the implementation lane,
+  behind its in-flight parts: the exchange-count arithmetic suite
+  (missing batches exactly ceil(N/maxBatchKeys), uploads exactly
+  the missing count, publish exactly once — after the streaming
+  push), the MRK-020 binding through a load-counting store (after
+  the shared read plan), and the paired-perturbation reducer sweep
+  (every generated lawful script paired with a one-edit unlawful
+  twin that must reject).

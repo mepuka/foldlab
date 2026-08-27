@@ -66,6 +66,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | MRK-017 | pending — by carrier construction at MRK-3 |
 | MRK-018 | instantiated (CODEC) |
 | MRK-019 | discharged — carrier construction (response\_trailing\_rejected) |
+| MRK-020 | pending — TypeScript evidence at E3 |
 | SRV-001 | pending — by carrier construction at S-M1 |
 | SRV-002 | pending — by carrier construction at S-M1 |
 | SRV-003 | pending — TypeScript evidence at S-M2 |
@@ -380,6 +381,10 @@ A blob manifest commits recipe identity, total bytes, and leaf count; readers se
 ## MRK-019
 
 A proof response is exactly one complete decode: trailing content after the machine's done status is rejected at the framer, and responses are bounded by declared output and proof-amplification budgets.
+
+## MRK-020
+
+A ranged blob read touches exactly the proof-necessary nodes: the manifest, the parents on intersecting paths, the intersecting leaves, and their chunk data — never a node outside the range's spine.
 
 ## SRV-001
 
