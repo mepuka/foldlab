@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "effect-service-cas-derivation-sources",
+  "observedAt": "2026-08-27T02:02:03.5753563-05:00",
+  "scope": "Pinned Effect v4 source surfaces used by the Effects CAS value, service, Layer, materialized-graph, and remote-store design survey.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4",
+    "dotnetRuntime": "10.0.10"
+  },
+  "repositoryPin": {
+    "id": "effect",
+    "repository": "https://github.com/Effect-TS/effect",
+    "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+    "rootTree": "68a2b3baeed509bc291cc3788c9b2c04bf53a80f",
+    "package": {
+      "name": "effect",
+      "version": "4.0.0-rc.111",
+      "license": "MIT"
+    },
+    "sourceLock": ".reference/provenance/sources.lock.json",
+    "artifacts": [
+      {
+        "path": "packages/effect/src/LayerMap.ts",
+        "role": "keyed-scoped-service-layer-resolution",
+        "gitBlob": "7b787441efed861e9fcdbb14ec8ef6d6dedc2c5e",
+        "sha256": "d07de34513bd6c3326e6f55a0108d2d07e6845b031d04deaf18c991a67621bd0",
+        "bytes": 16003
+      },
+      {
+        "path": "packages/effect/src/PrimaryKey.ts",
+        "role": "string-primary-key-protocol-and-non-identity-boundary",
+        "gitBlob": "ed76a3bc28b7ef3835d04c2602c96ac63395c07a",
+        "sha256": "60b57f9df8d7cc750969b13b7dc9a7b1a534ba5172c1945175008414f95f6703",
+        "bytes": 3574
+      },
+      {
+        "path": "packages/effect/src/RequestResolver.ts",
+        "role": "request-batching-and-cache-integration",
+        "gitBlob": "2061d4b86067451d6d68144d0bd6c16e39dde4c1",
+        "sha256": "cd7958c6f390f89654b602770d5f4a14613dd3df95ee88b71e1cf5ea9a652b77",
+        "bytes": 44299
+      },
+      {
+        "path": "packages/effect/src/Cache.ts",
+        "role": "keyed-lookup-cache-and-concurrent-miss-deduplication",
+        "gitBlob": "d1e3091b24db29b2377ce6f62b2d026f6cc18a6a",
+        "sha256": "16770e98d092fbfd4aebe2f9d6f51b659eeda7f6176d30e2ef6688c9b7d325d2",
+        "bytes": 43886
+      },
+      {
+        "path": "packages/effect/src/Graph.ts",
+        "role": "directed-graph-cycle-checking-traversal-and-snapshot-prior-art",
+        "gitBlob": "4a099e3056fc93ba7bec8ad7596a32b5186e4aab",
+        "sha256": "4b9b2f64a3d3554778a566dd330b61ef89252739adc4a83c7d188c9a6d099682",
+        "bytes": 274558
+      },
+      {
+        "path": "packages/effect/src/SchemaTransformation.ts",
+        "role": "effectful-bidirectional-schema-transformation",
+        "gitBlob": "e90c1a653ca5362871e612e6e4569e6470be8218",
+        "sha256": "f3d4b80cb7a6e1ee3b4df1dffbe80d7adadeb5019e0bcd49a607da8f652dec16",
+        "bytes": 59645
+      },
+      {
+        "path": "packages/effect/src/unstable/persistence/Persistable.ts",
+        "role": "schema-described-persistable-request-prior-art",
+        "gitBlob": "7935e7981b8cd6fea781db48d4faae85bbda115c",
+        "sha256": "f70df68f20b5874da325088b7badf9a7287935d740442ee312b714260aff6af5",
+        "bytes": 7653
+      },
+      {
+        "path": "packages/effect/src/unstable/persistence/Persistence.ts",
+        "role": "layered-memory-sql-redis-persistence-prior-art",
+        "gitBlob": "631df6ed7cc44a0b0758f3958845f696769f4b0c",
+        "sha256": "cea4cb06548c153c5862336f07d75bef5f98b91a8edf0d739da96575a7c74ab1",
+        "bytes": 42991
+      },
+      {
+        "path": "packages/effect/src/unstable/eventlog/EventLogRemote.ts",
+        "role": "scoped-authenticated-chunked-remote-service-prior-art",
+        "gitBlob": "dc76e650e0151ceb502288d3e36d5eaa95180c8f",
+        "sha256": "912c9451676828043353eed0d7eeaf632ee6b860c6ae4cce928a7ed3fa58ec74",
+        "bytes": 12815
+      },
+      {
+        "path": "packages/effect/src/unstable/http/HttpClient.ts",
+        "role": "outgoing-http-service-transforms-and-retries",
+        "gitBlob": "fb736c201bd6e279dc49dac71cde28213afd3123",
+        "sha256": "0e1057cd1e02453b3f9ec8f8de2ff8fcab2d82d246c6e6562c86fa06e62c7d7f",
+        "bytes": 63083
+      },
+      {
+        "path": "packages/effect/src/unstable/http/HttpClientRequest.ts",
+        "role": "http-request-auth-base-url-and-byte-body-surface",
+        "gitBlob": "46751c3b3c0d9379db957b5ca16a1e9258a50cab",
+        "sha256": "6fd508db327f92e010d854d0e5644f30a961e1456d2dac4c4be4c8d3672a41c6",
+        "bytes": 29585
+      },
+      {
+        "path": "packages/effect/src/unstable/http/HttpIncomingMessage.ts",
+        "role": "effectful-byte-and-stream-response-body-surface",
+        "gitBlob": "1b915334fad875213e71a337e7a463c3de547f37",
+        "sha256": "5a17700604d8f444c4b00d4106701ce446bd380ce16913c322a22e5df28fc30b",
+        "bytes": 5687
+      },
+      {
+        "path": "packages/effect/src/unstable/http/HttpBody.ts",
+        "role": "byte-array-and-streaming-http-body-surface",
+        "gitBlob": "ae9db9374cbc217a932b6b8dc15438717dcf8330",
+        "sha256": "debd9c754f3acd1706dedbcbab9e926650dc777e6472b6b9023b68f1163a649d",
+        "bytes": 15394
+      }
+    ]
+  },
+  "standing": {
+    "status": "resolved-research-source-pins",
+    "sourceLockPromotion": "pending",
+    "note": "The Effect repository revision is already selected by the estate Source Lock. This receipt resolves the additional file identities used by this conception-mode report; it does not promote unstable APIs into the Foldlab contract."
+  },
+  "result": "resolved-research-source-pins"
+}

@@ -44,6 +44,10 @@ repository locations.
   content-addressed program graph, an append-only effect history, checkpoints,
   and replay witnesses must remain separate. It proposes a fail-closed replay
   design and staged research direction without selecting a domain contract.
+- [`effect-service-cas-derivation-design.md`](effect-service-cas-derivation-design.md)
+  proposes an explicit domain-value projection and Effect `Layer` hydration
+  seam, then evaluates remote-store, batching, cache, scoped-client, offline,
+  and checked materialized-graph considerations without ratifying an API.
 - [`xet-prior-art.md`](xet-prior-art.md) evaluates the exact
   `draft-denis-xet-05` edition as bounded CAS storage/transfer prior art for the
   ratified Effect Replay design. It records reusable materialization patterns,
