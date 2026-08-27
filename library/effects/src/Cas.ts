@@ -36,7 +36,9 @@ export {
   CasStore as Store,
   decodeCasNode as decodeNode,
   encodeCasNode as encodeNode,
+  layerCryptoWebCrypto,
   layerMemory,
+  layerMemoryLive,
   makeMemoryCasStore as makeMemoryStore,
   makeSha256Address,
 } from "./cas/Store.ts"

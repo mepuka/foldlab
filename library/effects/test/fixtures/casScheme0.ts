@@ -9,7 +9,7 @@
  * suite build the fixture through this one module, so a committed file that
  * drifts from the shipped SHA-256 path fails the gate.
  */
-import { Crypto, Effect, Encoding, Layer, PlatformError, Schema } from "effect"
+import { Crypto, Effect, Encoding, Schema } from "effect"
 import { readFile } from "node:fs/promises"
 import { Byte, CasNodeInput, ContentId, type StoreFailure } from "../../src/cas/Node.ts"
 import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
@@ -23,31 +23,11 @@ const codecManifestUrl = new URL(
 )
 
 /**
- * The production digest path: SHA-256 through the platform's WebCrypto, which
- * every target runtime provides. The package resolves digests through Effect's
- * platform-independent `Crypto` service and ships no implementation of its
- * own, so a production composition supplies exactly this.
+ * The production digest path now ships in the package as
+ * `Cas.layerCryptoWebCrypto`; the fixture re-exports it so this gate keeps
+ * proving the shipped layer against the known-answer vectors.
  */
-export const productionCrypto: Layer.Layer<Crypto.Crypto> = Layer.succeed(
-  Crypto.Crypto,
-  Crypto.make({
-    randomBytes: (size) => crypto.getRandomValues(new Uint8Array(size)),
-    digest: (algorithm, data) =>
-      Effect.tryPromise({
-        // The pre-image is copied into a plain buffer: a shared or resizable
-        // backing store must not change under an in-flight digest.
-        try: () => crypto.subtle.digest(algorithm, Uint8Array.from(data)),
-        catch: (cause) =>
-          new PlatformError.PlatformError(
-            new PlatformError.BadArgument({
-              module: "Crypto",
-              method: "digest",
-              description: `${algorithm} failed: ${String(cause)}`,
-            }),
-          ),
-      }).pipe(Effect.map((digest) => new Uint8Array(digest))),
-  }),
-)
+export { layerCryptoWebCrypto as productionCrypto } from "../../src/cas/Store.ts"
 
 const AddressBytes = Schema.Array(Byte).check(Schema.isLengthBetween(32, 32))
 

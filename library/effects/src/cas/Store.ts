@@ -14,6 +14,7 @@ import {
   Effect,
   Encoding,
   Layer,
+  PlatformError,
   SynchronizedRef,
 } from "effect"
 import { bytesEqual } from "../internal/bytes.ts"
@@ -282,3 +283,34 @@ export function layerMemory(
       : makeMemoryCasStore(address),
   )
 }
+
+/** The WebCrypto-backed `Crypto` layer: SHA-256 through the platform's
+ * `crypto.subtle`, which every target runtime provides. The package ships
+ * no other Crypto implementation, so this is the production digest path a
+ * local composition supplies — proved against the scheme-0 known-answer
+ * vectors by the conformance gate. */
+export const layerCryptoWebCrypto: Layer.Layer<Crypto.Crypto> = Layer.succeed(
+  Crypto.Crypto,
+  Crypto.make({
+    randomBytes: (size) => crypto.getRandomValues(new Uint8Array(size)),
+    digest: (algorithm, data) =>
+      Effect.tryPromise({
+        // The pre-image is copied into a plain buffer: a shared or resizable
+        // backing store must not change under an in-flight digest.
+        try: () => crypto.subtle.digest(algorithm, Uint8Array.from(data)),
+        catch: (cause) =>
+          new PlatformError.PlatformError(
+            new PlatformError.BadArgument({
+              module: "Crypto",
+              method: "digest",
+              description: `${algorithm} failed: ${String(cause)}`,
+            }),
+          ),
+      }).pipe(Effect.map((digest) => new Uint8Array(digest))),
+  }),
+)
+
+/** The zero-configuration local runtime: one isolated in-memory store over
+ * scheme-0 SHA-256 through WebCrypto. */
+export const layerMemoryLive: Layer.Layer<CasStore> =
+  layerMemory().pipe(Layer.provide(layerCryptoWebCrypto))
