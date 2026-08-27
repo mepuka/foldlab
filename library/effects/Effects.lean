@@ -13,6 +13,7 @@ import Effects.Replay.Reducer
 import Effects.Replay.Relation
 import Effects.Replay.Laws
 import Effects.Replay.Run
+import Effects.Replay.Witness
 import Effects.Conformance
 
 /-!
