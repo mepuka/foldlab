@@ -69,6 +69,13 @@ repository locations.
   adoption points) and how the tracing/Clock ambient trap resolves
   (`TracerTimingEnabled = false` in replay construction; deterministic
   time by describing it), without ratifying any change.
+- [`effect4-schema-custom-codecs-for-cas-values.md`](effect4-schema-custom-codecs-for-cas-values.md)
+  reviews the pinned v4 Schema implementation for custom encode/decode
+  machinery behind CAS value descriptors: the sanctioned built-in
+  constructor vocabulary, the `decodeTo`/`encodeTo` discipline with a
+  per-descriptor round-trip fixture, a `Schema.Json` static-bound
+  candidate, and `SchemaRepresentation` noted as future prior art —
+  without ratifying any change.
 
 ## Local external inputs
 
