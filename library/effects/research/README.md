@@ -51,6 +51,11 @@ repository locations.
   conformance workflow's schema bundles: proof obligations as structure
   fields, kits made unrepresentable-when-missing, and the sentence field as
   the plain-meaning source.
+- [`lean4-markdown-prior-art.md`](lean4-markdown-prior-art.md) records the
+  `lean4-markdown` library as design prior art for the typed human-surface
+  emitter: the `Represent` projection typeclass and arity-checked tables,
+  re-expressed in an owned module whose default path escapes (route (b),
+  ruled 2026-08-26).
 
 ## Local external inputs
 

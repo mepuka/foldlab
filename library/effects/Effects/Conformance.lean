@@ -1,3 +1,5 @@
+import Effects.Conformance.Markdown
+
 /-!
 # Conformance schema bundles
 
@@ -252,9 +254,30 @@ their instances. -/
 
 def registry : List LedgerEntry := []
 
-def emitLedger (rows : List LedgerEntry) : String :=
-  String.intercalate "\n" (rows.map fun r => s!"{r.id} | {r.family} | {r.sentence}")
+/-- Lean-side ledger projection: the instantiated-obligation table plus one
+sentence section per obligation, rendered through the typed emitter — never
+by ad-hoc string concatenation. The phase-1 generator merges this projection
+with the plan's obligation inventory and the TypeScript/mutation results. -/
+def ledgerBlocks (rows : List LedgerEntry) : List Markdown.Block :=
+  let title := Markdown.Block.h1 "Conformance ledger — Lean-side projection"
+  if rows.isEmpty then
+    [title, .p [.text "No instantiated obligations yet."]]
+  else
+    let table := Markdown.Block.table {
+      headers := ⟨#["ID", "Family"], rfl⟩
+      rows := rows.map fun r => ⟨#[⟨[.text r.id]⟩, ⟨[.text r.family]⟩], rfl⟩
+    }
+    let sections := rows.flatMap fun r =>
+      [Markdown.Block.h2 r.id, .p [.text r.sentence]]
+    title :: table :: sections
 
-#guard emitLedger registry == ""
+def emitLedger (rows : List LedgerEntry) : String :=
+  Markdown.render (ledgerBlocks rows)
+
+#guard emitLedger registry ==
+  "# Conformance ledger — Lean-side projection\n\nNo instantiated obligations yet.\n"
+
+instance : Markdown.ToMarkdown (List LedgerEntry) where
+  blocks := ledgerBlocks
 
 end Effects.Conformance
