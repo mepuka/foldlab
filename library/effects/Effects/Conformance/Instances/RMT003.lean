@@ -1,4 +1,5 @@
 import Effects.Conformance.Schema.TraceExcludes
+import Effects.Conformance.Rider
 import Effects.Conformance.Instances.RemoteKit
 import Effects.Remote.Laws
 
@@ -11,9 +12,10 @@ integrity-rejected" — membership in the set-valued terminal-integrity
 memory, which only ever grows — and the excluded decision is issuing an
 upload command for that pair under any operation identifier. The
 backing theorems are temporal: the per-step exclusion composes with
-rejection-set monotonicity into the whole-run corollary
-(`RMT_003_terminal_over_run`). The negative kit is the same request
-from a state with no rejection on record, which does issue.
+rejection-set monotonicity into the whole-run corollary, and both are
+carried structurally by the sentence riders below. The negative kit is
+the same request from a state with no rejection on record, which does
+issue.
 -/
 
 namespace Effects.Conformance
@@ -53,5 +55,18 @@ def rmt003 : TraceExcludes MSt MIn MDec Bool where
   negInput := .request 1 (.upload 2 [7, 9])
   neg_mode := by simp [rmtEmpty]
   neg_bad := by simp [Effects.Remote.step, rmtEmpty, rmtParams]
+
+/-- "The rejection memory only grows": per-step monotonicity of the
+terminal-integrity set, over every machine instantiation. -/
+def rmt003MonotoneRider : SentenceRider :=
+  .of "RMT-003" "the rejection memory only grows"
+    (@RMT_003_rejection_monotone)
+
+/-- "Terminal over the whole run": the per-step exclusion composed with
+monotonicity into the run corollary. -/
+def rmt003RunRider : SentenceRider :=
+  .of "RMT-003"
+    "an integrity failure is terminal for those bytes over the whole run"
+    (@RMT_003_terminal_over_run)
 
 end Effects.Conformance

@@ -1,5 +1,6 @@
 import Effects.Conformance.Schema.FailClosed
-import Effects.Replay.Laws
+import Effects.Conformance.Rider
+import Effects.Replay.Run
 
 /-!
 # SES-003 — record-mode delegation is exclusive and outcome-solicited
@@ -11,8 +12,8 @@ registered exactly that invocation. When solicitation fails the step
 rejects with a typed category — delegation outstanding, or unsolicited
 outcome — and the history length is unchanged, so interleaved live calls
 and cross-wired outcomes can never corrupt a history: lawful record runs
-append in invocation order (the run half is
-`SES_003_solicited_run_appends_in_order`). The positive kit is an
+append in invocation order — the run half is carried structurally by the
+sentence rider below. The positive kit is an
 invocation arriving while another is outstanding; the negative kit is the
 same invocation arriving into a clean state, which delegates.
 -/
@@ -80,5 +81,12 @@ def ses003 : FailClosed St In (StepResult String String) where
   negState := clean
   negInput := .invoke invA
   neg_hyp := rfl
+
+/-- The run half of the sentence: over any solicited call-pair list from
+a clean active record state, the whole run appends exactly those
+entries in invocation order, cursor pinned, pending clear. -/
+def ses003OrderRider : SentenceRider :=
+  .of "SES-003" "lawful record runs append in invocation order"
+    (@SES_003_solicited_run_appends_in_order)
 
 end Effects.Conformance

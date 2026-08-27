@@ -1,4 +1,5 @@
 import Effects.Conformance.Schema.TraceExcludes
+import Effects.Conformance.Rider
 import Effects.Conformance.Instances.RemoteKit
 import Effects.Remote.Laws
 
@@ -13,9 +14,9 @@ and verify for its key — and the excluded decision is the cache tag.
 The backing theorem is the conjunction covering both halves of the
 obligation: neither `cached` nor `returned` (the caller's mirror of
 delivery) is reachable without entitlement; the instance's `bad` is the
-cache tag, and the return half is carried by the same named theorem,
-the mutant, and the vectors. The negative kit is an entitled load
-response, which does cache — the guard is not vacuous.
+cache tag, and the return half is carried structurally by the sentence
+rider below, beside the mutant and the vectors. The negative kit is an
+entitled load response, which does cache — the guard is not vacuous.
 -/
 
 namespace Effects.Conformance
@@ -48,5 +49,14 @@ def rmt001 : TraceExcludes StI Unit RTag Bool where
   neg_mode := by simp [entitledToCache, loading2, rmtEmpty, rmtParams]
   neg_bad := by simp [Effects.Remote.step, loading2, rmtEmpty, rmtParams,
     loadEvent, RDecision.tag]
+
+/-- The sentence's return half: `bad` carries the cache tag, and the
+same admission theorem's second conjunct excludes the caller's mirror. -/
+def rmt001ReturnRider : SentenceRider :=
+  .of "RMT-001"
+    "no step ever emits a return to the caller without entitlement"
+    (fun (s : MachineState Nat (List UInt8)) (i : MInput Nat (List UInt8))
+        (h : entitledToCache rmtParams s i = false) =>
+      (RMT_001_no_cache_or_return_without_admission rmtParams s i h).2)
 
 end Effects.Conformance

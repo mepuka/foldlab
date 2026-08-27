@@ -1,4 +1,5 @@
 import Effects.Conformance.Schema.FailClosed
+import Effects.Conformance.Rider
 import Effects.Conformance.Instances.RemoteKit
 import Effects.Remote.Laws
 
@@ -12,7 +13,9 @@ typed result and the confirmed count is unchanged; downloading the node
 instead would prove only that the peer held it at confirmation time,
 which is the same retention exposure the presence claim already carries.
 The kit's positive case attests without any presence report; the
-negative case attests a reported-present key whose bytes verify.
+negative case attests a reported-present key whose bytes verify. The
+sentence's confirmation and cache-non-admission conjuncts are carried
+structurally by the riders below.
 -/
 
 namespace Effects.Conformance
@@ -75,5 +78,18 @@ def rmt017 : FailClosed St AttestIn (MResult Nat (List UInt8)) where
   negState := presentState
   negInput := (3, [1, 2, 3])
   neg_hyp := ⟨rfl, by simp [presentState]⟩
+
+/-- The entitled direction: verified bytes plus a presence report step
+to exactly the confirmed-and-attested machine state. -/
+def rmt017ConfirmsRider : SentenceRider :=
+  .of "RMT-017"
+    "an entitled attestation confirms the key for publication"
+    (@RMT_017_attest_confirms)
+
+/-- Presence stays non-admission for reads: attestation never touches
+the cache, entitled or not. -/
+def rmt017CacheRider : SentenceRider :=
+  .of "RMT-017" "without admitting anything to the cache"
+    (@RMT_017_attest_never_caches)
 
 end Effects.Conformance

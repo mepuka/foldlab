@@ -79,4 +79,20 @@ def registry : List LedgerEntry :=
    "CODEC", "CODEC"]
 #guard (emitLedger registry).take 20 == "# Conformance ledger"
 
+/-- Every declared sentence rider: the conjuncts of ratified sentences
+discharged by named theorems rather than schema law fields, carried
+structurally so the citations are load-bearing. -/
+def sentenceRiders : List SentenceRider :=
+  [ rmt001ReturnRider
+  , rmt003MonotoneRider
+  , rmt003RunRider
+  , rmt017ConfirmsRider
+  , rmt017CacheRider
+  , ses003OrderRider ]
+
+#guard sentenceRiders.map (·.id) ==
+  ["RMT-001", "RMT-003", "RMT-003", "RMT-017", "RMT-017", "SES-003"]
+#guard (sentenceRiders.map (·.id)).all
+  (fun id => (registry.map (·.id)).contains id)
+
 end Effects.Conformance
