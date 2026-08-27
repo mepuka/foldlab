@@ -960,10 +960,18 @@ declared mutant per falsification case in both directions.
   implementation-side consumption (chunked `CasBlob`, early-emission
   `CasTransfer`, TypeScript mirrors and harness lanes) is a LATER
   slice that consumes these ratified families.
-- **MRK-2 — consistency proofs** (`MRK-007`): the RFC 9162
-  `SUBPROOF` shape over append-only hash-chained structures (session
-  histories, witnesses), with the prefix-agreement corollary.
-  Sequenced by the operator after MRK-1.
+- **MRK-2 — consistency proofs and verified partial reads**
+  (`MRK-007` plus the Q docket): the RFC 9162 `SUBPROOF` shape over
+  append-only hash-chained structures (session histories, witnesses)
+  with the prefix-agreement corollary; the proof-document codecs
+  (opening, stream header and items) under the control-codec
+  discipline; ranged stream-generation completeness (the server-half
+  theorem); the blob refinement tie (abstract Merkle hash as the
+  address of the corresponding canonical node encoding); and the
+  key-list codec exactness closing the RMT-014 narrowing observation
+  after F1 lands. Design authority:
+  [`research/server-reference-and-verified-reads.md`](research/server-reference-and-verified-reads.md);
+  docket Q1–Q5 pending ratification.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`;
   plus discovery-order pull (ruled at the R2 audit: a cold replica
   pulling a reference-carrying root must discover root-first and
@@ -1011,6 +1019,24 @@ declared mutant per falsification case in both directions.
   its own slice (not necessarily R2 or R3), always behind the
   abstract conformance-peer interface with its audited gaps as named
   detection targets, never a standards oracle.
+- **Implementation-lane sequencing (directed 2026-08-27):** front-end
+  slices first — **F1** the remote API to spec (machine-mirror
+  catch-up, the five R3 families through the harness, the control
+  codec, adapter counterparts, `push`; in flight), **F2** the Merkle
+  query surface (TypeScript mirrors consuming the MRK families,
+  proof-document codecs, `CasBlob`), **F3** the discovery-order pull
+  staging area (ratified P8). The normative wire letter for F1's
+  adapter half is [`PROFILE-CAS-HTTP-0.md`](PROFILE-CAS-HTTP-0.md)
+  W1–W6.
+- **S-lane — server tooling toward publication (directed
+  2026-08-27):** **S1** the reference server (`CasServer` over
+  pluggable storage, capabilities derived from policy, handlers
+  sharing the client codecs) and the conformance kit packaged as a
+  black-box server suite; **S2** the LeanServer binding slice and the
+  server-machine survey. Target design:
+  [`research/server-reference-and-verified-reads.md`](research/server-reference-and-verified-reads.md).
+  The splash gate stays: the TypeScript verifier passing end-to-end
+  against the reference server.
 
 Exit:
 

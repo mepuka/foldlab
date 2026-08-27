@@ -1121,3 +1121,48 @@ Stop and return to grilling if:
   next; RMT rows 005–008 and 014 flip green on the Lean side at this
   landing with their TypeScript evidence columns filling at the
   delivery review.
+- **Wire contract W1–W6 and the server direction (2026-08-27):** the
+  implementation lane stopped correctly at the unminted wire choices
+  for the R3 adapter half and asked for the contract; the operator
+  directed the target server design first, the reference server as
+  the destination, publication as the goal, and verified partial
+  reads as the active workstream, delegating prioritization. Under
+  that delegation the cas-http/0 R3 extension landed as the normative
+  `PROFILE-CAS-HTTP-0.md` (W1 resource spaces and the shared
+  status→event table; W2 the canonical key-list document; W3 the
+  required capabilities endpoint carrying exactly the eight-byte
+  canonical document; W4 positional find-missing whose response is
+  exactly N status bytes in request order, presence never carrying
+  content bytes on this profile; W5 publish carrying the declared
+  closure with client-side gating as the law and server verification
+  optional; W6 the caller surface on the streamed-transfer service
+  with the `push` composite as the developer-facing headline and
+  three error-vocabulary extensions, no new error class). Two
+  decision points were flagged and stand accepted with the
+  delegation: the declared closure travels on the publish wire so
+  any server can verify, and `push` is in F1 scope while `pull`
+  waits for the staging-area slice. The profile document is now the
+  normative home; the README profile section consolidates into it at
+  the next acceptance review. The target design landed as
+  `research/server-reference-and-verified-reads.md`: the
+  four-artifact published shape (client, reference server,
+  conformance kit, profile document), the blob-mode ruling question
+  answered — a blob is a node graph, not a second store:
+  position-bound leaves per the proved pre-image model, parents as
+  ordinary two-reference nodes, the root an ordinary content
+  identifier so negotiation, closure-gated publish, and pull apply
+  verbatim; the chunk recipe is a PROFILE constant (a
+  capability-derived chunk size would fragment content identity
+  across authorities); blob mode is explicit, never a threshold —
+  and the proof plane whose range-stream wire language is exactly
+  the verified-streaming decoder's input alphabet, so the committed
+  MRK stream vectors constrain the wire directly. Sequencing
+  recorded in plan section 9: F1 (in flight) → F2 → F3 on the
+  implementation lane, S1/S2 after; conformance lane next is the
+  MRK-2/partial-reads docket Q1–Q5, presented for ratification (Q5,
+  the key-list codec exactness closing the RMT-014 narrowing
+  observation, deliberately waits for F1 acceptance so committed
+  manifests do not move mid-slice). The CasBlob/CasSync service
+  mints stay G0 proposals from the streaming-sync survey; W6
+  deliberately extends the ratified streamed-transfer service
+  instead, and any service split is an F2 docket decision.

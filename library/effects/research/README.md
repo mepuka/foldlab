@@ -136,6 +136,16 @@ repository locations.
   extraction — with the absence result that no prover has mechanized
   bao streaming or the RFC 9162 algorithms. A nine-item decision
   docket; nothing ratified.
+- [`server-reference-and-verified-reads.md`](server-reference-and-verified-reads.md)
+  is the target design for the published shape: the four-artifact
+  package (client, reference server over pluggable `CasServerStore`
+  backends with policy-derived capabilities, black-box conformance
+  kit, profile document), the blob mode as a node graph rather than a
+  second store (position-bound leaves per the proved model, the chunk
+  recipe a profile constant, explicit mode), the proof plane whose
+  range-stream wire language is exactly the verified-streaming
+  decoder's input alphabet, and the Q1–Q5 / F2 / S-lane dockets —
+  dockets pending ratification, target sections non-normative.
 - [`leanserver-adoption.md`](leanserver-adoption.md) is the formal
   adoption record for LeanServer at its ratified pin: the
   materialized gitignored clone, blob-level digest verification
