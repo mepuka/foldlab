@@ -76,6 +76,23 @@ repository locations.
   per-descriptor round-trip fixture, a `Schema.Json` static-bound
   candidate, and `SchemaRepresentation` noted as future prior art —
   without ratifying any change.
+- [`remote-cas-prior-art-compendium.md`](remote-cas-prior-art-compendium.md)
+  condenses a four-sweep study of shipped CAS practice — wire protocols
+  at exact pins (Git, OCI, REAPI, Nix, OSTree, casync), distributed
+  addressing theory (IPFS, BLAKE3/bao, RBSR, chunking regimes, Venti),
+  production failure semantics (GC races, presence-oracle desync,
+  negative caching, the S3 2008 control-state lesson), and
+  conformance-testing prior art (OCI suite, git's protocol fixtures,
+  ShardStore, FoundationDB, etcd robustness, BoringSSL, sans-io) —
+  with five cross-sweep convergences and per-part implication lists.
+- [`remote-cas-conformance-design.md`](remote-cas-conformance-design.md)
+  synthesizes the compendium into the remote-CAS conformance design:
+  a sans-io client decision machine over an abstract exchange
+  alphabet, fault schedules as manifest fixture data (flagged novel
+  ground), a sixteen-row candidate obligation catalog with family
+  fits, the four-lane evidence architecture, the staged R ladder, and
+  the remote Pass A docket skeleton — hypotheses only, nothing
+  promoted.
 
 ## Local external inputs
 
