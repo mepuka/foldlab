@@ -536,3 +536,24 @@ Stop and return to grilling if:
   weigh. The first `OutcomeInadmissible` emission arrived with this
   milestone at outcome decode, as the M3 taxonomy-fidelity ruling
   anticipated.
+- **M5 acceptance (2026-08-27):** the compositional-chaining delivery
+  was reviewed first-hand and accepted — one test-side file, nothing
+  else touched. Two independently described leaf services compose under
+  one transparent orchestration service through ordinary Layer
+  composition (the orchestration is never described or wrapped; its
+  control code re-executes while leaves substitute), record uses the
+  by-value kit overload and replay the bare kit, and the same caller
+  program runs under both graphs. All four ratified fixtures hold
+  record-then-replay: repeated identical leaves stay distinct
+  occurrences consumed in order; a nested typed failure re-injects
+  through the failure channel; recovery control flow re-executes over
+  substituted leaves with record and replay agreeing on outcome and
+  trace; and a mid-orchestration divergence rejects at the frozen
+  cursor with no live fallback. The exit holds: replayed orchestrations
+  consume the full nested history with zero live invocations on both
+  fakes. Observation recorded, no action owed: Effect's span tracing
+  consults the default Clock, so a traced method inside replayed
+  orchestration trips the ambient tripwire — the fixtures keep
+  orchestration control methods untraced, the reject-first answer; a
+  deterministic tracing clock in the replay environment is a future
+  D7-revisit candidate if a fixture ever demands spans.
