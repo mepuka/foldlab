@@ -1718,3 +1718,24 @@ Stop and return to grilling if:
   the 0.2.0 slice; the merge composed cleanly with zero file
   overlap — one hundred eighty-eight tests across twenty-four
   files on the merged tree.
+- **Axiom profile enforced at build time (2026-08-27):** the
+  release-queue axiom gate landed as a compile-time elaboration
+  command in its own exe root, riding the default lake build so
+  `check:effects` enforces it with zero task wiring. The sweep
+  walks every constant declared under `Effects.*` with a
+  shared-cache collector: only `propext`, `Quot.sound`, and
+  `Classical.choice` may be reachable; `sorryAx` and the
+  native-decide axioms are refused by name; every declared
+  carrier-discharge citation must resolve to a real constant, so a
+  renamed or typo'd theorem can no longer sit behind a green
+  discharged row; and the resolved carriers are held to the strict
+  base profile. FINDING sharpened by the gate's first run: all
+  NINE discharge carriers stand on `propext`/`Quot.sound` alone —
+  the choice-exception list is EMPTY; the documented
+  `Classical.choice` users are instance-side only. The quarantined
+  mutant tree is deliberately outside the sweep. The declared
+  Merkle vector-growth batch (single-leaf opening, empty stream,
+  manifest upper-boundary values, a five-chunk blob graph) is
+  QUEUED, deferred while the in-flight implementation delivery
+  consumes those exact manifests — growth lands after its
+  acceptance under the ratified same-version mechanism.
