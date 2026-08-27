@@ -58,3 +58,8 @@ export type {
   ReplayableKit,
   ReplayableValueKit,
 } from "./replay/ServiceAdapter.ts"
+
+// The abort-path witness receipt sink. Defaults to a drop sink;
+// production compositions override the reference.
+export { WitnessSink } from "./replay/WitnessSink.ts"
+export type { WitnessReceipt, WitnessSinkShape } from "./replay/WitnessSink.ts"

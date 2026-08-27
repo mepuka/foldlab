@@ -34,6 +34,10 @@ export namespace CasBlob {
 
   const MaxUint32 = 0xffff_ffff
   const KnownRecipes = new Set([0, ReferencedChunkRecipe])
+  /** The bound for materializing a whole blob into one `Uint8Array`:
+   * 2^31 - 1 bytes, the portable typed-array allocation limit. Larger
+   * blobs remain fully readable through `stream` and `slice`. */
+  const MaxMaterializedBytes = 0x7fff_ffffn
 
   /** Blob identity is the manifest ContentId with a compile-time-only brand. */
   export const BlobRef = ContentId.pipe(Schema.brand("BlobRef"))
@@ -163,10 +167,10 @@ export namespace CasBlob {
       ? 1n
       : (totalBytes + BigInt(ChunkSize) - 1n) / BigInt(ChunkSize)
 
-  const loadPlan = (
+  const loadPlan = Effect.fn("CasBlob.loadPlan")(function* (
     store: CasStoreShape,
     ref: BlobRef,
-  ): Effect.Effect<ReadPlan, CasError | BlobError> => Effect.gen(function* () {
+  ) {
     const id = ContentId.make(ref)
     const manifestNode = yield* store.load(id)
     if (manifestNode.kind.tag !== BlobManifestTag) {
@@ -246,12 +250,12 @@ export namespace CasBlob {
     return Number(plan.totalBytes - BigInt(index) * BigInt(ChunkSize))
   }
 
-  const loadChunk = (
+  const loadChunk = Effect.fn("CasBlob.loadChunk")(function* (
     store: CasStoreShape,
     plan: ReadPlan,
     id: ContentId,
     index: number,
-  ): Effect.Effect<Uint8Array, CasError | BlobError> => Effect.gen(function* () {
+  ) {
     const leaf = yield* store.load(id)
     const expectedLength = expectedChunkLength(plan, index)
     if (leaf.kind.tag !== BlobNodeTag
@@ -410,6 +414,12 @@ export namespace CasBlob {
 
     const get = Effect.fn("CasBlob.get")(function* (ref: BlobRef) {
       const plan = yield* resolve(ref)
+      // The manifest declares the size up front, so an un-materializable
+      // blob is refused before the first chunk loads — never after the
+      // full graph has been read and retained.
+      if (plan.totalBytes > MaxMaterializedBytes) {
+        return yield* new MaterializationError({ totalBytes: plan.totalBytes })
+      }
       const chunks = yield* Stream.runCollect(streamPlan(plan))
       return yield* join(chunks, plan.totalBytes)
     })
@@ -440,8 +450,8 @@ export namespace CasBlob {
         chunks.push(pending.slice(0, pendingLength))
       }
       const graph = yield* materializeBlobGraph(store, chunks).pipe(
-        Effect.mapError((error) => error instanceof BlobGraphError
-          ? format(error.message)
+        Effect.mapError((error) => error._tag === "BlobGraphError"
+          ? format(error.reason)
           : error),
       )
       return BlobRef.make(graph.blobRef)

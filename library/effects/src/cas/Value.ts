@@ -3,8 +3,9 @@
  *
  * The digest payload is canonical JSON of the Schema's Encoded form inside
  * the exact envelope `{ revision, value }`. Object keys are ordered by
- * JavaScript code-unit order at every depth, array order is preserved, only
- * finite JSON numbers are admitted, and the resulting text is UTF-8 encoded.
+ * Unicode codepoint (equal to UTF-8 byte order) at every depth, array order
+ * is preserved, only safe integers are admitted as numbers, and the
+ * resulting text is UTF-8 encoded.
  * The kind tag and revision together version this projection: the kind tag is
  * the CAS node tag and the revision is carried in the payload envelope.
  *
@@ -21,6 +22,8 @@ import {
   type ContentId as ContentIdType,
 } from "./Node.ts"
 import { CasSchemeVersion, CasStore } from "./Store.ts"
+import { bytesEqual } from "../internal/bytes.ts"
+import { ReservedKindTags } from "../internal/kindTags.ts"
 
 declare const RootTypeId: unique symbol
 
@@ -56,8 +59,6 @@ export interface CasValue<A> {
   readonly get: (root: Root<A>) => Effect.Effect<A, ProjectionError, CasStore>
 }
 
-const HistoryKindTag = 0x48
-const WitnessKindTag = 0x57
 const utf8Encoder = new TextEncoder()
 const utf8Decoder = new TextDecoder("utf-8", { fatal: true })
 
@@ -148,14 +149,6 @@ export const canonicalJson = (
   }
 }
 
-const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
-}
-
 const payloadFor = (
   revision: number,
   encoded: unknown,
@@ -201,15 +194,18 @@ const makeRoot = <A>(id: ContentIdType): Root<A> => id as Root<A>
 /** Construct a typed value projection over the in-memory CAS service. */
 export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
   const kindTag = Byte.make(options.kindTag)
-  if (kindTag === HistoryKindTag || kindTag === WitnessKindTag) {
+  // The whole library-owned registry is refused, not just the replay
+  // tags — a projection aliasing a blob tag would give one kind plane
+  // two public interpretations.
+  if (ReservedKindTags.has(kindTag)) {
     throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)
   }
   if (!Number.isSafeInteger(options.revision) || options.revision < 0) {
     throw new TypeError("Projection revision must be a non-negative safe integer")
   }
 
-  const put: CasValue<A>["put"] = (input) =>
-    Effect.gen(function* () {
+  const put: CasValue<A>["put"] = Effect.fn("CasValue.put")(
+    function* (input) {
       const store = yield* CasStore
       const encoded = yield* Schema.encodeUnknownEffect(options.schema)(input).pipe(
         Effect.mapError((issue) => projectionFailure("encode", issue)),
@@ -221,10 +217,11 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
         refs: [],
       }))
       return makeRoot<A>(id)
-    })
+    },
+  )
 
-  const get: CasValue<A>["get"] = (root) =>
-    Effect.gen(function* () {
+  const get: CasValue<A>["get"] = Effect.fn("CasValue.get")(
+    function* (root) {
       const store = yield* CasStore
       const node = yield* store.load(root)
       if (node.kind.tag !== kindTag) {
@@ -241,7 +238,8 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
       return yield* Schema.decodeUnknownEffect(options.schema)(encoded).pipe(
         Effect.mapError((issue) => projectionFailure("decode", issue, root)),
       )
-    })
+    },
+  )
 
   return { put, get }
 }

@@ -1,20 +1,22 @@
 /** Recipe-1 blob graph materialization over an explicit ordered chunk list. */
-import { Effect } from "effect"
+import { Data, Effect } from "effect"
 import { CasNodeInput, type CasError, type ContentId } from "../cas/Node.ts"
 import type { CasStoreShape } from "../cas/Store.ts"
 import { pow2Below } from "./merkleTree.ts"
+import { BlobManifestTag, BlobNodeTag, ChunkDataTag } from "./kindTags.ts"
 
-export const ChunkDataTag = 8 as const
-export const BlobNodeTag = 9 as const
-export const BlobManifestTag = 10 as const
+export { BlobManifestTag, BlobNodeTag, ChunkDataTag }
 export const ReferencedChunkRecipe = 1 as const
 
 const MaxUint32 = 0xffff_ffff
 const MaxUint64 = 0xffff_ffff_ffff_ffffn
 
-export class BlobGraphError extends Error {
-  readonly name = "BlobGraphError"
-}
+/** Internal recipe violation, carried as a typed tag in the error
+ * channel and translated to the public format error at the boundary —
+ * never encoded, never a bare `Error`. */
+export class BlobGraphError extends Data.TaggedError("BlobGraphError")<{
+  readonly reason: string
+}> {}
 
 export interface BlobGraphResult {
   readonly blobRef: ContentId
@@ -78,10 +80,10 @@ export const materializeBlobGraph = (
 ): Effect.Effect<BlobGraphResult, CasError | BlobGraphError> =>
   Effect.gen(function* () {
     if (chunks.length === 0) {
-      return yield* Effect.fail(new BlobGraphError("recipe 1 requires at least one chunk"))
+      return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 requires at least one chunk" }))
     }
     if (chunks.length > MaxUint32) {
-      return yield* Effect.fail(new BlobGraphError("recipe 1 exceeds the u32 leaf-count field"))
+      return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" }))
     }
 
     const leaves: Array<ContentId> = []
@@ -89,7 +91,7 @@ export const materializeBlobGraph = (
     for (const bytes of chunks) {
       totalBytes += BigInt(bytes.length)
       if (totalBytes > MaxUint64) {
-        return yield* Effect.fail(new BlobGraphError("recipe 1 exceeds the u64 total-bytes field"))
+        return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" }))
       }
       const chunkId = yield* store.put(node(ChunkDataTag, bytes.slice(), []))
       const leafId = yield* store.put(node(

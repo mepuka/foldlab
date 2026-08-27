@@ -16,6 +16,7 @@ import {
   Layer,
   SynchronizedRef,
 } from "effect"
+import { bytesEqual } from "../internal/bytes.ts"
 import {
   AddressMismatch,
   CasNodeInput,
@@ -123,14 +124,6 @@ export const decodeCasNode = (bytes: Uint8Array): CasNodeInput | undefined => {
   })
 }
 
-const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
-}
-
 const cloneNode = (node: CasNodeInput): CasNodeInput =>
   CasNodeInput.make({
     kind: { ...node.kind },
@@ -192,6 +185,13 @@ export const makeSha256Address: Effect.Effect<CasAddress, never, Crypto.Crypto> 
             reason: `SHA-256 failed: ${String(cause)}`,
           })),
         )
+        // A wrong-width digest is a broken host crypto service: fail typed
+        // before the branded hex constructor turns it into a defect.
+        if (digest.byteLength !== 32) {
+          return yield* new StoreFailure({
+            reason: `SHA-256 digest was ${digest.byteLength} bytes, expected 32`,
+          })
+        }
         return ContentId.make(Encoding.encodeHex(digest))
       }),
     }
@@ -209,6 +209,9 @@ export const makeMemoryCasStore = (
       const node = yield* validateNode(input)
       yield* ensureKnownKind(node)
       const canonicalBytes = encodeCasNode(node)
+      // Hashing needs no store state, so it runs before the atomic
+      // section — a slow digest must not serialize every other put.
+      const id = yield* address.digest(canonicalBytes.slice())
 
       const update = (
         current: MemoryState,
@@ -219,26 +222,22 @@ export const makeMemoryCasStore = (
         const admissionError = checkReferences(current, node)
         if (admissionError !== undefined) return Effect.fail(admissionError)
 
-        return address.digest(canonicalBytes.slice()).pipe(
-          Effect.flatMap((id) => {
-            const resident = current.get(id)
-            if (resident !== undefined) {
-              if (bytesEqual(resident.canonicalBytes, canonicalBytes)) {
-                return Effect.succeed([id, current] as const)
-              }
-              return Effect.fail(new StoreFailure({
-                reason: `Content identifier collision at ${id}`,
-              }))
-            }
+        const resident = current.get(id)
+        if (resident !== undefined) {
+          if (bytesEqual(resident.canonicalBytes, canonicalBytes)) {
+            return Effect.succeed([id, current] as const)
+          }
+          return Effect.fail(new StoreFailure({
+            reason: `Content identifier collision at ${id}`,
+          }))
+        }
 
-            const next = new Map(current)
-            next.set(id, {
-              canonicalBytes: canonicalBytes.slice(),
-              node: cloneNode(node),
-            })
-            return Effect.succeed([id, next] as const)
-          }),
-        )
+        const next = new Map(current)
+        next.set(id, {
+          canonicalBytes: canonicalBytes.slice(),
+          node: cloneNode(node),
+        })
+        return Effect.succeed([id, next] as const)
       }
 
       return yield* SynchronizedRef.modifyEffect(state, update)

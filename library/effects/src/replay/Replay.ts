@@ -15,9 +15,10 @@ import {
   Context,
   Data,
   Effect,
-  Fiber,
   Layer,
+  Option,
   Random,
+  Result,
   References,
   Ref,
   Schema,
@@ -34,6 +35,7 @@ import { CasStore, type CasStoreShape } from "../cas/Store.ts"
 import type { Decision, DecisionTrace } from "./Decision.ts"
 import type { AnyOperationDescription, OperationSchema } from "./Operation.ts"
 import { liveHandler } from "../internal/live.ts"
+import { HistoryKindTag, WitnessKindTag } from "../internal/kindTags.ts"
 import { makeSessionCell, type SessionCell } from "../internal/sessionCell.ts"
 import {
   decodeHistoryEntry,
@@ -46,6 +48,7 @@ import {
   StoredWitness,
 } from "../internal/storage.ts"
 import { reduce, rejectStep } from "./Reducer.ts"
+import { WitnessSink, type WitnessReceipt } from "./WitnessSink.ts"
 import type {
   AmbientService,
   Invocation,
@@ -89,8 +92,9 @@ export class Replay extends Context.Service<Replay, ReplayShape>()(
   "foldlab/effect-replay/Replay",
 ) {}
 
-const HistoryKindTag = 0x48
-const WitnessKindTag = 0x57
+/** The abort-path persistence deadline. A hung store must not hang
+ * session teardown; the sink reports what the deadline cost. */
+const AbortPersistDeadline = "1 second"
 
 class MismatchTransport extends Data.TaggedError("ReplayMismatchTransport")<{
   readonly category: MismatchCategory
@@ -747,20 +751,29 @@ const makeReplayRun = (
             : "Defect" as const
           return Effect.gen(function* () {
             const active = yield* cell.read
-            const writer = yield* persistWitness<A, E>(
+            const sink = yield* WitnessSink
+            // The abort-path write is owned by this finalizer fiber and
+            // truly bounded: on deadline the interruptible put is
+            // interrupted (CAS puts are content-addressed, so a repeat
+            // is idempotent), and the sacrifice is reported to the
+            // sink instead of a detached fiber outliving the session
+            // with its receipt discarded.
+            const persisted = yield* persistWitness<A, E>(
               store,
               executionId,
               active,
               { _tag: "Aborted", reason },
               options.terminal,
             ).pipe(
-              Effect.uninterruptible,
-              Effect.forkDetach,
+              Effect.timeoutOption(AbortPersistDeadline),
+              Effect.result,
             )
-            yield* Fiber.join(writer).pipe(
-              Effect.timeoutOption("1 second"),
-              Effect.asVoid,
-            )
+            const result: WitnessReceipt["result"] = Result.isFailure(persisted)
+              ? { _tag: "Failed", error: persisted.failure }
+              : Option.isNone(persisted.success)
+                ? { _tag: "TimedOut" }
+                : { _tag: "Persisted", witness: persisted.success.value }
+            yield* sink.record({ executionId, reason, result })
           })
         }),
       )

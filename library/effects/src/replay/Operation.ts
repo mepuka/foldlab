@@ -40,13 +40,19 @@ export type AnyOperationDescription = OperationDescription
  * variadic, and multi-argument methods must first expose a unary request
  * object at the replay boundary. */
 export type MethodDescription<M> = M extends (
-  request: infer Req,
+  ...args: infer Args
 ) => Effect.Effect<infer Succ, infer Fail>
-  ? OperationDescription<
-      Schema.Codec<Req, unknown, never, never>,
-      Schema.Codec<Succ, unknown, never, never>,
-      Schema.Codec<Fail, unknown, never, never>
-    >
+  // Exactly one required parameter: a bare `(request) =>` pattern also
+  // admits zero-argument, optional, and rest signatures under
+  // assignability, and the generated wrappers forward exactly one
+  // argument — so anything but a one-tuple is rejected here.
+  ? Args extends [request: infer Req]
+    ? OperationDescription<
+        Schema.Codec<Req, unknown, never, never>,
+        Schema.Codec<Succ, unknown, never, never>,
+        Schema.Codec<Fail, unknown, never, never>
+      >
+    : never
   : never
 
 /** One statically checked description per method of the wrapped service
@@ -74,7 +80,7 @@ export const describeService =
     const descriptions: Partial<Record<keyof S, unknown>> = {}
     const keys = Reflect.ownKeys(specs) as unknown as ReadonlyArray<keyof S>
     for (const key of keys) {
-      const spec = specs[key]
+      const spec = specs[key] as Omit<AnyOperationDescription, "id" | "leafReplay">
       if (!Number.isInteger(spec.revision) || spec.revision < 0) {
         throw new TypeError(
           `Replay operation ${prefix}/${String(key)} revision must be a non-negative integer`,

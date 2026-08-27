@@ -4,6 +4,7 @@ import { ContentId } from "../src/cas/Node.ts"
 import { layerMemory } from "../src/cas/Store.ts"
 import {
   describeService,
+  type MethodDescription,
   type ServiceDescriptions,
 } from "../src/replay/Operation.ts"
 import {
@@ -40,6 +41,27 @@ const RatesDescriptions = describeService<RatesShape>("test/HardeningRates")({
     failure: QuoteUnavailable,
   },
 })
+
+// The unary-method constraint is structural, not advisory: every
+// non-unary signature must collapse to `never`, and the one lawful
+// shape must not. These literals turn a loosened conditional red.
+type IsNever<T> = [T] extends [never] ? true : false
+const _zeroArgRejected: IsNever<
+  MethodDescription<() => Effect.Effect<number, never>>
+> = true
+const _twoArgRejected: IsNever<
+  MethodDescription<(a: string, b: string) => Effect.Effect<number, never>>
+> = true
+const _restRejected: IsNever<
+  MethodDescription<(...parts: Array<string>) => Effect.Effect<number, never>>
+> = true
+const _optionalRejected: IsNever<
+  MethodDescription<(input?: string) => Effect.Effect<number, never>>
+> = true
+const _unaryAccepted: IsNever<
+  MethodDescription<(input: string) => Effect.Effect<number, never>>
+> = false
+void [_zeroArgRejected, _twoArgRejected, _restRejected, _optionalRejected, _unaryAccepted]
 
 const MispairedDescriptions: ServiceDescriptions<RatesShape> = {
   quote: {

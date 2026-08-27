@@ -12,7 +12,7 @@
  * with a typed error, never normalized (type-level brands are ruled out by
  * caller-facing type identity).
  */
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Layer, Predicate, Schema } from "effect"
 import type {
   AnyOperationDescription,
   ServiceDescriptions,
@@ -64,13 +64,9 @@ type RuntimeMethod = (
   request: unknown,
 ) => Effect.Effect<unknown, unknown>
 
-const isObject = (value: unknown): value is object =>
-  (typeof value === "object" && value !== null) || typeof value === "function"
-
 const isWrappedService = (value: unknown): boolean =>
-  isObject(value) &&
-  WrappedServiceBrand in value &&
-  (value as Record<string, unknown>)[WrappedServiceBrand] === true
+  Predicate.hasProperty(value, WrappedServiceBrand)
+  && value[WrappedServiceBrand] === true
 
 const brand = <S>(service: S): S => {
   Object.defineProperty(service, WrappedServiceBrand, {

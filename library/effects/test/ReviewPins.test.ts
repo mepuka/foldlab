@@ -62,6 +62,7 @@ import type { RemoteCasTransport } from "../src/internal/remoteTransport.ts"
 import type { ServiceDescriptions } from "../src/replay/Operation.ts"
 import { describeService } from "../src/replay/Operation.ts"
 import { layerReplay, session } from "../src/replay/Replay.ts"
+import { WitnessSink, type WitnessReceipt } from "../src/replay/WitnessSink.ts"
 import { replayable } from "../src/replay/ServiceAdapter.ts"
 import { decodeWitness, StoredWitness } from "../src/internal/storage.ts"
 import { awaitPeerSocketsReleased } from "./remote/harness/ConformancePeer.ts"
@@ -392,35 +393,44 @@ it.effect("explicit terminal schemas project non-plain values before witness sto
   }))
 
 /* ------------------------------------------------------------------ */
-/* Finding 5 — receipt deferred; bounded persistence remediated           */
+/* Finding 5 — abort persistence is owned, bounded, and receipted        */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 5a: the aborted witness is persisted but its receipt is discarded", () =>
+it.effect("pin 5a: the aborted witness receipt reaches the sink", () =>
   Effect.gen(function* () {
     const spy = yield* makeSpyStore()
+    const receipts: Array<WitnessReceipt> = []
     const defect = new Error("pin-defect")
     const caught = yield* session(Effect.die(defect), { mode: "record" }).pipe(
       Effect.catchDefect((d) => Effect.succeed(d)),
       Effect.provide(runtimeOver(Layer.succeed(CasStore, spy.shape))),
+      Effect.provideService(WitnessSink, {
+        record: (receipt) => Effect.sync(() => {
+          receipts.push(receipt)
+        }),
+      }),
     )
-    // The witness node exists in the store...
     const witness = spy.captured.find((p) => p.node.kind.tag === WitnessTag)
     if (witness === undefined) {
       return yield* Effect.die("expected a persisted aborted witness")
     }
     const stored = decodeStoredWitness(witness.node.payload)
     expect(stored.outcome).toEqual({ _tag: "Aborted", reason: "Defect" })
-    // ...but the emitted channel re-raises the original defect with no
-    // receipt: the ContentId is unreachable outside a spying store.
-    // Fixed behavior: a receipt sink/callback or cause-visible receipt.
+    // The emitted channel still re-raises the original defect unchanged;
+    // the receipt travels through the sink, carrying the witness id.
     expect(caught).toBe(defect)
-    expect(String(caught)).not.toContain(witness.id)
+    expect(receipts).toEqual([{
+      executionId: stored.executionId,
+      reason: "Defect",
+      result: { _tag: "Persisted", witness: witness.id },
+    }])
   }))
 
-it.effect("pin 5b: aborted-witness persistence is masked but bounded", () =>
+it.effect("pin 5b: a hung abort write is interrupted at the deadline and receipted as timed out", () =>
   Effect.gen(function* () {
     const witnessStarted = yield* Deferred.make<void>()
     const releaseStore = yield* Deferred.make<void>()
+    const receipts: Array<WitnessReceipt> = []
     const spy = yield* makeSpyStore({
       before: (node) => node.kind.tag === WitnessTag
         ? Deferred.succeed(witnessStarted, undefined).pipe(
@@ -433,6 +443,11 @@ it.effect("pin 5b: aborted-witness persistence is masked but bounded", () =>
       { mode: "record" },
     ).pipe(
       Effect.provide(runtimeOver(Layer.succeed(CasStore, spy.shape))),
+      Effect.provideService(WitnessSink, {
+        record: (receipt) => Effect.sync(() => {
+          receipts.push(receipt)
+        }),
+      }),
       Effect.forkChild,
     )
     yield* Deferred.await(witnessStarted)
@@ -446,7 +461,15 @@ it.effect("pin 5b: aborted-witness persistence is masked but bounded", () =>
     yield* TestClock.adjust(1_001)
     yield* Fiber.join(interruptor)
     expect(interruptSettled).toBe(true)
-    yield* Deferred.succeed(releaseStore, undefined)
+    // No detached fiber survives: the write was interrupted at the
+    // deadline, and the sacrifice is observable rather than silent.
+    // The reason is the abort's own cause — the defect that ended the
+    // session — not the later interrupt racing its teardown.
+    expect(receipts).toEqual([{
+      executionId: expect.any(String),
+      reason: "Defect",
+      result: { _tag: "TimedOut" },
+    }])
   }))
 
 /* ------------------------------------------------------------------ */
