@@ -93,25 +93,45 @@ export class InternalStorageError extends Error {
   readonly name = "InternalStorageError"
 }
 
+const textEncoder = new TextEncoder()
+const textDecoder = new TextDecoder("utf-8", { fatal: true })
+
 class Writer {
-  readonly bytes: Array<number> = []
+  private buffer = new Uint8Array(256)
+  private length = 0
+
+  private reserve(additional: number): void {
+    const required = this.length + additional
+    if (required <= this.buffer.length) return
+    let capacity = this.buffer.length
+    while (capacity < required) capacity *= 2
+    const grown = new Uint8Array(capacity)
+    grown.set(this.buffer)
+    this.buffer = grown
+  }
 
   byte(value: number): void {
-    this.bytes.push(value & 0xff)
+    this.reserve(1)
+    this.buffer[this.length] = value & 0xff
+    this.length += 1
   }
 
   uint32(value: number): void {
     if (!Number.isSafeInteger(value) || value < 0 || value > 0xffff_ffff) {
       throw new InternalStorageError(`Length is outside uint32: ${value}`)
     }
-    this.byte(value >>> 24)
-    this.byte(value >>> 16)
-    this.byte(value >>> 8)
-    this.byte(value)
+    this.reserve(4)
+    this.buffer[this.length] = value >>> 24
+    this.buffer[this.length + 1] = value >>> 16
+    this.buffer[this.length + 2] = value >>> 8
+    this.buffer[this.length + 3] = value
+    this.length += 4
   }
 
   raw(bytes: Uint8Array): void {
-    for (const byte of bytes) this.byte(byte)
+    this.reserve(bytes.length)
+    this.buffer.set(bytes, this.length)
+    this.length += bytes.length
   }
 
   framed(bytes: Uint8Array): void {
@@ -120,7 +140,7 @@ class Writer {
   }
 
   string(value: string): void {
-    this.framed(new TextEncoder().encode(value))
+    this.framed(textEncoder.encode(value))
   }
 
   number(value: number): void {
@@ -130,6 +150,10 @@ class Writer {
     const bytes = new Uint8Array(8)
     new DataView(bytes.buffer).setFloat64(0, value)
     this.raw(bytes)
+  }
+
+  finish(): Uint8Array {
+    return this.buffer.slice(0, this.length)
   }
 }
 
@@ -170,7 +194,7 @@ class Reader {
 
   string(): string {
     try {
-      return new TextDecoder("utf-8", { fatal: true }).decode(this.framed())
+      return textDecoder.decode(this.framed())
     } catch (cause) {
       throw new InternalStorageError(`Invalid UTF-8: ${String(cause)}`)
     }
@@ -291,7 +315,7 @@ const encodeCarrier = (carrier: number, value: unknown): Uint8Array => {
   writer.raw(CarrierMagic)
   writer.byte(carrier)
   writeValue(writer, value)
-  return Uint8Array.from(writer.bytes)
+  return writer.finish()
 }
 
 const decodeCarrier = (carrier: number, bytes: Uint8Array): unknown => {
@@ -308,7 +332,7 @@ const decodeCarrier = (carrier: number, bytes: Uint8Array): unknown => {
 export const encodeStoredValue = (value: unknown): string => {
   const writer = new Writer()
   writeValue(writer, value)
-  return Encoding.encodeHex(Uint8Array.from(writer.bytes))
+  return Encoding.encodeHex(writer.finish())
 }
 
 export const decodeStoredValue = (encoded: string): unknown => {
