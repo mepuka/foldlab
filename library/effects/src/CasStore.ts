@@ -19,6 +19,7 @@ import {
 import {
   AddressMismatch,
   CasNodeInput,
+  ContentNotFound,
   ContentId,
   DanglingReference,
   NonCanonicalBytes,
@@ -247,7 +248,7 @@ export const makeMemoryCasStore = (
       const current = yield* SynchronizedRef.get(state)
       const resident = current.get(id)
       if (resident === undefined) {
-        return yield* new StoreFailure({ reason: `Content not found: ${id}` })
+        return yield* new ContentNotFound({ id })
       }
 
       const canonicalBytes = resident.canonicalBytes.slice()

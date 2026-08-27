@@ -10,11 +10,15 @@
  * defect with a must-fail fixture. Produced services carry a runtime
  * string-keyed brand checked at construction; double wrapping is rejected
  * with a typed error, never normalized (type-level brands are ruled out by
- * caller-facing type identity). Brand mechanics arrive at M4.
+ * caller-facing type identity).
  */
-import type { Context, Layer } from "effect"
-import type { ServiceDescriptions } from "./Operation.ts"
-import type { Replay } from "./Replay.ts"
+import { Context, Effect, Layer, Schema } from "effect"
+import type {
+  AnyOperationDescription,
+  ServiceDescriptions,
+} from "./Operation.ts"
+import { Replay, type ReplayShape } from "./Replay.ts"
+import { bindLive } from "./ReplayLive.ts"
 
 /** Phantom identifier for the internally minted live role key: the same
  * shape as the public service, under a distinct identity, so record-mode
@@ -25,10 +29,10 @@ export interface Live<Self> {
 }
 
 /** Construction-time rejection for wrapping an already-wrapped service. */
-export interface DoubleWrap {
-  readonly _tag: "DoubleWrap"
-  readonly service: string
-}
+export class DoubleWrap extends Schema.TaggedError<DoubleWrap>()(
+  "ServiceAdapter/DoubleWrap",
+  { service: Schema.String },
+) {}
 
 export interface ReplayableKit<Self, S> {
   /** The internal live role key. Live construction provides THIS, never the
@@ -40,10 +44,138 @@ export interface ReplayableKit<Self, S> {
   readonly replay: Layer.Layer<Self, never, Replay>
 }
 
-/** The kit constructor. A by-value overload (passing the live
- * implementation directly, built on this) arrives with the M4
- * implementation. */
-export declare const replayable: <Self, S>(
+/** A convenience kit whose record construction has its live role supplied
+ * by value. It is implemented by providing the core kit's distinct live
+ * role; replay construction remains unchanged and live-free. */
+export interface ReplayableValueKit<Self, S> {
+  readonly live: Context.Service<Live<Self>, S>
+  readonly record: Layer.Layer<Self, DoubleWrap, Replay>
+  readonly replay: Layer.Layer<Self, never, Replay>
+}
+
+const WrappedServiceBrand = "foldlab/effect-replay/ServiceAdapter/wrapped"
+let liveRoleSequence = 0
+
+type RuntimeMethod = (
+  request: unknown,
+) => Effect.Effect<unknown, unknown>
+
+const isObject = (value: unknown): value is object =>
+  (typeof value === "object" && value !== null) || typeof value === "function"
+
+const isWrappedService = (value: unknown): boolean =>
+  isObject(value) &&
+  WrappedServiceBrand in value &&
+  (value as Record<string, unknown>)[WrappedServiceBrand] === true
+
+const brand = <S>(service: S): S => {
+  Object.defineProperty(service, WrappedServiceBrand, {
+    configurable: false,
+    enumerable: false,
+    value: true,
+    writable: false,
+  })
+  return service
+}
+
+const descriptionKeys = <S>(
+  descriptions: ServiceDescriptions<S>,
+): ReadonlyArray<keyof S> =>
+  Reflect.ownKeys(descriptions) as unknown as ReadonlyArray<keyof S>
+
+const descriptionAt = <S>(
+  descriptions: ServiceDescriptions<S>,
+  key: keyof S,
+): AnyOperationDescription => descriptions[key]
+
+const asRuntimeMethod = <S>(service: S, key: keyof S): RuntimeMethod => {
+  const method = (service as Record<keyof S, unknown>)[key]
+  if (typeof method !== "function") {
+    throw new TypeError(`Described service member ${String(key)} is not a function`)
+  }
+  return method as RuntimeMethod
+}
+
+/** Build a replay wrapper without accepting or closing over a live service. */
+const replayService = <S>(
+  descriptions: ServiceDescriptions<S>,
+  replay: ReplayShape,
+): S => {
+  const wrapped: Partial<Record<keyof S, unknown>> = {}
+  for (const key of descriptionKeys(descriptions)) {
+    const operation = descriptionAt(descriptions, key)
+    wrapped[key] = (request: unknown) => replay.invoke(operation, request)
+  }
+  return brand(wrapped as S)
+}
+
+/** Build a record wrapper around the distinct internal live role. */
+const recordService = <S>(
+  descriptions: ServiceDescriptions<S>,
+  replay: ReplayShape,
+  live: S,
+): S => {
+  const wrapped: Partial<Record<keyof S, unknown>> = {}
+  for (const key of descriptionKeys(descriptions)) {
+    const liveMethod = asRuntimeMethod(live, key)
+    const operation = bindLive(descriptionAt(descriptions, key), liveMethod)
+    wrapped[key] = (request: unknown) => replay.invoke(operation, request)
+  }
+  return brand(wrapped as S)
+}
+
+const makeKit = <Self, S>(
   service: Context.Service<Self, S>,
   descriptions: ServiceDescriptions<S>,
-) => ReplayableKit<Self, S>
+): ReplayableKit<Self, S> => {
+  const live = Context.Service<Live<Self>, S>(
+    `${service.key}/LiveRole/${++liveRoleSequence}`,
+  )
+
+  const record = Layer.effect(
+    service,
+    Effect.gen(function* () {
+      const liveService = yield* live
+      if (isWrappedService(liveService)) {
+        return yield* new DoubleWrap({ service: service.key })
+      }
+      const replay = yield* Replay
+      return recordService(descriptions, replay, liveService)
+    }),
+  )
+
+  const replay = Layer.effect(
+    service,
+    Replay.use((runtime) => Effect.succeed(replayService(descriptions, runtime))),
+  )
+
+  return { live, record, replay }
+}
+
+/** Construct the core live-role/record/replay kit. */
+export function replayable<Self, S>(
+  service: Context.Service<Self, S>,
+  descriptions: ServiceDescriptions<S>,
+): ReplayableKit<Self, S>
+
+/** Lift one existing service value through the core kit's live-role layer. */
+export function replayable<Self, S>(
+  service: Context.Service<Self, S>,
+  descriptions: ServiceDescriptions<S>,
+  implementation: S,
+): ReplayableValueKit<Self, S>
+
+export function replayable<Self, S>(
+  service: Context.Service<Self, S>,
+  descriptions: ServiceDescriptions<S>,
+  implementation?: S,
+): ReplayableKit<Self, S> | ReplayableValueKit<Self, S> {
+  const kit = makeKit(service, descriptions)
+  if (implementation === undefined) return kit
+  return {
+    ...kit,
+    record: kit.record.pipe(
+      Layer.provide(Layer.succeed(kit.live, implementation)),
+    ),
+  }
+}

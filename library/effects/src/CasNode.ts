@@ -76,6 +76,13 @@ export class WrongKindReference extends Schema.TaggedError<WrongKindReference>()
   { ref: ContentId, expectedTag: Byte, actualTag: Byte },
 ) {}
 
+/** A caller-requested root is absent from the store. Admission-time missing
+ * references remain the distinct DanglingReference clause. */
+export class ContentNotFound extends Schema.TaggedError<ContentNotFound>()(
+  "CasError/ContentNotFound",
+  { id: ContentId },
+) {}
+
 export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
   "CasError/StoreFailure",
   { reason: Schema.String },
@@ -87,4 +94,5 @@ export type CasError =
   | UnknownKind
   | DanglingReference
   | WrongKindReference
+  | ContentNotFound
   | StoreFailure

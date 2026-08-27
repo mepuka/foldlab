@@ -8,14 +8,18 @@
  */
 import type { Schema } from "effect"
 
+/** M4 admits service-free codecs: operation encoding and decoding cannot
+ * smuggle ambient requirements into caller-facing method environments. */
+export type OperationSchema = Schema.Codec<unknown, unknown, never, never>
+
 /** The leaf-replay class. Slice 1 admits exactly one class; future classes
  * (opaque outer substitution and friends) enter through their own Pass A. */
 export type LeafReplay = "substitutable"
 
 export interface OperationDescription<
-  Req extends Schema.Top = Schema.Top,
-  Succ extends Schema.Top = Schema.Top,
-  Fail extends Schema.Top = Schema.Top,
+  Req extends OperationSchema = OperationSchema,
+  Succ extends OperationSchema = OperationSchema,
+  Fail extends OperationSchema = OperationSchema,
 > {
   /** Stable operation identity, e.g. "acme/Rates/get". */
   readonly id: string

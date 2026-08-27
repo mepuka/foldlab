@@ -249,7 +249,7 @@ it.effect("CAS-002 consumes every ratified REJECTION-CLAUSE row structurally", (
     }
   }))
 
-it.effect("the M2 in-memory adapter re-verifies load and keeps misses as StoreFailure", () => {
+it.effect("the in-memory adapter re-verifies load and names caller-requested misses", () => {
   const firstId = contentIdFromBytes(Array(32).fill(0x11))
   const secondId = contentIdFromBytes(Array(32).fill(0x22))
   let digestCalls = 0
@@ -280,7 +280,7 @@ it.effect("the M2 in-memory adapter re-verifies load and keeps misses as StoreFa
         onSuccess: () => undefined,
       }),
     )
-    expect(missing?._tag).toBe("CasError/StoreFailure")
+    expect(missing?._tag).toBe("CasError/ContentNotFound")
   }).pipe(Effect.provide(layerMemory(changingAddress)))
 })
 

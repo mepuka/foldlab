@@ -10,10 +10,38 @@
  * the tagged session outcome. The internal defect is plumbing, never
  * modeled defect semantics.
  */
-import { Context, type Effect, Schema } from "effect"
-import type { CasError, ContentId } from "./CasNode.ts"
-import type { DecisionTrace } from "./Decision.ts"
-import type { AnyOperationDescription } from "./Operation.ts"
+import {
+  Clock,
+  Context,
+  Data,
+  Effect,
+  Layer,
+  Random,
+  Ref,
+  Schema,
+} from "effect"
+import {
+  CasNodeInput,
+  StoreFailure,
+  UnknownKind,
+  type CasError,
+  type CasReference,
+  type ContentId,
+} from "./CasNode.ts"
+import { CasStore, type CasStoreShape } from "./CasStore.ts"
+import type { Decision, DecisionTrace } from "./Decision.ts"
+import type { AnyOperationDescription, OperationSchema } from "./Operation.ts"
+import { liveHandler } from "./ReplayLive.ts"
+import {
+  decodeHistoryEntry,
+  decodeStoredValue,
+  encodeHistoryEntry,
+  encodeStoredValue,
+  encodeWitness,
+  InternalStorageError,
+  StoredHistoryEntry,
+  StoredWitness,
+} from "./ReplayStorage.ts"
 
 /** Record invokes live adapters and appends history; replay is hermetic. */
 export const ReplayMode = Schema.Literals(["record", "replay"])
@@ -52,11 +80,8 @@ export type Terminal<A, E> =
   | { readonly _tag: "Succeeded"; readonly value: A }
   | { readonly _tag: "Failed"; readonly error: E }
 
-/** An ambient-service violation caught by the replay-mode tripwire
- * Clock/Random defaults (ruling D7). */
-export interface AmbientServiceViolation {
-  readonly service: "Clock" | "Random"
-}
+/** An ambient service caught by the replay-mode tripwire defaults. */
+export type AmbientService = "Clock" | "Random"
 
 /** The tagged session outcome (GR-5, GR-8). UnconsumedSuffix is the
  * Rejected case that populates terminalSoFar — the program terminated, but
@@ -70,7 +95,7 @@ export type SessionOutcome<A, E> =
       readonly at: number
       readonly terminalSoFar?: Terminal<A, E>
     }
-  | { readonly _tag: "Violated"; readonly violation: AmbientServiceViolation }
+  | { readonly _tag: "Violated"; readonly service: AmbientService }
 
 /** A channel-preserving outcome stored in one history occurrence. */
 export type Outcome<A, E> =
@@ -339,10 +364,598 @@ export class Replay extends Context.Service<Replay, ReplayShape>()(
   "foldlab/effect-replay/Replay",
 ) {}
 
-/** Run a program under a session. Signature frozen at M1; implementation
- * arrives at M4. The history root names a ratified recorded history for
- * replay mode; record mode produces one. */
-export declare const session: <A, E, R>(
+const HistoryKindTag = 0x48
+const WitnessKindTag = 0x57
+
+class MismatchTransport extends Data.TaggedError("ReplayMismatchTransport")<{
+  readonly category: MismatchCategory
+  readonly at: number
+}> {}
+
+class AmbientTransport extends Data.TaggedError("ReplayAmbientTransport")<{
+  readonly service: AmbientService
+}> {}
+
+class CasTransport extends Data.TaggedError("ReplayCasTransport")<{
+  readonly error: CasError
+}> {}
+
+class RuntimeTransport extends Data.TaggedError("ReplayRuntimeTransport")<{
+  readonly reason: string
+}> {}
+
+interface ActiveSession {
+  readonly state: SessionState<string, string, unknown, unknown>
+  readonly historyRoot: ContentId | undefined
+  readonly trace: ReadonlyArray<Decision>
+}
+
+interface ReplayRuntime {
+  readonly run: <A, E, R>(
+    program: Effect.Effect<A, E, R>,
+    options: { readonly mode: ReplayMode; readonly history?: ContentId },
+  ) => Effect.Effect<SessionOutcome<A, E>, CasError, R>
+}
+
+const runtimes = new WeakMap<ReplayShape, ReplayRuntime>()
+
+const transportCasFailure = <A, R>(
+  self: Effect.Effect<A, CasError, R>,
+): Effect.Effect<A, never, R> =>
+  Effect.matchEffect(self, {
+    onFailure: (error) => Effect.die(new CasTransport({ error })),
+    onSuccess: Effect.succeed,
+  })
+
+const abortOnCasFailure = <A, R>(
+  self: Effect.Effect<A, CasError, R>,
+  activeRef: Ref.Ref<ActiveSession>,
+  active: ActiveSession,
+): Effect.Effect<A, never, R> =>
+  Effect.matchEffect(self, {
+    onFailure: (error) => abortForStoreFailure(activeRef, active, error),
+    onSuccess: Effect.succeed,
+  })
+
+const rejectOnCasFailure = <A, R>(
+  self: Effect.Effect<A, CasError, R>,
+  activeRef: Ref.Ref<ActiveSession>,
+  active: ActiveSession,
+): Effect.Effect<A, never, R> =>
+  Effect.matchEffect(self, {
+    onFailure: () => rejectForMismatch(activeRef, active, "OutcomeInadmissible"),
+    onSuccess: Effect.succeed,
+  })
+
+const storageEffect = <A>(
+  operation: string,
+  evaluate: () => A,
+): Effect.Effect<A, StoreFailure> =>
+  Effect.sync(evaluate).pipe(
+    Effect.catchDefect((cause) => Effect.fail(new StoreFailure({
+      reason: `${operation}: ${String(cause)}`,
+    }))),
+  )
+
+const encodeOperationValue = <S extends OperationSchema>(
+  schema: S,
+  value: S["Type"],
+): Effect.Effect<string, StoreFailure> =>
+  storageEffect("Operation value encoding failed", () => {
+    const encoded = Schema.encodeUnknownResult(schema)(value)
+    if (encoded._tag === "Failure") throw new InternalStorageError(String(encoded.failure))
+    return encodeStoredValue(encoded.success)
+  })
+
+const decodeOperationValue = <S extends OperationSchema>(
+  schema: S,
+  value: string,
+): Effect.Effect<S["Type"], StoreFailure> =>
+  storageEffect("Operation value decoding failed", () => {
+    const decoded = Schema.decodeUnknownResult(schema)(decodeStoredValue(value))
+    if (decoded._tag === "Failure") throw new InternalStorageError(String(decoded.failure))
+    return decoded.success
+  })
+
+const appendDecisions = (
+  active: ActiveSession,
+  state: SessionState<string, string, unknown, unknown>,
+  decisions: DecisionTrace,
+  historyRoot: ContentId | undefined = active.historyRoot,
+): ActiveSession => ({
+  state,
+  historyRoot,
+  trace: [...active.trace, ...decisions],
+})
+
+const abortForStoreFailure = (
+  activeRef: Ref.Ref<ActiveSession>,
+  active: ActiveSession,
+  error: CasError,
+): Effect.Effect<never> => {
+  const aborted = reduce(active.state, { _tag: "AppendFailed" })
+  return Ref.set(
+    activeRef,
+    appendDecisions(active, aborted.state, aborted.decisions),
+  ).pipe(Effect.andThen(Effect.die(new CasTransport({ error }))))
+}
+
+const rejectForMismatch = (
+  activeRef: Ref.Ref<ActiveSession>,
+  active: ActiveSession,
+  category: MismatchCategory,
+): Effect.Effect<never> => {
+  const rejected = rejectStep(active.state, category)
+  return Ref.set(
+    activeRef,
+    appendDecisions(active, rejected.state, rejected.decisions),
+  ).pipe(Effect.andThen(Effect.die(new MismatchTransport({
+    category,
+    at: active.state.cursor,
+  }))))
+}
+
+const loadHistory = (
+  store: CasStoreShape,
+  root: ContentId,
+): Effect.Effect<ReadonlyArray<StoredHistoryEntry>, CasError> =>
+  Effect.gen(function* () {
+    const entries: Array<StoredHistoryEntry> = []
+    const visited = new Set<ContentId>()
+    let current: ContentId | undefined = root
+
+    while (current !== undefined) {
+      if (visited.has(current)) {
+        return yield* new StoreFailure({ reason: `Cyclic history root: ${current}` })
+      }
+      visited.add(current)
+
+      const node: CasNodeInput = yield* store.load(current)
+      if (node.kind.tag !== HistoryKindTag) return yield* new UnknownKind(node.kind)
+      if (node.refs.length > 1) {
+        return yield* new StoreFailure({ reason: `History node has multiple predecessors: ${current}` })
+      }
+
+      const raw = yield* storageEffect(
+        `History payload decoding failed at ${current}`,
+        () => decodeHistoryEntry(node.payload),
+      )
+      const entry = yield* Schema.decodeUnknownEffect(StoredHistoryEntry)(raw).pipe(
+        Effect.mapError((issue) => new StoreFailure({
+          reason: `History payload validation failed at ${current}: ${String(issue)}`,
+        })),
+      )
+      entries.push(entry)
+
+      const predecessor: CasReference | undefined = node.refs[0]
+      if (predecessor !== undefined && predecessor.expectedTag !== HistoryKindTag) {
+        return yield* new StoreFailure({
+          reason: `History predecessor has wrong declared tag at ${current}`,
+        })
+      }
+      current = predecessor?.id
+    }
+
+    entries.reverse()
+    return entries
+  })
+
+const tripwireClock: Clock.Clock = {
+  currentTimeMillisUnsafe: () => {
+    throw new AmbientTransport({ service: "Clock" })
+  },
+  currentTimeMillis: Effect.die(new AmbientTransport({ service: "Clock" })),
+  currentTimeNanosUnsafe: () => {
+    throw new AmbientTransport({ service: "Clock" })
+  },
+  currentTimeNanos: Effect.die(new AmbientTransport({ service: "Clock" })),
+  monotonicTimeNanosUnsafe: () => {
+    throw new AmbientTransport({ service: "Clock" })
+  },
+  monotonicTimeNanos: Effect.die(new AmbientTransport({ service: "Clock" })),
+  sleep: () => Effect.die(new AmbientTransport({ service: "Clock" })),
+}
+
+const tripwireRandom: Context.Service.Shape<typeof Random.Random> = {
+  nextIntUnsafe: () => {
+    throw new AmbientTransport({ service: "Random" })
+  },
+  nextDoubleUnsafe: () => {
+    throw new AmbientTransport({ service: "Random" })
+  },
+}
+
+const makeStoredTerminal = <A, E>(
+  terminal: Terminal<A, E>,
+): Effect.Effect<
+  | { readonly _tag: "Succeeded"; readonly value: string }
+  | { readonly _tag: "Failed"; readonly error: string },
+  StoreFailure
+> =>
+  terminal._tag === "Succeeded"
+    ? storageEffect("Witness terminal encoding failed", () => ({
+        _tag: "Succeeded" as const,
+        value: encodeStoredValue(terminal.value),
+      }))
+    : storageEffect("Witness terminal encoding failed", () => ({
+        _tag: "Failed" as const,
+        error: encodeStoredValue(terminal.error),
+      }))
+
+const makeStoredOutcome = <A, E>(
+  outcome: SessionOutcome<A, E>,
+): Effect.Effect<StoredWitness["outcome"], StoreFailure> =>
+  Effect.gen(function* () {
+    switch (outcome._tag) {
+      case "Completed":
+        return { _tag: "Completed", terminal: yield* makeStoredTerminal(outcome.terminal) }
+      case "Violated":
+        return { _tag: "Violated", service: outcome.service }
+      case "Rejected": {
+        if (outcome.terminalSoFar === undefined) {
+          return { _tag: "Rejected", category: outcome.category, at: outcome.at }
+        }
+        return {
+          _tag: "Rejected",
+          category: outcome.category,
+          at: outcome.at,
+          terminalSoFar: yield* makeStoredTerminal(outcome.terminalSoFar),
+        }
+      }
+    }
+  })
+
+const persistWitness = <A, E>(
+  store: CasStoreShape,
+  executionId: string,
+  active: ActiveSession,
+  outcome: SessionOutcome<A, E>,
+): Effect.Effect<void, CasError> =>
+  Effect.gen(function* () {
+    const raw = {
+      mode: active.state.mode,
+      executionId,
+      consumed: active.state.cursor,
+      trace: active.trace,
+      outcome: yield* makeStoredOutcome(outcome),
+      ...(active.historyRoot === undefined ? {} : { historyRoot: active.historyRoot }),
+    }
+    const witness = yield* StoredWitness.makeEffect(raw).pipe(
+      Effect.mapError((issue) => new StoreFailure({
+        reason: `Witness validation failed: ${String(issue)}`,
+      })),
+    )
+    const payload = yield* storageEffect("Witness encoding failed", () =>
+      encodeWitness(witness))
+    const node = CasNodeInput.make({
+      kind: { version: 0, tag: WitnessKindTag },
+      payload,
+      refs: active.historyRoot === undefined
+        ? []
+        : [{ id: active.historyRoot, expectedTag: HistoryKindTag }],
+    })
+    yield* store.put(node)
+  })
+
+const appendRecordedOutcome = <D extends AnyOperationDescription>(
+  store: CasStoreShape,
+  activeRef: Ref.Ref<ActiveSession>,
+  operation: D,
+  invocation: Invocation<string, string>,
+  outcome:
+    | { readonly _tag: "Success"; readonly value: D["success"]["Type"] }
+    | { readonly _tag: "Failure"; readonly error: D["failure"]["Type"] },
+): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const active = yield* Ref.get(activeRef)
+    let stored: Outcome<string, string>
+    if (outcome._tag === "Success") {
+      const value = yield* abortOnCasFailure(
+        encodeOperationValue(operation.success, outcome.value),
+        activeRef,
+        active,
+      )
+      stored = { _tag: "Success", value }
+    } else {
+      const error = yield* abortOnCasFailure(
+        encodeOperationValue(operation.failure, outcome.error),
+        activeRef,
+        active,
+      )
+      stored = { _tag: "Failure", error }
+    }
+
+    const appended = reduce(active.state, {
+      _tag: "Recorded",
+      invocation,
+      outcome: stored,
+    })
+    if (appended.result._tag !== "Appended") {
+      return yield* Effect.die(new RuntimeTransport({
+        reason: `Record append produced ${appended.result._tag}`,
+      }))
+    }
+
+    const entry = yield* abortOnCasFailure(
+      StoredHistoryEntry.makeEffect({
+        ...invocation,
+        outcome: stored,
+      }).pipe(
+        Effect.mapError((issue) => new StoreFailure({
+          reason: `History entry validation failed: ${String(issue)}`,
+        })),
+      ),
+      activeRef,
+      active,
+    )
+    const payload = yield* abortOnCasFailure(
+      storageEffect("History entry encoding failed", () => encodeHistoryEntry(entry)),
+      activeRef,
+      active,
+    )
+    const node = CasNodeInput.make({
+      kind: { version: 0, tag: HistoryKindTag },
+      payload,
+      refs: active.historyRoot === undefined
+        ? []
+        : [{ id: active.historyRoot, expectedTag: HistoryKindTag }],
+    })
+    const root = yield* abortOnCasFailure(
+      store.put(node),
+      activeRef,
+      active,
+    )
+    yield* Ref.set(
+      activeRef,
+      appendDecisions(active, appended.state, appended.decisions, root),
+    )
+  })
+
+const invokeInSession = <D extends AnyOperationDescription>(
+  store: CasStoreShape,
+  activeRef: Ref.Ref<ActiveSession>,
+  operation: D,
+  request: D["request"]["Type"],
+): Effect.Effect<D["success"]["Type"], D["failure"]["Type"]> =>
+  Effect.gen(function* () {
+    const active = yield* Ref.get(activeRef)
+    const storedRequest = yield* transportCasFailure(
+      encodeOperationValue(operation.request, request),
+    )
+    const invocation = {
+      op: operation.id,
+      revision: operation.revision,
+      request: storedRequest,
+    }
+
+    if (active.state.mode === "record") {
+      const invoked = reduce(active.state, { _tag: "Invoke", invocation })
+      if (invoked.result._tag !== "Delegated") {
+        return yield* Effect.die(new RuntimeTransport({
+          reason: `Record invocation produced ${invoked.result._tag}`,
+        }))
+      }
+      yield* Ref.set(
+        activeRef,
+        appendDecisions(active, invoked.state, invoked.decisions),
+      )
+
+      const handler = liveHandler(operation)
+      if (handler === undefined) {
+        return yield* Effect.die(new RuntimeTransport({
+          reason: `No live role supplied for ${operation.id}`,
+        }))
+      }
+
+      return yield* handler(request).pipe(
+        Effect.matchEffect({
+          onFailure: (error) =>
+            appendRecordedOutcome(store, activeRef, operation, invocation, {
+              _tag: "Failure",
+              error,
+            }).pipe(Effect.andThen(Effect.fail(error))),
+          onSuccess: (value) =>
+            appendRecordedOutcome(store, activeRef, operation, invocation, {
+              _tag: "Success",
+              value,
+            }).pipe(Effect.as(value)),
+        }),
+      )
+    }
+
+    const replayed = reduce(active.state, { _tag: "Invoke", invocation })
+    if (replayed.result._tag === "Rejected") {
+      yield* Ref.set(
+        activeRef,
+        appendDecisions(active, replayed.state, replayed.decisions),
+      )
+      return yield* Effect.die(new MismatchTransport({
+        category: replayed.result.category,
+        at: replayed.result.at,
+      }))
+    }
+    if (replayed.result._tag !== "Substituted") {
+      return yield* Effect.die(new RuntimeTransport({
+        reason: `Replay invocation produced ${replayed.result._tag}`,
+      }))
+    }
+
+    const recorded = replayed.result.outcome
+    const encoded = recorded._tag === "Success" ? recorded.value : recorded.error
+    if (typeof encoded !== "string") {
+      return yield* rejectForMismatch(activeRef, active, "OutcomeInadmissible")
+    }
+
+    if (recorded._tag === "Success") {
+      const value = yield* rejectOnCasFailure(
+        decodeOperationValue(operation.success, encoded),
+        activeRef,
+        active,
+      )
+      yield* Ref.set(
+        activeRef,
+        appendDecisions(active, replayed.state, replayed.decisions),
+      )
+      return value
+    }
+
+    const error = yield* rejectOnCasFailure(
+      decodeOperationValue(operation.failure, encoded),
+      activeRef,
+      active,
+    )
+    yield* Ref.set(
+      activeRef,
+      appendDecisions(active, replayed.state, replayed.decisions),
+    )
+    return yield* Effect.fail(error)
+  })
+
+const finishSession = <A, E>(
+  store: CasStoreShape,
+  executionId: string,
+  activeRef: Ref.Ref<ActiveSession>,
+  terminal: Terminal<A, E>,
+): Effect.Effect<SessionOutcome<A, E>, CasError> =>
+  Effect.gen(function* () {
+    const active = yield* Ref.get(activeRef)
+    const completed = reduce(active.state, { _tag: "Complete", terminal })
+    if (completed.result._tag !== "SessionOutcome") {
+      return yield* new StoreFailure({
+        reason: `Session completion produced ${completed.result._tag}`,
+      })
+    }
+
+    const next = appendDecisions(active, completed.state, completed.decisions)
+    yield* Ref.set(activeRef, next)
+
+    const reducedOutcome = completed.result.outcome
+    let outcome: SessionOutcome<A, E>
+    if (reducedOutcome._tag === "Completed") {
+      outcome = { _tag: "Completed", terminal }
+    } else if (reducedOutcome._tag === "Rejected") {
+      outcome = {
+        _tag: "Rejected",
+        category: reducedOutcome.category,
+        at: reducedOutcome.at,
+        terminalSoFar: terminal,
+      }
+    } else {
+      return yield* new StoreFailure({
+        reason: "Completion reducer returned an ambient violation",
+      })
+    }
+    yield* persistWitness(store, executionId, next, outcome)
+    return outcome
+  })
+
+const makeReplayRuntime = (
+  store: CasStoreShape,
+  executionCounter: Ref.Ref<number>,
+): ReplayRuntime => ({
+  run: <A, E, R>(
+    program: Effect.Effect<A, E, R>,
+    options: { readonly mode: ReplayMode; readonly history?: ContentId },
+  ): Effect.Effect<SessionOutcome<A, E>, CasError, R> =>
+    Effect.gen(function* () {
+      const executionNumber = yield* Ref.updateAndGet(executionCounter, (value) => value + 1)
+      const executionId = `execution-${executionNumber}`
+      const history = options.history === undefined
+        ? []
+        : yield* loadHistory(store, options.history)
+      const activeRef = yield* Ref.make<ActiveSession>({
+        state: {
+          mode: options.mode,
+          status: "active",
+          history,
+          cursor: options.mode === "record" ? history.length : 0,
+        },
+        historyRoot: options.history,
+        trace: [],
+      })
+
+      const scopedReplay = Replay.of({
+        invoke: (operation, request) =>
+          invokeInSession(store, activeRef, operation, request),
+      })
+      const scopedProgram = options.mode === "replay"
+        ? program.pipe(
+            Effect.provideService(Replay, scopedReplay),
+            Effect.provideService(Clock.Clock, tripwireClock),
+            Effect.provideService(Random.Random, tripwireRandom),
+          )
+        : program.pipe(Effect.provideService(Replay, scopedReplay))
+      const attempted = scopedProgram.pipe(
+        Effect.match({
+          onFailure: (error): Terminal<A, E> => ({ _tag: "Failed", error }),
+          onSuccess: (value): Terminal<A, E> => ({ _tag: "Succeeded", value }),
+        }),
+        Effect.flatMap((terminal) =>
+          finishSession(store, executionId, activeRef, terminal)),
+      )
+
+      return yield* attempted.pipe(
+        Effect.catchDefect((defect): Effect.Effect<SessionOutcome<A, E>, CasError> => {
+          if (defect instanceof CasTransport) return Effect.fail(defect.error)
+          if (defect instanceof RuntimeTransport) {
+            return Effect.fail(new StoreFailure({ reason: defect.reason }))
+          }
+          if (defect instanceof MismatchTransport) {
+            const outcome: SessionOutcome<A, E> = {
+              _tag: "Rejected",
+              category: defect.category,
+              at: defect.at,
+            }
+            return Ref.get(activeRef).pipe(
+              Effect.flatMap((active) =>
+                persistWitness(store, executionId, active, outcome)),
+              Effect.as(outcome),
+            )
+          }
+          if (defect instanceof AmbientTransport) {
+            const outcome: SessionOutcome<A, E> = {
+              _tag: "Violated",
+              service: defect.service,
+            }
+            return Ref.get(activeRef).pipe(
+              Effect.flatMap((active) =>
+                persistWitness(store, executionId, active, outcome)),
+              Effect.as(outcome),
+            )
+          }
+          return Effect.die(defect)
+        }),
+      )
+    }),
+})
+
+/** Construct the replay runtime over the supplied CAS store. */
+export const layerReplay: Layer.Layer<Replay, never, CasStore> = Layer.effect(
+  Replay,
+  Effect.gen(function* () {
+    const store = yield* CasStore
+    const executionCounter = yield* Ref.make(0)
+    const service = Replay.of({
+      invoke: () => Effect.die(new RuntimeTransport({
+        reason: "Replay.invoke used outside session",
+      })),
+    })
+    runtimes.set(service, makeReplayRuntime(store, executionCounter))
+    return service
+  }),
+)
+
+/** Run a program under a session. The history root resolves through the
+ * Replay runtime's CasStore; record mode creates a fresh immutable suffix. */
+export const session = <A, E, R>(
   program: Effect.Effect<A, E, R>,
   options: { readonly mode: ReplayMode; readonly history?: ContentId },
-) => Effect.Effect<SessionOutcome<A, E>, CasError, R | Replay>
+): Effect.Effect<SessionOutcome<A, E>, CasError, R | Replay> =>
+  Effect.gen(function* () {
+    const replay = yield* Replay
+    const runtime = runtimes.get(replay)
+    if (runtime === undefined) {
+      return yield* new StoreFailure({ reason: "Replay service has no session runtime" })
+    }
+    return yield* runtime.run(program, options)
+  })
