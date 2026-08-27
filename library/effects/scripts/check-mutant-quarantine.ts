@@ -36,8 +36,30 @@ for (const file of leanFiles(root)) {
   }
 }
 
+// The same rule in the TypeScript lane: runtime sources never import a
+// test mutant.
+const srcRoot = join(pkg, "src")
+const tsFiles = (dir: string): string[] => {
+  const out: string[] = []
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    if (statSync(path).isDirectory()) out.push(...tsFiles(path))
+    else if (name.endsWith(".ts")) out.push(path)
+  }
+  return out
+}
+for (const file of tsFiles(srcRoot)) {
+  const text = readFileSync(file, "utf8")
+  for (const line of text.split(/\r?\n/)) {
+    if (/^import\s.*from\s+"[^"]*\/mutants\//.test(line)) {
+      console.error(`quarantine violation: ${relative(pkg, file)}: ${line.trim()}`)
+      violations++
+    }
+  }
+}
+
 if (violations > 0) {
   console.error(`${violations} quarantine violation(s); the model never imports mutants`)
   process.exit(1)
 }
-console.log("mutant quarantine clean: no model file imports Effects/Mutants")
+console.log("mutant quarantine clean: no model or src file imports mutants")

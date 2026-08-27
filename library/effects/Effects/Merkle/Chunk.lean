@@ -70,4 +70,18 @@ theorem Recipe.unchunk_chunk (r : Recipe) (b : Bytes) :
     r.unchunk? (r.chunk b) = some b := by
   simp [Recipe.unchunk?, r.chunk_flatten b]
 
+/-- Exactness: a successful un-chunk's input IS the chunking of its
+result — the checked inverse accepts nothing chunking does not
+produce. -/
+theorem Recipe.unchunk_exact (r : Recipe) {chunks : List Bytes}
+    {b : Bytes} (h : r.unchunk? chunks = some b) :
+    chunks = r.chunk b ∧ b = chunks.flatten := by
+  dsimp only [Recipe.unchunk?] at h
+  split at h
+  · rename_i heq
+    injection h with h
+    subst h
+    exact ⟨heq.symm, rfl⟩
+  · exact nomatch h
+
 end Effects.Merkle

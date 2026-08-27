@@ -43,6 +43,23 @@ theorem decodeStreamBounded_encode (x : BoundedStream) :
   simp only [Option.bind_some]
   rw [dif_pos ⟨ht, hlo, hhi, hwf⟩]
 
+theorem decodeStreamBounded_exact (b : List UInt8) (x : BoundedStream)
+    (h : decodeStreamBounded b = some x) :
+    b = encodeStream x.val.1 x.val.2 := by
+  unfold decodeStreamBounded at h
+  match hd : decodeStream? b with
+  | none =>
+    rw [hd] at h
+    exact nomatch h
+  | some p =>
+    rw [hd] at h
+    simp only [Option.bind_some] at h
+    split at h
+    · injection h with h
+      subst h
+      exact (decodeStream_exact b p.1 p.2 (by rw [hd])).1
+    · exact nomatch h
+
 /-- MRK-012: range-stream documents parse fail-closed and exactly. -/
 def mrk012 : Codec BoundedStream (List UInt8) where
   id := "MRK-012"
@@ -52,6 +69,7 @@ def mrk012 : Codec BoundedStream (List UInt8) where
   decode := decodeStreamBounded
   law_canon_idem := fun _ => rfl
   law_roundtrip := fun x => decodeStreamBounded_encode x
+  law_exact := fun b x h => decodeStreamBounded_exact b x h
   law_inj := fun x y _ _ henc => by
     have hx := decodeStreamBounded_encode x
     rw [henc, decodeStreamBounded_encode y] at hx

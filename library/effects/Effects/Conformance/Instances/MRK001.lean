@@ -30,6 +30,7 @@ def mrk001 : Codec Bytes (List Bytes) where
   law_canon_idem := fun _ => rfl
   law_roundtrip := fun x => mrkRecipe.unchunk_chunk x
   law_inj := fun _ _ _ _ h => mrkRecipe.chunk_injective h
+  law_exact := fun _ _ h => (mrkRecipe.unchunk_exact h).1
   posVal := [7, 7, 7, 7, 7]
   negBytes := [[], []]
   neg_rejects := by

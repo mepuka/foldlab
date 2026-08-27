@@ -40,6 +40,22 @@ theorem decodeOpeningBounded_encode (x : BoundedOpening) :
   simp only [Option.bind_some]
   rw [dif_pos ⟨hi, ht, hl⟩]
 
+theorem decodeOpeningBounded_exact (b : List UInt8) (x : BoundedOpening)
+    (h : decodeOpeningBounded b = some x) : b = encodeOpening x.val := by
+  unfold decodeOpeningBounded at h
+  match hd : decodeOpening? b with
+  | none =>
+    rw [hd] at h
+    exact nomatch h
+  | some d =>
+    rw [hd] at h
+    simp only [Option.bind_some] at h
+    split at h
+    · injection h with h
+      subst h
+      exact (decodeOpening_exact b d hd).1
+    · exact nomatch h
+
 /-- MRK-011: inclusion-opening documents parse fail-closed and
 exactly. -/
 def mrk011 : Codec BoundedOpening (List UInt8) where
@@ -50,6 +66,7 @@ def mrk011 : Codec BoundedOpening (List UInt8) where
   decode := decodeOpeningBounded
   law_canon_idem := fun _ => rfl
   law_roundtrip := fun x => decodeOpeningBounded_encode x
+  law_exact := fun b x h => decodeOpeningBounded_exact b x h
   law_inj := fun x y _ _ henc => by
     have hx := decodeOpeningBounded_encode x
     rw [henc, decodeOpeningBounded_encode y] at hx

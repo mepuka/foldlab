@@ -544,4 +544,108 @@ theorem RMT_008_interrupt_admits_nothing (P : Params K B)
   cases st <;>
     simp [step, hm, loadEvent, uploadEvent, batchEvent, publishEvent]
 
+/-! ## The command mirror
+
+Every wire command is mirrored into the decision trace as its issued
+decision — until now asserted only in prose, which left the command
+stream unconstrained by every trace-level exclusion. With this law,
+a decision-level exclusion genuinely bounds commands: a mutant that
+emits the wire command while dropping the mirrored decision violates
+`step_commands_mirrored` directly. -/
+
+theorem loadEvent_commands (P : Params K B) (s : MachineState K B)
+    (id : OpId) (key : K) (e : Event K B) :
+    (loadEvent P s id key e).commands = [] := by
+  cases e <;>
+    first
+      | rfl
+      | (simp only [loadEvent]
+         split <;> first | rfl | (split <;> rfl))
+
+theorem uploadEvent_commands (P : Params K B) (s : MachineState K B)
+    (id : OpId) (key : K) (bytes : B) (e : Event K B) :
+    (uploadEvent P s id key bytes e).commands = [] := by
+  cases e <;>
+    first
+      | rfl
+      | (simp only [uploadEvent]
+         split <;> first | rfl | (split <;> rfl))
+
+theorem batchEvent_commands (s : MachineState K B) (id : OpId)
+    (keys : List K) (e : Event K B) :
+    (batchEvent s id keys e).commands = [] := by
+  cases e <;>
+    first
+      | rfl
+      | (simp only [batchEvent]
+         split <;> first | rfl | (split <;> rfl))
+
+theorem publishEvent_commands (s : MachineState K B) (id : OpId)
+    (key : K) (e : Event K B) :
+    (publishEvent s id key e).commands = [] := by
+  cases e <;> rfl
+
+/-- The mirror law: every issued wire command appears in the decision
+trace as its issued decision. -/
+theorem step_commands_mirrored (P : Params K B) (s : MachineState K B) :
+    ∀ (i : MInput K B) (c : OpId × Command K B),
+      c ∈ (step P s i).commands →
+      (c.1, RDecision.issued c.2) ∈ (step P s i).decisions := by
+  intro i c hc
+  match i with
+  | .request id op =>
+    match hm : s.inFlight[id]? with
+    | some st =>
+      simp [step, hm] at hc
+    | none =>
+      match op with
+      | .load key =>
+        simp only [step, hm] at hc ⊢
+        simp at hc
+        simp [hc]
+      | .findMissing keys =>
+        by_cases hb : keys.length > P.budgets.maxKeys
+        · simp [step, hm, hb] at hc
+        · simp only [step, hm, if_neg hb] at hc ⊢
+          simp at hc
+          simp [hc]
+      | .publishRoot key closure =>
+        by_cases hent : publishEntitled s key closure
+        · simp only [step, hm, if_pos hent] at hc ⊢
+          simp at hc
+          simp [hc]
+        · simp [step, hm, hent] at hc
+      | .upload key bytes =>
+        by_cases hb : P.size bytes > P.budgets.maxBytes
+        · simp [step, hm, hb] at hc
+        · by_cases hr : s.rejected.contains (key, bytes)
+          · simp [step, hm, hb, hr] at hc
+          · by_cases hv : P.verify key bytes
+            · by_cases hcache : s.cache.contains key
+              · simp [step, hm, hb, hr, hv, hcache] at hc
+              · simp only [step, hm, if_neg hb, if_neg hr, if_pos hv,
+                  if_neg hcache] at hc ⊢
+                simp at hc
+                simp [hc]
+            · simp [step, hm, hb, hr, hv] at hc
+  | .fromWire id e =>
+    match hm : s.inFlight[id]? with
+    | none => simp [step, hm, absorbOut] at hc
+    | some (.loading key) =>
+      simp only [step, hm] at hc
+      rw [loadEvent_commands] at hc
+      exact absurd hc (by simp)
+    | some (.uploading key bytes) =>
+      simp only [step, hm] at hc
+      rw [uploadEvent_commands] at hc
+      exact absurd hc (by simp)
+    | some (.findingMissing keys) =>
+      simp only [step, hm] at hc
+      rw [batchEvent_commands] at hc
+      exact absurd hc (by simp)
+    | some (.publishing key) =>
+      simp only [step, hm] at hc
+      rw [publishEvent_commands] at hc
+      exact absurd hc (by simp)
+
 end Effects.Remote

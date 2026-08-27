@@ -3,6 +3,7 @@ import Effects.Conformance.Registry
 import Effects.Conformance.ModelVersion
 import Effects.Conformance.Generate
 import Effects.Conformance.ManifestReplay
+import Effects.Conformance.ManifestMerkle
 
 /-!
 # The lane briefing (phase 1)
@@ -152,7 +153,8 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
       else
         let versions := String.intercalate ", " ratifiedManifestVersions
         let manifestNames :=
-          (Manifest.files ++ Manifest.replayFiles).map (·.1)
+          (Manifest.files ++ Manifest.replayFiles ++ Manifest.remoteFiles
+            ++ Manifest.merkleFiles).map (·.1)
         let consumable :=
           rows.filter fun e => manifestNames.contains (e.id ++ ".json")
         [ Markdown.Block.h2 "Consume the ratified manifests"

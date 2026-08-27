@@ -22,7 +22,8 @@ namespace Effects.Conformance
 open Effects.Remote
 
 private def confirmedState : MachineState Nat (List UInt8) :=
-  { rmtEmpty with confirmed := (∅ : Std.HashSet Nat).insert 2 }
+  { rmtEmpty with
+    confirmed := ((∅ : Std.HashSet Nat).insert 2).insert 3 }
 
 /-- RMT-007: no root publish issues before its closure stands
 confirmed. -/
@@ -40,14 +41,14 @@ def rmt007 : TraceExcludes
   posState := (rmtEmpty, .request 1 (.publishRoot 2 [3]))
   posInput := ()
   pos_mode := by simp [publishRequestEntitled, publishEntitled, rmtEmpty]
-  negState := (confirmedState, .request 1 (.publishRoot 2 []))
+  negState := (confirmedState, .request 1 (.publishRoot 2 [3]))
   negInput := ()
   neg_mode := by
     simp [publishRequestEntitled, publishEntitled, confirmedState, rmtEmpty]
   neg_bad := by
     have hin : confirmedState.inFlight[(1 : OpId)]? = none := by
       simp [confirmedState, rmtEmpty]
-    have hent : publishEntitled confirmedState 2 ([] : List Nat) = true := by
+    have hent : publishEntitled confirmedState 2 ([3] : List Nat) = true := by
       simp [publishEntitled, confirmedState, rmtEmpty]
     simp [Effects.Remote.step, hin, hent, RDecision.tag]
 

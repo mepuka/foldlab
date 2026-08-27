@@ -1403,6 +1403,41 @@ Stop and return to grilling if:
   in-flight CasScheme0 slice must reconcile its CasHash service
   with that existing seam rather than minting a parallel one,
   flagged for that delivery's review.
+- **Four-lens code review consolidated; Track A landed
+  (2026-08-27):** four read-only reviews (runtime correctness, test
+  quality, the Lean tree, cross-surface coherence — eighty-eight
+  findings) were verified on their sharpest claims first-hand and
+  consolidated into four tracks; the operator ruled proceed as
+  proposed. TRACK A (evidence integrity) is LANDED: the CODEC
+  schema gains the structurally-carried `law_exact` field — the
+  direction a lax codec omits, which round-trip plus injectivity
+  does not imply — filled across all five instances, including the
+  newly proved chunking exactness (`Recipe.unchunk_exact`, the one
+  ledger sentence claim that had no theorem anywhere) and three new
+  bounded-decoder exactness theorems; the command stream is now
+  law-bound by `step_commands_mirrored` (every wire command appears
+  in the decision trace as its issued decision — previously prose
+  only, leaving every trace-level exclusion silent about commands);
+  MRK-018's rejection kit now exercises the recipe gate itself (a
+  well-formed sixteen-byte document with an unregistered recipe)
+  rather than truncation; RMT-007's entitled kit publishes against
+  a NON-empty confirmed closure, so the closure half of the gate is
+  witnessed in Lean, not only in vectors; the mutant quarantine
+  gate now also walks the TypeScript sources for test-mutant
+  imports; and the implementation briefing's consumable-manifest
+  list includes the remote and Merkle families it had silently
+  omitted since their slices landed. Committed manifests and the
+  ledger regenerate byte-identical — the strengthening is invisible
+  to ratified surfaces by design. Track A's remaining item — the
+  sentence-versus-field alignment for the four bundles whose
+  sentences carry conjuncts only docstring-cited theorems prove —
+  awaits the operator's policy ruling (second law fields versus
+  narrowed sentences), since sentences are ratified surfaces.
+  Tracks B (host-boundary fault packet, led by the verified
+  replay-session record race) and C (mechanical consolidation,
+  split between lanes) proceed next; Track D rulings pending: the
+  push present-node confirmation cost, the sentence policy, and
+  peer-dependency timing.
 - **CasScheme0 ratified (2026-08-27):** the operator ratified the
   hash docket as recommended, H1 through H6. The profile gains the
   addressing section: an address is the full thirty-two-byte

@@ -40,6 +40,22 @@ theorem decodeManifestBounded_encode (x : BoundedManifest) :
   simp only [Option.bind_some]
   rw [dif_pos ⟨hr, hrb, ht, hl⟩]
 
+theorem decodeManifestBounded_exact (b : List UInt8) (x : BoundedManifest)
+    (h : decodeManifestBounded b = some x) : b = encodeManifest x.val := by
+  unfold decodeManifestBounded at h
+  match hd : decodeManifest? b with
+  | none =>
+    rw [hd] at h
+    exact nomatch h
+  | some m =>
+    rw [hd] at h
+    simp only [Option.bind_some] at h
+    split at h
+    · injection h with h
+      subst h
+      exact (decodeManifest_exact b m hd).1
+    · exact nomatch h
+
 /-- MRK-018: blob manifests parse fail-closed, exactly, and
 recipe-gated. -/
 def mrk018 : Codec BoundedManifest (List UInt8) where
@@ -50,13 +66,14 @@ def mrk018 : Codec BoundedManifest (List UInt8) where
   decode := decodeManifestBounded
   law_canon_idem := fun _ => rfl
   law_roundtrip := fun x => decodeManifestBounded_encode x
+  law_exact := fun b x h => decodeManifestBounded_exact b x h
   law_inj := fun x y _ _ henc => by
     have hx := decodeManifestBounded_encode x
     rw [henc, decodeManifestBounded_encode y] at hx
     injection hx with hx
     exact hx.symm
   posVal := ⟨⟨1, 5, 1⟩, by decide⟩
-  negBytes := [0, 0, 0, 1]
+  negBytes := encodeManifest ⟨9, 5, 3⟩
   neg_rejects := by decide
 
 end Effects.Conformance

@@ -34,6 +34,7 @@ def cas001 : Codec AdmittedNode Bytes where
   law_canon_idem := fun _ => rfl
   law_roundtrip := fun x => decodeAdmitted_encodeAdmitted x
   law_inj := fun _ _ _ _ h => encodeAdmitted_inj h
+  law_exact := fun _ _ h => decodeAdmitted_exact h
   posVal := cas001PosNode
   negBytes := cas001NegBytes
   neg_rejects := by
