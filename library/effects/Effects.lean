@@ -1,4 +1,6 @@
 import Effects.Cas.Value
+import Effects.Cas.Node
+import Effects.Cas.Codec
 import Effects.Conformance
 
 /-!
