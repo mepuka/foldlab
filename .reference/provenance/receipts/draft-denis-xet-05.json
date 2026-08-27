@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-resolution-receipt",
+  "sourceLockId": "draft-denis-xet",
+  "observedAt": "2026-08-26T22:46:03.6238740-05:00",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4",
+    "dotnetRuntime": "10.0.10",
+    "systemNetHttpAssembly": "10.0.0.0"
+  },
+  "gitResolution": {
+    "requestedRepository": "https://github.com/jedisct1/draft-denis-xet.git",
+    "observedRemote": "git@github.com:jedisct1/draft-denis-xet.git",
+    "requestedSelector": "refs/tags/draft-denis-xet-05",
+    "tagObject": {
+      "algorithm": "sha1",
+      "digest": "6ebfd6a0a37870373192c8d941af01cabf242321",
+      "signatureStatus": "present-not-verified-public-key-unavailable"
+    },
+    "commit": {
+      "algorithm": "sha1",
+      "digest": "b29b7d1564b382245aabb65ede5fc9cfc8e93d4c",
+      "objectKind": "commit"
+    },
+    "rootTree": {
+      "algorithm": "sha1",
+      "digest": "cff859aa964cf50ecda49bb01ca4fcbf0ac94bfd"
+    },
+    "artifact": {
+      "path": "draft-denis-xet.md",
+      "objectKind": "blob",
+      "gitBlob": {
+        "algorithm": "sha1",
+        "digest": "c8fed40144e3a77eb90bf85558ebb9ffefc3d791"
+      },
+      "contentDigest": {
+        "algorithm": "sha256",
+        "digest": "d1112adbdb7f4a451b8c19f06c280703ff4ca7dfbd89d3b316da4b191b781d7c"
+      },
+      "bytes": 77555
+    }
+  },
+  "publishedEditionResolution": {
+    "name": "draft-denis-xet-05",
+    "humanFacingHtmlUrl": "https://www.ietf.org/archive/id/draft-denis-xet-05.html",
+    "url": "https://www.ietf.org/archive/id/draft-denis-xet-05.txt",
+    "selectionReason": "The text edition returned byte-identically on two fresh fetches; the HTML delivery injected changing bytes and was excluded from the pin.",
+    "matchingFetches": 2,
+    "httpStatus": 200,
+    "contentType": "text/plain; charset=utf-8",
+    "lastModified": "2026-06-29T10:12:29Z",
+    "contentDigest": {
+      "algorithm": "sha256",
+      "digest": "474d64988f0e28a561403807379e19cfe2c046a43ce39f210c9fdaf55b098a03"
+    },
+    "bytes": 101863
+  },
+  "result": "matched-source-lock"
+}

@@ -8,6 +8,8 @@ project's approved-tools rule). Start light; grow as work gets defined.
 
 | Tool | Role | Trust statement |
 | --- | --- | --- |
+| Git client (version recorded per resolution receipt) | Resolve external repository selectors to full commit, tree, and blob identities and materialize exact blob bytes for Source Provenance | Resolution observation only. Full object identities, byte length, and an independent SHA-256 content digest must agree in the receipt; Git contributes no semantic or authorship claim. |
+| PowerShell/.NET HTTP and SHA-256 surfaces (versions recorded per resolution receipt) | Fetch a versioned standards artifact as bytes and compute its external integrity digest | Transport and digest observation only. The receipt records the exact URL, response metadata, byte length, and digest; neither HTTPS nor SHA-256 establishes authorship, endorsement, or semantic correctness. |
 | mise | Toolchain and task runner | Trusted for reproducing the declared environment; contributes nothing to claims. |
 | bun | Dev runtime, package manager, test runner | Test results are sampled evidence only (G4 at best); never a proof. |
 | node (pinned) | Claim-target JavaScript engine (L0) | Named host for any future hosted-execution claim (G6). |

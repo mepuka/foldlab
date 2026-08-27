@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "reference-source-lock",
   "location": ".reference/provenance",
-  "snapshotDate": "2026-08-24",
+  "snapshotDate": "2026-08-26",
   "repositories": [
     {
       "id": "effect",
@@ -121,6 +121,53 @@
             "digest": "53ee1ee0237744ec07557dc96e577e202117d0f548511668b61bad43ba848732"
           },
           "bytes": 230301
+        }
+      ]
+    },
+    {
+      "id": "draft-denis-xet",
+      "kind": "git",
+      "repository": {
+        "host": "github.com",
+        "owner": "jedisct1",
+        "name": "draft-denis-xet",
+        "canonicalUrl": "https://github.com/jedisct1/draft-denis-xet",
+        "fetchUrl": "https://github.com/jedisct1/draft-denis-xet.git"
+      },
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "b29b7d1564b382245aabb65ede5fc9cfc8e93d4c",
+        "url": "https://github.com/jedisct1/draft-denis-xet/commit/b29b7d1564b382245aabb65ede5fc9cfc8e93d4c"
+      },
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "cff859aa964cf50ecda49bb01ca4fcbf0ac94bfd"
+      },
+      "edition": {
+        "name": "draft-denis-xet-05",
+        "status": "internet-draft-work-in-progress",
+        "published": "2026-06-29",
+        "archivedUrl": "https://www.ietf.org/archive/id/draft-denis-xet-05.txt",
+        "contentDigest": {
+          "algorithm": "sha256",
+          "digest": "474d64988f0e28a561403807379e19cfe2c046a43ce39f210c9fdaf55b098a03"
+        },
+        "bytes": 101863
+      },
+      "artifacts": [
+        {
+          "path": "draft-denis-xet.md",
+          "role": "xet-protocol-prior-art-source",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "c8fed40144e3a77eb90bf85558ebb9ffefc3d791"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "d1112adbdb7f4a451b8c19f06c280703ff4ca7dfbd89d3b316da4b191b781d7c"
+          },
+          "bytes": 77555
         }
       ]
     }

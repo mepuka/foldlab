@@ -41,6 +41,11 @@ repository locations.
   content-addressed program graph, an append-only effect history, checkpoints,
   and replay witnesses must remain separate. It proposes a fail-closed replay
   design and staged research direction without selecting a domain contract.
+- [`xet-prior-art.md`](xet-prior-art.md) evaluates the exact
+  `draft-denis-xet-05` edition as bounded CAS storage/transfer prior art for the
+  ratified Effect Replay design. It records reusable materialization patterns,
+  strict non-support boundaries, and deferred recommendations without amending
+  the contract.
 
 ## Local external inputs
 

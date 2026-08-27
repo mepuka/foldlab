@@ -80,6 +80,18 @@ No located project establishes end-to-end Lean 4 semantic preservation for curre
 | [Modern JSON Schema formalization](https://arxiv.org/abs/2307.10034) | Research pattern | Formal semantics and complexity for modern validation; informative, not normative |
 | [Type Safety with JSON Subschema](https://arxiv.org/abs/1911.12651) | Research pattern | Subschema checking and static typing relation; do not conflate with Effect or TypeScript subtyping |
 
+## Content-addressable storage and transfer prior art
+
+| Source | Pin and role | Supports | Does not support |
+| --- | --- | --- | --- |
+| [XET: Content-Addressable Storage Protocol for Efficient Data Transfer](https://www.ietf.org/archive/id/draft-denis-xet-05.html) | Individual Internet-Draft `draft-denis-xet-05` (work in progress), published 2026-06-29; [source commit](https://github.com/jedisct1/draft-denis-xet/commit/b29b7d1564b382245aabb65ede5fc9cfc8e93d4c); exact identities in the [Source Lock](../provenance/sources.lock.json) and [resolution receipt](../provenance/receipts/draft-denis-xet-05.json) | Pattern source for content-defined chunking, bounded chunk containers, role-separated hashes, semantic content identity independent of physical serialization, deterministic Merkle aggregation, ordered range reconstruction, derived metadata indexes, staged upload/closure ordering, deduplication versus locality, and cross-boundary deduplication privacy | Any Effect operation, history, occurrence, session, or substitution-replay semantics; any Lean theorem or verification claim; collision-free identity or address reflection without an explicit hash premise; permission to make an algorithm suite implicit in Foldlab's identity bytes |
+
+XET is admitted as bounded **prior art**, not as normative authority. Its status
+page explicitly says that an individual Internet-Draft has no IETF endorsement
+or formal standing in the standards process. The project-specific evaluation is
+recorded in
+[`library/effects/research/xet-prior-art.md`](../../library/effects/research/xet-prior-art.md).
+
 ## Conformance corpora
 
 | Corpus | Required pin | Permitted evidence |

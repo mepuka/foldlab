@@ -1,7 +1,7 @@
 # Source provenance reference
 
 Status: reference provenance contract  
-Snapshot: 2026-08-24
+Snapshot: 2026-08-26
 
 The project must distinguish a human-facing link from an artifact identity. A branch URL is useful for discovery but is mutable. A proof or conformance result may depend only on a fully resolved artifact.
 
@@ -55,7 +55,16 @@ The machine-readable [sources.lock.json](../../.reference/provenance/sources.loc
 
 - Effect repository commit 0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07;
 - root tree 68a2b3baeed509bc291cc3788c9b2c04bf53a80f;
-- Effect package version 4.0.0-rc.111; and
-- full Git blob, SHA-256, and size identities for the selected Schema source artifacts.
+- Effect package version 4.0.0-rc.111;
+- full Git blob, SHA-256, and size identities for the selected Schema source artifacts;
+- XET Internet-Draft `draft-denis-xet-05`, published 2026-06-29;
+- XET source commit b29b7d1564b382245aabb65ede5fc9cfc8e93d4c and root tree
+  cff859aa964cf50ecda49bb01ca4fcbf0ac94bfd; and
+- exact Git-blob and SHA-256 identities for its Markdown source, plus the
+  SHA-256 identity of the byte-stable archived IETF text edition and a separate
+  [resolution receipt](../../.reference/provenance/receipts/draft-denis-xet-05.json).
 
-Standards, test suites, TypeScript, Effect tsgo, and host/runtime entries remain explicitly unresolved until their exact artifact bytes or repository commits are selected. An unresolved entry is a visible blocker, not permission to use a moving URL.
+The candidate JSON and ECMAScript standards, test suites, TypeScript, Effect
+tsgo, and host/runtime entries remain explicitly unresolved until their exact
+artifact bytes or repository commits are selected. An unresolved entry is a
+visible blocker, not permission to use a moving URL.
