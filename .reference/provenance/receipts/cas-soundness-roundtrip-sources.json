@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "cas-soundness-roundtrip-sources",
+  "observedAt": "2026-08-27T00:23:37.5497618-05:00",
+  "scope": "Primary sources used by the Effects CAS soundness and round-trip reference survey.",
+  "resolver": {
+    "git": "2.55.0.windows.2",
+    "powershell": "7.6.4",
+    "dotnetRuntime": "10.0.10",
+    "systemNetHttpAssembly": "10.0.0.0"
+  },
+  "publicationPins": [
+    {
+      "id": "delaware-2019-narcissus-decoders-encoders",
+      "title": "Narcissus: Deriving Correct-By-Construction Decoders and Encoders from Binary Formats",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1803.04870v3"
+      },
+      "url": "https://arxiv.org/pdf/1803.04870v3",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "ec89ae3a9d32b69e0704beaae85b8abecd1cee5071445020e3361d03c51c1f44",
+        "bytes": 840852
+      }
+    },
+    {
+      "id": "sato-2021-plebeia-fstar",
+      "title": "Verification of a Merkle Patricia Tree Library Using F*",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2106.04826v1"
+      },
+      "url": "https://arxiv.org/pdf/2106.04826v1",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "aac63a24cdf0666d62d0d4906613d814a3e9652d2cd137979b39221222983bf5",
+        "bytes": 1143687
+      }
+    },
+    {
+      "id": "brun-traytel-2019-generic-authenticated-data-structures",
+      "title": "Generic Authenticated Data Structures, Formally",
+      "identifier": {
+        "scheme": "DOI",
+        "value": "10.4230/LIPIcs.ITP.2019.10"
+      },
+      "url": "https://drops.dagstuhl.de/storage/00lipics/lipics-vol141-itp2019/LIPIcs.ITP.2019.10/LIPIcs.ITP.2019.10.pdf",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "41fff9b10dfadbb2ee63bb45491b876d1fd3e9611a4de9caf9ed03ca40d7bc12",
+        "bytes": 518597
+      }
+    },
+    {
+      "id": "ramananandro-2019-everparse",
+      "title": "EverParse: Verified Secure Zero-Copy Parsers for Authenticated Message Formats",
+      "identifier": {
+        "scheme": "USENIX",
+        "value": "USENIX Security 2019, pp. 1465-1482"
+      },
+      "url": "https://www.usenix.org/system/files/sec19-ramananandro_0.pdf",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "7043cad06c60ff5ce3a9ccb1d9e57b2033ce6471c1bc2c81c98b8094cde7f10f",
+        "bytes": 632612
+      }
+    },
+    {
+      "id": "gregersen-agarwal-tassarotti-2025-verified-ads",
+      "title": "Logical Relations for Formally Verified Authenticated Data Structures",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2501.10802v1"
+      },
+      "publishedIdentifier": {
+        "scheme": "DOI",
+        "value": "10.1145/3719027.3744801"
+      },
+      "artifactIdentifier": {
+        "scheme": "DOI",
+        "value": "10.5281/zenodo.15551944"
+      },
+      "url": "https://arxiv.org/pdf/2501.10802v1",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "316cf726a909d48a9c296652daceea782d52ba895c7e576b09fc0320bd81bac5",
+        "bytes": 882860
+      }
+    },
+    {
+      "id": "song-2020-ifscq",
+      "title": "The Design and Implementation of a Verified File System with End-to-End Data Integrity",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "2012.07917v1"
+      },
+      "url": "https://arxiv.org/pdf/2012.07917v1",
+      "httpStatus": 200,
+      "contentType": "application/pdf",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "45b39a8b3c082ea17131b0439bcf2a81cc78be238fbd72812e62a2d1b711566b",
+        "bytes": 595275
+      }
+    },
+    {
+      "id": "braibant-jourdan-monniaux-2014-hash-consed-coq",
+      "title": "Implementing and reasoning about hash-consed data structures in Coq",
+      "identifier": {
+        "scheme": "arXiv",
+        "value": "1311.2959v4"
+      },
+      "source": "existing-paper-lock",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "1d42a91a6f12371c0697157c923ec20520189cc8b97c6b09118ba8237f449f77",
+        "bytes": 610106
+      }
+    }
+  ],
+  "repositoryPins": [
+    {
+      "id": "plebeia-fstar",
+      "repository": "https://gitlab.com/dailambda/plebeia",
+      "selector": "refs/heads/banno@port_into_fstar",
+      "commit": "e67767e4c9ef77e6e702e7269856ce5956159bb6",
+      "rootTree": "fffa39417db5197d03b820a44ed3b2bcb5817ae3",
+      "artifacts": [
+        {
+          "path": "fstar/node_storage_store_fstar.fst",
+          "role": "verified-commit-and-load-round-trip-surface",
+          "gitBlob": "b82cf7883d98dd29903f61f43e954e53d9f96095",
+          "sha256": "529d51822a73149a1e01d7294eaf9e56c5f3e7f7da053f10dc53e1a5c69ecbef",
+          "bytes": 18702
+        },
+        {
+          "path": "fstar/node_storage_load_fstar.fst",
+          "role": "verified-low-level-load-and-parse-surface",
+          "gitBlob": "ea4b354cdb8451dbcc2cf242e7d559e119a9a1bc",
+          "sha256": "db005f9b22b76ad4ada8e70202785b5175a608c8998bd03f16f15653005e559f",
+          "bytes": 9705
+        },
+        {
+          "path": "fstar/node_storage_fstar_assumptions.fsti",
+          "role": "explicit-fuel-assumption-boundary",
+          "gitBlob": "74f6fc192ced41f0a905c1094aa28544db31f8ff",
+          "sha256": "43d98a02912db60d9f3ad7173115368c5e90eae593676cce956d0ee80f1e6dc5",
+          "bytes": 503
+        }
+      ]
+    },
+    {
+      "id": "fiat-narcissus",
+      "repository": "https://github.com/mit-plv/fiat",
+      "selector": "refs/heads/narcissus-icfp2019",
+      "commit": "df1565d187de242fdf822111a23e3f6b71049c9c",
+      "rootTree": "2236a9c2c6954c0022961dd6bec3cfc11bbac27d",
+      "artifacts": [
+        {
+          "path": "src/Narcissus/Common/Specs.v",
+          "role": "encoder-decoder-correctness-judgments-and-CorrectDecodeEncode",
+          "gitBlob": "1f74866a3b0abbda1b0e46d0ee489e4bbaf21eee",
+          "sha256": "e88a4ff8dcda59548eb23e52a7cad4026cf6f10b12b96df8aefea687e6031c93",
+          "bytes": 39177
+        },
+        {
+          "path": "src/Narcissus/Examples/README.v",
+          "role": "worked-boundaries-for-non-unique-and-restricted-formats",
+          "gitBlob": "512d700951456a40cee2a76a9abfd094a4fff800",
+          "sha256": "7dcb427492520c15c69843bc8d5b83d0e5d7545b8e1e539864e59dd2e863b155",
+          "bytes": 11409
+        }
+      ]
+    },
+    {
+      "id": "veri-auth",
+      "repository": "https://github.com/jtassarotti/veri-auth",
+      "selector": "refs/heads/main",
+      "commit": "24c41ec37e5f12f75a40b00c65b787dea63810b0",
+      "rootTree": "7e6af9a288c22a9d878c2dc4824d8599f073a55f",
+      "artifacts": [
+        {
+          "path": "PAPER.md",
+          "role": "paper-to-proof-name-map",
+          "gitBlob": "bd35f7cf0b806e409553bbbed9569a372ee1042e",
+          "sha256": "32b87bbd092ae66df18042a750e591bde58063646d8824d6ea5ba6e1c65a4435",
+          "bytes": 11456
+        },
+        {
+          "path": "theories/examples/authentikit_list_security.v",
+          "role": "authenticated-data-structure-security-refinement",
+          "gitBlob": "8c3788afbcd4f2f10a235d8fb22353d37bdb3fa4",
+          "sha256": "1395ea3fa9c540188416d26b3538c85a38e0d7594764c9e9f23f8c5832e8da0f",
+          "bytes": 10483
+        },
+        {
+          "path": "theories/examples/authentikit_list_correctness.v",
+          "role": "prover-ideal-verifier-correctness-refinement",
+          "gitBlob": "756ee561dd338234167b6f2424d016b9665fcfc9",
+          "sha256": "d6ef267eb95bedc39c9095596ff6381722e87c157bce6b81291d5da3d208df59",
+          "bytes": 14449
+        },
+        {
+          "path": "theories/examples/merkle_retrieve_security.v",
+          "role": "optimized-Merkle-retrieval-security-refinement",
+          "gitBlob": "4ab006d40e102744dd0fcedbfc134bc580470d64",
+          "sha256": "5ca052895b3eb8c145ea03c5a02042914ef024ac2f79884768960e9b7ee6deb7",
+          "bytes": 73570
+        },
+        {
+          "path": "theories/examples/merkle_retrieve_correctness.v",
+          "role": "optimized-Merkle-retrieval-correctness-refinement",
+          "gitBlob": "52b0ddf8e2f246f90193501b9c6ab35f8a32c445",
+          "sha256": "3fcb305eb63e3c0c24f5d867650f45218e09b1f5960e8b3e69d64c96e3e98c1c",
+          "bytes": 57036
+        }
+      ]
+    }
+  ],
+  "paperLockStatus": {
+    "status": "pending-consolidation",
+    "reason": "The host paper directory already contains unrelated PDFs not yet assigned by the generated paper ledger. This receipt resolves the exact editions used here without silently broadening or bypassing that ledger's partition requirement."
+  },
+  "result": "resolved-research-source-pins"
+}

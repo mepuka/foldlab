@@ -32,6 +32,10 @@ repository locations.
 
 ## Project research
 
+- [`cas-soundness-roundtrip-references.md`](cas-soundness-roundtrip-references.md)
+  separates codec exactness, CAS store algebra, structural admission,
+  authenticated observation, and crash recovery, then maps theorem-bearing
+  references for each layer to the current Effects and machine obligations.
 - [`cas-effect-program-replay.md`](cas-effect-program-replay.md) studies how a
   content-addressed program graph, an append-only effect history, checkpoints,
   and replay witnesses must remain separate. It proposes a fail-closed replay
