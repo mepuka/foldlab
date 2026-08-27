@@ -5,7 +5,7 @@ Prepared: 2026-08-24
 
 This plan describes the order in which a future implementation should establish ownership, types, proofs, and external seams. It does not choose Effect features, Schema constructors, JSON behavior, theorem statements, compiler targets, or hosted runtimes.
 
-Every phase is governed by the global [development invariants](../../../../../docs/DEVELOPMENT-INVARIANTS.md) and the generic [claim gates](CLAIM-GATES.md).
+Every phase is governed by the global [development invariants](../DEVELOPMENT-INVARIANTS.md) and the generic [claim gates](CLAIM-GATES.md).
 
 ## Phase 0 — keep the reference corpus coherent
 

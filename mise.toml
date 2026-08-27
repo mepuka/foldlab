@@ -60,6 +60,16 @@ description = "Print a lane briefing (pass conformance or implementation)"
 dir = "{{config_root}}/library/effects"
 run = "lake exe conformance_brief"
 
+[tasks."gen:effects:research"]
+description = "Refresh the effects research/docs snapshots from their canonical owners"
+dir = "{{config_root}}/library/effects"
+run = "bun scripts/sync-research.ts --write"
+
+[tasks."check:effects:research"]
+description = "Assert the effects research/docs snapshots are byte-equal to their canonical owners"
+dir = "{{config_root}}/library/effects"
+run = "bun scripts/sync-research.ts"
+
 [tasks."check:effects:ts"]
 description = "Frozen install, typecheck, and test the effects TypeScript package"
 dir = "{{config_root}}/library/effects"
@@ -87,5 +97,6 @@ run = [
   "mise run check:machine",
   "mise run check:effects",
   "mise run check:effects:ts",
+  "mise run check:effects:research",
   "mise run check:ledger",
 ]

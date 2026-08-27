@@ -11,7 +11,7 @@ Effect Schema is not treated as a loose collection of validators. At the pinned 
 
 Pinned source: [SchemaAST.ts](https://github.com/Effect-TS/effect/blob/0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07/packages/effect/src/SchemaAST.ts).
 
-Canonical terms are owned by the [Effect Language Semantics context](CONTEXT.md), the [Schema JSON Codec context](../../../../../docs/schema-json/CONTEXT.md), and the [Source Provenance context](../../../../../docs/provenance/CONTEXT.md).
+Canonical terms are owned by the [Effect Language Semantics context](CONTEXT.md), the [Schema JSON Codec context](../schema-json/CONTEXT.md), and the [Source Provenance context](../provenance/CONTEXT.md).
 
 ## Required declaration shapes
 

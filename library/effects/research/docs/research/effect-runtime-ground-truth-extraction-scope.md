@@ -9,7 +9,7 @@ Source gate: G0 (source snapshot identified; no runtime-conformance or Lean clai
 This report scopes an extraction/modeling effort against Effect commit
 `0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07`, package `effect` version
 `4.0.0-rc.111` (the repository identity and revision recorded in
-[`sources.lock.json`](../../../../../.reference/provenance/sources.lock.json)).
+[`sources.lock.json`](../../.reference/provenance/sources.lock.json)).
 The repository owner is [Effect-TS/effect](https://github.com/Effect-TS/effect).
 All Effect source links below use that commit, so those implementation links
 are immutable primary-source links. Runtime-core file identities should be
@@ -20,7 +20,7 @@ means a proposed Foldlab abstraction and is not a claim about Effect. Nothing
 here claims JavaScript-host, compiler, whole-library, performance, or semantic
 preservation conformance. The charter explicitly defers fibers, interruption,
 scheduling, resources, and service environments until separately modeled
-([`CHARTER.md`](../../../../../CHARTER.md)).
+([`CHARTER.md`](../../CHARTER.md)).
 
 ## Scoping result
 
@@ -289,7 +289,7 @@ projection, simulation, and adequacy—should be designed for later reuse withou
 being prematurely promoted into `formal/lib/`.
 
 The source authority is
-[`sources.lock.json`](../../../../../.reference/provenance/sources.lock.json), not a
+[`sources.lock.json`](../../.reference/provenance/sources.lock.json), not a
 working checkout. The runtime model must retain typed failure separately from
 later defect and interruption causes, and the admitted source surface must be
 recorded through the repository's provenance context before any G3 claim.

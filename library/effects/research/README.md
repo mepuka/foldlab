@@ -8,15 +8,10 @@ owners remain the corresponding files under the repository's `docs/` tree;
 refresh these copies explicitly rather than editing them independently.
 
 The copies are retained because the project bootstrap requested a local
-research pack. Before implementation milestone M1, a mise task must refresh
-them from the canonical owners and fail unless the copies are byte-equal. Until
-that task exists, drift is checked manually and no claim may cite a copied path
-when a canonical path exists.
-
-A manual SHA-256 check on 2026-08-26 found that `CONTEXT.md` and
-`effect-modeling-wasm-interoperability-optimization-frontier.md` match their
-canonical owners. The other five listed copies differ and must be treated as
-stale until the M1 sync task refreshes them.
+research pack. The sync task refreshes them from the canonical owners
+(`mise run gen:effects:research`), and the gate asserts byte equality
+(`check:effects:research`, part of the root check). No claim may cite a
+copied path when a canonical path exists.
 
 ## Effect research reports
 

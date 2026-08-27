@@ -121,7 +121,7 @@ The Effect-specific [`@effect/tsgo`](https://github.com/Effect-TS/tsgo) reposito
 ### Effect v4 subject sources
 
 The repository pins the Effect commit and exported package version in
-[`sources.lock.json`](../../../../../.reference/provenance/sources.lock.json). The `main`
+[`sources.lock.json`](../../.reference/provenance/sources.lock.json). The `main`
 links below remain discovery links; project traceability must resolve the
 corresponding paths through that lock before freezing a theorem statement.
 
@@ -227,7 +227,7 @@ Names are provisional. Each final theorem should carry the supported-feature pre
 ## Open gaps and risks
 
 1. **The external-source ledger is incomplete.** Effect is pinned by
-   [`sources.lock.json`](../../../../../.reference/provenance/sources.lock.json), but
+   [`sources.lock.json`](../../.reference/provenance/sources.lock.json), but
    conformance-suite commits, TypeScript/`@effect/tsgo`, runtime versions, and
    project-specific standards decisions still require pins before their gates.
 2. **No maintained normative TypeScript semantics.** The compiler and tests are operational authority, and the type system is intentionally erasable and not sound. Full TypeScript typing or transpilation correctness is a separate research program.
