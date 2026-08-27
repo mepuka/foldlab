@@ -17,7 +17,11 @@ transfer service, event notification service, remote transport.
 Amended 2026-08-27 at the MRK-1 ratification (operator-ratified):
 four entries minted — chunk tree, inclusion opening,
 verified-streaming decoder, encoding-malleability boundary — and the
-R2-delivered transfer and transport labels filled. Kind:
+R2-delivered transfer and transport labels filled. Amended 2026-08-27
+at the R1–R11 ratification (operator-ratified, R11): one entry minted
+— solicited delegation — the mismatch taxonomy grown to eight
+categories, and the replay session's form gains the pending slot and
+its well-formedness clause. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -147,7 +151,10 @@ enters as an ordinary refactor proposal at that time.
   `Effects/Replay/Relation.lean`; provisional `src/replay/Session.ts`,
   `src/replay/Reducer.ts`, and `src/replay/Replay.ts`.
 - **Form:** mode (record or replay), execution identity, history root, flat
-  cursor, ordered decision trace, and terminal abort state.
+  cursor, pending delegation slot, ordered decision trace, and terminal
+  abort state. Well-formedness keeps the cursor inside the history, pins it
+  to the history length in record mode, and keeps the pending slot empty in
+  replay mode.
 - **Obligations:** a record-mode append failure aborts the session through
   the defect-class transport seam — the failure is in no wrapped method's
   error channel, so orchestration cannot catch it, no later wrapped
@@ -163,6 +170,22 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** recording past an append failure; giving a replay session a live
   dependency; "poisoned flag" phrasing — the abort is structural.
 
+### Solicited delegation
+- **Kind:** model (protocol). **Code label:** `Effects/Replay/Session.lean`
+  (`pending` slot) with the guarding steps in `Effects/Replay/Reducer.lean`;
+  provisional `src/replay/Reducer.ts`.
+- **Form:** record-mode delegation is exclusive and paired — an invoke
+  registers the outstanding invocation in the session's pending slot, the
+  live outcome appends only by naming that registered invocation, and the
+  append clears the slot.
+- **Obligations:** a second invoke while one is outstanding rejects as
+  delegation outstanding; a recorded outcome without or beside its
+  registered invocation rejects as unsolicited; lawful record runs
+  therefore append in invocation order.
+- **Avoid:** treating the slot as a concurrency queue — one outstanding
+  delegation is the ruled protocol, and sound concurrent recording is a
+  designed post-alpha milestone, never an incremental widening.
+
 ### Decision trace
 - **Kind:** model (observable). **Code label:**
   `Effects/Replay/Decision.lean`; provisional `src/replay/Decision.ts`.
@@ -177,10 +200,11 @@ enters as an ordinary refactor proposal at that time.
 ### Mismatch category
 - **Kind:** taxonomy. **Code label:** `Effects/Replay/Decision.lean`
   (`MismatchCategory`).
-- **Form:** six categories. Request-side, checked against the entry at the
+- **Form:** eight categories. Request-side, checked against the entry at the
   cursor: operation mismatch, revision mismatch, request mismatch, history
-  exhausted. Completion-side: unconsumed suffix. Outcome-side, checked at
-  consumption: outcome inadmissible.
+  exhausted. Record-side, checked against the pending delegation slot:
+  delegation outstanding, unsolicited outcome. Completion-side: unconsumed
+  suffix. Outcome-side, checked at consumption: outcome inadmissible.
 - **Obligations:** request-side compatibility and outcome-side admissibility
   are distinct checks with distinct categories; the set is caller-visible API.
 - **Avoid:** an "order mismatch" category (it always manifests as a
