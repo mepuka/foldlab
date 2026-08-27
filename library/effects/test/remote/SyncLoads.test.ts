@@ -43,7 +43,6 @@ const TestCrypto = Layer.succeed(Crypto.Crypto, Crypto.make({
 
 const HttpRuntime = Layer.mergeAll(
   FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
   TestCrypto,
 )
 

@@ -99,7 +99,7 @@ export class RemoteIntegrityError extends Schema.TaggedError<RemoteIntegrityErro
 export class RemoteBudgetError extends Schema.TaggedError<RemoteBudgetError>()(
   "CasRemoteError/Budget",
   {
-    opId: PositiveCount,
+    opId: Schema.optionalKey(PositiveCount),
     attemptId: AttemptId,
     stage: RemoteBudgetStage,
     authority: RemoteAuthority,
@@ -133,6 +133,7 @@ export class RemoteUnavailableError extends Schema.TaggedError<RemoteUnavailable
     completion: RemoteCompletion,
     receivedBytes: Count,
     sentBytes: Count,
+    retryAfter: Schema.optionalKey(Count),
   },
 ) {}
 
@@ -147,6 +148,7 @@ export class RemotePolicyError extends Schema.TaggedError<RemotePolicyError>()(
     completion: RemoteCompletion,
     receivedBytes: Count,
     sentBytes: Count,
+    cause: Schema.optionalKey(Schema.Union([RemoteProtocolError, RemoteUnavailableError])),
   },
 ) {}
 
@@ -181,6 +183,8 @@ export type RedirectPolicy = typeof RedirectPolicy.Type
 /**
  * Explicit remote policy. Credentials are accepted only as Redacted values;
  * no error or transcript type has a field capable of carrying them.
+ * Redirect policy fields are validated now but become behaviorally active in
+ * R4; R2 observes every redirect and denies it through the machine.
  */
 export class CasRemoteConfig extends Schema.Class<CasRemoteConfig>("CasRemoteConfig")({
   authority: RemoteAuthority,

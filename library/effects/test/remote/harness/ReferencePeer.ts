@@ -2,6 +2,7 @@ import { Effect } from "effect"
 import { createHash } from "node:crypto"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import type { Socket } from "node:net"
+import { registerSocketReleaseHook, socketReleaseHook } from "./ConformancePeer.ts"
 import type {
   ConformancePeer,
   PeerEndpoint,
@@ -45,6 +46,7 @@ export const ReferencePeer: ConformancePeer = {
       }
 
       const handler = (request: IncomingMessage, response: ServerResponse) => {
+        response.setHeader("connection", "close")
         stats.requests += 1
         const match = /^\/cas\/([0-9a-f]{64})$/.exec(request.url ?? "")
         if (match === null || request.headers["cas-profile"] !== "cas-http/0") {
@@ -106,11 +108,13 @@ export const ReferencePeer: ConformancePeer = {
           sockets.clear()
           server.close(() => closed(Effect.void))
         })
+        const endpoint: PeerEndpoint = {
+          authority: `http://127.0.0.1:${address.port}`,
+          observe,
+        }
+        registerSocketReleaseHook(endpoint, socketReleaseHook(sockets))
         resume(Effect.succeed({
-          endpoint: {
-            authority: `http://127.0.0.1:${address.port}`,
-            observe,
-          },
+          endpoint,
           close,
         }))
       })

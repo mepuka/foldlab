@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from "effect"
 import { createServer, type Socket } from "node:net"
+import { registerSocketReleaseHook, socketReleaseHook } from "./ConformancePeer.ts"
 import type {
   ConformancePeer,
   PeerEndpoint,
@@ -19,11 +20,18 @@ export const HostileFault = Schema.Literals([
   "resetMidBody",
   "cancellationMidDownload",
   "cancellationMidUpload",
+  "redirect",
 ])
 export type HostileFault = typeof HostileFault.Type
 
 const headers = (status: string, values: ReadonlyArray<readonly [string, string]> = []): string =>
-  [`HTTP/1.1 ${status}`, ...values.map(([name, value]) => `${name}: ${value}`), "", ""].join("\r\n")
+  [
+    `HTTP/1.1 ${status}`,
+    "Connection: close",
+    ...values.map(([name, value]) => `${name}: ${value}`),
+    "",
+    "",
+  ].join("\r\n")
 
 export const HostilePeer: ConformancePeer = {
   name: "node-raw-hostile-cas-http-0",
@@ -70,8 +78,15 @@ export const HostilePeer: ConformancePeer = {
             socket.end(headers("404 Not Found", [["Content-Length", "0"]]))
             return
           }
+          if (fault === "redirect") {
+            socket.end(headers("302 Found", [
+              ["Location", `http://127.0.0.1:${String((server.address() as { port: number }).port)}/cas/redirected`],
+              ["Content-Length", "0"],
+            ]))
+            return
+          }
           if (fault === "declaredOversize") {
-            socket.write(headers("200 OK", [
+            socket.end(headers("200 OK", [
               ["Content-Type", "application/octet-stream"],
               ["Content-Length", String(realization.declared ?? body.length)],
             ]))
@@ -167,11 +182,13 @@ export const HostilePeer: ConformancePeer = {
           sockets.clear()
           server.close(() => closed(Effect.void))
         })
+        const endpoint: PeerEndpoint = {
+          authority: `http://127.0.0.1:${address.port}`,
+          observe,
+        }
+        registerSocketReleaseHook(endpoint, socketReleaseHook(sockets))
         resume(Effect.succeed({
-          endpoint: {
-            authority: `http://127.0.0.1:${address.port}`,
-            observe,
-          },
+          endpoint,
           close,
         }))
       })

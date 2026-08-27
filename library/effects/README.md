@@ -88,19 +88,43 @@ uploads. A load accepts only `200` with `application/octet-stream`; `404` is
 becomes rate-limited machine input, and every `3xx` remains a redirect event.
 Uploads accept `200`, `201`, or `204`; `409` is an integrity mismatch.
 
-The HTTP shell performs no retry and follows no redirect. In particular, a
-caller using `FetchHttpClient` must configure its request initialization with
-`redirect: "manual"` so the adapter can observe `3xx` responses. The semantic
-adapter owns the explicit policy: uploads retry only a `Transfer.replayable`
-source, never `Transfer.oneShot`, up to `maxAttempts`, with the content address
-rechecked on every attempt. The authority mode never silently falls back
-between remote and local storage.
+The HTTP shell performs no retry and follows no redirect. The library supplies
+`redirect: "manual"` around each request, including with plain
+`FetchHttpClient` wiring, so every `3xx` reaches the machine and becomes the
+typed `redirectDenied` policy outcome. `redirectPolicy.maxRedirects` and
+`redirectPolicy.crossOrigin` are validated configuration reserved for R4;
+redirect following is not active in R2. The semantic adapter retries only a
+`Transfer.replayable` source, up to `maxAttempts`, with the content address
+rechecked on every attempt. A retryable failure from `Transfer.oneShot`
+becomes `oneShotRetryRefused` and retains the underlying transport evidence.
+
+Authority modes never silently fall back. `remote-authoritative` uses the
+wire, `local-authoritative` admits locally without a remote claim, and
+`offline` rejects puts with the typed `offline` policy marker. On Fetch
+transport errors, `sentBytes` is necessarily a conservative prepared-byte
+witness because the platform does not expose the transmitted count.
+
+The four byte budgets bind at these `cas-http/0` stages:
+
+| Stage | Plane and bound |
+|---|---|
+| `encoded` | Canonical upload bytes, checked by the machine before wire issue. |
+| `decoded` | Load `content-length` declaration and the running response-byte counter. |
+| `decompressed` | No distinct codec stage exists in `cas-http/0`; it shares the response counter with `decoded`. |
+| `queued` | Bytes buffered awaiting admission, independent of transport or source rechunking. |
 
 R2 verifies downloads completely before exposing bytes, using a scoped,
 decoded-budget-bounded in-memory spool. Filesystem spooling and authenticated
 chunk proofs are later slices. The test-side `ConformancePeer` interface is
 the named landing point for the adopted LeanServer peer; R2 provides the Node
 reference and hostile raw-socket bindings only.
+
+Cold-pull limitation (R3 boundary): a cold replica cannot yet load a
+reference-carrying parent when its children are absent locally. Parent
+admission therefore returns `RemoteFailure` wrapping `DanglingReference`;
+discovery-order closure pulling is the R3 slice. The adapter's diagnostic
+decision transcript is intentionally unbounded in R2 and is not a production
+telemetry buffer.
 
 ## Usage sketch
 

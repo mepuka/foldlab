@@ -1,5 +1,5 @@
 /** Namespace facade for typed CAS projections and remote adapters. */
-import { Context, Crypto, Effect, Layer, type SchemaIssue } from "effect"
+import { Context, Crypto, Effect, Layer } from "effect"
 import * as HttpClient from "effect/unstable/http/HttpClient"
 import { CasRemoteConfig } from "./cas/Remote.ts"
 import { CasStore, makeSha256Address } from "./cas/Store.ts"
@@ -19,13 +19,12 @@ export const layerRemote = (
   config: CasRemoteConfig,
 ): Layer.Layer<
   CasStore | CasTransfer,
-  SchemaIssue.Issue,
+  never,
   HttpClient.HttpClient | Crypto.Crypto
 > => Layer.effectContext(Effect.gen(function* () {
-  const validated = yield* CasRemoteConfig.makeEffect(config)
-  const transport = yield* makeRemoteHttp(validated)
+  const transport = yield* makeRemoteHttp(config)
   const address = yield* makeSha256Address
-  const adapter = yield* makeRemoteAdapter(validated, transport, address)
+  const adapter = yield* makeRemoteAdapter(config, transport, address)
   return Context.empty().pipe(
     Context.add(CasStore, adapter.store),
     Context.add(CasTransfer, adapter.transfer),

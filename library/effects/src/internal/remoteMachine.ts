@@ -188,7 +188,16 @@ export const loadEvent = <K, B>(
     }
   }
 
-  if (event._tag === "Unauthenticated" || event._tag === "Denied") {
+  if (event._tag === "Unauthenticated") {
+    return {
+      result: { _tag: "AuthFailed", key },
+      state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
+      commands: [],
+      decisions: [{ op: id, decision: { _tag: "GaveUp", key } }],
+    }
+  }
+
+  if (event._tag === "Denied") {
     return {
       result: { _tag: "AuthFailed", key },
       state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
@@ -258,7 +267,16 @@ export const uploadEvent = <K, B>(
     }
   }
 
-  if (event._tag === "Unauthenticated" || event._tag === "Denied") {
+  if (event._tag === "Unauthenticated") {
+    return {
+      result: { _tag: "AuthFailed", key },
+      state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
+      commands: [],
+      decisions: [{ op: id, decision: { _tag: "GaveUp", key } }],
+    }
+  }
+
+  if (event._tag === "Denied") {
     return {
       result: { _tag: "AuthFailed", key },
       state: { ...state, inFlight: HashMap.remove(state.inFlight, id) },
@@ -385,7 +403,7 @@ export const entitledToCache = <K, B>(
   const current = HashMap.get(state.inFlight, input.id)
   if (Option.isNone(current)) return false
   if (current.value._tag === "Loading") {
-    return input.event.declared <= params.budgets.maxBytes
+    return !(input.event.declared > params.budgets.maxBytes)
       && params.verify(current.value.key, input.event.bytes)
   }
   return params.verify(current.value.key, current.value.bytes)
@@ -397,17 +415,19 @@ export const overBudget = <K, B>(
   state: MachineState<K, B>,
   input: MInput<K, B>,
 ): boolean => {
-  if (input._tag === "Request" && input.op._tag === "Upload") {
-    return Option.isNone(HashMap.get(state.inFlight, input.id))
-      && params.size(input.op.bytes) > params.budgets.maxBytes
+  switch (input._tag) {
+    case "Request":
+      return input.op._tag === "Upload"
+        && Option.isNone(HashMap.get(state.inFlight, input.id))
+        && params.size(input.op.bytes) > params.budgets.maxBytes
+    case "FromWire": {
+      if (input.event._tag !== "Ok") return false
+      const current = HashMap.get(state.inFlight, input.id)
+      return Option.isSome(current)
+        && current.value._tag === "Loading"
+        && input.event.declared > params.budgets.maxBytes
+    }
   }
-  if (input._tag === "FromWire" && input.event._tag === "Ok") {
-    const current = HashMap.get(state.inFlight, input.id)
-    return Option.isSome(current)
-      && current.value._tag === "Loading"
-      && input.event.declared > params.budgets.maxBytes
-  }
-  return false
 }
 
 /** Whether a result is the budget rejection. */

@@ -93,9 +93,9 @@ export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
  * frozen CasStore method signatures beyond the CasError family. */
 export class RemoteFailure extends Schema.TaggedError<RemoteFailure>()(
   "CasError/RemoteFailure",
-  { cause: CasRemoteError },
+  { cause: Schema.Union([CasRemoteError, DanglingReference]) },
 ) {
-  declare readonly cause: CasRemoteErrorType
+  declare readonly cause: CasRemoteErrorType | DanglingReference
 }
 
 export type CasError =

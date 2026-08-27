@@ -1,6 +1,4 @@
-import { expect } from "@effect/vitest"
 import { Effect, Schema } from "effect"
-import { readFile } from "node:fs/promises"
 import type { Decision } from "../src/replay/Decision.ts"
 import { reduce } from "../src/replay/Reducer.ts"
 import {
@@ -9,6 +7,7 @@ import {
   type SessionState,
   type StepResult,
 } from "../src/replay/Session.ts"
+import { assertFamilyRows, ManifestModel } from "./conformance/harness.ts"
 
 const OutcomeSchema = Schema.Union([
   Schema.TaggedStruct("Success", { value: Schema.String }),
@@ -136,21 +135,6 @@ export type ReplayFamily =
 
 export type ReplayReducer = typeof reduce
 
-const manifestSchema = <const Family extends ReplayFamily>(family: Family) =>
-  Schema.Struct({
-    family: Schema.Literal(family),
-    meaning: Schema.String,
-    model: Schema.Literal("effects-model@0.1.0"),
-    rows: Schema.Array(ReplayRowSchema),
-  })
-
-const readJson = (url: URL): Effect.Effect<unknown> =>
-  Effect.promise(async () => {
-    const text = await readFile(url, "utf8")
-    const json: unknown = JSON.parse(text)
-    return json
-  })
-
 const runFixture = (
   reducer: ReplayReducer,
   initialState: SessionState,
@@ -186,17 +170,9 @@ export const assertFamily = (
   family: ReplayFamily,
   reducer: ReplayReducer = reduce,
 ) =>
-  Effect.gen(function* () {
-    const json = yield* readJson(
-      new URL(`../conformance/manifest/${family}.json`, import.meta.url),
-    )
-    const manifest = yield* Schema.decodeUnknownEffect(manifestSchema(family))(json)
-
-    for (const row of manifest.rows) {
-      const actual = runFixture(reducer, row.input.state, row.input.inputs)
-      expect({ case: row.case, result: actual }).toEqual({
-        case: row.case,
-        result: row.expect,
-      })
-    }
-  })
+  assertFamilyRows({
+    family,
+    model: ManifestModel,
+    row: ReplayRowSchema,
+    hasOracle: false,
+  }, (row) => Effect.succeed(runFixture(reducer, row.input.state, row.input.inputs)))

@@ -8,7 +8,6 @@ import {
   Option,
   Pull,
   Ref,
-  Scope,
   Stream,
   SynchronizedRef,
 } from "effect"
@@ -105,14 +104,6 @@ interface Exchange {
   readonly witness: CompletionWitness
 }
 
-const bytesEqual = (left: Uint8Array, right: Uint8Array): boolean => {
-  if (left.length !== right.length) return false
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return false
-  }
-  return true
-}
-
 const joinChunks = (chunks: ReadonlyArray<Uint8Array>, length: number): Uint8Array => {
   const output = new Uint8Array(length)
   let offset = 0
@@ -141,13 +132,13 @@ const remoteIntegrity = (
 
 const remoteBudget = (
   config: CasRemoteConfig,
-  opId: number,
+  opId: number | undefined,
   stage: RemoteBudgetError["stage"],
   observed: number,
   bound: number,
   attemptId = 1,
 ): RemoteBudgetError => new RemoteBudgetError({
-  opId,
+  ...(opId === undefined ? {} : { opId }),
   attemptId,
   stage,
   authority: config.authority,
@@ -180,6 +171,7 @@ const remoteUnavailable = (
   receivedBytes: number,
   sentBytes: number,
   attemptId = 1,
+  retryAfter?: number,
 ): RemoteUnavailableError => new RemoteUnavailableError({
   opId,
   attemptId,
@@ -189,6 +181,7 @@ const remoteUnavailable = (
   completion,
   receivedBytes,
   sentBytes,
+  ...(retryAfter === undefined ? {} : { retryAfter }),
 })
 
 const remotePolicy = (
@@ -197,6 +190,7 @@ const remotePolicy = (
   code: RemotePolicyError["code"],
   completion: RemotePolicyError["completion"] = "knownUnprocessed",
   attemptId = 1,
+  cause?: RemoteProtocolError | RemoteUnavailableError,
 ): RemotePolicyError => new RemotePolicyError({
   opId,
   attemptId,
@@ -206,6 +200,7 @@ const remotePolicy = (
   completion,
   receivedBytes: 0,
   sentBytes: 0,
+  ...(cause === undefined ? {} : { cause }),
 })
 
 const unavailableFromTransport = (
@@ -307,6 +302,7 @@ export const makeRemoteAdapter = (
         }
 
         if (command._tag !== "Load") {
+          yield* clearInFlight(opId, { _tag: "Reset" }, config.maxEncodedBytes)
           return yield* remoteProtocol(config, opId, "invalidAcknowledgement", witness, attemptId)
         }
         if (witness.terminalFraming !== "complete") {
@@ -360,39 +356,40 @@ export const makeRemoteAdapter = (
           break
         }
         case "BodyChunk": {
-          if (wire.bytes.length > config.maxQueuedBytes) {
+          const buffered = received + wire.bytes.length
+          if (buffered > config.maxQueuedBytes) {
             yield* clearInFlight(opId, { _tag: "Interrupted" }, config.maxDecodedBytes)
             return yield* remoteBudget(
               config,
               opId,
               "queued",
-              config.maxQueuedBytes + 1,
+              buffered,
               config.maxQueuedBytes,
               attemptId,
             )
           }
-          if (received + wire.bytes.length > config.maxDecodedBytes) {
+          if (buffered > config.maxDecodedBytes) {
             yield* clearInFlight(opId, {
               _tag: "Ok",
-              declared: config.maxDecodedBytes + 1,
+              declared: buffered,
               bytes: new Uint8Array(),
             }, config.maxDecodedBytes)
             return yield* remoteBudget(
               config,
               opId,
               "decoded",
-              config.maxDecodedBytes + 1,
+              buffered,
               config.maxDecodedBytes,
               attemptId,
             )
           }
-          if (received + wire.bytes.length > config.maxDecompressedBytes) {
+          if (buffered > config.maxDecompressedBytes) {
             yield* clearInFlight(opId, { _tag: "Interrupted" }, config.maxDecodedBytes)
             return yield* remoteBudget(
               config,
               opId,
               "decompressed",
-              config.maxDecompressedBytes + 1,
+              buffered,
               config.maxDecompressedBytes,
               attemptId,
             )
@@ -423,6 +420,11 @@ export const makeRemoteAdapter = (
         attemptId,
       ))),
     )),
+    Effect.onInterrupt(() => clearInFlight(
+      opId,
+      { _tag: "Interrupted" },
+      command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
+    )),
   )
 
   const resultError = (
@@ -430,33 +432,40 @@ export const makeRemoteAdapter = (
     attemptId: number,
     result: MResult<ContentId, Uint8Array>,
     exchange: Exchange | undefined,
-  ): CasRemoteError | ContentNotFound => {
+    budget?: {
+      readonly stage: RemoteBudgetError["stage"]
+      readonly observed: number
+      readonly bound: number
+    },
+  ): Effect.Effect<never, CasRemoteError | ContentNotFound> => {
     const key = "key" in result ? result.key : undefined
     switch (result._tag) {
       case "NotFound":
-        return new ContentNotFound({ id: result.key })
+        return Effect.fail(new ContentNotFound({ id: result.key }))
       case "BudgetRejected":
-        return remoteBudget(
+        return Effect.fail(remoteBudget(
           config,
           opId,
-          "decoded",
-          config.maxDecodedBytes + 1,
-          config.maxDecodedBytes,
+          budget?.stage ?? "decoded",
+          budget?.observed ?? (exchange?.event._tag === "Ok"
+            ? exchange.event.declared
+            : config.maxDecodedBytes + 1),
+          budget?.bound ?? config.maxDecodedBytes,
           attemptId,
-        )
+        ))
       case "IntegrityRejected":
       case "RepeatRefused":
-        return remoteIntegrity(
+        return Effect.fail(remoteIntegrity(
           config,
           opId,
           "remoteRejected",
           exchange?.witness.receivedBytes ?? 0,
           "admission",
           attemptId,
-        )
+        ))
       case "AuthFailed": {
         const tag = exchange?.event._tag
-        return remoteUnavailable(
+        return Effect.fail(remoteUnavailable(
           config,
           opId,
           tag === "Denied" ? "denied" : "unauthenticated",
@@ -464,7 +473,7 @@ export const makeRemoteAdapter = (
           exchange?.witness.receivedBytes ?? 0,
           exchange?.witness.sentBytes ?? 0,
           attemptId,
-        )
+        ))
       }
       case "TransportFailed": {
         const witness = exchange?.witness ?? {
@@ -473,13 +482,13 @@ export const makeRemoteAdapter = (
           terminalFraming: "reset" as const,
         }
         if (exchange?.protocolCode !== undefined) {
-          return remoteProtocol(config, opId, exchange.protocolCode, witness, attemptId)
+          return Effect.fail(remoteProtocol(config, opId, exchange.protocolCode, witness, attemptId))
         }
         switch (exchange?.event._tag) {
           case "Redirected":
-            return remotePolicy(config, opId, "redirectDenied", "possiblyProcessed", attemptId)
+            return Effect.fail(remotePolicy(config, opId, "redirectDenied", "possiblyProcessed", attemptId))
           case "Silence":
-            return remoteUnavailable(
+            return Effect.fail(remoteUnavailable(
               config,
               opId,
               "timeout",
@@ -487,9 +496,9 @@ export const makeRemoteAdapter = (
               0,
               witness.sentBytes,
               attemptId,
-            )
+            ))
           case "Interrupted":
-            return remoteUnavailable(
+            return Effect.fail(remoteUnavailable(
               config,
               opId,
               "cancelled",
@@ -497,9 +506,9 @@ export const makeRemoteAdapter = (
               0,
               witness.sentBytes,
               attemptId,
-            )
+            ))
           case "RateLimited":
-            return remoteUnavailable(
+            return Effect.fail(remoteUnavailable(
               config,
               opId,
               "rateLimited",
@@ -507,9 +516,10 @@ export const makeRemoteAdapter = (
               0,
               witness.sentBytes,
               attemptId,
-            )
+              exchange.event.retryAfter,
+            ))
           case "Capacity":
-            return remoteUnavailable(
+            return Effect.fail(remoteUnavailable(
               config,
               opId,
               "capacity",
@@ -517,9 +527,9 @@ export const makeRemoteAdapter = (
               0,
               witness.sentBytes,
               attemptId,
-            )
+            ))
           default:
-            return remoteUnavailable(
+            return Effect.fail(remoteUnavailable(
               config,
               opId,
               "connectionReset",
@@ -527,16 +537,16 @@ export const makeRemoteAdapter = (
               witness.receivedBytes,
               witness.sentBytes,
               attemptId,
-            )
+            ))
         }
       }
       case "DuplicateId":
       case "Absorbed":
-        throw new Error(`remote machine invariant breach: ${result._tag}`)
+        return Effect.die(new Error(`remote machine invariant breach: ${result._tag}`))
       case "Commanded":
       case "Delivered":
       case "Uploaded":
-        throw new Error(`remote machine result is not an error: ${result._tag}${key ?? ""}`)
+        return Effect.die(new Error(`remote machine result is not an error: ${result._tag}${key ?? ""}`))
     }
   }
 
@@ -578,17 +588,6 @@ export const makeRemoteAdapter = (
     key: ContentId,
     bytes: Uint8Array,
   ): Effect.Effect<ContentId, CasRemoteError | CasError> => Effect.gen(function* () {
-    if (bytes.length > config.maxEncodedBytes) {
-      return yield* remoteBudget(
-        config,
-        opId,
-        "encoded",
-        bytes.length,
-        config.maxEncodedBytes,
-        attemptId,
-      )
-    }
-
     const actual = yield* address.digest(bytes.slice())
     const verified = actual === key
     const requested = yield* machineStep({
@@ -612,11 +611,17 @@ export const makeRemoteAdapter = (
       return admitted
     }
     if (requested.result._tag !== "Commanded") {
-      return yield* resultError(opId, attemptId, requested.result, undefined)
+      return yield* resultError(opId, attemptId, requested.result, undefined, {
+        stage: "encoded",
+        observed: bytes.length,
+        bound: config.maxEncodedBytes,
+      })
     }
 
     const command = requested.commands[0]?.command
-    if (command === undefined) throw new Error("commanded upload emitted no command")
+    if (command === undefined) {
+      return yield* Effect.die(new Error("commanded upload emitted no command"))
+    }
     const exchange = yield* consumeExchange(opId, attemptId, command)
     const rechecked = yield* address.digest(bytes.slice())
     const answered = yield* machineStep({
@@ -633,7 +638,11 @@ export const makeRemoteAdapter = (
       return yield* new AddressMismatch({ expected: key, actual: admitted })
     }
     return key
-  })
+  }).pipe(Effect.onInterrupt(() => clearInFlight(
+    opId,
+    { _tag: "Interrupted" },
+    config.maxEncodedBytes,
+  )))
 
   const driveLoad = (
     opId: number,
@@ -649,7 +658,9 @@ export const makeRemoteAdapter = (
     }
 
     const command = requested.commands[0]?.command
-    if (command === undefined) throw new Error("commanded load emitted no command")
+    if (command === undefined) {
+      return yield* Effect.die(new Error("commanded load emitted no command"))
+    }
     const exchange = yield* consumeExchange(opId, 1, command)
 
     if (exchange.event._tag !== "Ok") {
@@ -663,7 +674,7 @@ export const makeRemoteAdapter = (
 
     const bytes = exchange.event.bytes
     const decoded = decodeCasNode(bytes)
-    if (decoded === undefined || !bytesEqual(encodeCasNode(decoded), bytes)) {
+    if (decoded === undefined || !Equal.equals(encodeCasNode(decoded), bytes)) {
       yield* machineStep({
         _tag: "FromWire",
         id: opId,
@@ -688,6 +699,9 @@ export const makeRemoteAdapter = (
         id: opId,
         event: exchange.event,
       }, { key: id, bytes, valid: false }, config.maxDecodedBytes)),
+      Effect.mapError((error): CasError => error._tag === "CasError/DanglingReference"
+        ? new RemoteFailure({ cause: error })
+        : error),
     )
     if (admitted !== id) {
       return yield* new AddressMismatch({ expected: id, actual: admitted })
@@ -702,37 +716,44 @@ export const makeRemoteAdapter = (
       return yield* resultError(opId, 1, answered.result, exchange)
     }
     return decoded
-  })
+  }).pipe(Effect.onInterrupt(() => clearInFlight(
+    opId,
+    { _tag: "Interrupted" },
+    config.maxDecodedBytes,
+  )))
 
-  const putTransfer = (
+  const putTransfer = Effect.fn("CasTransfer.Remote.putStream")(function* (
     source: UploadSource,
     options: PutStreamOptions,
-  ): Effect.Effect<ContentId, CasRemoteError | CasError> => Effect.gen(function* () {
+  ) {
     const opId = yield* allocateOpId
     let expected = options.expected
     let attemptId = 1
 
+    // The explicit loop preserves attemptId threading and re-consumes a
+    // Replayable source for every attempt; a generic retry combinator cannot.
     while (true) {
       const chunks: Array<Uint8Array> = []
       let length = 0
 
       yield* source.stream.pipe(Stream.runForEach((chunk) => {
-        if (chunk.length > config.maxQueuedBytes) {
+        const buffered = length + chunk.length
+        if (buffered > config.maxQueuedBytes) {
           return Effect.fail(remoteBudget(
             config,
             opId,
             "queued",
-            config.maxQueuedBytes + 1,
+            buffered,
             config.maxQueuedBytes,
             attemptId,
           ))
         }
-        if (length + chunk.length > config.maxDecodedBytes) {
+        if (buffered > config.maxDecodedBytes) {
           return Effect.fail(remoteBudget(
             config,
             opId,
             "decoded",
-            config.maxDecodedBytes + 1,
+            buffered,
             config.maxDecodedBytes,
             attemptId,
           ))
@@ -760,7 +781,10 @@ export const makeRemoteAdapter = (
         )
       }
 
-      if (config.authorityMode !== "remote-authoritative") {
+      if (config.authorityMode === "offline") {
+        return yield* remotePolicy(config, opId, "offline")
+      }
+      if (config.authorityMode === "local-authoritative") {
         return yield* localStore.put(validated.node)
       }
 
@@ -770,16 +794,23 @@ export const makeRemoteAdapter = (
         validated.node,
         validated.id,
         validated.bytes,
-      ).pipe(Effect.match({
-        onFailure: (error) => ({ _tag: "Failure" as const, error }),
-        onSuccess: (value) => ({ _tag: "Success" as const, value }),
-      }))
-      if (uploaded._tag === "Success") return uploaded.value
+      ).pipe(Effect.result)
+      if (uploaded._tag === "Success") return uploaded.success
 
-      const retryable = uploaded.error._tag === "CasRemoteError/Protocol"
-        || uploaded.error._tag === "CasRemoteError/Unavailable"
-      if (source._tag === "OneShot" || !retryable || attemptId >= config.maxAttempts) {
-        return yield* Effect.fail(uploaded.error)
+      const retryable = uploaded.failure._tag === "CasRemoteError/Protocol"
+        || uploaded.failure._tag === "CasRemoteError/Unavailable"
+      if (source._tag === "OneShot" && retryable) {
+        return yield* remotePolicy(
+          config,
+          opId,
+          "oneShotRetryRefused",
+          uploaded.failure.completion,
+          attemptId,
+          uploaded.failure,
+        )
+      }
+      if (!retryable || attemptId >= config.maxAttempts) {
+        return yield* Effect.fail(uploaded.failure)
       }
       attemptId += 1
     }
@@ -788,7 +819,10 @@ export const makeRemoteAdapter = (
   const put = Effect.fn("CasStore.Remote.put")(function* (input: CasNodeInput) {
     const opId = yield* allocateOpId
     const validated = yield* validateUploadNode(input)
-    if (config.authorityMode !== "remote-authoritative") {
+    if (config.authorityMode === "offline") {
+      return yield* Effect.fail(wrapRemoteFailure(remotePolicy(config, opId, "offline")))
+    }
+    if (config.authorityMode === "local-authoritative") {
       return yield* localStore.put(validated.node)
     }
     return yield* driveUpload(opId, 1, validated.node, validated.id, validated.bytes).pipe(
@@ -813,7 +847,6 @@ export const makeRemoteAdapter = (
   })
 
   const loadStream = Effect.fn("CasTransfer.Remote.loadStream")(function* (id: ContentId) {
-    yield* Scope.Scope
     const node = yield* load(id).pipe(
       Effect.mapError((error): CasError | CasRemoteError => error._tag === "CasError/RemoteFailure"
         ? error.cause
@@ -821,8 +854,7 @@ export const makeRemoteAdapter = (
     )
     const bytes = encodeCasNode(node)
     if (bytes.length > config.maxDecodedBytes) {
-      const opId = yield* allocateOpId
-      return yield* remoteBudget(config, opId, "decoded", bytes.length, config.maxDecodedBytes)
+      return yield* remoteBudget(config, undefined, "decoded", bytes.length, config.maxDecodedBytes)
     }
     return Stream.succeed(bytes)
   })
