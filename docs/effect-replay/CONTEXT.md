@@ -9,7 +9,9 @@ abort through the transport seam — see the replay session entry. Amended
 minted — reified program and interpretation halt. Amended 2026-08-27 at
 the descriptor Pass A (operator-ratified): four entries minted — value
 descriptor, typed root, projection codec failure, hydrated service
-layer. Kind:
+layer. Amended 2026-08-27 at the remote Pass A (operator-ratified):
+four entries minted — remote exchange event, wire command, fault
+schedule, remote client machine. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -293,6 +295,57 @@ enters as an ordinary refactor proposal at that time.
   rejected.
 - **Avoid:** lazy per-method acquisition that hides errors; a hidden
   service root read as replay identity.
+
+### Remote exchange event
+- **Kind:** taxonomy. **Code label:** pending R1 (provisional
+  `Effects/Remote/Event.lean`).
+- **Form:** the abstract server-event alphabet the remote client
+  machine consumes: ok with bytes; absent; truncated; reset; silence;
+  unauthenticated; denied; rate-limited with retry-after; capacity;
+  redirected; per-key batch results; capabilities with limits; and
+  declared interruption.
+- **Obligations:** absence and corruption never share a member; every
+  event is data carrying no wall-clock or host detail; the alphabet is
+  the model's entire view of the wire.
+- **Avoid:** HTTP vocabulary in members; folding integrity failures
+  into transport members; events carrying credentials.
+
+### Wire command
+- **Kind:** taxonomy. **Code label:** pending R1 (provisional
+  `Effects/Remote/Command.lean`).
+- **Form:** what the machine emits toward the shell: capability probe,
+  load, find-missing, upload, query-committed, publish-root.
+- **Obligations:** commands are data and the shell owns their transport
+  realization; command sequences are part of the compared conformance
+  surface alongside decisions.
+- **Avoid:** commands carrying credentials or ambient state; a command
+  whose meaning depends on transport origin.
+
+### Fault schedule
+- **Kind:** schema. **Code label:** pending R1 (the schedule-vector
+  manifest row shape).
+- **Form:** the ordered scripted server-event list a vector row
+  carries, including declared interruption points; executed by the
+  model to compute the row's expectations.
+- **Obligations:** schedules are fixture data under the
+  generated-vectors law; retry delays and attempt counts are decision
+  data, never wall-clock; any randomness derives from a row-carried
+  seed or is excluded by the declared normalization.
+- **Avoid:** recorded transcripts as schedules; wall-clock in any
+  field; schedules that embed server internals beyond the alphabet.
+
+### Remote client machine
+- **Kind:** model (state machine). **Code label:** pending R1
+  (provisional `Effects/Remote/Machine.lean`).
+- **Form:** sans-io: state and one exchange event in; wire commands,
+  decisions, and outcome out. The Effect shell owns all I/O; state
+  carriers prefer the Lean standard library's structures.
+- **Obligations:** total on the alphabet; every invariant is stated
+  over its decisions and commands; the machine never models the
+  server, HTTP, TLS, or time.
+- **Avoid:** I/O or services inside the machine; modeling server
+  behavior beyond the alphabet; treating shell behavior as
+  model-covered.
 
 ### Service kit
 - **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.

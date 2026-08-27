@@ -591,6 +591,22 @@ IDs are provisional planning identifiers.
 | `PRJ-004` | Fixed-root hydration matches by-value construction: the layer builds the same caller-facing shape, construction errors stay on the layer, and method error unions never widen | TypeScript typecheck and integration fixtures | hydration widens a method error union or hides a construction failure | service kit and CAS store |
 | `PRJ-005` | Hydrated record construction stays non-recursive and single-wrapped: layerAs targets the internal live role only, never resolves the public wrapper, and double wrapping stays rejected | must-fail TypeScript fixtures | the wrapper resolves its public tag or accepts a wrapped live role | service kit |
 | `PRJ-006` | Equal roots imply no stronger value equality than the hash-hypothesis lattice permits | standing review rule | prose or API implying content equality from address equality | hash-hypothesis lattice |
+| `RMT-001` | No remote-loaded node reaches the cache or the caller without passing standard admission; a wire-supplied digest is a routing hint, never an identity | Lean TRACE-EXCLUDES instance and TS fixtures | a node cached or returned before admission | remote client machine |
+| `RMT-002` | Declared sizes and counts are checked against declared budgets before any hashing or decoding | Lean FAIL-CLOSED instance | an oversized declaration reaches hashing or decoding | exchange-alphabet budgets |
+| `RMT-003` | An integrity failure is terminal for those bytes: no wire attempt ever repeats unchanged content | Lean TRACE-EXCLUDES instance | a retry decision with unchanged bytes after integrity rejection | remote client machine |
+| `RMT-004` | An already-present exact-digest upload resolves as success with zero additional transfer commands | Lean EXACT-STEP instance | a duplicate upload emits a transfer command | find-missing negotiation |
+| `RMT-005` | No admission or publication decision is taken on a presence answer alone, and absence is never negatively cached by default | Lean TRACE-EXCLUDES instance | presence alone admits, publishes, or writes a negative cache | presence semantics |
+| `RMT-006` | A batch response accounts for every requested key per-key; an unaccounted or misaligned key fails the batch closed with no cross-key substitution | Lean FAIL-CLOSED instance | a misaligned batch partially succeeds or substitutes across keys | batch protocol |
+| `RMT-007` | Children upload before parents and the root publishes last; server acceptance of a parent never implies closure | Lean TRACE-EXCLUDES instance | a root-publish command precedes a child's confirmed upload | upload ordering |
+| `RMT-008` | At any declared interruption point, no partial node is admitted, no root is published, and resources are closed | Lean FAIL-CLOSED instance over scheduled interruptions | an interruption leaves a partial admit or a published root | fault schedule |
+| `RMT-009` | Interrupted transfers resume only from a re-queried, server-reported committed offset, tolerating regression | Lean FAIL-CLOSED instance | a resume from a locally remembered offset | resume protocol |
+| `RMT-010` | Retries are bounded by declared policy, rendered as decisions, and never repeat a non-idempotent wire attempt | Lean TRACE-EXCLUDES instance | an unbounded or non-idempotent retry | retry policy |
+| `RMT-011` | Server-declared limits are discovered at layer acquisition and honored by splitting or rerouting | TypeScript typecheck and fixtures | a hardcoded limit exceeds a declared capability | capability probe |
+| `RMT-012` | Verification and credential scope are independent of transport origin; credentials never cross redirect hosts | TypeScript fixtures | a credential follows a redirect or verification depends on origin | transport shell |
+| `RMT-013` | Presence-style operations carry a namespace; no global existence query exists on the surface | standing review rule | a global does-this-digest-exist call | API review |
+| `RMT-014` | Batch framing, capability documents, and presence indexes parse fail-closed with the same posture as node bytes | Lean FAIL-CLOSED instance and TS fixtures | malformed control state partially applied | control-state codecs |
+| `RMT-015` | A successful remote load implements the logical admitted-node load | Lean AGREEMENT instance | a remote load succeeding with a node the logical load would not produce | AGREEMENT family |
+| `RMT-016` | A local admitted-node hit is observationally equivalent to a successful remote load for immutable nodes | Lean AGREEMENT instance | a cache hit observably diverging from the remote answer | cache discipline |
 
 ## 8. Test and evidence strategy
 
@@ -841,6 +857,39 @@ Exit:
 - `PRJ-001` through `PRJ-005` evidenced at the TypeScript interface;
 - `PRJ-006` standing; and
 - replay semantics, manifests, and the Lean model unchanged.
+
+### R1–R6 — remote lane (ratified at the remote Pass A)
+
+Sequenced after the ergonomics lane and before M6, so the
+correspondence gate documents the full surface. Design authority:
+[`research/remote-cas-conformance-design.md`](research/remote-cas-conformance-design.md)
+over the prior-art compendium. Architecture, as ratified: a sans-io
+remote client decision machine over the abstract exchange alphabet
+(never HTTP); fault schedules as manifest fixture data executed by the
+model, with schedule-vector rows landing additively under the
+unchanged declared model version; the four evidence lanes with the
+existing flip mechanics (instances, tsSide evidence list,
+declared-evidence entries for the property and live lanes); one
+declared mutant per falsification case in both directions.
+
+- **R1** — the exchange alphabet and client machine in Lean, the
+  schedule-vector emitter, and the `RMT-001`–`RMT-003` instances and
+  mutants.
+- **R2** — the single-operation TypeScript baseline: sans-io core,
+  thin shell, deterministic fake-remote; `RMT-004` and the first
+  AGREEMENT instance (`RMT-015`).
+- **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
+- **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`.
+- **R5** — the property/state-machine lane, entering as declared
+  evidence.
+- **R6** — the live lane and one real backend layer under scoped
+  acquisition; the section-4 `Scope` row amendment lands here.
+
+Exit:
+
+- every `RMT` row green or standing;
+- no HTTP, TLS, wall-clock, or server internals in the Lean model; and
+- no recorded transcript ever serves as a schedule.
 
 ### M6 — correspondence and public library gate
 

@@ -109,6 +109,7 @@ The catalog (WGR-2), seeded from the obligation ledger:
 | HOMOMORPHISM | `interp (bind p k) = …` over both outcome cases | CMP-001; return/bind laws |
 | CODEC | `decode ∘ encode = some` ∧ `encode` injective on canonical forms | CAS-001 |
 | REJECTION-CLAUSE | `∀ raw, admit raw = error c ↔ Clause c raw` | CAS-002 node admission |
+| AGREEMENT | `∀ x, hyp x → observe (f x) = observe (g x)` | RMT-015 remote-load refinement; RMT-016 cache observation (added at the remote Pass A, 2026-08-27) |
 
 Cross-cutting: every checker carries the boolean-reflection iff
 (`check x = true ↔ Prop x`) — one judgment, one decision surface, one iff.
@@ -605,6 +606,40 @@ Stop and return to grilling if:
   recover from their own address boundary — a named API gap for a
   future ruling (the natural home is the descriptor slice or a widened
   record-mode result).
+- **Remote Pass A (2026-08-27):** the operator ratified the nine-item
+  docket as recommended, over the landed remote-CAS research pair.
+  (1) The exchange alphabet and the sans-io client decision machine
+  shape are minted — events and commands are data, absence and
+  corruption never share a member, and HTTP/TLS/wall-clock/server
+  internals stay outside the model. (2) The schedule-vector manifest
+  shape is ratified: rows carry operations plus an ordered scripted
+  server-event schedule (including declared interruption points), with
+  expectations computed by executing the model — additive under the
+  unchanged declared model version, and acknowledged as novel ground.
+  (3) Sixteen obligations enter plan section 7 as the RMT family at
+  the R1–R4 milestones, two tsSide and one standing review among them.
+  (4) The WGR-2 catalog event lands with one amendment called and
+  accepted: the two anticipated new shapes share a quantifier
+  structure, so ONE family — AGREEMENT,
+  `∀ x, hyp x → observe (f x) = observe (g x)` — is added, with
+  RMT-015 and RMT-016 as its first instances; sentence template "On
+  ⟨domain⟩, ⟨computation A⟩ and ⟨computation B⟩ agree at
+  ⟨observation⟩ — ⟨domain gloss⟩"; kit = a positive agreement witness
+  plus a mutated computation that satisfies the hypothesis yet
+  observably diverges. (5) Evidence lanes use existing flip mechanics
+  only — instances, the tsSide evidence list, and declared-evidence
+  entries for the property and live lanes. (6) The mutant floor is
+  one declared mutant per falsification case in both directions, with
+  wrong-bytes-for-address threaded as the canonical fault. (7) The R
+  lane ratchets before M6 — the rank map now orders R1 through R6
+  between E3 and M6. (8) Provenance: Part-I byte receipts are minted
+  at R1's landing, the first gated consumer, with the preserved bytes;
+  Parts II–IV stay pending-pin. (9) Operator rider during the
+  landing: the remote model prefers Lean's standard-library carriers —
+  `Std.HashMap`, `Std.HashSet`, and kin with their lemma APIs — over
+  bespoke map carriers, the same built-ins-first posture as the
+  EStateM ruling; a carrier that fights a proof falls back only with
+  the divergence documented. R1 opens as conformance-lane model work.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the

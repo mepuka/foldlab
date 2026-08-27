@@ -29,6 +29,22 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | PRJ-004 | evidenced — TypeScript evidence (test/CasService.test.ts) |
 | PRJ-005 | evidenced — TypeScript evidence (test/CasService.test.ts) |
 | PRJ-006 | standing review rule |
+| RMT-001 | pending — TRACE-EXCLUDES instance at R1 |
+| RMT-002 | pending — FAIL-CLOSED instance at R1 |
+| RMT-003 | pending — TRACE-EXCLUDES instance at R1 |
+| RMT-004 | pending — EXACT-STEP instance at R2 |
+| RMT-005 | pending — TRACE-EXCLUDES instance at R3 |
+| RMT-006 | pending — FAIL-CLOSED instance at R3 |
+| RMT-007 | pending — TRACE-EXCLUDES instance at R3 |
+| RMT-008 | pending — FAIL-CLOSED instance at R3 |
+| RMT-009 | pending — FAIL-CLOSED instance at R4 |
+| RMT-010 | pending — TRACE-EXCLUDES instance at R4 |
+| RMT-011 | pending — TypeScript evidence at R4 |
+| RMT-012 | pending — TypeScript evidence at R4 |
+| RMT-013 | standing review rule |
+| RMT-014 | pending — FAIL-CLOSED instance at R3 |
+| RMT-015 | pending — AGREEMENT instance at R2 |
+| RMT-016 | pending — AGREEMENT instance at R4 |
 
 ## CAS-001
 
@@ -149,3 +165,67 @@ Hydrated record construction stays non-recursive and single-wrapped: layerAs tar
 ## PRJ-006
 
 Equal roots imply no stronger value equality than the hash-hypothesis lattice permits.
+
+## RMT-001
+
+No remote-loaded node reaches the cache or the caller without passing standard admission; a wire-supplied digest is a routing hint, never an identity.
+
+## RMT-002
+
+Declared sizes and counts are checked against declared budgets before any hashing or decoding.
+
+## RMT-003
+
+An integrity failure is terminal for those bytes: no wire attempt ever repeats unchanged content.
+
+## RMT-004
+
+An already-present exact-digest upload resolves as success with zero additional transfer commands.
+
+## RMT-005
+
+No admission or publication decision is taken on a presence answer alone, and absence is never negatively cached by default.
+
+## RMT-006
+
+A batch response accounts for every requested key per-key; an unaccounted or misaligned key fails the batch closed with no cross-key substitution.
+
+## RMT-007
+
+Children upload before parents and the root publishes last; server acceptance of a parent never implies closure.
+
+## RMT-008
+
+At any declared interruption point, no partial node is admitted, no root is published, and resources are closed.
+
+## RMT-009
+
+Interrupted transfers resume only from a re-queried, server-reported committed offset, tolerating regression.
+
+## RMT-010
+
+Retries are bounded by declared policy, rendered as decisions, and never repeat a non-idempotent wire attempt.
+
+## RMT-011
+
+Server-declared limits are discovered at layer acquisition and honored by splitting or rerouting.
+
+## RMT-012
+
+Verification and credential scope are independent of transport origin; credentials never cross redirect hosts.
+
+## RMT-013
+
+Presence-style operations carry a namespace; no global existence query exists on the surface.
+
+## RMT-014
+
+Batch framing, capability documents, and presence indexes parse fail-closed with the same posture as node bytes.
+
+## RMT-015
+
+A successful remote load implements the logical admitted-node load.
+
+## RMT-016
+
+A local admitted-node hit is observationally equivalent to a successful remote load for immutable nodes.
