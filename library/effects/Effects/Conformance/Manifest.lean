@@ -172,9 +172,77 @@ def cas001Manifest : Value := familyManifest "CAS-001" cas001.sentence cas001Row
 
 def cas002Manifest : Value := familyManifest "CAS-002" cas002.sentence cas002Rows
 
+/-! ## The canonical value encoding (CAS-004): the model computes the
+bytes, the implementation reproduces them
+
+Structures in, canonical UTF-8 bytes out — executed through the
+compact renderer, so key sorting, integer formatting, and the exact
+`JSON.stringify` escape set bind a value writer byte-for-byte. The
+fixtures cover the sort order (including the astral-versus-BMP key
+pair where codepoint order and UTF-16 code-unit order disagree), the
+full short-escape set with a raw control character, integer extremes
+at the safe-integer boundary, and empty composites. -/
+
+/-- The function under test: a structure to its canonical rendering. -/
+abbrev ValueRenderFn := Json.Value → String
+
+def realValueRender : ValueRenderFn := Json.renderCompact
+
+private def ctrl (n : Nat) : String := String.singleton (Char.ofNat n)
+
+/-- Escape-set coverage: both mandatory escapes, all five short
+escapes, one raw control needing `\u00xx`, and multibyte literals. -/
+def cas004EscapeString : String :=
+  "q:\" b:\\ t:\t n:\n r:\r bs:" ++ ctrl 8 ++ " ff:" ++ ctrl 12
+    ++ " c1:" ++ ctrl 1 ++ " é 你 " ++ String.singleton (Char.ofNat 0x10000)
+
+/-- Codepoint order puts U+E000 before U+10000; UTF-16 code-unit order
+would reverse them — this fixture pins the codepoint rule. -/
+def cas004AstralKeys : Json.Value :=
+  .obj [ (String.singleton (Char.ofNat 0x10000), .nat 1)
+       , (String.singleton (Char.ofNat 0xE000), .nat 2) ]
+
+def cas004Structures : List (String × Json.Value) :=
+  [ ("null-000", .null)
+  , ("booleans-001", .arr [.bool true, .bool false])
+  , ("integers-at-safe-bounds-002",
+      .arr [ .nat 0, .int (-1), .nat 42
+           , .int (-9007199254740991), .nat 9007199254740991 ])
+  , ("string-escape-set-003", .str cas004EscapeString)
+  , ("key-sort-by-codepoint-004",
+      .obj [ ("b", .nat 1), ("a", .nat 2), ("aa", .nat 3)
+           , ("B", .nat 4), ("", .nat 5) ])
+  , ("astral-key-after-private-use-005", cas004AstralKeys)
+  , ("nested-composites-006",
+      .obj [ ("list", .arr [.obj [("k", .null)], .arr []])
+           , ("empty", .obj []) ])
+  , ("top-level-integer-007", .nat 7) ]
+
+def cas004Row (renderF : ValueRenderFn) (caseId : String)
+    (v : Json.Value) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", .obj
+             [("bytes", bytesJson (renderF v).toUTF8.toList)])
+         , ("input", .obj [("value", v)]) ] )
+
+def cas004Rows (renderF : ValueRenderFn) : List (String × Value) :=
+  cas004Structures.map fun (caseId, v) => cas004Row renderF caseId v
+
+/-- Rendered rows of the encoding family under a renderer — the
+mutation task's comparison unit. -/
+def cas004RowsRendered (renderF : ValueRenderFn) : String :=
+  renderRows (cas004Rows renderF)
+
+def cas004Manifest : Value :=
+  familyManifest "CAS-004"
+    "A value's canonical encoding is the UTF-8 bytes of its compact JSON rendering — codepoint-sorted keys, integers only, JSON short-escape strings — one encoding per structure, language-neutral."
+    (cas004Rows realValueRender)
+
 /-- The committed manifest files: name and rendered content. -/
 def files : List (String × String) :=
   [ ("CAS-001.json", Json.document cas001Manifest)
-  , ("CAS-002.json", Json.document cas002Manifest) ]
+  , ("CAS-002.json", Json.document cas002Manifest)
+  , ("CAS-004.json", Json.document cas004Manifest) ]
 
 end Effects.Conformance.Manifest

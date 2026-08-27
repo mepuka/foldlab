@@ -7,6 +7,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | CAS-001 | instantiated (CODEC) |
 | CAS-002 | instantiated (REJECTION-CLAUSE) |
 | CAS-003 | standing review rule |
+| CAS-004 | evidenced — TypeScript evidence (test/CasValueJson.test.ts) |
 | RPL-001 | discharged — carrier construction (step\_iff\_reduce) |
 | RPL-002 | instantiated (TRACE-EXCLUDES) |
 | RPL-003 | instantiated (EXACT-STEP) |
@@ -87,6 +88,10 @@ Graph admission rejects dangling or wrong-kind references.
 ## CAS-003
 
 Every address law is assigned to hash Level 0 or carries an explicit Level-1 hInj premise; no theorem occupies Level 2.
+
+## CAS-004
+
+A value's canonical encoding is the UTF-8 bytes of its compact JSON rendering — codepoint-sorted keys, integers only, JSON short-escape strings — one encoding per structure, language-neutral.
 
 ## RPL-001
 

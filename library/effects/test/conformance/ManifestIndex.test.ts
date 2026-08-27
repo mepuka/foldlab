@@ -42,6 +42,7 @@ type Binding =
 const REGISTRY: Record<string, Binding> = {
   "CAS-001": { status: "bound", by: "CasStore.test.ts" },
   "CAS-002": { status: "bound", by: "CasStore.test.ts" },
+  "CAS-004": { status: "bound", by: "CasValueJson.test.ts" },
   "CMP-002": { status: "bound", by: "ReplayReducer.test.ts" },
   "MRK-001": { status: "bound", by: "merkle/Merkle.test.ts" },
   "MRK-002": { status: "bound", by: "merkle/Merkle.test.ts" },

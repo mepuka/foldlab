@@ -54,7 +54,8 @@ def bridgeEvidence : List (String × String) :=
 TypeScript suite that carries the evidence. Entered only at an accepted
 delivery review; the transition check holds `evidenced` green. -/
 def tsEvidence : List (String × String) :=
-  [ ("CTX-001", "test/ReplaySession.test.ts")
+  [ ("CAS-004", "test/CasValueJson.test.ts")
+  , ("CTX-001", "test/ReplaySession.test.ts")
   , ("CTX-002", "test/ReplaySession.test.ts")
   , ("PRJ-001", "test/CasValue.test.ts")
   , ("PRJ-002", "test/CasValue.test.ts")

@@ -76,7 +76,27 @@ const isPlainObject = (value: object): boolean => {
   return prototype === Object.prototype || prototype === null
 }
 
-const canonicalJson = (
+/** Codepoint order — equal to UTF-8 byte order, the language-neutral
+ * key ordering CAS-004 pins. Default string comparison is UTF-16
+ * code-unit order, which disagrees on astral-plane keys. */
+const compareCodepoints = (left: string, right: string): number => {
+  const a = Array.from(left)
+  const b = Array.from(right)
+  const shorter = Math.min(a.length, b.length)
+  for (let index = 0; index < shorter; index += 1) {
+    const delta = (a[index] as string).codePointAt(0)! - (b[index] as string).codePointAt(0)!
+    if (delta !== 0) return delta
+  }
+  return a.length - b.length
+}
+
+/** The canonical value encoding (CAS-004): compact JSON with
+ * codepoint-sorted keys, integer-only numbers, and the exact
+ * `JSON.stringify` escape set. The UTF-8 bytes of this string are what
+ * a value node's content identity is computed over; integers-only is
+ * the ruling that keeps those bytes language-neutral. Exported for the
+ * conformance binding — the model's vectors are the authority. */
+export const canonicalJson = (
   value: unknown,
   ancestors: ReadonlySet<object> = new Set(),
 ): string => {
@@ -87,7 +107,11 @@ const canonicalJson = (
     case "string":
       return JSON.stringify(value)
     case "number":
-      if (!Number.isFinite(value)) throw new TypeError("JSON numbers must be finite")
+      if (!Number.isSafeInteger(value)) {
+        throw new TypeError(
+          "Canonical JSON numbers must be safe integers — fractional and unsafe values have no language-neutral encoding",
+        )
+      }
       return JSON.stringify(value)
     case "object": {
       if (ancestors.has(value)) throw new TypeError("Canonical JSON cannot encode cycles")
@@ -112,7 +136,7 @@ const canonicalJson = (
       if (Object.getOwnPropertySymbols(value).length > 0) {
         throw new TypeError("Canonical JSON objects cannot have symbol keys")
       }
-      const fields = Object.keys(value).sort().map((key) =>
+      const fields = Object.keys(value).sort(compareCodepoints).map((key) =>
         `${JSON.stringify(key)}:${canonicalJson(
           (value as Record<string, unknown>)[key],
           nextAncestors,

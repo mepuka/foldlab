@@ -1739,3 +1739,39 @@ Stop and return to grilling if:
   QUEUED, deferred while the in-flight implementation delivery
   consumes those exact manifests — growth lands after its
   acceptance under the ratified same-version mechanism.
+- **CAS-004 canonical value encoding; printer totalized
+  (2026-08-27):** two operator rulings landed through the harness
+  rather than as hand-written assertions. INTEGERS ONLY: canonical
+  value numbers are safe integers — the one number form whose
+  textual rendering is language-neutral — so fractional and unsafe
+  values are refused at encoding, never formatted; and key order is
+  CODEPOINT order (equal to UTF-8 byte order), pinned because the
+  shipped comparator was UTF-16 code-unit order, which silently
+  disagrees on astral-plane keys — a second accidental-canonicality
+  hole found while designing the family. CAS-004 minted
+  plan-§7-first as a tsSide obligation: the model computes each
+  structure's canonical bytes through a new total compact renderer
+  and the implementation reproduces them byte-for-byte (eight rows:
+  the escape set with raw controls, safe-integer extremes, the
+  astral-versus-private-use key pair, codepoint sorting, nested and
+  empty composites); the binding suite consumed every row on first
+  run and the row flipped evidenced. The manifest printer itself is
+  TOTALIZED in the same pass — the one `partial def` in the tree is
+  gone: fields render before they sort, so both renderers are
+  structural, and every committed manifest regenerated
+  byte-identical through the rewrite, gate-proved. One JSON model
+  now serves both surfaces (the pretty manifest printer and the
+  compact value encoding), extended with an integer constructor.
+  The operator's pointer at predictable-machines/lean4-tree-sitter
+  is dispositioned: it stays the pending-admission Stage-1
+  extractor instrument per TOOLS.md and does not enter the vector
+  trust boundary — a C-FFI parser cannot anchor model-executed
+  expectations, and the need here was a canonical encoder; the
+  reuse instinct landed as the one-JSON-model consolidation
+  instead. CALLER-SUPPLIED EXECUTION IDENTITY is ruled and queued:
+  the session accepts an explicit executionId with the
+  process-local counter demoted to a documented dev default —
+  implementation rides the optimization packet because the session
+  files are wet under the in-flight delivery. Also deferred there:
+  the CAS-004 direction-1 mutant wiring, which waits on the
+  mutation-runner dedupe in the worktree slice.
