@@ -3,8 +3,7 @@
  *
  * The TAG menu below is the ratified minimum — live delegation, record-mode
  * occurrence append, recorded substitution, history consumption, typed
- * rejection, completion. Payload shapes are provisional and explicitly
- * subject to the M3 re-freeze when the reducer's representation lands;
+ * rejection, completion. The payload shapes are frozen with the M3 reducer;
  * "whether a live adapter was requested" is a derived projection of the
  * trace, never a separate Boolean oracle.
  */
