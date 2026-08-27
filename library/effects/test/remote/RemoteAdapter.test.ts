@@ -21,10 +21,10 @@ import { createHash, randomBytes } from "node:crypto"
 import * as Cas from "../../src/Cas.ts"
 import {
   CasNodeInput,
-  CasStore,
   ContentId,
   RemoteFailure,
-} from "../../src/index.ts"
+} from "../../src/cas/Node.ts"
+import { CasStore } from "../../src/cas/Store.ts"
 import {
   CasRemoteConfig,
   RemoteAuthority,
@@ -237,7 +237,7 @@ it.effect("reference cas-http/0 shares admission state across CasStore and CasTr
       expect(endpoint.observe().puts).toBe(1)
 
       const projected = yield* transfer.putStream(
-        Cas.Transfer.replayable(Stream.make(Uint8Array.from([5, 4]), Uint8Array.from([3]))),
+        Cas.restartable(() => Stream.make(Uint8Array.from([5, 4]), Uint8Array.from([3]))),
         { kind: { version: 0, tag: 5 }, refs: [] },
       )
       expect(projected).toMatch(/^[0-9a-f]{64}$/)
@@ -499,8 +499,8 @@ it.effect("queued admission budgeting is invariant under one-chunk and many-chun
   Effect.scoped(Effect.gen(function* () {
     const endpoint = yield* HostilePeer.serve({ fault: "complete", body: new Uint8Array() })
     const outcomes = yield* CasTransfer.use((transfer) => Effect.forEach([
-      Cas.Transfer.replayable(Stream.succeed(Uint8Array.from([1, 2, 3, 4]))),
-      Cas.Transfer.replayable(Stream.make(
+      Cas.restartable(() => Stream.succeed(Uint8Array.from([1, 2, 3, 4]))),
+      Cas.restartable(() => Stream.make(
         Uint8Array.of(1),
         Uint8Array.of(2),
         Uint8Array.of(3),
@@ -870,7 +870,7 @@ it.effect("a one-shot upload reset is never retried and carries indeterminate co
         const transfer = yield* CasTransfer
         const store = yield* CasStore
         const error = yield* transfer.putStream(
-          Cas.Transfer.oneShot(Stream.succeed(uploaded.payload)),
+          Cas.oneShot(Stream.succeed(uploaded.payload)),
           { kind: uploaded.kind, refs: [], expected: id },
         ).pipe(Effect.flip)
         expect(error._tag).toBe("CasRemoteError/Policy")
@@ -890,7 +890,7 @@ it.effect("a one-shot upload reset is never retried and carries indeterminate co
       }).pipe(Effect.provide(remoteLayer(config(endpoint.authority, { maxAttempts: 3 }))))
     })))
 
-it.effect("a replayable upload reconsumes and rechecks its source before a bounded retry", () =>
+it.effect("a restartable upload reacquires and rechecks its source before a bounded retry", () =>
   Effect.scoped(Effect.gen(function* () {
       const uploaded = node([3, 1, 4], 8)
       const bytes = encodeCasNode(uploaded)
@@ -906,7 +906,7 @@ it.effect("a replayable upload reconsumes and rechecks its source before a bound
         const transfer = yield* CasTransfer
         const store = yield* CasStore
         const admitted = yield* transfer.putStream(
-          Cas.Transfer.replayable(source),
+          Cas.restartable(() => source),
           { kind: uploaded.kind, refs: [], expected: id },
         )
         expect(admitted).toBe(id)

@@ -1521,3 +1521,43 @@ Stop and return to grilling if:
   anchored on the FIPS 180 reference digests, and the
   authentication and deadline riders — one slice, the publication
   gate's last semantic prerequisite on the client side.
+- **One front door landed; external host-boundary review verified;
+  harness-enforcement directive (2026-08-27):** the architecture
+  review's first candidate is landed: the package barrel exports
+  exactly two namespaces, `Cas` and `Replay`, one per plane — the
+  flat duplicates, the bare `value` leak, and the reducer clause
+  helpers leave the public surface (the helpers stay
+  module-internal for Lean correspondence), and inside a namespace
+  the `Cas` prefix of internal module names drops (`Cas.Store`,
+  `Cas.Transfer`, `Cas.Blob`, `Cas.RemoteConfig`). The
+  `replayable` name collision is resolved: the upload source is
+  `restartable`, and it is now a STREAM FACTORY — every retry
+  attempt acquires a fresh stream, so a queue-backed or otherwise
+  consumptive stream can no longer be labeled re-runnable; the
+  bounded-retry test witnesses reacquisition. README rewritten to
+  the two-door surface; both typechecks and one hundred sixty-six
+  tests green. An external read-only review of `0fa1bde7` was
+  verified claim-by-claim first-hand and every finding CONFIRMED.
+  One nuance sharpens its first item: the redirect origin check
+  compares the URL the adapter itself built against the origin it
+  was built from — vacuous by construction, not merely misdirected
+  — and actual redirect denial exists today only for fetch
+  clients, where the manual-redirect request option makes a `3xx`
+  fall into the invalid-status arm; for any other HttpClient the
+  guarantee is unenforced. The concurrency finding needs the model
+  to speak first: if the reducer refuses interleaved delegation,
+  the runtime binds that refusal; if the model is silent, the
+  exclusivity rule lands in Lean before the runtime enforces it.
+  NEW OPERATOR DIRECTIVE reshaping priority: the Lean-vector
+  vitest harness must substantially ENFORCE correctness — cut as
+  Track E ahead of the fault items: a family coverage gate (every
+  committed manifest bound or the suite is red, row counts exact),
+  rendered-row agreement for the reducer and remote-machine
+  families rather than outcome-only comparison, the MRK-014
+  blob-graph binding over an injected toy address, law lanes that
+  fuzz beyond the fixtures (codec exactness both directions,
+  fragmentation invariance mirroring the proved theorems), and a
+  briefing-emitted manifest index as the TypeScript-side authority
+  for what must be bound. Lean-side prerequisites queued in this
+  lane: the fragmentation vector family and the manifest-index
+  emission.

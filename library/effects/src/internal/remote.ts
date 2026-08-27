@@ -1187,13 +1187,15 @@ export const makeRemoteAdapter = (
     let expected = options.expected
     let attemptId = 1
 
-    // The explicit loop preserves attemptId threading and re-consumes a
-    // Replayable source for every attempt; a generic retry combinator cannot.
+    // The explicit loop preserves attemptId threading and acquires a fresh
+    // stream from a Restartable source for every attempt; a generic retry
+    // combinator cannot.
     while (true) {
       const chunks: Array<Uint8Array> = []
       let length = 0
+      const stream = source._tag === "Restartable" ? source.acquire() : source.stream
 
-      yield* source.stream.pipe(Stream.runForEach((chunk) => {
+      yield* stream.pipe(Stream.runForEach((chunk) => {
         const buffered = length + chunk.length
         if (buffered > config.maxQueuedBytes) {
           return Effect.fail(remoteBudget(

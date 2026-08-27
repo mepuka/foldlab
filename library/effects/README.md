@@ -16,27 +16,29 @@ ledger, and ratified manifest vectors live under their own gates. See
 
 ## Runtime surface
 
-The package barrel exports:
+The package barrel exports exactly two namespaces — `Cas` and `Replay` — one
+per plane. Inside a namespace the `Cas` prefix of internal module names drops:
+the store tag is `Cas.Store`, the transfer tag is `Cas.Transfer`, blob reads
+live under `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
 
-- CAS node Schemas, clause-named errors, and content identifiers from
-  `cas/Node.ts`;
-- the `CasStore` service and isolated in-memory adapter from `cas/Store.ts`;
-- the `Cas.value` typed-value projection and `Cas.service` eager hydration
-  descriptor from `cas/Value.ts` and `cas/Service.ts`;
-- the typed remote configuration and failure family from `cas/Remote.ts`, plus
-  `CasTransfer`, `Transfer.replayable`, and `Transfer.oneShot` from
-  `cas/Transfer.ts`;
-- `Cas.layerRemote`, which builds one shared `CasStore | CasTransfer` adapter
-  and keeps the caller-provided `HttpClient` and native `Crypto` services
-  visible as layer requirements;
-- public session carriers and the synchronous pure reducer from
-  `replay/Session.ts` and `replay/Reducer.ts`;
-- operation descriptions and decisions from `replay/Operation.ts` and
-  `replay/Decision.ts`;
-- the runtime `Replay` service, `ReplayShape.run`, `layerReplay`, and `session`
-  from `replay/Replay.ts`; and
-- `replayable` from `replay/ServiceAdapter.ts`, which returns the internal-live
-  role, record, and replay layers.
+- `Cas` carries the node Schemas, clause-named errors, and content
+  identifiers; the `Store` service tag with the isolated in-memory adapter
+  (`Cas.layerMemory`) and the scheme-0 canonical node codec
+  (`Cas.encodeNode`/`Cas.decodeNode`); the `value` typed-value projection and
+  `service` eager hydration descriptor; verified blob reads under `Cas.Blob`;
+  the `Transfer` service tag with the `restartable`/`oneShot` upload sources;
+  the typed remote configuration and failure family; and `Cas.layerRemote`,
+  which builds one shared `Store | Transfer` adapter and keeps the
+  caller-provided `HttpClient` and native `Crypto` services visible as layer
+  requirements.
+- `Replay` carries the runtime `Replay` service with `Replay.layer` and
+  `Replay.session`; the synchronous pure reducer `Replay.reduce` with its
+  session carriers and decision vocabulary; `Replay.describeService`
+  operation descriptions; and the `Replay.replayable` service kit, which
+  returns the internal-live role, record, and replay layers.
+
+Deeper module paths (`cas/*.ts`, `replay/*.ts`) remain importable for tests
+and correspondence work; the reducer's clause helpers live only there.
 
 `internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts`
 modules are never exported. Their history/witness Schemas, binary carriers,
@@ -104,9 +106,10 @@ The HTTP shell performs no retry and follows no redirect. The library supplies
 typed `redirectDenied` policy outcome. `redirectPolicy.maxRedirects` and
 `redirectPolicy.crossOrigin` are validated configuration reserved for R4;
 redirect following is not active in this slice. The semantic adapter retries only a
-`Transfer.replayable` source, up to `maxAttempts`, with the content address
-rechecked on every attempt. A retryable failure from `Transfer.oneShot`
-becomes `oneShotRetryRefused` and retains the underlying transport evidence.
+`Cas.restartable` source — a stream factory reacquired for every attempt — up
+to `maxAttempts`, with the content address rechecked on every attempt. A
+retryable failure from `Cas.oneShot` becomes `oneShotRetryRefused` and retains
+the underlying transport evidence.
 
 Authority modes never silently fall back. `remote-authoritative` uses the
 wire, `local-authoritative` admits locally without a remote claim, and
@@ -139,22 +142,24 @@ telemetry buffer.
 ## Usage sketch
 
 Assume `Rates`, `RatesShape`, `QuoteUnavailable`, and `liveRates` are ordinary
-Effect service declarations, and that `runtimeLayer` supplies `layerReplay`
-over one `layerMemory`. A session returns its durable witness root and, when
-present, the recorded or consumed history root alongside the outcome.
+Effect service declarations, and that `runtimeLayer` supplies `Replay.layer`
+over one `Cas.layerMemory`. A session returns its durable witness root and,
+when present, the recorded or consumed history root alongside the outcome.
 
 ```ts
-const descriptions = describeService<RatesShape>("app/Rates")({
+import { Cas, Replay } from "@foldlab/effect-replay"
+
+const descriptions = Replay.describeService<RatesShape>("app/Rates")({
   quote: { revision: 1, request: Schema.String,
     success: Schema.Number, failure: QuoteUnavailable },
 })
-const kit = replayable(Rates, descriptions, liveRates)
+const kit = Replay.replayable(Rates, descriptions, liveRates)
 const program = Rates.use((rates) => rates.quote("EUR"))
 const flow = Effect.gen(function* () {
-  const recorded = yield* session(program.pipe(Effect.provide(kit.record)),
+  const recorded = yield* Replay.session(program.pipe(Effect.provide(kit.record)),
     { mode: "record" })
   if (recorded.history === undefined) return yield* Effect.die("no history")
-  const replayed = yield* session(program.pipe(Effect.provide(kit.replay)),
+  const replayed = yield* Replay.session(program.pipe(Effect.provide(kit.replay)),
     { mode: "replay", history: recorded.history })
   return { recorded: recorded.outcome, replayed: replayed.outcome }
 })

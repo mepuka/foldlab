@@ -1,0 +1,58 @@
+/**
+ * The replay plane, one front door. The session runtime, the pure reducer,
+ * operation description, and the replayable service kit re-exported under one
+ * namespace. The reducer's clause helpers stay module-internal in
+ * `src/replay/Reducer.ts`: they exist for file-by-file correspondence with the
+ * Lean model, not for callers.
+ */
+
+// The session runtime over a CAS store.
+export { layerReplay as layer, Replay, session } from "./replay/Replay.ts"
+export type { ReplayShape as Shape } from "./replay/Replay.ts"
+
+// The pure reducer — the model-correspondence artifact.
+export { reduce } from "./replay/Reducer.ts"
+
+// Session vocabulary shared by the reducer and the runtime.
+export {
+  isWellFormed,
+  MismatchCategory,
+  RecordedOutcome,
+  ReplayMode,
+} from "./replay/Session.ts"
+export type {
+  AmbientService,
+  HistoryEntry,
+  Input,
+  Invocation,
+  Outcome,
+  SessionOutcome,
+  SessionResult,
+  SessionState,
+  SessionStatus,
+  StepOut,
+  StepResult,
+  Terminal,
+} from "./replay/Session.ts"
+
+// Decision traces observed by sessions.
+export type { Decision, DecisionTrace } from "./replay/Decision.ts"
+
+// Operation description.
+export { describeService } from "./replay/Operation.ts"
+export type {
+  AnyOperationDescription,
+  LeafReplay,
+  MethodDescription,
+  OperationDescription,
+  OperationSchema,
+  ServiceDescriptions,
+} from "./replay/Operation.ts"
+
+// The replayable service kit.
+export { DoubleWrap, replayable } from "./replay/ServiceAdapter.ts"
+export type {
+  Live,
+  ReplayableKit,
+  ReplayableValueKit,
+} from "./replay/ServiceAdapter.ts"

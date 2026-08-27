@@ -4,7 +4,7 @@ import type { Scope } from "effect"
 import type { CasError, CasNodeInput, CasReference, ContentId, NodeKind } from "./Node.ts"
 import {
   oneShot,
-  replayable,
+  restartable,
   type CasPresence,
   type CasPushReport,
   type CasRemoteError,
@@ -12,7 +12,7 @@ import {
   type UploadSource,
 } from "./Remote.ts"
 
-export { oneShot, replayable, type UploadSource }
+export { oneShot, restartable, type UploadSource }
 export type { CasPresence, CasPushReport, RemoteCapabilities }
 
 export interface PutStreamOptions {

@@ -185,14 +185,22 @@ export const CasRemoteError = Schema.Union([
 ])
 export type CasRemoteError = typeof CasRemoteError.Type
 
-/** Upload restartability is explicit so one-shot streams cannot be retried. */
+/**
+ * Upload restartability is explicit so one-shot streams cannot be retried.
+ * A restartable source is a factory: every attempt acquires a fresh stream,
+ * so a queue-backed or otherwise consumptive stream cannot be labeled safely
+ * re-runnable while rerunning it would not reproduce its bytes.
+ */
 export type UploadSource =
-  | { readonly _tag: "Replayable"; readonly stream: Stream.Stream<Uint8Array, CasError | CasRemoteError> }
+  | {
+    readonly _tag: "Restartable"
+    readonly acquire: () => Stream.Stream<Uint8Array, CasError | CasRemoteError>
+  }
   | { readonly _tag: "OneShot"; readonly stream: Stream.Stream<Uint8Array, CasError | CasRemoteError> }
 
-export const replayable = (
-  stream: Stream.Stream<Uint8Array, CasError | CasRemoteError>,
-): UploadSource => ({ _tag: "Replayable", stream })
+export const restartable = (
+  acquire: () => Stream.Stream<Uint8Array, CasError | CasRemoteError>,
+): UploadSource => ({ _tag: "Restartable", acquire })
 
 export const oneShot = (
   stream: Stream.Stream<Uint8Array, CasError | CasRemoteError>,
