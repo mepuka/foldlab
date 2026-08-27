@@ -30,7 +30,7 @@ private abbrev RS := ReplayState String String String String
 
 /-- Project the built-in carrier's result onto the schema's pair shape. -/
 private def toOutcome {α : Type} :
-    EStateM.Result (Halt String) RS α → Outcome (Halt String) α × RS
+    EStateM.Result (Halt String) RS α → BindOutcome (Halt String) α × RS
   | .ok a s => (.ok a, s)
   | .error e s => (.fail e, s)
 

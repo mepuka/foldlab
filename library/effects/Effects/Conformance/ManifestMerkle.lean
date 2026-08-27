@@ -32,14 +32,10 @@ open Effects.Merkle Effects.Cas Json
 
 /-! ## The Merkle vector environment -/
 
-def nat32Bytes (n : Nat) : Bytes :=
-  [UInt8.ofNat (n >>> 24), UInt8.ofNat (n >>> 16),
-   UInt8.ofNat (n >>> 8), UInt8.ofNat n]
-
 /-- The structural pre-image encoding: a tag byte, then the leaf's
 absolute index and bytes or the parent's two child addresses. -/
 def encPre32 : Pre Addr32 → Bytes
-  | .leaf i b => 0 :: (nat32Bytes i ++ b)
+  | .leaf i b => 0 :: (Effects.Wire.nat32 i ++ b)
   | .parent l r => 1 :: (l.val ++ r.val)
 
 /-- The Merkle vector address function: the declared toy digest over

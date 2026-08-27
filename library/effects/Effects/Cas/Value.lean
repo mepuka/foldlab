@@ -1,3 +1,4 @@
+import Effects.Wire.Nat32
 /-!
 # Byte-codec primitives
 
@@ -28,6 +29,8 @@ namespace Effects.Cas
 
 abbrev Bytes := List UInt8
 
+open Effects.Wire
+
 /-! ## Self-contained helpers -/
 
 private theorem take_len_append (l r : List α) : (l ++ r).take l.length = l := by
@@ -39,64 +42,6 @@ private theorem drop_len_append (l r : List α) : (l ++ r).drop l.length = r := 
   induction l with
   | nil => simp
   | cons a t ih => simp [ih]
-
-private theorem toNat_ofNat_mod (n : Nat) : (UInt8.ofNat n).toNat = n % 256 := by
-  first
-    | rfl
-    | simp [UInt8.toNat, UInt8.ofNat]
-    | simp [UInt8.toNat_ofNat]
-
-/-! ## 32-bit big-endian scalars -/
-
-/-- Encode a natural below `2^32` as four big-endian bytes. -/
-def nat32 (n : Nat) : Bytes :=
-  [UInt8.ofNat (n / 16777216 % 256), UInt8.ofNat (n / 65536 % 256),
-   UInt8.ofNat (n / 256 % 256), UInt8.ofNat (n % 256)]
-
-/-- Read four big-endian bytes as a natural; fails on fewer than four. -/
-def readNat32 : Bytes → Option (Nat × Bytes)
-  | b3 :: b2 :: b1 :: b0 :: rest =>
-    some (b3.toNat * 16777216 + b2.toNat * 65536 + b1.toNat * 256 + b0.toNat, rest)
-  | _ => none
-
-theorem nat32_length (n : Nat) : (nat32 n).length = 4 := by
-  simp [nat32]
-
-theorem readNat32_nat32 (n : Nat) (h : n < 4294967296) (rest : Bytes) :
-    readNat32 (nat32 n ++ rest) = some (n, rest) := by
-  simp only [nat32, List.cons_append, List.nil_append, readNat32,
-    toNat_ofNat_mod, Option.some.injEq, Prod.mk.injEq]
-  exact ⟨by omega, trivial⟩
-
-theorem readNat32_exact {b : Bytes} {n : Nat} {rest : Bytes}
-    (h : readNat32 b = some (n, rest)) :
-    b = nat32 n ++ rest ∧ n < 4294967296 := by
-  match b with
-  | [] => simp [readNat32] at h
-  | [_] => simp [readNat32] at h
-  | [_, _] => simp [readNat32] at h
-  | [_, _, _] => simp [readNat32] at h
-  | b3 :: b2 :: b1 :: b0 :: r =>
-    simp only [readNat32, Option.some.injEq, Prod.mk.injEq] at h
-    obtain ⟨hn, hr⟩ := h
-    have h3 := b3.toNat_lt
-    have h2 := b2.toNat_lt
-    have h1 := b1.toNat_lt
-    have h0 := b0.toNat_lt
-    have e3 : (b3.toNat * 16777216 + b2.toNat * 65536 + b1.toNat * 256 + b0.toNat)
-        / 16777216 % 256 = b3.toNat := by omega
-    have e2 : (b3.toNat * 16777216 + b2.toNat * 65536 + b1.toNat * 256 + b0.toNat)
-        / 65536 % 256 = b2.toNat := by omega
-    have e1 : (b3.toNat * 16777216 + b2.toNat * 65536 + b1.toNat * 256 + b0.toNat)
-        / 256 % 256 = b1.toNat := by omega
-    have e0 : (b3.toNat * 16777216 + b2.toNat * 65536 + b1.toNat * 256 + b0.toNat)
-        % 256 = b0.toNat := by omega
-    subst hn hr
-    refine ⟨?_, by omega⟩
-    simp only [nat32, List.cons_append, List.nil_append, List.cons.injEq, and_true]
-    rw [e3, e2, e1, e0]
-    exact ⟨UInt8.ofNat_toNat.symm, UInt8.ofNat_toNat.symm,
-      UInt8.ofNat_toNat.symm, UInt8.ofNat_toNat.symm⟩
 
 /-! ## Length-prefixed frames -/
 
@@ -127,7 +72,7 @@ theorem readFrame_exact {b : Bytes} {bs rest : Bytes}
     next hle =>
       simp only [Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨hbs, hrest⟩ := h
-      obtain ⟨hb, hlt⟩ := readNat32_exact hr
+      obtain ⟨hb, hlt⟩ := readNat32_some _ _ _ hr
       have hlen : bs.length = len := by
         rw [← hbs, List.length_take]; omega
       have hsplit : r' = bs ++ rest := by

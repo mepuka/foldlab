@@ -615,7 +615,7 @@ theorem response_trailing_rejected (D : DParams Addr32)
 /-- The proof-amplification bound: an honest stream is linear in the
 tree, so a declared budget of twice the leaf count admits every honest
 response while a tiny range never licenses unbounded proof frames. -/
-theorem genStream_length (P : HP A') (lo hi : Nat) :
+theorem genStream_length {A : Type} (P : HP A) (lo hi : Nat) :
     ∀ (chunks : List Bytes) (base : Nat), 0 < chunks.length →
       (genStream P lo hi base chunks).length ≤ 2 * chunks.length - 1 := by
   intro chunks

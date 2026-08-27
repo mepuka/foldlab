@@ -1,4 +1,5 @@
 import Effects.Cas.Node
+import Effects.Wire.Nat32
 
 /-!
 # The canonical node codec
@@ -35,6 +36,8 @@ Level 0: no premise about any hash appears.
 -/
 
 namespace Effects.Cas
+
+open Effects.Wire
 
 /-! ## Stage: one byte -/
 
@@ -121,7 +124,7 @@ theorem parseCount_exact {b : Bytes} {refs : List Ref} {rest : Bytes}
       ∧ refs.length < 4294967296 := by
   simp only [parseCount, Option.bind_eq_some_iff] at h
   obtain ⟨cr, hn, hrn⟩ := h
-  obtain ⟨hb₁, hclt⟩ := readNat32_exact hn
+  obtain ⟨hb₁, hclt⟩ := readNat32_some _ _ _ hn
   obtain ⟨hb₂, hlen⟩ :=
     readN_exact (fun _b _a _r hh => parseRef_exact hh) cr.1 cr.2 refs rest hrn
   refine ⟨?_, by omega⟩
