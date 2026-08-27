@@ -2,7 +2,10 @@
 
 Status: RATIFIED by grilling 2026-08-26 (operator, in-session; recommendations
 accepted, with one operator strengthening: full independence from the Entity
-Store context). Kind: **glossary**. This document owns the context's vocabulary
+Store context). Amended 2026-08-26 at the M1 interface freeze
+(operator-ratified): the append-failure mechanism is a structural session
+abort through the transport seam — see the replay session entry. Kind:
+**glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
 claims are stamped per [CLAIM-GATES.md](../effect-typescript-semantics/CLAIM-GATES.md).
@@ -119,16 +122,21 @@ enters as an ordinary refactor proposal at that time.
 - **Kind:** model (state machine). **Code label:** pending Pass B (provisional
   `src/Replay.ts`).
 - **Form:** mode (record or replay), execution identity, history root, flat
-  cursor, ordered decision trace, and poisoned state.
-- **Obligations:** a record-mode append failure poisons the session — every
-  later wrapped operation fails with a typed error, so histories are truthful
-  prefixes, never gapped subsequences. Replay mode is hermetic: no live service
-  exists in its environment, and tripwire Clock/Random defaults surface ambient
-  use as a `Violated` outcome (mechanism verified against the pinned source,
-  2026-08-26: both are `Context.Reference` keys overridable per scope with
-  `Effect.provideService`).
+  cursor, ordered decision trace, and terminal abort state.
+- **Obligations:** a record-mode append failure aborts the session through
+  the defect-class transport seam — the failure is in no wrapped method's
+  error channel, so orchestration cannot catch it, no later wrapped
+  operation runs, and it surfaces as the session's typed store error.
+  Histories are therefore truthful prefixes, never gapped subsequences,
+  structurally rather than by a mutable poisoned flag (a wrapped method's
+  error union cannot widen without breaking caller-facing type identity, so
+  the flag-guarded alternative is unrepresentable). Replay mode is hermetic:
+  no live service exists in its environment, and tripwire Clock/Random
+  defaults surface ambient use as a `Violated` outcome (mechanism verified
+  against the pinned source, 2026-08-26: both are `Context.Reference` keys
+  overridable per scope with `Effect.provideService`).
 - **Avoid:** recording past an append failure; giving a replay session a live
-  dependency.
+  dependency; "poisoned flag" phrasing — the abort is structural.
 
 ### Decision trace
 - **Kind:** model (observable). **Code label:** pending Pass B (provisional
@@ -214,10 +222,10 @@ enters as an ordinary refactor proposal at that time.
 ### history-is-an-underapproximation
 Every recorded entry corresponds to a live action that occurred, in the
 recorded order; the converse is never claimed. **Why:** the live-action/append
-crash gap is unclosable from inside the library; poisoning keeps histories
-prefix-truthful, and replaying a short prefix fail-closes on its own (history
-exhausted). **Avoid:** exactly-once language; treating a witness as proof of
-external completeness.
+crash gap is unclosable from inside the library; the structural session abort
+keeps histories prefix-truthful, and replaying a short prefix fail-closes on
+its own (history exhausted). **Avoid:** exactly-once language; treating a
+witness as proof of external completeness.
 
 ### no-live-fallback
 A replay mismatch is terminal for the attempt; nothing falls through to a live

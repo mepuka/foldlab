@@ -129,10 +129,11 @@ section is the design view and defers to it.
 - **History entry:** one logical operation occurrence, retaining request,
   decision, outcome, and predecessor information.
 - **Replay session:** mode, execution identity, history root, current
-  flat-history cursor, ordered decision trace, and poisoned state. A
-  record-mode append failure poisons the session: every later wrapped
-  operation fails with a typed error, so histories are truthful prefixes,
-  never gapped subsequences.
+  flat-history cursor, ordered decision trace, and terminal abort state. A
+  record-mode append failure aborts the session through the transport seam:
+  orchestration cannot catch it, no later wrapped operation runs, and it
+  surfaces as the session's typed store error — histories are truthful
+  prefixes, never gapped subsequences, structurally.
 - **Service adapter:** an implementation of an existing Effect service
   interface that delegates each described operation through the replay
   service.
@@ -367,9 +368,10 @@ Names remain provisional until the domain contract is ratified.
   before replay construction is a named residual risk and a rejected design.
 - The caller-facing service method types should not expose CAS internals.
 - CAS storage failures and replay mismatches remain distinct typed errors.
-- Replay rejections and violations travel from wrapped methods to the session
-  boundary through a named defect-class transport seam; caller-facing method
-  types stay byte-identical across live, record, and replay modes.
+- Replay rejections, violations, and record-mode append failures travel from
+  wrapped methods to the session boundary through a named defect-class
+  transport seam; caller-facing method types stay byte-identical across
+  live, record, and replay modes.
 - Digest pre-images come only from the project-owned framed canonical encoder;
   Schema's default JSON encoding is never hashed.
 - Layer constructors accept dependencies; they do not create hidden global
@@ -566,7 +568,7 @@ IDs are provisional planning identifiers.
 | `RPL-003` | Matching consumes exactly the permitted occurrence | Lean theorem and fixtures | skip, duplicate, or reuse one occurrence | reducer mirror |
 | `RPL-004` | Mismatch fails closed | Lean theorem and integration test | missing entry falls back to live adapter | adapter wiring |
 | `RPL-005` | Completion rejects unconsumed suffix entries; the rejection carries the program's terminal so far | Lean theorem and fixture | same final value hides an extra history call | observation normalizer |
-| `SES-001` | Record-mode append failure poisons the session; histories are truthful prefixes, never gapped subsequences | Lean record-mode theorem and fault-injection integration test | a caught store error lets later appends continue | store adapter and session state |
+| `SES-001` | Record-mode append failure aborts the session through the transport seam; histories are truthful prefixes, never gapped subsequences | Lean record-mode theorem and fault-injection integration test | a caught store error lets later appends continue | transport seam and session state |
 | `CMP-001` | Sequential interpretation threads replay state compositionally across success and typed-failure outcomes | Lean bind/interpreter law over both cases | nested call resets or forks the cursor | session state carrier |
 | `CMP-002` | Identical requests remain separate occurrences | Lean theorem and repeated-call fixture | CAS deduplication shortens history | CAS storage versus history seam |
 | `CMP-003` | Deferred to M7: transparent and opaque policies have distinct, declared framed traces | two semantic rules and tests, when admitted | outer substitution silently leaves child cursor inconsistent | policy adapter |
@@ -624,7 +626,8 @@ allowed in the initial suite.
 - transparent orchestration with replayed leaves;
 - forbidden or deterministically overridden Clock/Random/default-service use;
 - store failure before append and after live completion;
-- a poisoned session refusing further operations after an append failure; and
+- a session structurally aborted by an append failure, its truthful prefix
+  retained; and
 - attempted double wrap, and ambient host access inside supposedly conforming
   orchestration.
 

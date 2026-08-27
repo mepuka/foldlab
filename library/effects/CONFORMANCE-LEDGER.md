@@ -57,7 +57,7 @@ Completion rejects unconsumed suffix entries; the rejection carries the program'
 
 ## SES-001
 
-Record-mode append failure poisons the session; histories are truthful prefixes, never gapped subsequences.
+Record-mode append failure aborts the session through the transport seam; histories are truthful prefixes, never gapped subsequences.
 
 ## CMP-001
 

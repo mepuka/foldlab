@@ -102,7 +102,7 @@ The catalog (WGR-2), seeded from the obligation ledger:
 | Schema family | Statement shape | First instances |
 | --- | --- | --- |
 | WF-PRESERVE | `∀ s i, WF s → hyp → WF (step s i)` | reducer step well-formedness; record append |
-| TRACE-EXCLUDES | `∀ s i, mode/flag s = m → d ∈ decisions (step s i) → d ≠ bad` | RPL-002; SES-001 (poisoned never appends) |
+| TRACE-EXCLUDES | `∀ s i, mode/flag s = m → d ∈ decisions (step s i) → d ≠ bad` | RPL-002; SES-001 (aborted session never appends) |
 | EXACT-STEP | `∀ s q, hyp → measure (step s q) = measure s + δ` | RPL-003; record append length |
 | FAIL-CLOSED | `∀ s q, ¬hyp → step s q rejects ∧ consumes nothing` | RPL-004; RPL-005's completion form |
 | DISTINCTNESS | `∀ s q q', content q = content q' → occurrences distinct` | CMP-002 |
