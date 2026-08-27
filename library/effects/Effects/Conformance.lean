@@ -30,8 +30,9 @@ Layout, one concept per file:
 - `Ledger` — `LedgerEntry` and the Lean-side ledger projection;
 - `Schema/<Family>` — one file per ratified family (WF-PRESERVE,
   TRACE-EXCLUDES, EXACT-STEP, FAIL-CLOSED, DISTINCTNESS, HOMOMORPHISM,
-  CODEC, REJECTION-CLAUSE), each carrying its sentence and kit templates in
-  the docstring and its `entry` ledger projection;
+  CODEC, REJECTION-CLAUSE, and AGREEMENT from the remote Pass A), each
+  carrying its sentence and kit templates in the docstring and its
+  `entry` ledger projection;
 - `Mutant` — the declared-mutant carrier; and
 - `Registry` — the instance registry the ledger projects from.
 

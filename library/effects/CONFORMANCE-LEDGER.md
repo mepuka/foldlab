@@ -32,7 +32,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RMT-001 | instantiated (TRACE-EXCLUDES) |
 | RMT-002 | instantiated (FAIL-CLOSED) |
 | RMT-003 | instantiated (TRACE-EXCLUDES) |
-| RMT-004 | pending — EXACT-STEP instance at R2 |
+| RMT-004 | instantiated (EXACT-STEP) |
 | RMT-005 | pending — TRACE-EXCLUDES instance at R3 |
 | RMT-006 | pending — FAIL-CLOSED instance at R3 |
 | RMT-007 | pending — TRACE-EXCLUDES instance at R3 |
@@ -43,7 +43,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RMT-012 | pending — TypeScript evidence at R4 |
 | RMT-013 | standing review rule |
 | RMT-014 | pending — FAIL-CLOSED instance at R3 |
-| RMT-015 | pending — AGREEMENT instance at R2 |
+| RMT-015 | instantiated (AGREEMENT) |
 | RMT-016 | pending — AGREEMENT instance at R4 |
 
 ## CAS-001
@@ -188,6 +188,8 @@ An integrity failure is terminal for those bytes: no wire attempt ever repeats u
 
 An already-present exact-digest upload resolves as success with zero additional transfer commands.
 
+**Sentence:** When an upload request names a key already admitted in the cache with content that verifies for it — within the byte budget, not integrity-rejected, its identifier free — one machine step changes the issued-command count by exactly zero: an already-present exact-digest upload resolves as success with no transfer, and duplicate content never becomes duplicate wire traffic.
+
 ## RMT-005
 
 No admission or publication decision is taken on a presence answer alone, and absence is never negatively cached by default.
@@ -231,6 +233,8 @@ Batch framing, capability documents, and presence indexes parse fail-closed with
 ## RMT-015
 
 A successful remote load implements the logical admitted-node load.
+
+**Sentence:** On leaf admitted nodes within the declared byte budget, the remote client's completed load run and the logical admitted-node store load agree at the delivered bytes under exact canonical encoding — a successful remote load implements the logical admitted-node load: what the machine delivers is precisely the canonical encoding of the node the store holds at that address, so remote success can never produce a node the logical load would not.
 
 ## RMT-016
 

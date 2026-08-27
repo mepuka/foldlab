@@ -4,6 +4,8 @@ import Effects.Mutants.CMP001_ForkNestedCursor
 import Effects.Mutants.RMT001_CacheBeforeAdmission
 import Effects.Mutants.RMT002_OversizeAccepted
 import Effects.Mutants.RMT003_RetryUnchangedBytes
+import Effects.Mutants.RMT004_DuplicateUploadTransfers
+import Effects.Mutants.RMT015_SubstitutedDelivery
 import Effects.Mutants.RPL002_LiveFallback
 import Effects.Mutants.RPL003_SkipAdvance
 import Effects.Mutants.RPL004_ConsumeOnMismatch
@@ -41,7 +43,9 @@ def cmpMutants : List (Mutant Effects.Mutants.CMP001ForkNestedCursor.CmpInterp) 
 def remoteMutants : List (Mutant RStep) :=
   [ Effects.Mutants.RMT001CacheBeforeAdmission.mutant
   , Effects.Mutants.RMT002OversizeAccepted.mutant
-  , Effects.Mutants.RMT003RetryUnchangedBytes.mutant ]
+  , Effects.Mutants.RMT003RetryUnchangedBytes.mutant
+  , Effects.Mutants.RMT004DuplicateUploadTransfers.mutant
+  , Effects.Mutants.RMT015SubstitutedDelivery.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/

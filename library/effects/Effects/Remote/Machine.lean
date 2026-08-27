@@ -30,6 +30,15 @@ return, budget checks on declarations before any inspection of a body,
 and terminal integrity. Retry policy, batching (and the key-count
 budget), closure ordering, and resume arrive at their own R slices; in
 R1 every transport fault gives up cleanly.
+
+R2 amendment: an upload request whose key is already admitted in the
+cache and whose content verifies completes as success without issuing
+any wire command — an already-present exact-digest upload transfers
+nothing. The branch sits inside the verified arm, after the budget and
+terminal-rejection guards, and emits only the verification decision:
+nothing is newly cached and nothing is delivered, so the ratified
+entitlement guard is untouched. No pre-existing vector row reaches the
+branch; the R1 families regenerate byte-identical.
 -/
 
 namespace Effects.Remote
@@ -251,11 +260,16 @@ def step (P : Params K B) (s : MachineState K B) :
           { result := .repeatRefused key, state := s
             commands := [], decisions := [(id, .repeatRefused key)] }
         else if P.verify key bytes then
-          { result := .commanded
-            state := { s with
-                       inFlight := s.inFlight.insert id (.uploading key bytes) }
-            commands := [(id, .upload key bytes)]
-            decisions := [(id, .verified key), (id, .issued (.upload key bytes))] }
+          if s.cache.contains key then
+            { result := .uploaded key, state := s
+              commands := []
+              decisions := [(id, .verified key)] }
+          else
+            { result := .commanded
+              state := { s with
+                         inFlight := s.inFlight.insert id (.uploading key bytes) }
+              commands := [(id, .upload key bytes)]
+              decisions := [(id, .verified key), (id, .issued (.upload key bytes))] }
         else
           { result := .integrityRejected key
             state := { s with rejected := s.rejected.insert (key, bytes) }

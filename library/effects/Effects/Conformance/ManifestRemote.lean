@@ -1,6 +1,8 @@
-import Effects.Conformance.ManifestReplay
+import Effects.Conformance.RemoteVectors
 import Effects.Conformance.Instances.RMT002
 import Effects.Conformance.Instances.RMT003
+import Effects.Conformance.Instances.RMT004
+import Effects.Conformance.Instances.RMT015
 
 /-!
 # The remote manifest families — schedule vectors
@@ -29,38 +31,6 @@ regeneration is byte-stable by construction.
 namespace Effects.Conformance.Manifest
 
 open Effects.Remote Effects.Cas Json
-
-instance : Hashable Addr32 := ⟨fun a => hash a.val⟩
-
-abbrev RSt := MachineState Addr32 Bytes
-abbrev RIn := MInput Addr32 Bytes
-abbrev RStep := RSt → RIn → Effects.Remote.StepOut Addr32 Bytes
-
-/-- The declared toy digest: a 32-lane byte fold over the input — not
-cryptographic, deliberately, per the abstract-hash posture. -/
-def toyAddr (bs : Bytes) : Addr32 :=
-  ⟨(List.range 32).map fun i =>
-      UInt8.ofNat ((bs.foldl (fun a b => a + b.toNat * (i + 3))
-        (i + bs.length)) % 256),
-    by simp⟩
-
-/-- The vector environment: byte budget forty (the small canonical
-encodings fit; the two-reference encoding cannot), sizes by length, and
-verification recomputing the toy digest over received bytes. -/
-def vecParams : Params Addr32 Bytes :=
-  { budgets := ⟨40, 4⟩
-    size := List.length
-    verify := fun k b => decide (toyAddr b = k) }
-
-/-! ## Canonical-byte fixtures (from the ratified CAS codec) -/
-
-def smallBytes : Bytes := encodeAdmitted cas001PosNode
-def goodBytes : Bytes := encodeAdmitted payloadNode
-def bigBytes : Bytes := encodeAdmitted multiRefNode
-
-def kGood : Addr32 := toyAddr goodBytes
-def kSmall : Addr32 := toyAddr smallBytes
-def kBig : Addr32 := toyAddr bigBytes
 
 /-! ## Scenario carrier: operations, schedule, explicit interleaving -/
 
@@ -259,6 +229,34 @@ def rmt003Rows (stepF : RStep) : List (String × Value) :=
         schedule := [(1, .integrityMismatch)]
         sequence := [.opRef 0, .eventRef 0, .opRef 1] } ]
 
+def rmt004Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWith stepF "upload-after-load-needs-no-transfer-000"
+      { ops := [(1, .load kGood), (2, .upload kGood goodBytes)]
+        schedule := [(1, .ok goodBytes.length goodBytes)]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1] }
+  , remoteRowWith stepF "upload-after-upload-needs-no-transfer-001"
+      { ops := [(1, .upload kSmall smallBytes), (2, .upload kSmall smallBytes)]
+        schedule := [(1, .ok 0 [])]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1] }
+  , remoteRowWith stepF "fresh-upload-transfers-002"
+      { ops := [(1, .upload kGood goodBytes)]
+        schedule := []
+        sequence := [.opRef 0] } ]
+
+def rmt015Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWith stepF "load-delivers-admitted-encoding-000"
+      { ops := [(1, .load kGood)]
+        schedule := [(1, .ok goodBytes.length goodBytes)]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWith stepF "load-substituted-bytes-refused-001"
+      { ops := [(1, .load kGood)]
+        schedule := [(1, .ok smallBytes.length smallBytes)]
+        sequence := [.opRef 0, .eventRef 0] }
+  , remoteRowWith stepF "load-second-key-delivers-admitted-002"
+      { ops := [(1, .load kSmall)]
+        schedule := [(1, .ok smallBytes.length smallBytes)]
+        sequence := [.opRef 0, .eventRef 0] } ]
+
 /-- The declared oracle, named in every remote family document. -/
 def remoteOracle : String :=
   "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter."
@@ -276,7 +274,9 @@ def remoteFamilies (stepF : RStep) :
     List (String × String × List (String × Value)) :=
   [ ("RMT-001", rmt001.sentence, rmt001Rows stepF)
   , ("RMT-002", rmt002.sentence, rmt002Rows stepF)
-  , ("RMT-003", rmt003.sentence, rmt003Rows stepF) ]
+  , ("RMT-003", rmt003.sentence, rmt003Rows stepF)
+  , ("RMT-004", rmt004.sentence, rmt004Rows stepF)
+  , ("RMT-015", rmt015.sentence, rmt015Rows stepF) ]
 
 /-- Rendered rows of one remote family under a step function — the
 mutation task's comparison unit. -/

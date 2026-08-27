@@ -40,7 +40,9 @@ theorem RMT_001_no_cache_or_return_without_admission (P : Params K B)
         · simp [RDecision.tag]
         · split
           · simp [RDecision.tag]
-          · split <;> simp [RDecision.tag]
+          · split
+            · split <;> simp [RDecision.tag]
+            · simp [RDecision.tag]
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -155,6 +157,24 @@ theorem RMT_002_budget_frozen (P : Params K B)
           simp [step, hm, loadEvent, h]
       | uploading key bytes => cases e <;> simp [overBudget, hm] at h
 
+/-- RMT-004: an upload request naming a key already admitted in the
+cache, with content that verifies for it — within budget, not
+integrity-rejected, its identifier free — completes in one step as
+success with the state unchanged, zero commands, and only the
+verification decision: an already-present exact-digest upload transfers
+nothing. -/
+theorem RMT_004_present_upload_needs_no_transfer (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (bytes : B)
+    (hflight : s.inFlight[id]? = none)
+    (hsize : ¬ P.size bytes > P.budgets.maxBytes)
+    (hrej : s.rejected.contains (key, bytes) = false)
+    (hver : P.verify key bytes = true)
+    (hcache : s.cache.contains key = true) :
+    step P s (.request id (.upload key bytes)) =
+      { result := .uploaded key, state := s, commands := []
+        decisions := [(id, .verified key)] } := by
+  simp [step, hflight, hsize, hrej, hver, hcache]
+
 /-- RMT-003, per-step half: once a key-content pair stands
 integrity-rejected, no step issues an upload command carrying that
 exact pair, under any operation identifier. -/
@@ -177,18 +197,20 @@ theorem RMT_003_no_repeat_after_integrity [LawfulBEq K] [LawfulBEq B]
         · split
           · simp
           · split
-            · rename_i hguard hverify
-              intro hmem
-              simp only [List.mem_cons, List.not_mem_nil, or_false] at hmem
-              rcases hmem with hone | htwo
-              · simp at hone
-              · simp only [Prod.mk.injEq, RDecision.issued.injEq,
-                  Command.upload.injEq] at htwo
-                obtain ⟨-, hk, hb⟩ := htwo
-                subst hk
-                subst hb
-                exact absurd (Std.HashSet.contains_iff_mem.mpr h) (by
-                  simpa using hguard)
+            · split
+              · simp
+              · rename_i hguard _ _
+                intro hmem
+                simp only [List.mem_cons, List.not_mem_nil, or_false] at hmem
+                rcases hmem with hone | htwo
+                · simp at hone
+                · simp only [Prod.mk.injEq, RDecision.issued.injEq,
+                    Command.upload.injEq] at htwo
+                  obtain ⟨-, hk, hb⟩ := htwo
+                  subst hk
+                  subst hb
+                  exact absurd (Std.HashSet.contains_iff_mem.mpr h) (by
+                    simpa using hguard)
             · simp
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
@@ -231,7 +253,7 @@ theorem RMT_003_rejection_monotone [LawfulBEq K] [LawfulBEq B]
         · split
           · simpa using h
           · split
-            · simpa using h
+            · split <;> simpa using h
             · simp [h]
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
