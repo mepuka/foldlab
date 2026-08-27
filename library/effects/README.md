@@ -15,6 +15,28 @@ ledger, and ratified manifest vectors live under their own gates. See
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) and the minted vocabulary in
 [`docs/effect-replay/CONTEXT.md`](../../docs/effect-replay/CONTEXT.md).
 
+## Install and consume
+
+The package remains private while publication is an operator decision. Its
+proposed first package version is `0.1.0`; the built package is ESM-only and
+publishes JavaScript plus declarations from `dist`. Once publication is
+approved, consumers install it alongside the exact Effect release it targets:
+
+```sh
+bun add @foldlab/effect-replay@0.1.0 effect@4.0.0-rc.111
+```
+
+The supported package root is intentionally small:
+
+```ts
+import { Effect, Layer } from "effect"
+import { Cas, Replay } from "@foldlab/effect-replay"
+```
+
+`Cas` and `Replay` are the only root exports. The package currently pins Effect
+as a direct dependency; whether a public release should instead declare it as a
+peer dependency remains a separate operator decision.
+
 ## Runtime surface
 
 The package barrel exports exactly two namespaces — `Cas` and `Replay` — one
@@ -30,9 +52,8 @@ surface is `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
   construction under `Cas.Blob`;
   the `Transfer` service tag with the `restartable`/`oneShot` upload sources;
   the typed remote configuration and failure family; and `Cas.layerRemote`,
-  which builds one shared `Store | Transfer` adapter and keeps the
-  caller-provided `HttpClient` and native `Crypto` services visible as layer
-  requirements.
+  which builds one shared `Store | Transfer` adapter, owns its Fetch transport,
+  and keeps native `Crypto` visible as a layer requirement.
 - `Replay` carries the runtime `Replay` service with `Replay.layer` and
   `Replay.session`; the synchronous pure reducer `Replay.reduce` with its
   session carriers and decision vocabulary; `Replay.describeService`
@@ -101,11 +122,12 @@ persisted across layers.
 larger than the probed key limit and returns positional planning data only—it
 never admits content or negatively caches absence. `CasTransfer.publish`
 refuses locally unless the root and declared closure are confirmed.
-`CasTransfer.push` resolves the complete local graph before operation-specific
-wire traffic, plans missing keys in capability-sized batches, uploads children
-before parents, and publishes the root last. A missing answer that contradicts
-the machine's existing confirmation fails closed as `remoteRejected`; it is
-never reported as a transfer that did not occur.
+`CasTransfer.push` preflights the complete local closure by identifier before
+operation-specific wire traffic, then materializes and negotiates one
+capability-sized batch at a time. It uploads children before parents and
+publishes the root last. A missing answer that contradicts the machine's
+existing confirmation fails closed as `remoteRejected`; it is never reported
+as a transfer that did not occur.
 
 The HTTP shell performs no retry and follows no redirect. The library supplies
 `redirect: "manual"` around each request, including with plain
@@ -205,4 +227,4 @@ research snapshots are byte-equal to their canonical owners.
 
 Research snapshots and their ownership are indexed in
 [`research/README.md`](research/README.md). Code is licensed under the
-[Apache-2.0 license](../../LICENSE).
+[Apache-2.0 license](LICENSE).

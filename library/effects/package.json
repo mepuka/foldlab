@@ -1,19 +1,27 @@
 {
   "name": "@foldlab/effect-replay",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Effect-native content-addressed record/replay with local and remote CAS adapters",
   "license": "Apache-2.0",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "files": [
+    "dist",
     "src",
     "README.md",
-    "PROFILE-CAS-HTTP-0.md"
+    "PROFILE-CAS-HTTP-0.md",
+    "LICENSE"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json && bun scripts/rewrite-declaration-imports.ts",
+    "prepack": "bun run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run"
   },

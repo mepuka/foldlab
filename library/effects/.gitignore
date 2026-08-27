@@ -1,3 +1,4 @@
 /.lake
 /node_modules
 /research/docs/*.pdf
+/dist
