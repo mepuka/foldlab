@@ -1,6 +1,7 @@
 import Effects.Conformance.Obligations
 import Effects.Conformance.Registry
 import Effects.Conformance.ModelVersion
+import Effects.Conformance.Generate
 
 /-!
 # The lane briefing (phase 1)
@@ -63,11 +64,13 @@ def Obligation.rank (o : Obligation) : Nat :=
   | some m => msRank m
   | none => 99
 
-/-- The lane's uninstantiated obligations, least milestone first (stable
-within a milestone, preserving inventory order). -/
+/-- The lane's open obligations — neither instantiated nor discharged —
+least milestone first (stable within a milestone, preserving inventory
+order). -/
 def laneTargets (lane : Lane) (inv : List Obligation) (rows : List LedgerEntry) :
     List Obligation :=
   let uninstantiated := fun (o : Obligation) => rows.all (fun e => e.id != o.id)
+  let undischarged := fun (o : Obligation) => carrierDischarges.all (·.1 != o.id)
   let relevant := fun (o : Obligation) =>
     match lane, o.disposition with
     | .conformance, .schema _ _ => true
@@ -75,7 +78,7 @@ def laneTargets (lane : Lane) (inv : List Obligation) (rows : List LedgerEntry) 
     | .implementation, .tsSide _ => true
     | .implementation, .bridge _ => true
     | _, _ => false
-  (inv.filter fun o => relevant o && uninstantiated o)
+  (inv.filter fun o => relevant o && uninstantiated o && undischarged o)
     |>.mergeSort fun a b => Nat.ble a.rank b.rank
 
 def targetBlocks (o : Obligation) : List Markdown.Block :=

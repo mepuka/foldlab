@@ -4,11 +4,12 @@
  *
  * Compares the committed conformance ledger (HEAD) with the working copy
  * and asserts every per-obligation status moves along a legal edge: a
- * non-instantiated status may stay, change wording, or become
- * instantiated; an instantiated status never changes — green never
- * regresses. A declared model-version bump is the only future escape
- * hatch, and no bump mechanism exists yet, so any green change fails.
- * A FAMILY MISMATCH status in the working ledger fails outright.
+ * non-green status may stay, change wording, or become green; a green
+ * status (instantiated, or discharged by carrier construction) never
+ * changes — green never regresses. A declared model-version bump is the
+ * only future escape hatch, and no bump mechanism exists yet, so any
+ * green change fails. A FAMILY MISMATCH status in the working ledger
+ * fails outright.
  */
 import { execFileSync } from "node:child_process"
 import { readFileSync } from "node:fs"
@@ -45,7 +46,8 @@ const working = readFileSync(join(pkg, "CONFORMANCE-LEDGER.md"), "utf8")
 const oldRows = committed === null ? new Map<string, string>() : statusRows(committed)
 const newRows = statusRows(working)
 
-const isGreen = (s: string) => s.startsWith("instantiated")
+const isGreen = (s: string) =>
+  s.startsWith("instantiated") || s.startsWith("discharged")
 const errors: string[] = []
 let flips = 0
 
@@ -74,5 +76,5 @@ if (errors.length > 0) {
   process.exit(1)
 }
 console.log(
-  `ledger transitions legal (${newRows.size} rows, ${flips} newly instantiated)`,
+  `ledger transitions legal (${newRows.size} rows, ${flips} newly green)`,
 )

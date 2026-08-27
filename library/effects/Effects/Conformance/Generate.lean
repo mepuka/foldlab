@@ -14,9 +14,22 @@ elaborate otherwise — so the status column needs no separate proof or kit
 state. A registry entry whose family disagrees with the inventory's declared
 family renders as an explicit mismatch line so the gate's byte-compare
 surfaces it.
+
+Carrier obligations are the second evidence kind: discharged by model
+construction, with no kit-bearing instance. They flip through the declared
+discharge list below, never through the registry, so "instantiated" keeps
+meaning proved-with-kit and the two evidence kinds stay visually distinct
+on the ledger.
 -/
 
 namespace Effects.Conformance
+
+/-- Carrier obligations the operator has ratified as discharged by model
+construction, with the discharging theorem. Reviewed at ratification like
+every instance; the transition check holds `discharged` green — it never
+regresses. -/
+def carrierDischarges : List (String × String) :=
+  [("RPL-001", "step_iff_reduce")]
 
 def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
   match rows.find? (·.id == o.id) with
@@ -29,7 +42,10 @@ def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
   | none =>
     match o.disposition with
     | .schema f m => s!"pending — {f} instance at {m}"
-    | .carrier m => s!"pending — by carrier construction at {m}"
+    | .carrier m =>
+      match carrierDischarges.find? (·.1 == o.id) with
+      | some (_, thm) => s!"discharged — carrier construction ({thm})"
+      | none => s!"pending — by carrier construction at {m}"
     | .tsSide m => s!"pending — TypeScript evidence at {m}"
     | .bridge m => s!"pending — differential evidence at {m}"
     | .review => "standing review rule"

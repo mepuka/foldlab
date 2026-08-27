@@ -9,7 +9,7 @@ import Effects.Conformance.Instances.SES002
 import Effects.Conformance.Instances.CMP002
 
 /-!
-# The replay manifest families — proposed under effects-model@0.2.0
+# The replay manifest families
 
 Scenario vectors for the seven replay obligations, executed from the
 model. Every row runs the reducer over a fixture state and input list and
@@ -19,22 +19,17 @@ reducer function so the mutation task can regenerate rows under a
 declared mutant and assert the vectors move (direction 1 of the ratified
 mutation form).
 
-These families are EMITTED FOR REVIEW under the proposed version and are
-not part of the committed manifest surface until the operator ratifies
-the version transition; the committed surface stays consistent with the
-last ratified version throughout review, which is what keeps both lanes'
-gates green while the ratification point is open. Wire names mirror the
-frozen TypeScript literals — mismatch categories, decision tags, and
+The families are committed additively under the declared model version:
+no pre-existing statement changed and the CAS families regenerate
+byte-identical, so rule 2's ratchet holds without a version bump — bumps
+stay reserved for semantics-affecting model changes. Wire names mirror
+the frozen TypeScript literals — mismatch categories, decision tags, and
 session-outcome tags use the runtime's names.
 -/
 
 namespace Effects.Conformance.Manifest
 
 open Effects.Replay Json
-
-/-- The proposed model version the replay families bind to; becomes the
-declared version at ratification. -/
-def proposedModelVersion : String := "effects-model@0.2.0"
 
 /-! ## Concrete replay atoms and the parameterized runner -/
 
@@ -249,15 +244,11 @@ def familyRowsRendered (step : RReducer) (family : String) : String :=
       Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
   | none => ""
 
-/-- The proposed manifest surface at effects-model@0.2.0: the CAS
-families restamped plus the seven replay families. -/
-def proposedFiles : List (String × String) :=
-  [ ("CAS-001.json", Json.document
-      (familyManifestAt proposedModelVersion "CAS-001" cas001.sentence cas001Rows))
-  , ("CAS-002.json", Json.document
-      (familyManifestAt proposedModelVersion "CAS-002" cas002.sentence cas002Rows)) ]
-  ++ (replayFamilies reduce).map fun (family, meaning, rows) =>
-      (family ++ ".json", Json.document
-        (familyManifestAt proposedModelVersion family meaning rows))
+/-- The committed replay manifest files, additive at the declared model
+version. -/
+def replayFiles : List (String × String) :=
+  (replayFamilies reduce).map fun (family, meaning, rows) =>
+    (family ++ ".json", Json.document
+      (familyManifestAt modelVersion family meaning rows))
 
 end Effects.Conformance.Manifest

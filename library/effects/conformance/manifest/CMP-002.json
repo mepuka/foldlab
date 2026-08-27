@@ -1,0 +1,72 @@
+{
+  "family": "CMP-002",
+  "meaning": "Two occurrences with identical invocation content remain distinct occurrence positions — the store deduplicates request nodes while the history keeps entries distinct; position is the occurrence identity, and every append claims a fresh one.",
+  "model": "effects-model@0.1.0",
+  "rows": [
+    {
+      "case": "repeated-occurrence-distinct-000",
+      "expect": {
+        "decisions": [
+          {
+            "_tag": "OccurrenceAppended",
+            "at": 0,
+            "operation": "acme/Rates/get"
+          },
+          {
+            "_tag": "OccurrenceAppended",
+            "at": 1,
+            "operation": "acme/Rates/get"
+          }
+        ],
+        "results": [
+          {
+            "_tag": "Appended"
+          },
+          {
+            "_tag": "Appended"
+          }
+        ],
+        "state": {
+          "cursor": 2,
+          "historyLength": 2,
+          "status": "active",
+          "wellFormed": true
+        }
+      },
+      "input": {
+        "inputs": [
+          {
+            "_tag": "Recorded",
+            "invocation": {
+              "op": "acme/Rates/get",
+              "request": "req-0",
+              "revision": 1
+            },
+            "outcome": {
+              "_tag": "Success",
+              "value": "ok-0"
+            }
+          },
+          {
+            "_tag": "Recorded",
+            "invocation": {
+              "op": "acme/Rates/get",
+              "request": "req-0",
+              "revision": 1
+            },
+            "outcome": {
+              "_tag": "Success",
+              "value": "ok-0"
+            }
+          }
+        ],
+        "state": {
+          "cursor": 0,
+          "history": [],
+          "mode": "record",
+          "status": "active"
+        }
+      }
+    }
+  ]
+}

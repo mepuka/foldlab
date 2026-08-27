@@ -99,8 +99,9 @@ enters as an ordinary refactor proposal at that time.
   mismatch taxonomy.
 
 ### History entry
-- **Kind:** model (carrier). **Code label:** pending Pass B (provisional
-  `Effects/History.lean`).
+- **Kind:** model (carrier). **Code label:** `Effects/Replay/History.lean`
+  (invocation and entry carriers) with the outcome envelope in
+  `Effects/Replay/Outcome.lean`.
 - **Form:** one logical operation occurrence: operation identity and revision,
   canonical request, decision, outcome envelope, and predecessor information.
 - **Obligations:** the outcome envelope is channel-preserving two-case data —
@@ -114,7 +115,9 @@ enters as an ordinary refactor proposal at that time.
   merged).
 
 ### Occurrence identity
-- **Kind:** model (identity discipline). **Code label:** pending Pass B.
+- **Kind:** model (identity discipline). **Code label:**
+  `Effects/Replay/Session.lean` (flat history; position is the occurrence)
+  with the distinctness law in `Effects/Replay/Laws.lean`.
 - **Form:** structural `(executionId, index)`. Under exact positional matching,
   position is the semantics; identity and matching rule coincide.
 - **Obligations:** identical invocation content never collapses occurrences —
@@ -124,8 +127,10 @@ enters as an ordinary refactor proposal at that time.
   frames or migration demand it.
 
 ### Replay session
-- **Kind:** model (state machine). **Code label:** pending Pass B (provisional
-  `src/Replay.ts`).
+- **Kind:** model (state machine). **Code label:**
+  `Effects/Replay/Session.lean` (state carrier) with the total reducer in
+  `Effects/Replay/Reducer.lean` and the derived relation in
+  `Effects/Replay/Relation.lean`; provisional `src/Replay.ts`.
 - **Form:** mode (record or replay), execution identity, history root, flat
   cursor, ordered decision trace, and terminal abort state.
 - **Obligations:** a record-mode append failure aborts the session through
@@ -144,8 +149,8 @@ enters as an ordinary refactor proposal at that time.
   dependency; "poisoned flag" phrasing — the abort is structural.
 
 ### Decision trace
-- **Kind:** model (observable). **Code label:** pending Pass B (provisional
-  `src/Decision.ts`).
+- **Kind:** model (observable). **Code label:**
+  `Effects/Replay/Decision.lean`; provisional `src/Decision.ts`.
 - **Form:** the ordered decisions emitted by the pure reducer. Minimum cases:
   live delegation, record-mode occurrence append, recorded substitution,
   history consumption, typed rejection, completion.
@@ -155,7 +160,8 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** comparators that drop live-delegation or rejection decisions.
 
 ### Mismatch category
-- **Kind:** taxonomy. **Code label:** pending Pass B.
+- **Kind:** taxonomy. **Code label:** `Effects/Replay/Decision.lean`
+  (`MismatchCategory`).
 - **Form:** six categories. Request-side, checked against the entry at the
   cursor: operation mismatch, revision mismatch, request mismatch, history
   exhausted. Completion-side: unconsumed suffix. Outcome-side, checked at
@@ -168,7 +174,9 @@ enters as an ordinary refactor proposal at that time.
   case, not a category).
 
 ### Session outcome
-- **Kind:** model (tagged result). **Code label:** pending Pass B.
+- **Kind:** model (tagged result). **Code label:**
+  `Effects/Replay/Session.lean` (`SessionOutcome`); completion checked
+  uniformly by the reducer in `Effects/Replay/Reducer.lean`.
 - **Form:** `Completed` with the terminal; `Rejected` with category, position,
   and — for the unconsumed-suffix case only — the program's terminal so far; or
   `Violated` with the ambient-service violation.
@@ -182,8 +190,8 @@ enters as an ordinary refactor proposal at that time.
   errors; presenting the transport defect as modeled defect behavior.
 
 ### Replay witness
-- **Kind:** schema. **Code label:** pending Pass B (provisional
-  `src/Witness.ts`).
+- **Kind:** schema. **Code label:** `Effects/Replay/Witness.lean`
+  (immutable carrier); provisional `src/Witness.ts`.
 - **Form:** mode, execution identity, consumed history, decision trace, and
   session outcome, immutable.
 - **Obligations:** carries execution identity, never program identity;

@@ -417,3 +417,36 @@ Stop and return to grilling if:
   digest for. The CAS node, content identifier, and node admission code
   labels left pending in the context document were filled at this
   ratification.
+- **M3 ratification (2026-08-27, additive under `effects-model@0.1.0`):**
+  the operator ratified the seven replay statement-and-sentence pairs —
+  RPL-002 (TRACE-EXCLUDES: replay hermeticity as an empty live-delegation
+  projection), RPL-003 (EXACT-STEP over the `MatchesAt` hypothesis),
+  RPL-004 (FAIL-CLOSED over the same hypothesis, so the two partition the
+  invoke step with no third behavior; rejection also aborts the session
+  structurally — terminal-for-the-attempt is state, not prose), RPL-005
+  (FAIL-CLOSED over completion, the carried terminal-so-far exhibited by a
+  full output equation), SES-001 (TRACE-EXCLUDES with the status as the
+  guarded mode — an aborted session's step emits nothing at all; the
+  transport-seam half stays M4 TypeScript evidence), SES-002 (WF-PRESERVE
+  with the trivial hypothesis — totality preserves well-formedness on
+  every input; minted plan-first as a new section-7 row at the M3 slice),
+  and CMP-002 (DISTINCTNESS with content as the entire input — a
+  byte-identical invocation and outcome still keeps occurrences distinct;
+  position is the occurrence identity). Version ruling: the seven replay
+  families land additively under the unchanged `effects-model@0.1.0` — no
+  pre-existing statement changed and the CAS families regenerate
+  byte-identical, so rule 2's ratchet is satisfied without a bump; bumps
+  stay reserved for semantics-affecting model changes (a store-side
+  acyclicity clause, if ever adopted, is the first genuine 0.2.0).
+  Ratification fired on the new statements, not on a version transition.
+  Carrier-discharge ruling: RPL-001 is discharged by carrier construction
+  — the agreement theorem `step_iff_reduce` plus reducer determinism —
+  recorded in the generator's declared discharge list and rendered as
+  `discharged`, which the transition check holds green; the registry route
+  was rejected so that "instantiated" keeps meaning proved-with-kit.
+  Taxonomy-fidelity ruling: the `violated` session outcome and the
+  `outcomeInadmissible` mismatch category stand as ratified caller-visible
+  taxonomy with no emitting reducer rule in this slice; their emitting
+  rules arrive with their milestones through Pass A. The replay-term code
+  labels left pending in the context document were filled at this
+  ratification.

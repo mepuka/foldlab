@@ -7,7 +7,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | CAS-001 | instantiated (CODEC) |
 | CAS-002 | instantiated (REJECTION-CLAUSE) |
 | CAS-003 | standing review rule |
-| RPL-001 | pending — by carrier construction at M3 |
+| RPL-001 | discharged — carrier construction (step\_iff\_reduce) |
 | RPL-002 | instantiated (TRACE-EXCLUDES) |
 | RPL-003 | instantiated (EXACT-STEP) |
 | RPL-004 | instantiated (FAIL-CLOSED) |
