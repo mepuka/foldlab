@@ -1,3 +1,33 @@
-/** Namespace facade for typed CAS value and service projections. */
+/** Namespace facade for typed CAS projections and remote adapters. */
+import { Context, Crypto, Effect, Layer, type SchemaIssue } from "effect"
+import * as HttpClient from "effect/unstable/http/HttpClient"
+import { CasRemoteConfig } from "./cas/Remote.ts"
+import { CasStore, makeSha256Address } from "./cas/Store.ts"
+import { CasTransfer } from "./cas/Transfer.ts"
+import { makeRemoteAdapter } from "./internal/remote.ts"
+import { makeRemoteHttp } from "./internal/remoteHttp.ts"
+
 export { value } from "./cas/Value.ts"
 export { service } from "./cas/Service.ts"
+export * as Transfer from "./cas/Transfer.ts"
+
+/**
+ * Build the remote store and transfer views once over one shared adapter.
+ * HttpClient and platform Crypto remain visible layer requirements.
+ */
+export const layerRemote = (
+  config: CasRemoteConfig,
+): Layer.Layer<
+  CasStore | CasTransfer,
+  SchemaIssue.Issue,
+  HttpClient.HttpClient | Crypto.Crypto
+> => Layer.effectContext(Effect.gen(function* () {
+  const validated = yield* CasRemoteConfig.makeEffect(config)
+  const transport = yield* makeRemoteHttp(validated)
+  const address = yield* makeSha256Address
+  const adapter = yield* makeRemoteAdapter(validated, transport, address)
+  return Context.empty().pipe(
+    Context.add(CasStore, adapter.store),
+    Context.add(CasTransfer, adapter.transfer),
+  )
+}))

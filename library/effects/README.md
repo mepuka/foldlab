@@ -3,8 +3,9 @@
 `@foldlab/effect-replay` is a private mixed TypeScript/Lean library for
 recording explicitly described Effect service calls into a content-addressed
 history and replaying them without a live adapter. The TypeScript implementation
-is current through M5 and the E2/E3 descriptor slice: the in-memory CAS, pure
-reducer, session service, replayable service kit, transparent orchestration,
+is current through M5, the E2/E3 descriptor slice, and the R2 remote baseline:
+the in-memory and remote CAS adapters, pure reducer, session service,
+replayable service kit, transparent orchestration, streamed transfer service,
 and typed value/service projection are present.
 
 The library keeps different evidence surfaces separate. TypeScript compilation
@@ -22,6 +23,12 @@ The package barrel exports:
 - the `CasStore` service and isolated in-memory adapter from `cas/Store.ts`;
 - the `Cas.value` typed-value projection and `Cas.service` eager hydration
   descriptor from `cas/Value.ts` and `cas/Service.ts`;
+- the typed remote configuration and failure family from `cas/Remote.ts`, plus
+  `CasTransfer`, `Transfer.replayable`, and `Transfer.oneShot` from
+  `cas/Transfer.ts`;
+- `Cas.layerRemote`, which builds one shared `CasStore | CasTransfer` adapter
+  and keeps the caller-provided `HttpClient` and native `Crypto` services
+  visible as layer requirements;
 - public session carriers and the synchronous pure reducer from
   `replay/Session.ts` and `replay/Reducer.ts`;
 - operation descriptions and decisions from `replay/Operation.ts` and
@@ -31,9 +38,10 @@ The package barrel exports:
 - `replayable` from `replay/ServiceAdapter.ts`, which returns the internal-live
   role, record, and replay layers.
 
-`internal/storage.ts` and `internal/live.ts` are never exported. Their
-history/witness Schemas, binary carriers, and live bindings are implementation
-details with no public canonicality or stability claim.
+`internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts`
+modules are never exported. Their history/witness Schemas, binary carriers,
+live bindings, remote state machine, and untrusted transport seam are
+implementation details with no public canonicality or stability claim.
 
 `Cas.value` encodes a Schema's Encoded form as recursively key-sorted,
 finite-number-only UTF-8 JSON under an explicit kind tag and revision. Its
@@ -69,6 +77,30 @@ Each described service method must accept exactly one request value. Wrap
 multiple logical arguments in a request object before describing the method.
 The request, success, and typed-failure codecs are inferred per method, while
 the operation revision remains explicit.
+
+## Remote CAS profile
+
+`Cas.layerRemote` speaks `cas-http/0`, a versioned project profile—not an HTTP
+or CAS standard. It uses `GET {authority}/cas/{hex}` for loads and
+`PUT {authority}/cas/{hex}` with a canonical node as the octet-stream body for
+uploads. A load accepts only `200` with `application/octet-stream`; `404` is
+`ContentNotFound`, `401` and `403` are typed authorization failures, `429`
+becomes rate-limited machine input, and every `3xx` remains a redirect event.
+Uploads accept `200`, `201`, or `204`; `409` is an integrity mismatch.
+
+The HTTP shell performs no retry and follows no redirect. In particular, a
+caller using `FetchHttpClient` must configure its request initialization with
+`redirect: "manual"` so the adapter can observe `3xx` responses. The semantic
+adapter owns the explicit policy: uploads retry only a `Transfer.replayable`
+source, never `Transfer.oneShot`, up to `maxAttempts`, with the content address
+rechecked on every attempt. The authority mode never silently falls back
+between remote and local storage.
+
+R2 verifies downloads completely before exposing bytes, using a scoped,
+decoded-budget-bounded in-memory spool. Filesystem spooling and authenticated
+chunk proofs are later slices. The test-side `ConformancePeer` interface is
+the named landing point for the adopted LeanServer peer; R2 provides the Node
+reference and hostile raw-socket bindings only.
 
 ## Usage sketch
 

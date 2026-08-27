@@ -9,6 +9,7 @@
  * shape only.
  */
 import { Schema } from "effect"
+import { CasRemoteError, type CasRemoteError as CasRemoteErrorType } from "./Remote.ts"
 
 /** One byte in the version/tag plane. */
 export const Byte = Schema.Int.check(
@@ -88,6 +89,15 @@ export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
   { reason: Schema.String },
 ) {}
 
+/** A remote-backed store retains the typed remote cause without widening the
+ * frozen CasStore method signatures beyond the CasError family. */
+export class RemoteFailure extends Schema.TaggedError<RemoteFailure>()(
+  "CasError/RemoteFailure",
+  { cause: CasRemoteError },
+) {
+  declare readonly cause: CasRemoteErrorType
+}
+
 export type CasError =
   | AddressMismatch
   | NonCanonicalBytes
@@ -96,3 +106,4 @@ export type CasError =
   | WrongKindReference
   | ContentNotFound
   | StoreFailure
+  | RemoteFailure
