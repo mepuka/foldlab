@@ -156,6 +156,13 @@ repository locations.
   deep-module architecture (`CasBlob`, `CasRepository`,
   `CasServerCore`, object-store and root-registry seams), and the
   O-obligation list adopted as the MRK-3 and S-M dockets.
+- [`cas-scheme-0-hash-ruling.md`](cas-scheme-0-hash-ruling.md) is the
+  G0 decision docket pinning the production address scheme (H1–H6):
+  SHA-256 over the canonical node encoding through WebCrypto, full
+  width, profile-pinned with no per-address prefix, the hash as an
+  injected Effect service, generated known-answer fixtures, and the
+  digests-are-not-secrets boundary — pending ratification; the
+  package must not publish before it.
 - [`leanserver-adoption.md`](leanserver-adoption.md) is the formal
   adoption record for LeanServer at its ratified pin: the
   materialized gitignored clone, blob-level digest verification

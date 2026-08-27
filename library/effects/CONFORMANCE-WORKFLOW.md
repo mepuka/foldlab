@@ -1336,3 +1336,34 @@ Stop and return to grilling if:
   CasBlob packet on the landed manifest graph, the S1 reference
   server, and the profile's proof-plane clauses promoted from
   planned to ratified as the implementation consumes them.
+- **Release-gap pass: profile consolidation, blob recipe, auth and
+  deadline clauses, hash docket (2026-08-27):** under the
+  development directive the release-facing gaps were surveyed beyond
+  the prior-art review and the owed consolidation landed: the
+  profile document is now the sole wire authority (statuses
+  upgraded to implemented after the F1 acceptance, the
+  acknowledgment-closure and identity-content-encoding clauses
+  captured, the README wire restatement reduced to a pointer), and
+  the blob node-graph section freezes recipe 1 — fixed 65536-byte
+  chunks, the four node shapes with tags and payloads, the
+  recipe-gate rule, and the chunk-size-is-profile-constant law.
+  Two ratified clauses landed under the operator's direction as
+  normative-pending-implementation: AUTHENTICATION (an opaque
+  bearer credential per authority, structurally redacted, scoped by
+  the no-redirect rule, no challenge negotiation, server principals
+  explicit with root-update authorization independent of upload)
+  and DEADLINES (a default thirty-second per-request deadline
+  resolving as the machine's silence event with the typed timeout
+  reason — wall-clock stays in the shell, the model unchanged);
+  both become riders on the next implementation packet. The
+  CasScheme0 hash docket is landed as a research ruling document
+  and presented for ratification — SHA-256 over the canonical node
+  encoding via WebCrypto, full width, profile-pinned scheme with no
+  per-address prefix, the hash as an injected Effect service with
+  generated known-answer fixtures — with the publication gate
+  stated plainly: the package cannot interoperate across processes
+  and must not publish before the scheme is ratified and landed.
+  Remaining named gaps queued: the portable-replay-history flagship
+  example, the claim matrix, the axiom-profile gate, client
+  concurrency documentation, memory bounds on large-graph push, and
+  stable trace-span names.

@@ -9,7 +9,8 @@ own. Endpoints are added to `/0` only additively; any change to the
 meaning of an existing exchange mints `cas-http/1`.
 
 Status of each section is marked: **implemented** (normative and
-shipping in the client), or **planned** (design authority in the
+shipping in the client), **ratified** (normative now; implementation
+landing in a named slice), or **planned** (design authority in the
 research tree; not yet normative). This document is the sole wire
 authority; the package README describes library behavior above the
 wire and points here for protocol law.
@@ -29,6 +30,11 @@ wire and points here for protocol law.
   (truncation), never to invented events.
 - The HTTP shell performs no retry and follows no redirect; retries
   and redirects are semantic-core decisions.
+- Content encoding is identity-only at `/0`: any non-identity
+  `content-encoding` on a response is a typed protocol violation —
+  the decompressed budget stage exists for future profiles, and
+  nothing at `/0` may silently inflate bytes past the decoded
+  counter.
 
 ## 2. Data plane (implemented)
 
@@ -136,12 +142,50 @@ budget stages (the key-count budget); `publishUnconfirmed` joins the
 policy codes (the local ordering refusal). Publish and batch
 transport failures classify through the existing classes by cause.
 
-## 8. Namespacing rule (standing)
+## 8. Authentication (ratified)
+
+The credential model at `/0` is deliberately minimal: an OPAQUE
+bearer credential per authority, supplied in layer configuration and
+sent as `Authorization: Bearer <credential>` on every request to
+exactly that authority. Rules:
+
+- A credential is scoped to its one configured authority and never
+  accompanies a request anywhere else; combined with the standing
+  no-redirect-following rule, no cross-host leak path exists.
+- The credential value is structurally absent from errors, reports,
+  decision transcripts, and logs — redaction is by construction,
+  never by filtering.
+- Configuration without a credential sends no `Authorization` header;
+  servers MAY serve anonymous reads per policy.
+- `401` and `403` map through the standing status table; there is no
+  challenge negotiation at `/0` — a `401` is terminal for its
+  operation, never a retry trigger.
+- Server side: the authenticated principal is passed explicitly to
+  every semantic operation; authorization for root updates is
+  independent of authorization for object upload; credential
+  comparison is constant-time where the platform provides it.
+
+## 9. Deadlines (ratified)
+
+Every wire operation carries a client-side deadline from layer
+configuration (`requestTimeout`, default thirty seconds), covering
+the full exchange — request issue through acknowledgment or complete
+body. Expiry resolves the in-flight operation as the machine's
+SILENCE event with the typed `timeout` reason: no new alphabet, no
+retry decided at the shell, and the semantic core sees exactly the
+event it already handles. Deadlines are wall-clock shell concerns and
+never enter the model. Node bodies are budget-bounded, so one
+per-request deadline suffices at `/0`; streaming responses will carry
+an idle-progress deadline defined with the proof plane, not this
+one. The deadline is validated positive and finite; opting out is an
+explicit configuration value, never an accidental zero.
+
+## 10. Namespacing rule (standing)
 
 Presence-style operations are scoped by the authority; no global
 does-this-digest-exist query exists on any surface of this profile.
 
-## 9. Blob representation (implemented model; client landing at F2b)
+## 11. Blob representation (implemented model; client landing at F2b)
 
 A blob is a NODE GRAPH under the ordinary data plane — no new
 endpoints and no second identity. Four node shapes, version byte 0:
@@ -171,7 +215,7 @@ identity across authorities. A server whose node-body budget cannot
 hold a chunk node cannot host recipe-1 blobs; that is a typed policy
 refusal at push, never a silent re-chunk.
 
-## 10. Planned planes (not yet normative)
+## 12. Planned planes (not yet normative)
 
 Design authority: the server-reference and verified-reads survey in
 the research tree. In brief: a proof plane serving inclusion openings
