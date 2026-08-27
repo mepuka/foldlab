@@ -931,7 +931,12 @@ declared mutant per falsification case in both directions.
   family-binding machinery, expressed in the test library's own
   idioms with no custom runners, and the replay fixture module
   delegates compatibly.
-- **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
+- **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`;
+  plus discovery-order pull (ruled at the R2 audit: a cold replica
+  pulling a reference-carrying root must discover root-first and
+  admit children-first — the R2 adapter documents this as a named
+  limitation, and the sync-load fixtures' pull planner already
+  models both orders).
 - **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`. The standards bind
   the retry obligations: an HTTP retry requires application
   idempotency or evidence the original request was not applied

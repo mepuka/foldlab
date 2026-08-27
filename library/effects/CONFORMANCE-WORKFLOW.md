@@ -821,6 +821,47 @@ Stop and return to grilling if:
   the M6 packaging review. The rider is written to absorb the
   implementation lane's in-flight structures, never to restart them,
   and shape conflicts come back as questions per the workflow.
+- **R2 pre-acceptance audit and correction ratification
+  (2026-08-27):** the implementation lane delivered the R2 baseline
+  and the operator directed a concerted pre-acceptance review —
+  alignment with the Effect HTTP semantics, no reimplementation of
+  what composes from built-ins, corrections landed before the shape
+  hardens. Four parallel read-only audits ran (built-in composition;
+  ratified-shape rule-by-rule; mirror and vector correspondence;
+  idiom and resource safety) plus a worktree agent building the
+  operator-directed seeded production sync-load fixtures (landed:
+  graph generators, sync planners, peer preload, seven profiles, six
+  end-to-end tests; every module labeled sampled evidence, never
+  conformance vectors). Audit verdict: architecturally faithful —
+  the ratified-shape table returned twenty of twenty-one rules met
+  with the mirror verified rule-for-rule twice independently, the
+  client path composes the pinned HTTP modules end to end, and the
+  apparent hand-rolls (budget counters, the witness pull loop) were
+  verified necessary at the pin. The operator ratified the
+  consolidated correction docket as recommended. Blocker tier:
+  socket-cleanup assertions made real (in-scope, plus a
+  caller-interrupt test); interruption clears machine in-flight
+  state (the interruption-exclusion shell half); the adapter owns
+  manual-redirect semantics so production wiring cannot silently
+  auto-follow. Major tier: budget errors report observed quantities
+  honestly (tests re-pinned); the queued budget redefined as
+  buffered-bytes-awaiting-admission so rechunking is invariant;
+  oversize uploads flow through the machine step so adapter and
+  mirror transcripts agree; transport failure classification
+  consumes the typed reason taxonomy (pre-send failures are
+  known-unprocessed), defects never launder into wire evidence, sent
+  bytes report transmission; the differential boundary grows to a
+  shared scenario set covering uploads, dedup, and rejections; the
+  ratified harness rider is absorbed (closed strict envelope decode,
+  the step service tag with layer-selected lanes, delegating replay
+  fixtures, remote direction-2 mutants); the missing named span and
+  Schema-decoded header parsing land. A minor batch follows the
+  audit lists. Scope ruling: the fixtures-discovered cold
+  root-first-pull gap (fetched parents resolve references against
+  the local mirror) is DOCUMENTED as a named R2 limitation and
+  DEFERRED to R3, whose closure slice gains discovery-order pull
+  explicitly; the fixtures' pull planner already models both orders.
+  Acceptance review remains open until the correction delivery.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the
