@@ -90,9 +90,10 @@ it.effect("the index names exactly the committed family manifests", () =>
     expect([...manifestIndexNames]).toEqual([...manifestIndexNames].sort())
   }))
 
-it.effect("every named family decodes through the closed envelope at the declared model", () =>
-  Effect.gen(function* () {
-    for (const name of manifestIndexNames) {
+it.effect.each([...manifestIndexNames])(
+  "family %s decodes through the closed envelope at the declared model",
+  (name) =>
+    Effect.gen(function* () {
       const text = yield* Effect.promise(() =>
         readFile(new URL(name, manifestDir), "utf8"))
       const decoded = yield* Schema.decodeUnknownEffect(FamilyDocSchema)(
@@ -115,14 +116,19 @@ it.effect("every named family decodes through the closed envelope at the declare
         name,
         unique: ids.length,
       })
-    }
-  }))
+    }),
+)
 
-it.effect("every family is bound to a suite or declared leading — never a silent gap", () =>
-  Effect.gen(function* () {
+it.effect("the binding registry covers the index exactly", () =>
+  Effect.sync(() => {
     const families = manifestIndexNames.map((name) => name.replace(/\.json$/, ""))
     expect(Object.keys(REGISTRY).sort()).toEqual([...families].sort())
-    for (const family of families) {
+  }))
+
+it.effect.each(manifestIndexNames.map((name) => name.replace(/\.json$/, "")))(
+  "family %s is bound to a suite or declared leading — never a silent gap",
+  (family) =>
+    Effect.gen(function* () {
       const binding = REGISTRY[family]
       if (binding === undefined) {
         return yield* Effect.die(new Error(`${family}: no binding declared`))
@@ -133,5 +139,5 @@ it.effect("every family is bound to a suite or declared leading — never a sile
           until: true,
         })
       }
-    }
-  }))
+    }),
+)

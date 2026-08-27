@@ -1,11 +1,8 @@
 import { expect, it } from "@effect/vitest"
-import { Context, Effect, Encoding, Layer, Schema } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 import { Cas } from "../src/index.ts"
 import { ContentId } from "../src/cas/Node.ts"
-import {
-  layerMemory,
-  type CasAddress,
-} from "../src/cas/Store.ts"
+import { layerMemory } from "../src/cas/Store.ts"
 import type { Root } from "../src/cas/Value.ts"
 import type { ServiceDescriptions } from "../src/replay/Operation.ts"
 import {
@@ -17,21 +14,7 @@ import {
   replayable,
   type Live,
 } from "../src/replay/ServiceAdapter.ts"
-
-const deterministicAddress = (): CasAddress => {
-  const ids = new Map<string, ContentId>()
-  let next = 1n
-  return {
-    digest: (bytes) => Effect.sync(() => {
-      const key = Encoding.encodeHex(bytes)
-      const resident = ids.get(key)
-      if (resident !== undefined) return resident
-      const id = ContentId.make((next++).toString(16).padStart(64, "0"))
-      ids.set(key, id)
-      return id
-    }),
-  }
-}
+import { deterministicAddress } from "./fixtures/address.ts"
 
 class MissingEntry extends Schema.TaggedError<MissingEntry>()(
   "CasService/MissingEntry",

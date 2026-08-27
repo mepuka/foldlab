@@ -67,29 +67,16 @@ import { replayable } from "../src/replay/ServiceAdapter.ts"
 import { decodeWitness, StoredWitness } from "../src/internal/storage.ts"
 import { awaitPeerSocketsReleased } from "./remote/harness/ConformancePeer.ts"
 import { HostilePeer } from "./remote/harness/HostilePeer.ts"
-
-const HistoryTag = 0x48
-const WitnessTag = 0x57
+import {
+  deterministicAddress,
+  HistoryKindTag as HistoryTag,
+  WitnessKindTag as WitnessTag,
+} from "./fixtures/address.ts"
 
 class PinFail extends Schema.TaggedError<PinFail>()(
   "ReviewPins/Fail",
   { note: Schema.String },
 ) {}
-
-const deterministicAddress = (): CasAddress => {
-  const ids = new Map<string, ContentId>()
-  let next = 1n
-  return {
-    digest: (bytes) => Effect.sync(() => {
-      const key = Encoding.encodeHex(bytes)
-      const resident = ids.get(key)
-      if (resident !== undefined) return resident
-      const id = ContentId.make((next++).toString(16).padStart(64, "0"))
-      ids.set(key, id)
-      return id
-    }),
-  }
-}
 
 interface SpyPut {
   readonly id: ContentId

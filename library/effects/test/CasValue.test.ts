@@ -10,27 +10,12 @@ import {
 import {
   CasStore,
   layerMemory,
-  type CasAddress,
 } from "../src/cas/Store.ts"
 import {
   ProjectionCodecFailure,
   type Root,
 } from "../src/cas/Value.ts"
-
-const deterministicAddress = (): CasAddress => {
-  const ids = new Map<string, ContentId>()
-  let next = 1n
-  return {
-    digest: (bytes) => Effect.sync(() => {
-      const key = Encoding.encodeHex(bytes)
-      const resident = ids.get(key)
-      if (resident !== undefined) return resident
-      const id = ContentId.make((next++).toString(16).padStart(64, "0"))
-      ids.set(key, id)
-      return id
-    }),
-  }
-}
+import { deterministicAddress } from "./fixtures/address.ts"
 
 const Snapshot = Schema.Struct({
   label: Schema.String,

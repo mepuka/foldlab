@@ -9,9 +9,7 @@ import { Context, Effect, Encoding, Layer, Schema } from "effect"
 import { ContentId, type CasNodeInput } from "../src/cas/Node.ts"
 import {
   CasStore,
-  decodeCasNode,
   layerMemory,
-  type CasAddress,
   type CasStoreShape,
 } from "../src/cas/Store.ts"
 import type { ServiceDescriptions } from "../src/replay/Operation.ts"
@@ -23,6 +21,12 @@ import {
   StoredWitness,
 } from "../src/internal/storage.ts"
 import { DoubleWrap, replayable } from "../src/replay/ServiceAdapter.ts"
+import {
+  HistoryKindTag,
+  trackingAddress,
+  WitnessKindTag,
+  type TrackingAddress,
+} from "./fixtures/address.ts"
 
 class StockUnavailable extends Schema.TaggedError<StockUnavailable>()(
   "Composition/StockUnavailable",
@@ -199,38 +203,6 @@ const makePricingFake = (): CountedFake<PricingShape> => {
   }
 }
 
-interface TrackingAddress {
-  readonly address: CasAddress
-  readonly latestHistory: () => ContentId | undefined
-  readonly witnesses: () => ReadonlyArray<ContentId>
-}
-
-const trackingAddress = (): TrackingAddress => {
-  const ids = new Map<string, ContentId>()
-  const witnessIds: Array<ContentId> = []
-  let next = 1n
-  let latestHistory: ContentId | undefined
-
-  return {
-    address: {
-      digest: (canonicalBytes) =>
-        Effect.sync(() => {
-          const key = Encoding.encodeHex(canonicalBytes)
-          const resident = ids.get(key)
-          if (resident !== undefined) return resident
-
-          const id = ContentId.make((next++).toString(16).padStart(64, "0"))
-          ids.set(key, id)
-          const node = decodeCasNode(canonicalBytes)
-          if (node?.kind.tag === 0x48) latestHistory = id
-          if (node?.kind.tag === 0x57) witnessIds.push(id)
-          return id
-        }),
-    },
-    latestHistory: () => latestHistory,
-    witnesses: () => witnessIds,
-  }
-}
 
 const requireValue = <A>(value: A | undefined, label: string): Effect.Effect<A> =>
   value === undefined ? Effect.die(`missing ${label}`) : Effect.succeed(value)
@@ -244,7 +216,7 @@ const observeHistory = (
     let current: ContentId | undefined = root
     while (current !== undefined) {
       const node: CasNodeInput = yield* store.load(current)
-      if (node.kind.tag !== 0x48) return yield* Effect.die("non-history node in history chain")
+      if (node.kind.tag !== HistoryKindTag) return yield* Effect.die("non-history node in history chain")
       const raw = yield* Effect.sync(() => decodeHistoryEntry(node.payload))
       reversed.push(yield* Schema.decodeUnknownEffect(StoredHistoryEntry)(raw))
       current = node.refs[0]?.id
@@ -259,7 +231,7 @@ const observeWitness = (
 ) =>
   Effect.gen(function* () {
     const node = yield* store.load(id)
-    if (node.kind.tag !== 0x57) return yield* Effect.die("expected witness node")
+    if (node.kind.tag !== WitnessKindTag) return yield* Effect.die("expected witness node")
     const raw = yield* Effect.sync(() => decodeWitness(node.payload))
     return yield* Schema.decodeUnknownEffect(StoredWitness)(raw)
   })
@@ -314,7 +286,7 @@ const withReplayLayers = <A, E>(
   program.pipe(Effect.provide(fixture.replayLayer))
 
 const latestWitness = (fixture: CompositionFixture, label: string) =>
-  requireValue(fixture.tracked.witnesses().at(-1), `${label} witness`)
+  requireValue(fixture.tracked.witnessIds().at(-1), `${label} witness`)
 
 const resetLiveCounts = (fixture: CompositionFixture): void => {
   fixture.stock.reset()
