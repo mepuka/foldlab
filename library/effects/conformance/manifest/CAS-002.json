@@ -34,6 +34,40 @@
       }
     },
     {
+      "case": "admit-two-resolving-refs-004",
+      "expect": {
+        "admitted": true
+      },
+      "input": {
+        "node": {
+          "payload": [],
+          "refs": [
+            {
+              "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              "expectedTag": 5
+            },
+            {
+              "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              "expectedTag": 5
+            }
+          ],
+          "tag": 1,
+          "version": 0
+        },
+        "store": [
+          {
+            "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "node": {
+              "payload": [],
+              "refs": [],
+              "tag": 5,
+              "version": 0
+            }
+          }
+        ]
+      }
+    },
+    {
       "case": "reject-dangling-001",
       "expect": {
         "admitted": false,
@@ -78,6 +112,44 @@
         "node": {
           "payload": [],
           "refs": [
+            {
+              "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              "expectedTag": 7
+            }
+          ],
+          "tag": 1,
+          "version": 0
+        },
+        "store": [
+          {
+            "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "node": {
+              "payload": [],
+              "refs": [],
+              "tag": 5,
+              "version": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "reject-wrong-kind-among-refs-003",
+      "expect": {
+        "actualTag": 5,
+        "admitted": false,
+        "clause": "CasError/WrongKindReference",
+        "expectedTag": 7,
+        "ref": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      "input": {
+        "node": {
+          "payload": [],
+          "refs": [
+            {
+              "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              "expectedTag": 5
+            },
             {
               "addr": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
               "expectedTag": 7

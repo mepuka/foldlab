@@ -58,6 +58,28 @@ carries both. -/
 bound address, where the resident carries kind tag five. -/
 def wrongKindNode : Node := ⟨0, 1, [], [⟨7, cas002Bound⟩]⟩
 
+/-- A second, distinct address for reference-ordering coverage:
+thirty-two bytes of two. -/
+def addrB : Addr32 := ⟨List.replicate 32 2, by simp⟩
+
+/-- Declared vector growth (M4 Pass A, same version): a nontrivial
+payload under the round trip. -/
+def payloadNode : AdmittedNode := ⟨⟨0, 3, [1, 2, 3, 250, 255], []⟩, by decide⟩
+
+/-- Declared vector growth: two ordered typed references and a nonempty
+payload — payload framing, reference count, and per-reference bytes
+exercised in one admitted node. -/
+def multiRefNode : AdmittedNode :=
+  ⟨⟨0, 3, [9], [⟨5, cas002Bound⟩, ⟨7, addrB⟩]⟩, by decide⟩
+
+/-- Declared vector growth: a resolving reference beside a wrong-kind one
+— admission must reject even when an earlier reference is fine. -/
+def mixedRefsNode : Node := ⟨0, 1, [], [⟨5, cas002Bound⟩, ⟨7, cas002Bound⟩]⟩
+
+/-- Declared vector growth: two references, both resolving at the
+declared kind. -/
+def twoResolvingNode : Node := ⟨0, 1, [], [⟨5, cas002Bound⟩, ⟨5, cas002Bound⟩]⟩
+
 /-- The kit store's bindings, rendered as data for the manifest. -/
 def storeBindings : List (Addr32 × Node) := [(cas002Bound, cas002Resident)]
 
@@ -67,12 +89,15 @@ def storeJson : Value :=
 
 /-! ## CAS-001 rows — executed from the codec -/
 
-def cas001RoundtripRow : Value :=
-  let bytes := encodeAdmitted cas001PosNode
-  let roundtrip := decide (decodeAdmitted bytes = some cas001PosNode)
-  .obj [ ("case", .str "roundtrip-smallest-000")
+def cas001RoundtripRowAt (caseId : String) (n : AdmittedNode) : Value :=
+  let bytes := encodeAdmitted n
+  let roundtrip := decide (decodeAdmitted bytes = some n)
+  .obj [ ("case", .str caseId)
        , ("expect", .obj [("bytes", bytesJson bytes), ("roundtrip", .bool roundtrip)])
-       , ("input", .obj [("node", nodeJson cas001PosNode.val)]) ]
+       , ("input", .obj [("node", nodeJson n.val)]) ]
+
+def cas001RoundtripRow : Value :=
+  cas001RoundtripRowAt "roundtrip-smallest-000" cas001PosNode
 
 def cas001RejectRow : Value :=
   let decoded := match decodeAdmitted cas001NegBytes with
@@ -109,12 +134,20 @@ def familyManifest (family meaning : String) (rows : List (String × Value)) :
 
 def cas001Rows : List (String × Value) :=
   [ ("roundtrip-smallest-000", cas001RoundtripRow)
-  , ("reject-trailing-byte-001", cas001RejectRow) ]
+  , ("reject-trailing-byte-001", cas001RejectRow)
+  , ("roundtrip-payload-002",
+      cas001RoundtripRowAt "roundtrip-payload-002" payloadNode)
+  , ("roundtrip-multi-ref-003",
+      cas001RoundtripRowAt "roundtrip-multi-ref-003" multiRefNode) ]
 
 def cas002Rows : List (String × Value) :=
   [ ("admit-resolving-ref-000", cas002Row "admit-resolving-ref-000" cas002Pos)
   , ("reject-dangling-001", cas002Row "reject-dangling-001" cas002Neg)
-  , ("reject-wrong-kind-002", cas002Row "reject-wrong-kind-002" wrongKindNode) ]
+  , ("reject-wrong-kind-002", cas002Row "reject-wrong-kind-002" wrongKindNode)
+  , ("reject-wrong-kind-among-refs-003",
+      cas002Row "reject-wrong-kind-among-refs-003" mixedRefsNode)
+  , ("admit-two-resolving-refs-004",
+      cas002Row "admit-two-resolving-refs-004" twoResolvingNode) ]
 
 def cas001Manifest : Value := familyManifest "CAS-001" cas001.sentence cas001Rows
 

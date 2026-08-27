@@ -482,3 +482,31 @@ Stop and return to grilling if:
   actual manifest surface, so an unvectored instantiated family never
   renders as consumable. Two context entries were minted at this
   ratification: reified program and interpretation halt.
+- **M4 Pass A (2026-08-27):** the operator ratified the eight-item
+  docket as recommended. (1) The `Violated` session-outcome wire shape
+  flattens toward the Lean carrier and the manifest (`service` at top
+  level) — a freeze-postdating TypeScript correction landing in the M4
+  packet, before any tripwire vector exists. (2) tsSide rows flip
+  through the same declared-evidence-list mechanic as bridge rows,
+  rendered `evidenced — TypeScript evidence`, built with its first
+  consumer at the M4 delivery review. (3) Direction-2 TypeScript
+  mutants are an M4 deliverable: one mutated reducer per replay
+  falsification case under `test/mutants/`, meanings mirrored verbatim
+  from the Lean mutant headers, with a task asserting the suite goes
+  red under each. (4) The M2 kit-store rider is closed by finding:
+  manifest rows carry store bindings as data and the suite instantiates
+  a store per fixture, so application-level contexts are realized by
+  construction — no model change. (5) Vector growth lands as a declared
+  additive batch on the CAS families under the unchanged version:
+  nontrivial-payload and multi-reference round trips, a wrong-kind
+  reference beside a resolving one, and a two-resolving-references
+  admission. (6) The error review adds `ContentNotFound` only — a
+  TypeScript-owned load-miss clause; the model's read stays an Option —
+  while the collision and scheme-version clauses stay deferred, the
+  latter requiring a plan section-7 entry first. (7) Family digests
+  stay deferred, re-scoped as a dedicated slice: the cost driver is a
+  Lean-side SHA-256 or a two-stage generation pipeline, neither on M4's
+  critical path. (8) M4 history persistence rides the in-memory store
+  with internal history/witness Schemas carrying no canonicality claim
+  and no digest-preimage authority; the canonical history-node codec is
+  a future declared plan section-7 entry.
