@@ -117,12 +117,14 @@ interface TrackingAddress {
   readonly address: CasAddress
   readonly latestHistory: () => ContentId | undefined
   readonly historyDepth: (root: ContentId) => number
+  readonly witnesses: () => ReadonlyArray<StoredWitness>
   readonly witnessedOutcomes: () => ReadonlyArray<StoredWitness["outcome"]>
 }
 
 const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
   const ids = new Map<string, ContentId>()
   const historyParents = new Map<ContentId, ContentId | undefined>()
+  const witnesses: Array<StoredWitness> = []
   const witnessedOutcomes: Array<StoredWitness["outcome"]> = []
   let next = 1n
   let latestHistory: ContentId | undefined
@@ -144,6 +146,7 @@ const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
             const witness = Schema.decodeUnknownSync(StoredWitness)(
               decodeWitness(decoded.payload),
             )
+            witnesses.push(witness)
             witnessedOutcomes.push(witness.outcome)
           }
           return id
@@ -153,6 +156,7 @@ const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
           : calculate
       },
     },
+    witnesses: () => witnesses,
     latestHistory: () => latestHistory,
     historyDepth: (root) => {
       let depth = 0
@@ -168,6 +172,21 @@ const trackingAddress = (yieldHistoryDigest = false): TrackingAddress => {
     witnessedOutcomes: () => witnessedOutcomes,
   }
 }
+
+it.effect("caller-supplied execution identity is persisted verbatim", () => {
+  const tracked = trackingAddress()
+  return Effect.gen(function* () {
+    yield* session(Effect.void, {
+      mode: "record",
+      executionId: "worker-7/attempt-42",
+    })
+    yield* session(Effect.void, { mode: "record" })
+
+    const identities = tracked.witnesses().map((witness) => witness.executionId)
+    expect(identities[0]).toBe("worker-7/attempt-42")
+    expect(identities[1]).toMatch(/^execution-[1-9][0-9]*$/)
+  }).pipe(Effect.provide(runtimeLayer(tracked.address)))
+})
 
 const runtimeLayer = (address: CasAddress) =>
   layerReplay.pipe(Layer.provide(layerMemory(address)))

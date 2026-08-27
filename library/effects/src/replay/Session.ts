@@ -83,6 +83,12 @@ export interface TerminalSchemas<A, E> {
 
 export interface SessionOptions<A, E> {
   readonly mode: ReplayMode
+  /** Stable identity for this attempt, persisted verbatim in its witness.
+   * When omitted the runtime uses `execution-${counter}` from a process-local
+   * development counter. That default is not globally unique: collisions
+   * across processes and process restarts are expected. Production callers
+   * that correlate witnesses must supply their own identity. */
+  readonly executionId?: string
   readonly history?: ContentId
   readonly terminal?: TerminalSchemas<A, E>
 }

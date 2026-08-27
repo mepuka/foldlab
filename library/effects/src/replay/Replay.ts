@@ -655,8 +655,9 @@ const makeReplayRun = (
     options: SessionOptions<A, E>,
   ): Effect.Effect<SessionResult<A, E>, CasError, R> =>
     Effect.gen(function* () {
-      const executionNumber = yield* Ref.updateAndGet(executionCounter, (value) => value + 1)
-      const executionId = `execution-${executionNumber}`
+      const executionId = options.executionId ?? `execution-${
+        yield* Ref.updateAndGet(executionCounter, (value) => value + 1)
+      }`
       const history = options.history === undefined
         ? []
         : yield* loadHistory(store, options.history)
