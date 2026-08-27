@@ -116,6 +116,14 @@ repository locations.
   assertions, and TestClock as the R4 deterministic-time hook — an
   eight-item decision docket, nothing implemented while R2 is in
   flight.
+- [`leanserver-adoption.md`](leanserver-adoption.md) is the formal
+  adoption record for LeanServer at its ratified pin: the
+  materialized gitignored clone, blob-level digest verification
+  against the transport-standards receipt (with the Windows CRLF
+  caution), the two adopted roles, the C5 claim boundary (never a
+  standards oracle; its theorem count is not estate evidence), the
+  audited gaps as named detection targets, and the
+  own-slice integration roadmap.
 
 ## Local external inputs
 
