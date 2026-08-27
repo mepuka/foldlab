@@ -1207,6 +1207,9 @@ export const makeRemoteAdapter = (
       )
     }
     if (limits.maxBatchKeys === 0) {
+      // A zero batch capability cannot negotiate at all: this call fails
+      // typed through the machine's key-budget rejection, so the
+      // zero-stride batch loop below is never entered.
       yield* missing(ids)
     }
 

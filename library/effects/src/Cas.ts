@@ -100,7 +100,9 @@ export type { RemoteConfigOptions } from "./cas/Remote.ts"
  * Build the remote store and transfer views once over one shared adapter.
  * The transport owns the pinned FetchHttpClient realization so manual redirect
  * observation cannot be bypassed. Capability probing is eager by default;
- * `capabilityProbe: "lazy"` defers its one memoized probe until a wire-backed
- * operation first needs it. Platform Crypto remains a visible layer requirement.
+ * `capabilityProbe: "lazy"` defers the probe until a wire-backed operation
+ * first needs it — a successful probe is memoized for the layer's life,
+ * while a retryable failure re-probes on the next call. Platform Crypto
+ * remains a visible layer requirement.
  */
 export { layerRemote } from "./internal/remote.ts"
