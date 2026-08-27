@@ -89,6 +89,7 @@ export const ReferencePeer: ConformancePeer = {
               response.writeHead(400).end()
               return
             }
+            stats.events.push(`missing:${decoded.value.length}`)
             const statuses = Uint8Array.from(decoded.value, (key) =>
               realization.reportedMissing?.has(key) === true
                 ? 0

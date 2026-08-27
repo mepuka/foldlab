@@ -104,6 +104,12 @@ export interface RemoteAdapter {
   readonly snapshot: Effect.Effect<RemoteMachineSnapshot>
 }
 
+export interface RemoteAdapterOptions {
+  /** Internal source mirror. Production construction uses a fresh memory
+   * store; integration fixtures may supply a pre-populated mirror. */
+  readonly localStore?: CasStoreShape
+}
+
 interface Verification {
   readonly key: ContentId
   readonly bytes: Uint8Array
@@ -236,8 +242,9 @@ export const makeRemoteAdapter = (
   config: CasRemoteConfig,
   transport: RemoteCasTransport,
   address: CasAddress,
+  options: RemoteAdapterOptions = {},
 ): Effect.Effect<RemoteAdapter, CasRemoteError> => Effect.gen(function* () {
-  const localStore = yield* makeMemoryCasStore(address)
+  const localStore = options.localStore ?? (yield* makeMemoryCasStore(address))
   const runtime = yield* SynchronizedRef.make<MachineRuntime>({
     machine: initialMachineState(),
     decisions: [],
@@ -1090,11 +1097,11 @@ export const makeRemoteAdapter = (
     readonly bytes: Uint8Array
   }
 
-  const collectLocalGraph = (
+  const collectLocalGraphIds = (
     root: ContentId,
-  ): Effect.Effect<ReadonlyArray<LocalGraphEntry>, CasError> => Effect.gen(function* () {
+  ): Effect.Effect<ReadonlyArray<ContentId>, CasError> => Effect.gen(function* () {
     const seen = new Set<ContentId>()
-    const entries: Array<LocalGraphEntry> = []
+    const ids: Array<ContentId> = []
 
     const visit = (
       id: ContentId,
@@ -1124,84 +1131,86 @@ export const makeRemoteAdapter = (
         if (seen.has(ref.id)) continue
         yield* visit(ref.id, false, child)
       }
-      entries.push({ id, node: current, bytes: encodeCasNode(current) })
+      ids.push(id)
     })
 
     yield* visit(root, true)
-    return entries
+    return ids
   })
+
+  const materializeLocalBatch = (
+    ids: ReadonlyArray<ContentId>,
+  ): Effect.Effect<ReadonlyArray<LocalGraphEntry>, CasError> => Effect.forEach(
+    ids,
+    (id) => localStore.load(id).pipe(
+      Effect.map((node) => ({ id, node, bytes: encodeCasNode(node) })),
+    ),
+  )
 
   const push = Effect.fn("CasTransfer.Remote.push")(function* (
     root: ContentId,
   ): Effect.fn.Return<CasPushReport, CasRemoteError | CasError> {
-    // Resolve and kind-check the complete local graph before the first
-    // operation-specific wire request. Layer capability probing is separate.
-    const graph = yield* collectLocalGraph(root)
+    // Preflight the complete closure before operation-specific traffic, but
+    // retain only identifiers. Encoded nodes are materialized one negotiated
+    // batch at a time below.
+    const ids = yield* collectLocalGraphIds(root)
     const limits = yield* capabilities
-    const largestNode = graph.reduce(
-      (largest, entry) => Math.max(largest, entry.bytes.length),
-      0,
-    )
-    if (largestNode > limits.maxBlobBytes) {
-      return yield* remoteBudget(
-        config,
-        undefined,
-        "encoded",
-        largestNode,
-        limits.maxBlobBytes,
-      )
-    }
-    const keys = graph.map((entry) => entry.id)
-    const present: Array<ContentId> = []
-    const absent: Array<ContentId> = []
-    const failed: Array<ContentId> = []
-
     if (limits.maxBatchKeys === 0) {
-      yield* missing(keys)
-    } else {
-      for (let offset = 0; offset < keys.length; offset += limits.maxBatchKeys) {
-        const planned = yield* missing(keys.slice(offset, offset + limits.maxBatchKeys))
-        present.push(...planned.present)
-        absent.push(...planned.missing)
-        failed.push(...planned.failed)
-      }
+      yield* missing(ids)
     }
-
-    const planned = new Map<ContentId, "present" | "missing" | "failed">()
-    for (const key of present) planned.set(key, "present")
-    for (const key of absent) planned.set(key, "missing")
-    for (const key of failed) planned.set(key, "failed")
 
     const transferred: Array<ContentId> = []
     const alreadyPresent: Array<ContentId> = []
-    for (const entry of graph) {
-      const status = planned.get(entry.id)
-      if (status === "missing") {
-        const opId = yield* allocateOpId
-        const confirmed = yield* SynchronizedRef.get(runtime).pipe(
-          Effect.map((current) => HashSet.has(current.machine.confirmed, entry.id)),
+    for (let offset = 0; offset < ids.length; offset += limits.maxBatchKeys) {
+      const batchIds = ids.slice(offset, offset + limits.maxBatchKeys)
+      const batch = yield* materializeLocalBatch(batchIds)
+      const largestNode = batch.reduce(
+        (largest, entry) => Math.max(largest, entry.bytes.length),
+        0,
+      )
+      if (largestNode > limits.maxBlobBytes) {
+        return yield* remoteBudget(
+          config,
+          undefined,
+          "encoded",
+          largestNode,
+          limits.maxBlobBytes,
         )
-        if (confirmed) {
-          return yield* remoteIntegrity(
-            config,
-            opId,
-            "remoteRejected",
-            0,
-            "response",
+      }
+
+      const presence = yield* missing(batchIds)
+      const planned = new Map<ContentId, "present" | "missing" | "failed">()
+      for (const key of presence.present) planned.set(key, "present")
+      for (const key of presence.missing) planned.set(key, "missing")
+      for (const key of presence.failed) planned.set(key, "failed")
+
+      for (const entry of batch) {
+        const status = planned.get(entry.id)
+        if (status === "missing") {
+          const opId = yield* allocateOpId
+          const confirmed = yield* SynchronizedRef.get(runtime).pipe(
+            Effect.map((current) => HashSet.has(current.machine.confirmed, entry.id)),
           )
+          if (confirmed) {
+            return yield* remoteIntegrity(
+              config,
+              opId,
+              "remoteRejected",
+              0,
+              "response",
+            )
+          }
+          yield* driveUpload(opId, 1, entry.node, entry.id, entry.bytes)
+          transferred.push(entry.id)
+        } else if (status === "present") {
+          const opId = yield* allocateOpId
+          yield* driveLoad(opId, entry.id)
+          alreadyPresent.push(entry.id)
         }
-        yield* driveUpload(opId, 1, entry.node, entry.id, entry.bytes)
-        transferred.push(entry.id)
-      } else if (status === "present") {
-        const opId = yield* allocateOpId
-        yield* driveLoad(opId, entry.id)
-        alreadyPresent.push(entry.id)
       }
     }
 
-    const closure = graph
-      .map((entry) => entry.id)
-      .filter((id) => id !== root)
+    const closure = ids.filter((id) => id !== root)
     yield* publish(root, closure)
     return { transferred, alreadyPresent }
   })

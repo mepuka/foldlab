@@ -29,7 +29,7 @@ import {
   CasRemoteConfig,
   RemoteAuthority,
 } from "../../src/cas/Remote.ts"
-import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
+import { encodeCasNode, makeMemoryCasStore, makeSha256Address } from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
 import { makeRemoteAdapter, type RemoteAdapter } from "../../src/internal/remote.ts"
 import { encodeCapabilityDocument } from "../../src/internal/remoteControl.ts"
@@ -52,6 +52,9 @@ import { HostilePeer, type HostileFault } from "./harness/HostilePeer.ts"
 import { ReferencePeer } from "./harness/ReferencePeer.ts"
 import { serveGatedPeer } from "./harness/GatedPeer.ts"
 import { awaitPeerSocketsReleased } from "./harness/ConformancePeer.ts"
+import { admitGraphBottomUp } from "./fixtures/Graph.ts"
+import { freshPush } from "./fixtures/Profiles.ts"
+import { buildScenario } from "./fixtures/Sync.ts"
 import {
   remoteStepLayer,
   type RemoteBytes,
@@ -675,6 +678,7 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
       expect(endpoint.observe().events?.slice(eventOffset)).toEqual([
         `put:${childId}`,
         `put:${parentId}`,
+        "missing:2",
         `publish:${parentId}`,
       ])
 
@@ -686,6 +690,39 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
     yield* awaitPeerSocketsReleased(endpoint)
     expect(endpoint.observe().openSockets).toBe(0)
   })))
+
+it.effect("push uploads an early batch before the final batch is materialized", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const scenario = buildScenario(freshPush)
+    const endpoint = yield* ReferencePeer.serve({})
+    const remoteConfig = config(endpoint.authority)
+    const address = yield* makeSha256Address
+    const localStore = yield* makeMemoryCasStore(address)
+    const ids = yield* admitGraphBottomUp(localStore, scenario.graph)
+    const root = ids[scenario.graph.root]
+    if (root === undefined) return yield* Effect.die("seeded graph has no root")
+    const transport = yield* makeRemoteHttp(remoteConfig)
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      transport,
+      address,
+      { localStore },
+    )
+
+    const report = yield* adapter.transfer.push(root)
+    expect(report.transferred).toEqual(ids)
+    expect(report.alreadyPresent).toEqual([])
+
+    const events = endpoint.observe().events ?? []
+    const firstUpload = events.findIndex((event) => event.startsWith("put:"))
+    const finalNegotiation = events.findLastIndex((event) => event.startsWith("missing:"))
+    expect(firstUpload).toBeGreaterThanOrEqual(0)
+    expect(finalNegotiation).toBeGreaterThan(firstUpload)
+    expect(events.at(-1)).toBe(`publish:${root}`)
+    expect(endpoint.observe().putIds).toEqual(ids)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  }).pipe(Effect.provide(TestCrypto))))
 
 it.effect("push fails closed when a missing plan contradicts machine confirmation", () =>
   Effect.scoped(Effect.gen(function* () {
