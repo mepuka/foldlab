@@ -1,10 +1,11 @@
-# effects — planned Effect-native CAS replay and bounded semantics
+# effects — Effect-native CAS replay and bounded semantics
 
-Status: bare scaffold, 2026-08-26. No semantic contract, public model,
-generator, theorem, or Effect implementation claim has been admitted.
+Status: M0 domain contract ratified by grilling, 2026-08-26. No public model,
+theorem, or Effect implementation claim has been admitted; implementation
+begins at M1.
 
-This mixed TypeScript/Lean library is reserved for a deliberately bounded
-programme. Its proposed first slice is described in
+This mixed TypeScript/Lean library carries a deliberately bounded programme.
+Its ratified first slice is described in
 [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md):
 
 1. implement CAS and replay as public Effect TypeScript services;
@@ -14,10 +15,11 @@ programme. Its proposed first slice is described in
 4. keep model claims, source bridges, implementation observations, compilation,
    and hosted execution at separate claim gates.
 
-The plan is not a ratified semantic contract. The meanings of “accepted,”
-“valid,” “replay,” and the source-to-model relation remain pending domain
-decisions. Compiler acceptance, sampled execution, and a Lean model are
-separate observations and will not be collapsed into one claim.
+The plan's domain contract is ratified: vocabulary, the mismatch taxonomy,
+session semantics, and construction roles are minted in
+[docs/effect-replay/CONTEXT.md](../../docs/effect-replay/CONTEXT.md). Compiler
+acceptance, sampled execution, and a Lean model remain separate observations
+and will not be collapsed into one claim.
 
 The project starts with no Mathlib or external Lake dependencies. Its Lean
 toolchain is pinned in [`lean-toolchain`](lean-toolchain), and the canonical

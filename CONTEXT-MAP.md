@@ -7,6 +7,7 @@
 - [Effect Language Semantics](docs/effect-typescript-semantics/CONTEXT.md): names semantic layers, observations, bridges, and claim strength for selected Effect behavior.
 - [Schema JSON Codec](docs/schema-json/CONTEXT.md): names the source topology and modeling terms available to a future domain decision.
 - [Entity Store](docs/entity-store/CONTEXT.md): owns the content-addressed store's vocabulary — admissibility, verdicts, canonical spelling, and the store's minted rules.
+- [Effect Replay](docs/effect-replay/CONTEXT.md): owns the CAS replay library's vocabulary — operation descriptions, histories, sessions, decision traces, the mismatch taxonomy, witnesses, and the replay contract's minted rules. Fully independent of the Entity Store context.
 
 ## Relationships
 
@@ -19,6 +20,9 @@
 - **Source Provenance → Entity Store**: the pinned Effect bytes behind MAPPING's dispositions name resolved artifacts or stay pending.
 - **Effect Language Semantics → Entity Store**: supplies the claim vocabulary; the correspondence lane's model-vs-pinned-implementation business stays its own, gated separately.
 - **Entity Store → Schema JSON Codec**: the store's carrier is the lab-owned projection the codec context described; dispositions live in the store context's MAPPING.
+- **Lab Core → Effect Replay**: supplies the artifact, grade, and evidence vocabulary.
+- **Source Provenance → Effect Replay**: the pinned Effect revision and any runtime-file evidence name resolved artifacts or stay explicitly pending.
+- **Effect Language Semantics → Effect Replay**: supplies the claim ladder and layer vocabulary; model, extraction, implementation, compilation, and host claims stay distinct.
 
 ## Shared evidence
 

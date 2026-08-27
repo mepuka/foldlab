@@ -1,6 +1,8 @@
 # Effect-native CAS replay library — implementation plan
 
-Status: Pass-A implementation plan, pending domain ratification, 2026-08-26
+Status: Pass-A implementation plan; M0 domain contract ratified by grilling,
+2026-08-26. Vocabulary is owned by
+[docs/effect-replay/CONTEXT.md](../../docs/effect-replay/CONTEXT.md)
 Claim posture: planning input only; no model, specification, source-bridge, or
 implementation-conformance claim is admitted by this document
 
@@ -24,12 +26,12 @@ replay:
 > rejection at the first divergence, consumes no occurrence beyond it, and
 > still never selects live delegation.
 
-That sentence is a pending model-contract target, not a current claim. The
-TypeScript side has a deliberately weaker first boundary: ordinary orchestration
-is admitted by a documented discipline rather than by a source checker. G2
-traceability must retain that quantifier mismatch. Its final quantifiers,
-observations, and vocabulary require domain-modeling and grilling before any
-declarations or public interface are promoted.
+That sentence is the ratified model-contract target (M0, 2026-08-26), not a
+current claim. The TypeScript side has a deliberately weaker first boundary:
+ordinary orchestration is conforming under a documented discipline rather than
+admitted by a source checker. G2 traceability must retain that quantifier
+mismatch. Exact declaration names and types remain Pass-B work; the minted
+vocabulary lives in the owning context document.
 
 For this slice, matching separates two checks with distinct rejection
 categories. Request-side compatibility compares what the running program emits
@@ -110,7 +112,8 @@ Either route adopts the machine's hash-hypothesis lattice:
 
 ## 3. Pending domain contract
 
-Names in this section are working role labels, not minted estate definitions.
+Names in this section are minted in the Effect Replay context document; this
+section is the design view and defers to it.
 
 ### Objects
 
@@ -124,14 +127,21 @@ Names in this section are working role labels, not minted estate definitions.
   JSON encoding is never the digest pre-image.
 - **History entry:** one logical operation occurrence, retaining request,
   decision, outcome, and predecessor information.
-- **Replay session:** replay mode, execution identity, history root, current
-  flat-history cursor, ordered decision trace, and first mismatch if one occurs.
+- **Replay session:** mode, execution identity, history root, current
+  flat-history cursor, ordered decision trace, and poisoned state. A
+  record-mode append failure poisons the session: every later wrapped
+  operation fails with a typed error, so histories are truthful prefixes,
+  never gapped subsequences.
 - **Service adapter:** an implementation of an existing Effect service
   interface that delegates each described operation through the replay
   service.
-- **Replay witness:** immutable account of the mode, consumed history, decision
-  trace, and terminal result or mismatch. It does not identify a program in the
-  first slice.
+- **Session outcome:** tagged result of a session: `Completed` with the
+  terminal; `Rejected` with category, position, and — for the
+  unconsumed-suffix case only — the program's terminal so far; or `Violated`
+  with the ambient-service violation.
+- **Replay witness:** immutable account of the mode, execution identity,
+  consumed history, decision trace, and session outcome. It carries execution
+  identity and never program identity.
 
 ### Operations
 
@@ -163,6 +173,17 @@ The remaining observations are:
 Allocation, wall-clock cost, tracing, Effect's internal Context representation,
 layer memoization, and runtime primitive steps are not initial observations.
 
+### Mismatch taxonomy
+
+Six ratified categories. Request-side, checked against the entry at the
+cursor: operation mismatch, revision mismatch, request mismatch, and history
+exhausted. Completion-side: unconsumed suffix. Outcome-side, checked at
+consumption: outcome inadmissible. "Order mismatch" is deliberately not a
+category — under exact positional matching it always manifests as a
+request-side case at the current position. CAS storage failures are a distinct
+typed error family, never mismatch categories; ambient-service violations are
+a distinct session-outcome case.
+
 ### Initial equalities and distinctions
 
 - CAS nodes are equal when their admitted canonical representations are equal;
@@ -193,11 +214,15 @@ Initial scope:
   audit; and
 - public Effect imports only.
 
-Admitted orchestration must not perform ambient host effects or consult
+Conforming orchestration must not perform ambient host effects or consult
 Effect-provided default services such as Clock or Random except through a
-described leaf operation. `R = never` is not treated as evidence of purity. The
-first implementation either rejects time/random/jittered scheduling from the
-admitted examples or provides explicitly selected deterministic overrides.
+described leaf operation. `R = never` is not treated as evidence of purity.
+The ratified policy is reject-first: time, randomness, and jittered scheduling
+are rejected from conforming examples; replay-mode sessions install tripwire
+Clock/Random defaults that surface ambient use as a `Violated` session outcome
+(mechanism verified against the pinned surface at M1); deterministic overrides
+are deferred until a fixture demands one. The raw-host channel (`Date.now`)
+remains discipline plus permanent counterexample fixtures.
 
 Deferred:
 
@@ -256,7 +281,7 @@ arbitrary Effect programs.
 | --- | --- |
 | Assumptions | Project-owned deterministic canonical byte codec; explicit `hInj` only for Level-1 address reflection; described orchestration performs no ambient host effect and consults no default Clock/Random service except through described operations; live adapters obey their declared request/result Schemas |
 | Lean facts to establish | Replay determinism; fail-closed mismatch; exact consumption; replay traces never select live delegation; occurrence distinctness; CAS graph well-formedness; interpreter composition laws |
-| G2 traceability limitation | Lean quantifies over reified admitted programs; ordinary TypeScript orchestration is admitted only by discipline until a source judgment exists |
+| G2 traceability limitation | Lean quantifies over reified admitted programs; ordinary TypeScript orchestration is discipline-conforming until a source judgment exists |
 | TypeScript facts to test | Schema decoding/encoding behavior; Effect service/layer wiring; replay construction without a live dependency; adapter delegation; decision-trace agreement on fixtures; store corruption/error handling; package public imports |
 | Deployment facts to monitor later | Filesystem atomicity; process crash windows; remote availability; host runtime/compiler versions; digest implementation behavior; secret handling |
 
@@ -273,7 +298,7 @@ The plan uses them to select an abstraction rather than reproduce the runtime.
 | `Schema` | Validate durable node, operation, request, outcome, error, and witness representations | Project-owned value relations and codec obligations; no digest-byte authority | Full SchemaAST and effectful transformations |
 | `Exit` / `Cause` | Retain success versus admitted typed failure | Initial two-case outcome with a later embedding into richer causes | Defects, interruption, annotations, finalizer failures |
 | `Ref` or `SynchronizedRef` | Possible implementation carrier for session state | Explicit immutable replay state and transition function | Concurrency and atomic multi-step updates |
-| `Clock`, `Random`, `Schedule` | Forbidden in admitted orchestration unless mediated or deterministically overridden | Absent from the first model | Default services and jitter bypass the visible `R` requirements |
+| `Clock`, `Random`, `Schedule` | Rejected in conforming orchestration; replay-mode tripwire defaults surface ambient use | Absent from the first model | Default services and jitter bypass the visible `R` requirements |
 | `Crypto` or platform digest | Concrete digest adapter | Abstract address function with Level-0 laws and explicit Level-1 `hInj` | Concrete algorithm, collisions, and host/FFI behavior |
 | `Scope`, `Fiber`, `Scheduler` | Excluded | Absent | Resources, cancellation, nondeterminism |
 | `unstable/eventlog`, `unstable/persistence`, `unstable/workflow` | Prior-art inspection only | No semantic authority | Version-sensitive dependency and mismatched workflow contract |
@@ -318,21 +343,29 @@ Names remain provisional until the domain contract is ratified.
 | Decision | Define the reducer's decision cases and normalized trace | Case constructors, trace encoding, and derived projections such as live invocation |
 | Replay reducer | Pure transition from state and request to decision, result, and new state | Flat cursor, decision trace, mismatch, and exact-consumption rules |
 | Replay service | Expose reducer-driven operations in Effect and own a session | `Ref`/state carrier, store calls, Schema errors |
-| Service adapter | Produce the original Effect service interface from a live implementation plus operation descriptions | Method interception and operation-to-method routing |
+| Service adapter | Kit constructor producing the live role tag plus record/replay constructions for one described service | Method interception, operation-to-method routing, runtime wrap brand |
 | Witness | Finalize and encode replay evidence | Root assembly and observation normalization |
 
 ### Public interface constraints
 
 - A pre-existing service can be wrapped only with explicit method/operation
   descriptions; TypeScript reflection is insufficient.
-- The live implementation and public wrapped service must occupy distinct
-  construction roles, preventing accidental recursive lookup or double wrap.
+- One kit constructor per described service mints an internal live role tag
+  and returns the record and replay constructions; a by-value overload builds
+  on it. Wrapper bodies never resolve the public tag — a named defect with a
+  must-fail fixture.
+- Wrapped services carry a runtime string-keyed brand checked at construction;
+  double wrapping is rejected with a typed error, never normalized. Type-level
+  brands are ruled out by caller-facing type identity.
 - The replay-mode adapter constructor must not require or receive the live
   service. Its Effect environment contains replay dependencies only. Record
   construction receives the live service separately. Capturing a live reference
   before replay construction is a named residual risk and a rejected design.
 - The caller-facing service method types should not expose CAS internals.
 - CAS storage failures and replay mismatches remain distinct typed errors.
+- Replay rejections and violations travel from wrapped methods to the session
+  boundary through a named defect-class transport seam; caller-facing method
+  types stay byte-identical across live, record, and replay modes.
 - Digest pre-images come only from the project-owned framed canonical encoder;
   Schema's default JSON encoding is never hashed.
 - Layer constructors accept dependencies; they do not create hidden global
@@ -474,12 +507,15 @@ Replay state:
 - successful complete replay consumes exactly the declared history;
 - record mode extends history by one occurrence while leaving its prefix
   unchanged;
-- identical invocation content does not collapse distinct occurrences; and
+- identical invocation content does not collapse distinct occurrences;
+- an append-failed record session admits no further occurrences, and its
+  history is a prefix of the record-mode trace; and
 - terminal histories reject ordinary appended entries.
 
 Composition:
 
-- interpretation respects `return` and sequential `bind`;
+- interpretation respects `return` and sequential `bind` across both outcome
+  cases (success and typed failure);
 - wrapping a handler commutes with sequential program interpretation under
   explicit state threading;
 - extending the environment with an unrelated service leaves existing
@@ -489,7 +525,8 @@ Composition:
 - double wrapping is rejected or normalized according to one ratified policy.
 
 Framed child histories and opaque substitution of an outer orchestration
-service are M5 obligations, not part of the M3 theorem inventory.
+service are deferred to the M7 extension list and are not part of the M3–M5
+theorem inventory.
 
 The machine/direct agreement theorem for this slice should compare the reified
 program interpreter with the reducer-driven interpreter, not with arbitrary
@@ -507,8 +544,8 @@ JavaScript execution.
    checked translations?
 5. Do the effects CAS kinds instantiate the pre-grade machine algebra directly,
    or discharge a deliberately forked copy of its obligation shapes?
-6. When M5 begins, does an opaque outer occurrence retain one child-root
-   reference or an exact start/end interval?
+6. If the opaque extension is admitted at M7, does an opaque outer occurrence
+   retain one child-root reference or an exact start/end interval?
 
 ## 7. Obligation ledger
 
@@ -523,13 +560,14 @@ IDs are provisional planning identifiers.
 | `RPL-002` | Replay-mode decision traces never select live delegation, and replay construction has no live-service requirement | Lean theorem at M3; layer typecheck and controlled TS fake at M4 | live dependency appears in replay construction or live counter increments | service adapter/runtime |
 | `RPL-003` | Matching consumes exactly the permitted occurrence | Lean theorem and fixtures | skip, duplicate, or reuse one occurrence | reducer mirror |
 | `RPL-004` | Mismatch fails closed | Lean theorem and integration test | missing entry falls back to live adapter | adapter wiring |
-| `RPL-005` | Completion rejects unconsumed suffix entries | Lean theorem and fixture | same final value hides an extra history call | observation normalizer |
-| `CMP-001` | Sequential interpretation threads replay state compositionally | Lean bind/interpreter law | nested call resets or forks the cursor | session state carrier |
+| `RPL-005` | Completion rejects unconsumed suffix entries; the rejection carries the program's terminal so far | Lean theorem and fixture | same final value hides an extra history call | observation normalizer |
+| `SES-001` | Record-mode append failure poisons the session; histories are truthful prefixes, never gapped subsequences | Lean record-mode theorem and fault-injection integration test | a caught store error lets later appends continue | store adapter and session state |
+| `CMP-001` | Sequential interpretation threads replay state compositionally across success and typed-failure outcomes | Lean bind/interpreter law over both cases | nested call resets or forks the cursor | session state carrier |
 | `CMP-002` | Identical requests remain separate occurrences | Lean theorem and repeated-call fixture | CAS deduplication shortens history | CAS storage versus history seam |
-| `CMP-003` | M5 transparent and opaque policies have distinct, declared framed traces | two semantic rules and tests | outer substitution silently leaves child cursor inconsistent | policy adapter |
+| `CMP-003` | Deferred to M7: transparent and opaque policies have distinct, declared framed traces | two semantic rules and tests, when admitted | outer substitution silently leaves child cursor inconsistent | policy adapter |
 | `CTX-001` | Wrapped service construction supplies the same caller-facing interface without recursive lookup | TypeScript typecheck and layer integration tests | wrapper resolves itself as its live dependency | Context/Layer wiring |
-| `CTX-002` | Admitted orchestration cannot consult default Clock/Random behavior without mediation or deterministic override | admission rule and negative integration fixtures | jittered retry or default time/random changes the trace | Effect default services |
-| `ADM-001` | G2 traceability distinguishes reified Lean-program quantification from discipline-admitted TypeScript orchestration | contract review and claim matrix | model theorem is presented as universal over ordinary TS programs | source-admission boundary |
+| `CTX-002` | Conforming orchestration cannot consult default Clock/Random behavior; replay-mode tripwires surface ambient use as a `Violated` outcome | conformance rule, tripwire defaults, and negative integration fixtures | jittered retry or default time/random changes the trace | Effect default services |
+| `ADM-001` | G2 traceability distinguishes reified Lean-program quantification from discipline-conforming TypeScript orchestration | contract review and claim matrix | model theorem is presented as universal over ordinary TS programs | source-admission boundary |
 | `BRG-001` | Model fixtures and TS reducer compare one declared normalized decision trace | generated manifest and differential suite | comparator drops live-delegation or mismatch decisions | manual reducer mirror |
 | `BRG-002` | Pinned Effect integration agrees on the enumerated domain | reproducible G4 observations | runtime/version/config drift | compiler, bun/node, Effect runtime |
 | `DUR-001` | No exactly-once claim crosses the live-action/history-append crash gap | contract review and fault test | external action succeeds, append fails | external system and persistence |
@@ -546,7 +584,8 @@ IDs are provisional planning identifiers.
    sessions, typed failure propagation, and controlled live-adapter counters.
 4. **Composition tests:** orchestration calling two wrapped leaf services,
    repeated identical calls, transparent nesting, and recovery after a
-   substituted typed failure. Opaque subtree skipping begins at M5.
+   substituted typed failure. Opaque subtree skipping begins with the M7
+   extension.
 5. **Lean examples and theorems:** positive witnesses, invalid examples, state
    invariants, reducer laws, and composition laws.
 6. **Differential fixtures:** one versioned case manifest interpreted by the
@@ -574,11 +613,13 @@ allowed in the initial suite.
 - corrupt/dangling CAS reference;
 - transparent orchestration with replayed leaves;
 - forbidden or deterministically overridden Clock/Random/default-service use;
-- store failure before append and after live completion; and
-- attempted double wrap or ambient host access in an admitted example.
+- store failure before append and after live completion;
+- a poisoned session refusing further operations after an append failure; and
+- attempted double wrap, and ambient host access inside supposedly conforming
+  orchestration.
 
-M5 adds framed-history fixtures for opaque outer substitution and child-root or
-interval semantics.
+Framed-history fixtures for opaque outer substitution arrive with the M7
+extension, not before.
 
 Generated observations must be reproducible from declared sources through mise
 tasks. Handwritten scenarios may be canonical inputs; derived snapshots may not
@@ -587,6 +628,10 @@ be silently hand-maintained.
 ## 9. Staged implementation
 
 ### M0 — ratify the contract
+
+Status: completed 2026-08-26. The vocabulary and rulings landed in
+`docs/effect-replay/CONTEXT.md`; the deliverables below stand as the record of
+what was decided.
 
 Deliverables:
 
@@ -695,8 +740,9 @@ Deliverables:
 - transparent orchestration and substituted leaf operations;
 - integration fakes exposing live invocation counts;
 - typed mapping of CAS, decode, live-service, and mismatch failures;
-- admission checks or deterministic overrides for default services; and
-- negative/default-override fixtures for Clock, Random, and jittered scheduling.
+- replay-mode tripwire defaults for Clock and Random; and
+- negative fixtures for Clock, Random, and jittered scheduling surfacing as
+  `Violated` session outcomes.
 
 Exit:
 
@@ -711,19 +757,16 @@ Deliverables:
 
 - two independent described leaf services and one orchestration service;
 - shared-session state threading across nested calls;
-- optional framed-history extension for opaque substitution of an outer
-  orchestration operation;
 - Lean handler/environment extension and bind laws; and
-- composition fixtures covering repeats, nested failure, recovery, mismatches,
-  and—if admitted here—opaque subtree skipping.
+- composition fixtures covering repeats, nested failure, recovery, and
+  mismatches.
 
 Exit:
 
 - `CMP-001` and `CMP-002` hold for the selected model;
 - a replayed orchestration consumes the expected nested history;
-- if outer opaque substitution is admitted, `CMP-003` holds and its child-
-  history rule is explicit; otherwise it remains deferred without blocking the
-  transparent core.
+- outer opaque substitution stays on the M7 extension list and does not block
+  the transparent core.
 
 ### M6 — correspondence and public library gate
 
@@ -747,13 +790,16 @@ Exit:
 
 Add one semantic dimension per milestone:
 
-1. defect and interruption distinctions;
-2. sequential Scope/finalizer behavior;
-3. crash-aware journaling and filesystem CAS;
-4. ActionIndex with an explicit recomputation/cache consumer;
-5. checkpoints and retention;
-6. nondeterministic choice; and
-7. fibers, causal histories, races, and cancellation.
+1. framed histories and opaque substitution of an outer orchestration
+   operation;
+2. defect and interruption distinctions;
+3. sequential Scope/finalizer behavior;
+4. crash-aware journaling and filesystem CAS (write-ahead intent entries
+   narrow, never close, the crash gap);
+5. ActionIndex with an explicit recomputation/cache consumer;
+6. checkpoints and retention;
+7. nondeterministic choice; and
+8. fibers, causal histories, races, and cancellation.
 
 Each extension re-enters Pass A and receives its own observation profile,
 counterexamples, theorem delta, fixtures, and claim gate. Concurrency does not
@@ -780,7 +826,7 @@ bridge automatically.
 
 The G2 traceability matrix must state that the Lean theorem ranges over the
 reified admitted program carrier, while ordinary TypeScript orchestration is
-only discipline-admitted in the first release. No wording may silently replace
+only discipline-conforming in the first release. No wording may silently replace
 the former quantifier with "all Effect programs" or "all programs using the
 service."
 
@@ -822,40 +868,58 @@ Primary risks:
 | Model/TS reducer drift | Shared versioned fixtures, differential tests, and independent review |
 | Hash or codec is treated as mathematical authority | Use the Level-0/Level-1/empty-Level-2 lattice and keep concrete adapters outside model claims |
 | Schema JSON bytes drift across Effect versions | Hash only the project-owned framed canonical encoding |
-| Default Clock/Random services bypass visible requirements | Reject or deterministically override them in admitted orchestration |
+| Default Clock/Random services bypass visible requirements | Reject them in conforming orchestration; tripwire defaults in replay mode |
 | Replay history is mistaken for program identity | State the weakening in the contract, witness, fixtures, and G2 matrix |
 | Crash after live effect but before append | Make the gap observable; prohibit exactly-once language |
 | Unstable Effect workflow/eventlog APIs dictate the contract | Use only as version-sensitive prior art; own the public interface |
-| Scope expands to arbitrary Effect programs | Enforce the admitted leaf-operation boundary and retain the ambient-effect counterexample |
+| Scope expands to arbitrary Effect programs | Enforce the described leaf-operation boundary and retain the ambient-effect counterexample |
 
-## 12. Decisions required before M1
+## 12. Decisions ratified before M1 (2026-08-26)
 
-The next ratification session must decide:
+The M0 grilling session resolved every open decision:
 
-1. whether effects CAS kinds instantiate the pre-grade machine algebra or
-   deliberately fork its obligation shapes while retaining the same hash
-   lattice;
-2. exact names and owning context for CAS node, operation description, history
-   occurrence, replay session, and replay witness;
-3. exact project-owned canonical node representation, framing, scalar encoding,
-   and digest-domain policy;
-4. occurrence identity and how repeated identical invocations are represented
-   in the initial flat history;
-5. the first supported typed-failure representation;
-6. the service-lifting interface and separate record/replay construction roles
-   for an already-defined Effect service;
-7. the Clock/Random/default-service admission and deterministic-override policy;
-8. whether M5 admits opaque outer substitution and, if so, its framed-child
-   rule;
-9. the initial package name and public/private publication posture;
-10. ratification of the mixed TypeScript/Lean placement under `library/` and the
-    corresponding `AGENTS.md` orientation change; and
-11. the provenance disposition for the local compilation-techniques PDF.
+1. **Machine relationship:** deliberate fork of the machine's obligation
+   shapes; no Lake or code dependency on `library/machine`; the hash lattice
+   is adopted; the M2 mapping table is the standing correspondence audit;
+   convergence to instantiation is expected only after the machine algebra is
+   itself ratified.
+2. **Names and context:** the Effect Replay context is minted at
+   `docs/effect-replay/CONTEXT.md`, fully independent of the Entity Store
+   context, with four lexical rules (compound-named admission judgments,
+   "conforming" for discipline, no "verdict", "canonical" glossed).
+3. **Canonical representation:** pre-image
+   `versionByte ++ kindTag ++ frame(encode(canon node))`; one-byte kind plane;
+   references inside the framed body as full-length addresses in declared
+   order; no digest truncation; SHA-256 platform crypto as the first adapter;
+   any pre-image-affecting change bumps the scheme version byte. Byte-level
+   framing and scalar encodings are Pass-B work.
+4. **Occurrence identity:** structural `(executionId, index)`;
+   request-content-keyed reuse answering an occurrence is a named defect.
+5. **Typed failures:** Schema-tagged data values in a channel-preserving
+   success/failure envelope; nothing host-shaped is recorded.
+6. **Service lifting:** one kit constructor per described service minting an
+   internal live role tag; record requires the live role and replay service,
+   replay requires the replay service only; runtime string-keyed brand checked
+   at construction; double wrap rejects.
+7. **Ambient policy:** reject-first; replay-mode tripwire Clock/Random
+   defaults surfacing as `Violated` (mechanism verified at M1); deterministic
+   overrides deferred until a fixture demands one.
+8. **Opaque substitution:** deferred to the M7 extension list; M5 is
+   transparent chaining only.
+9. **Package:** private until the M6 gate; name candidate
+   `@foldlab/effect-replay`, final at M1.
+10. **Placement:** mixed TypeScript/Lean tenant ratified under `library/`;
+    the `AGENTS.md` orientation row is updated accordingly.
+11. **Compilation-techniques PDF:** the local copy stays gitignored;
+    paper-lock admission is queued for the papers-lock landing session; no
+    estate citation until admitted.
 
-The initial reducer strategy is no longer open: it is a small manual TypeScript
-mirror checked by normalized decision-trace fixtures. ActionIndex is also no
-longer a first-slice decision; it begins only with a recomputation/cache
-consumer.
+The reducer strategy was closed before the session: a small manual TypeScript
+mirror checked by normalized decision-trace fixtures. ActionIndex begins only
+with a recomputation/cache consumer.
 
-No implementation milestone begins until these choices are reviewed against
-the positive, negative, boundary, and overclaim cases above.
+Every positive, negative, boundary, and overclaim case in section 3 was
+grilled in the ratification session; the session-boundary transport, mismatch
+taxonomy, session poisoning, tripwire policy, and construction-role rulings
+recorded above and in the context document came out of those cases. M1 may
+begin.
