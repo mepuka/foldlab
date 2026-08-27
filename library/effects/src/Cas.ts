@@ -76,6 +76,7 @@ export type {
 export {
   CasRemoteConfig as RemoteConfig,
   CasRemoteError as RemoteError,
+  DefaultDecisionTranscriptCapacity,
   RedirectPolicy,
   RemoteAuthority,
   RemoteAuthorityMode,

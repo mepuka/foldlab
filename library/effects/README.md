@@ -141,8 +141,10 @@ Cold-pull limitation (deferred pull-staging boundary): a cold replica cannot yet
 reference-carrying parent when its children are absent locally. Parent
 admission therefore returns `RemoteFailure` wrapping `DanglingReference`;
 discovery-order closure pulling remains a later slice. The adapter's diagnostic
-decision transcript is intentionally unbounded and is not a production
-telemetry buffer.
+decision transcript is a most-recent ring capped by
+`decisionTranscriptCapacity` (default 4096); snapshots report how many older
+entries were dropped. It remains diagnostic state, not a production telemetry
+buffer.
 
 ## Usage sketch
 

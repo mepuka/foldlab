@@ -193,6 +193,7 @@ const config = (
     readonly maxQueuedBytes: number
     readonly maxAttempts: number
     readonly operationDeadlineMs: number
+    readonly decisionTranscriptCapacity: number
   }> = {},
 ) => new CasRemoteConfig({
   authority: RemoteAuthority.make(authority),
@@ -203,6 +204,9 @@ const config = (
   maxQueuedBytes: overrides.maxQueuedBytes ?? 4096,
   maxAttempts: overrides.maxAttempts ?? 1,
   operationDeadlineMs: overrides.operationDeadlineMs ?? 5_000,
+  ...(overrides.decisionTranscriptCapacity === undefined
+    ? {}
+    : { decisionTranscriptCapacity: overrides.decisionTranscriptCapacity }),
   redirectPolicy: { maxRedirects: 0, crossOrigin: "deny" },
 })
 
@@ -252,6 +256,30 @@ it.effect("reference cas-http/0 shares admission state across CasStore and CasTr
       expect(endpoint.observe().openSockets).toBe(0)
     }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
   })))
+
+it.effect("remote snapshots retain a bounded decision tail and dropped count", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const endpoint = yield* ReferencePeer.serve({})
+    const remoteConfig = config(endpoint.authority, {
+      decisionTranscriptCapacity: 3,
+    })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+    )
+
+    for (let value = 0; value < 5; value += 1) {
+      yield* adapter.store.put(node([value], 80 + value))
+    }
+    const snapshot = yield* adapter.snapshot
+    expect(snapshot.decisions).toHaveLength(3)
+    expect(snapshot.droppedDecisions).toBeGreaterThan(0)
+    expect(snapshot.decisions.at(-1)?.op).toBe(6)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
+  }).pipe(Effect.provide(TestCrypto))))
 
 it.effect("RMT-002 rejects a declared oversize before any response body is read or admitted", () =>
   Effect.scoped(Effect.gen(function* () {

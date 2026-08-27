@@ -26,6 +26,7 @@ import {
 } from "../cas/Node.ts"
 import {
   RemoteBudgetError,
+  DefaultDecisionTranscriptCapacity,
   RemoteIntegrityError,
   RemotePolicyError,
   RemoteProtocolError,
@@ -72,6 +73,7 @@ import {
 interface MachineRuntime {
   readonly machine: MachineState<ContentId, Uint8Array>
   readonly decisions: ReadonlyArray<TaggedDecision<ContentId, Uint8Array>>
+  readonly droppedDecisions: number
 }
 
 const wrapRemoteFailure = (error: CasError | CasRemoteError): CasError => {
@@ -89,6 +91,7 @@ const wrapRemoteFailure = (error: CasError | CasRemoteError): CasError => {
 
 export interface RemoteMachineSnapshot {
   readonly decisions: ReadonlyArray<TaggedDecision<ContentId, Uint8Array>>
+  readonly droppedDecisions: number
   readonly cacheSize: number
   readonly confirmedSize: number
   readonly inFlightSize: number
@@ -245,9 +248,12 @@ export const makeRemoteAdapter = (
   options: RemoteAdapterOptions = {},
 ): Effect.Effect<RemoteAdapter, CasRemoteError> => Effect.gen(function* () {
   const localStore = options.localStore ?? (yield* makeMemoryCasStore(address))
+  const decisionCapacity = config.decisionTranscriptCapacity
+    ?? DefaultDecisionTranscriptCapacity
   const runtime = yield* SynchronizedRef.make<MachineRuntime>({
     machine: initialMachineState(),
     decisions: [],
+    droppedDecisions: 0,
   })
   const nextOpId = yield* Ref.make(1)
 
@@ -268,9 +274,12 @@ export const makeRemoteAdapter = (
           && Equal.equals(key, verification.key)
           && Equal.equals(bytes, verification.bytes),
       }, current.machine, input)
+      const appended = [...current.decisions, ...output.decisions]
+      const overflow = Math.max(0, appended.length - decisionCapacity)
       return [output, {
         machine: output.state,
-        decisions: [...current.decisions, ...output.decisions],
+        decisions: overflow === 0 ? appended : appended.slice(overflow),
+        droppedDecisions: current.droppedDecisions + overflow,
       }] as const
     })
 
@@ -1346,6 +1355,7 @@ export const makeRemoteAdapter = (
 
   const snapshot = SynchronizedRef.get(runtime).pipe(Effect.map((current) => ({
     decisions: current.decisions,
+    droppedDecisions: current.droppedDecisions,
     cacheSize: HashSet.size(current.machine.cache),
     confirmedSize: HashSet.size(current.machine.confirmed),
     inFlightSize: HashMap.size(current.machine.inFlight),

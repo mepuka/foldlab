@@ -212,6 +212,10 @@ export const RedirectPolicy = Schema.Struct({
 })
 export type RedirectPolicy = typeof RedirectPolicy.Type
 
+/** Default number of most-recent remote machine decisions retained for
+ * diagnostics by one acquired adapter. */
+export const DefaultDecisionTranscriptCapacity = 4_096
+
 /**
  * Explicit remote policy. Credentials are accepted only as Redacted values;
  * no error or transcript type has a field capable of carrying them.
@@ -228,6 +232,7 @@ export class CasRemoteConfig extends Schema.Class<CasRemoteConfig>("CasRemoteCon
   maxQueuedBytes: PositiveCount,
   maxAttempts: PositiveCount,
   operationDeadlineMs: PositiveCount,
+  decisionTranscriptCapacity: Schema.optionalKey(Count),
   redirectPolicy: RedirectPolicy,
   credentials: Schema.optionalKey(Schema.Redacted(Schema.String, {
     disallowJsonEncode: true,
