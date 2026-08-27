@@ -5,7 +5,7 @@
  * admits them — history chaining under the history tag and decoded
  * witnesses under the witness tag. The per-file copies these replace had
  * quietly diverged in what they collected. */
-import { Effect, Encoding, Schema } from "effect"
+import { Effect, Encoding, Option, Schema } from "effect"
 import { ContentId } from "../../src/cas/Node.ts"
 import { decodeCasNode, type CasAddress } from "../../src/cas/Store.ts"
 import { HistoryKindTag, WitnessKindTag } from "../../src/internal/kindTags.ts"
@@ -54,7 +54,7 @@ export const trackingAddress = (): TrackingAddress => {
           if (resident !== undefined) return resident
           const id = ContentId.make((next++).toString(16).padStart(64, "0"))
           ids.set(key, id)
-          const decoded = decodeCasNode(canonicalBytes)
+          const decoded = Option.getOrUndefined(decodeCasNode(canonicalBytes))
           if (decoded?.kind.tag === HistoryKindTag) {
             latestHistory = id
             historyParents.set(id, decoded.refs[0]?.id)

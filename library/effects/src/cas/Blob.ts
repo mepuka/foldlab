@@ -112,6 +112,10 @@ export namespace CasBlob {
       ref: BlobRef,
       range: ByteRange,
     ) => Stream.Stream<Uint8Array, CasError | BlobError>
+    readonly readRange: (
+      ref: BlobRef,
+      range: ByteRange,
+    ) => Effect.Effect<Uint8Array, CasError | BlobError>
     readonly inspect: (
       ref: BlobRef,
     ) => Effect.Effect<BlobInfo, CasError | BlobError>
@@ -424,6 +428,18 @@ export namespace CasBlob {
       return yield* join(chunks, plan.totalBytes)
     })
 
+    const readRange = Effect.fn("CasBlob.readRange")(function* (
+      ref: BlobRef,
+      range: ByteRange,
+    ) {
+      const plan = yield* resolve(ref)
+      if (range.length > MaxMaterializedBytes) {
+        return yield* new MaterializationError({ totalBytes: range.length })
+      }
+      const chunks = yield* Stream.runCollect(slicePlan(plan, range))
+      return yield* join(chunks, range.length)
+    })
+
     const put = <E, R>(
       source: Stream.Stream<Uint8Array, E, R>,
     ): Effect.Effect<BlobRef, E | CasError | BlobError, R> => Effect.gen(function* () {
@@ -457,7 +473,7 @@ export namespace CasBlob {
       return BlobRef.make(graph.blobRef)
     })
 
-    return Service.of({ put, get, stream, slice, inspect })
+    return Service.of({ put, get, stream, slice, readRange, inspect })
   }
 
   /** Construct one blob service over the CasStore selected by Layer composition. */
@@ -486,6 +502,15 @@ export namespace CasBlob {
     range: ByteRange,
   ): Stream.Stream<Uint8Array, CasError | BlobError, Service> =>
     Stream.unwrap(Service.use((service) => Effect.succeed(service.slice(ref, range))))
+
+  /** Materialize one byte range as a single buffer. The streaming `slice`
+   * stays the primitive for large ranges; this is the Effect-returning
+   * sibling every small ranged read otherwise hand-writes. */
+  export const readRange = (
+    ref: BlobRef,
+    range: ByteRange,
+  ): Effect.Effect<Uint8Array, CasError | BlobError, Service> =>
+    Service.use((service) => service.readRange(ref, range))
 
   export const inspect = (
     ref: BlobRef,

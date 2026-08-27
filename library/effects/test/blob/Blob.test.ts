@@ -233,6 +233,27 @@ const registerBlobSuite = (
             onSuccess: () => ({ _tag: "Accepted" as const, error: "none" }),
           }),
         ))
+
+      // The Effect-returning sibling materializes exactly the slice bytes
+      // and rejects out-of-range requests through the same validation.
+      yield* assertCaseTable(sliceCases, (range) =>
+        CasBlob.readRange(ref, range).pipe(
+          Effect.map((actual) => ({
+            length: actual.length,
+            matches: bytesEqual(
+              actual,
+              bytes.slice(Number(range.offset), Number(range.offset + range.length)),
+            ),
+          })),
+        ))
+
+      yield* assertCaseTable(invalidSliceCases, (range) =>
+        CasBlob.readRange(ref, range).pipe(
+          Effect.match({
+            onFailure: (error) => ({ _tag: "Rejected" as const, error: error._tag }),
+            onSuccess: () => ({ _tag: "Accepted" as const, error: "none" }),
+          }),
+        ))
     }))
 
   test.effect("equal chunks deduplicate across positions and blobs through ordinary store references", () =>

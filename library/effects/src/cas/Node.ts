@@ -107,3 +107,68 @@ export type CasError =
   | ContentNotFound
   | StoreFailure
   | RemoteFailure
+
+interface CasErrorMembers {
+  readonly AddressMismatch: AddressMismatch
+  readonly NonCanonicalBytes: NonCanonicalBytes
+  readonly UnknownKind: UnknownKind
+  readonly DanglingReference: DanglingReference
+  readonly WrongKindReference: WrongKindReference
+  readonly ContentNotFound: ContentNotFound
+  readonly StoreFailure: StoreFailure
+  readonly RemoteFailure: RemoteFailure
+}
+
+/** The runtime `_tag` of every CAS error member, as typed constants. The
+ * tags are namespaced (`"CasError/..."`) while the exported class names
+ * are not, so a bare class name at a `catchTag` site never matches —
+ * these constants close that gap. */
+export const CasErrorTag = {
+  AddressMismatch: "CasError/AddressMismatch",
+  NonCanonicalBytes: "CasError/NonCanonicalBytes",
+  UnknownKind: "CasError/UnknownKind",
+  DanglingReference: "CasError/DanglingReference",
+  WrongKindReference: "CasError/WrongKindReference",
+  ContentNotFound: "CasError/ContentNotFound",
+  StoreFailure: "CasError/StoreFailure",
+  RemoteFailure: "CasError/RemoteFailure",
+} as const
+
+const casErrorClasses = [
+  AddressMismatch,
+  NonCanonicalBytes,
+  UnknownKind,
+  DanglingReference,
+  WrongKindReference,
+  ContentNotFound,
+  StoreFailure,
+  RemoteFailure,
+] as const
+
+/** Whether a value is a member of the CAS error union — an instance
+ * check against the declared classes, never a tag-prefix heuristic. */
+export const isCasError = (value: unknown): value is CasError =>
+  casErrorClasses.some((member) => value instanceof member)
+
+/** Fold over the CAS error union by member name. Either every member is
+ * handled — the compiler enforces totality — or `onOther` catches the
+ * members left unnamed. */
+export function matchCasError<A>(cases: {
+  readonly [K in keyof CasErrorMembers]: (error: CasErrorMembers[K]) => A
+}): (error: CasError) => A
+export function matchCasError<A>(cases:
+  & { readonly [K in keyof CasErrorMembers]?: (error: CasErrorMembers[K]) => A }
+  & { readonly onOther: (error: CasError) => A }
+): (error: CasError) => A
+export function matchCasError<A>(cases:
+  & { readonly [K in keyof CasErrorMembers]?: (error: CasErrorMembers[K]) => A }
+  & { readonly onOther?: (error: CasError) => A }
+): (error: CasError) => A {
+  return (error) => {
+    const name = error._tag.slice("CasError/".length) as keyof CasErrorMembers
+    const handler = cases[name] as ((error: CasError) => A) | undefined
+    if (handler !== undefined) return handler(error)
+    if (cases.onOther !== undefined) return cases.onOther(error)
+    throw new TypeError(`Unhandled CAS error ${error._tag}`)
+  }
+}

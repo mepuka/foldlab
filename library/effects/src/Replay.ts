@@ -6,8 +6,16 @@
  * Lean model, not for callers.
  */
 
-// The session runtime over a CAS store.
-export { layerReplay as layer, Replay, session } from "./replay/Replay.ts"
+// The session runtime over a CAS store. `Service` aliases the tag so the
+// composed name reads `Replay.Service`, matching the Cas namespace rule.
+export {
+  layerReplay as layer,
+  record,
+  Replay,
+  Replay as Service,
+  replay,
+  session,
+} from "./replay/Replay.ts"
 export type { ReplayShape as Shape } from "./replay/Replay.ts"
 
 // The pure reducer — the model-correspondence artifact.
@@ -56,6 +64,7 @@ export { DoubleWrap, replayable } from "./replay/ServiceAdapter.ts"
 export type {
   Live,
   ReplayableKit,
+  ReplayableLayerKit,
   ReplayableValueKit,
 } from "./replay/ServiceAdapter.ts"
 

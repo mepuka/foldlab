@@ -1,3 +1,10 @@
+/**
+ * Assertion-shape rule (ratified): `toEqual` for values — an added field
+ * is a real difference — and `toMatchObject` only where a payload is
+ * deliberately partial (error evidence whose incidental fields are not
+ * under test). The case-labeled `expect({ case, ... }).toEqual({ case,
+ * ... })` form below is the house shape for row-driven suites.
+ */
 import { expect } from "@effect/vitest"
 import { Context, Effect, Equal, Layer, Schema, type SchemaIssue } from "effect"
 import { readFileSync } from "node:fs"

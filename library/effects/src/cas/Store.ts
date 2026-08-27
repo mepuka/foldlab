@@ -14,6 +14,7 @@ import {
   Effect,
   Encoding,
   Layer,
+  Option,
   PlatformError,
   SynchronizedRef,
 } from "effect"
@@ -97,17 +98,18 @@ export const encodeCasNode = (node: CasNodeInput): Uint8Array => {
 }
 
 /** Closed decoder: parses exactly one canonical node and rejects every
- * truncation, malformed count, or trailing byte. */
-export const decodeCasNode = (bytes: Uint8Array): CasNodeInput | undefined => {
-  if (bytes.length < 10) return undefined
+ * truncation, malformed count, or trailing byte. Returns `Option` like
+ * every other closed decoder in the package. */
+export const decodeCasNode = (bytes: Uint8Array): Option.Option<CasNodeInput> => {
+  if (bytes.length < 10) return Option.none()
 
   const payloadLength = readNat32(bytes, 2)
   const countOffset = 6 + payloadLength
-  if (countOffset + 4 > bytes.length) return undefined
+  if (countOffset + 4 > bytes.length) return Option.none()
 
   const refCount = readNat32(bytes, countOffset)
   const refsOffset = countOffset + 4
-  if (refsOffset + refCount * 33 !== bytes.length) return undefined
+  if (refsOffset + refCount * 33 !== bytes.length) return Option.none()
 
   const refs: Array<{ readonly id: ContentId; readonly expectedTag: number }> = []
   let offset = refsOffset
@@ -118,11 +120,11 @@ export const decodeCasNode = (bytes: Uint8Array): CasNodeInput | undefined => {
     offset += 33
   }
 
-  return CasNodeInput.make({
+  return Option.some(CasNodeInput.make({
     kind: { version: bytes[0] ?? 0, tag: bytes[1] ?? 0 },
     payload: bytes.slice(6, countOffset),
     refs,
-  })
+  }))
 }
 
 const cloneNode = (node: CasNodeInput): CasNodeInput =>
@@ -252,10 +254,12 @@ export const makeMemoryCasStore = (
       }
 
       const canonicalBytes = resident.canonicalBytes.slice()
-      const decoded = decodeCasNode(canonicalBytes)
-      if (decoded === undefined || !bytesEqual(encodeCasNode(decoded), canonicalBytes)) {
+      const decodedNode = decodeCasNode(canonicalBytes)
+      if (Option.isNone(decodedNode)
+        || !bytesEqual(encodeCasNode(decodedNode.value), canonicalBytes)) {
         return yield* new NonCanonicalBytes({ id })
       }
+      const decoded = decodedNode.value
 
       yield* ensureKnownKind(decoded)
       const actual = yield* address.digest(canonicalBytes.slice())

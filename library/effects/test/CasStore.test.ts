@@ -1,5 +1,5 @@
 import { expect, it } from "@effect/vitest"
-import { Effect, Encoding, Schema } from "effect"
+import { Effect, Encoding, Option, Schema } from "effect"
 import {
   Byte,
   CasNodeInput,
@@ -171,14 +171,16 @@ it.effect("CAS-001 consumes every ratified CODEC row structurally", () =>
       if ("node" in row.input) {
         const node = yield* decodeManifestNode(row.input.node)
         const encoded = encodeCasNode(node)
-        const decoded = decodeCasNode(encoded)
+        const decoded = Option.getOrUndefined(decodeCasNode(encoded))
         const actual = {
           bytes: Array.from(encoded),
           roundtrip: decoded !== undefined && nodesEqual(decoded, node),
         }
         return actual
       } else {
-        const decoded = decodeCasNode(Uint8Array.from(row.input.bytes))
+        const decoded = Option.getOrUndefined(
+          decodeCasNode(Uint8Array.from(row.input.bytes)),
+        )
         const actual = {
           decoded: decoded === undefined ? null : manifestNodeFromCas(decoded),
         }

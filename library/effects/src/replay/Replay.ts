@@ -805,3 +805,21 @@ export const session = <A, E, R>(
   options: SessionOptions<A, E>,
 ): Effect.Effect<SessionResult<A, E>, CasError, R | Replay> =>
   Replay.use((replay) => replay.run(program, options))
+
+/** Record a run. A thin wrapper over `session` whose type cannot carry a
+ * history root — recording never consumes one. */
+export const record = <A, E, R>(
+  program: Effect.Effect<A, E, R>,
+  options?: Omit<SessionOptions<A, E>, "mode" | "history">,
+): Effect.Effect<SessionResult<A, E>, CasError, R | Replay> =>
+  session(program, { ...options, mode: "record" })
+
+/** Replay a run against its recorded history. The root is positional and
+ * required — a replay without a history is not expressible here, where
+ * the flat `session` options accept the meaningless combination. */
+export const replay = <A, E, R>(
+  program: Effect.Effect<A, E, R>,
+  history: ContentId,
+  options?: Omit<SessionOptions<A, E>, "mode" | "history">,
+): Effect.Effect<SessionResult<A, E>, CasError, R | Replay> =>
+  session(program, { ...options, mode: "replay", history })

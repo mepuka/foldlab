@@ -44,12 +44,16 @@ per plane. Inside a namespace the `Cas` prefix of internal module names drops:
 the store tag is `Cas.Store`, the transfer tag is `Cas.Transfer`, the blob
 surface is `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
 
-- `Cas` carries the node Schemas, clause-named errors, and content
-  identifiers; the `Store` service tag with the isolated in-memory adapter
-  (`Cas.layerMemory`) and the scheme-0 canonical node codec
-  (`Cas.encodeNode`/`Cas.decodeNode`); the `value` typed-value projection and
-  `service` eager hydration descriptor; verified blob reads and recipe-1 blob
-  construction under `Cas.Blob`;
+- `Cas` carries the node Schemas, clause-named errors (with `Cas.ErrorTag`
+  constants, the `Cas.isCasError` guard, and the `Cas.matchError` fold),
+  and content identifiers; the `Store` service tag with the isolated
+  in-memory adapter (`Cas.layerMemory`), the shipped WebCrypto digest path
+  (`Cas.layerCryptoWebCrypto`), the zero-configuration local runtime
+  (`Cas.layerMemoryLive`), and the scheme-0 canonical node codec
+  (`Cas.encodeNode`/`Cas.decodeNode`, the decoder returning `Option`); the
+  `value` typed-value projection and `service` eager hydration descriptor;
+  verified blob reads and recipe-1 blob construction under `Cas.Blob`
+  (streaming `slice` plus the buffer-returning `readRange`);
   the `Transfer` service tag with the `restartable`/`oneShot` upload sources;
   the typed remote configuration and failure family; and `Cas.layerRemote`,
   which builds one shared `Store | Transfer` adapter, owns its Fetch transport,
@@ -60,8 +64,10 @@ surface is `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
   operation descriptions; and the `Replay.replayable` service kit, which
   returns the internal-live role, record, and replay layers.
 
-Deeper module paths (`cas/*.ts`, `replay/*.ts`) remain importable for tests
-and correspondence work; the reducer's clause helpers live only there.
+Deeper module paths (`cas/*.ts`, `replay/*.ts`) remain importable inside
+this repository for tests and correspondence work; the published package
+exposes only the root entry, so consumers reach everything through the two
+namespaces.
 
 `internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts` and
 `internal/merkle*.ts` modules are never exported. Their history/witness
@@ -100,10 +106,13 @@ encode direction is deterministic and total, their Encoded type stays within
 `Schema.Json` (with finite numbers enforced at runtime), and the descriptor has
 a `put` → `get` → `put` fixture asserting that both puts return the same root.
 
-Each described service method must accept exactly one request value. Wrap
-multiple logical arguments in a request object before describing the method.
-The request, success, and typed-failure codecs are inferred per method, while
-the operation revision remains explicit.
+Each described service method must accept exactly one request value — the
+constraint is enforced structurally, so zero-argument, optional, variadic,
+and multi-argument methods are rejected at the type level. Wrap multiple
+logical arguments in a request object before describing the method. The
+request, success, and typed-failure codecs are inferred per method, while
+the operation revision remains explicit. A method with no typed failure
+still names one: pass `Schema.Never` as its `failure` codec.
 
 ## Remote CAS profile
 
@@ -173,10 +182,13 @@ buffer.
 
 ## Usage sketch
 
-Assume `Rates`, `RatesShape`, `QuoteUnavailable`, and `liveRates` are ordinary
-Effect service declarations, and that `runtimeLayer` supplies `Replay.layer`
-over one `Cas.layerMemory`. A session returns its durable witness root and,
-when present, the recorded or consumed history root alongside the outcome.
+Assume `Rates` is an ordinary Effect service declaration with
+`RatesShape = Rates["Service"]`, `QuoteUnavailable` a `Schema.TaggedError`,
+and `liveRates` a value of the shape (`Replay.replayable` also accepts a
+`Layer` implementation). `runtimeLayer` supplies `Replay.layer` over
+`Cas.layerMemoryLive` — the zero-configuration local runtime. A session
+returns its durable witness root and, when present, the recorded or
+consumed history root alongside the outcome.
 
 ```ts
 import { Cas, Replay } from "@foldlab/effect-replay"
@@ -188,17 +200,23 @@ const descriptions = Replay.describeService<RatesShape>("app/Rates")({
 const kit = Replay.replayable(Rates, descriptions, liveRates)
 const program = Rates.use((rates) => rates.quote("EUR"))
 const flow = Effect.gen(function* () {
-  const recorded = yield* Replay.session(program.pipe(Effect.provide(kit.record)),
-    { mode: "record" })
+  const recorded = yield* Replay.record(program.pipe(Effect.provide(kit.record)))
   if (recorded.history === undefined) return yield* Effect.die("no history")
-  const replayed = yield* Replay.session(program.pipe(Effect.provide(kit.replay)),
-    { mode: "replay", history: recorded.history })
+  const replayed = yield* Replay.replay(
+    program.pipe(Effect.provide(kit.replay)),
+    recorded.history,
+  )
   return { recorded: recorded.outcome, replayed: replayed.outcome }
 })
 ```
 
-Record construction uses the live adapter; replay construction has no live
-dependency. Both expose the original caller-facing method types.
+`Replay.record` and `Replay.replay` are thin wrappers over `Replay.session`
+that make the two call sites structurally distinct: recording cannot name a
+history root, and replay requires one positionally. Record construction uses
+the live adapter; replay construction has no live dependency. Both expose
+the original caller-facing method types. Session witnesses default to a
+process-local execution identity — production callers that correlate
+witnesses across processes supply their own `executionId` in the options.
 
 ## Replay ambient defaults
 

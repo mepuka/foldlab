@@ -11,6 +11,11 @@
  * string-keyed brand checked at construction; double wrapping is rejected
  * with a typed error, never normalized (type-level brands are ruled out by
  * caller-facing type identity).
+ *
+ * Rejection phases are deliberate, not drift: plain-function kit
+ * construction throws on invariant breaches (conflicting descriptions,
+ * matching the constructor throws in Operation and Value), while layer
+ * construction — effectful, composable — fails typed (DoubleWrap).
  */
 import { Context, Effect, Layer, Predicate, Schema } from "effect"
 import type {
@@ -50,6 +55,16 @@ export interface ReplayableKit<Self, S> {
 export interface ReplayableValueKit<Self, S> {
   readonly live: Context.Service<Live<Self>, S>
   readonly record: Layer.Layer<Self, DoubleWrap, Replay>
+  readonly replay: Layer.Layer<Self, never, Replay>
+}
+
+/** A convenience kit whose record construction has its live role supplied
+ * by an ordinary service Layer — the ecosystem's default shape. The
+ * layer's error and requirements ride along on the record construction;
+ * replay construction remains unchanged and live-free. */
+export interface ReplayableLayerKit<Self, S, E, R> {
+  readonly live: Context.Service<Live<Self>, S>
+  readonly record: Layer.Layer<Self, DoubleWrap | E, Replay | R>
   readonly replay: Layer.Layer<Self, never, Replay>
 }
 
@@ -196,6 +211,16 @@ export function replayable<Self, S>(
   descriptions: ServiceDescriptions<S>,
 ): ReplayableKit<Self, S>
 
+/** Lift one implementation Layer through the core kit's live-role layer:
+ * the layer builds under the public tag, and its output is re-tagged to
+ * the distinct live role, so record wiring still cannot resolve the
+ * wrapper as its own implementation. */
+export function replayable<Self, S, E, R>(
+  service: Context.Service<Self, S>,
+  descriptions: ServiceDescriptions<S>,
+  implementation: Layer.Layer<Self, E, R>,
+): ReplayableLayerKit<Self, S, E, R>
+
 /** Lift one existing service value through the core kit's live-role layer. */
 export function replayable<Self, S>(
   service: Context.Service<Self, S>,
@@ -206,14 +231,20 @@ export function replayable<Self, S>(
 export function replayable<Self, S>(
   service: Context.Service<Self, S>,
   descriptions: ServiceDescriptions<S>,
-  implementation?: S,
+  implementation?: S | Layer.Layer<Self, unknown, unknown>,
 ): ReplayableKit<Self, S> | ReplayableValueKit<Self, S> {
   const kit = makeKit(service, descriptions)
   if (implementation === undefined) return kit
+  const liveRole = Layer.isLayer(implementation)
+    ? Layer.effect(
+        kit.live,
+        Effect.gen(function* () {
+          return yield* service
+        }),
+      ).pipe(Layer.provide(implementation as Layer.Layer<Self>))
+    : Layer.succeed(kit.live, implementation as S)
   return {
     ...kit,
-    record: kit.record.pipe(
-      Layer.provide(Layer.succeed(kit.live, implementation)),
-    ),
+    record: kit.record.pipe(Layer.provide(liveRole)),
   }
 }

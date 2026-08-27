@@ -916,7 +916,7 @@ export const makeRemoteAdapter = (
     }
 
     const bytes = exchange.event.bytes
-    const decoded = decodeCasNode(bytes)
+    const decoded = Option.getOrUndefined(decodeCasNode(bytes))
     if (decoded === undefined || !Equal.equals(encodeCasNode(decoded), bytes)) {
       yield* machineStep({
         _tag: "FromWire",
