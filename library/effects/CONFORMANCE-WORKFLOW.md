@@ -557,3 +557,31 @@ Stop and return to grilling if:
   orchestration control methods untraced, the reject-first answer; a
   deterministic tracing clock in the replay environment is a future
   D7-revisit candidate if a fixture ever demands spans.
+- **Ergonomics review ratification (2026-08-27):** the operator ratified
+  the eight-item review docket as recommended. Hardening-packet rulings:
+  operation descriptions become statically checked —
+  `ServiceDescriptions` maps each method through per-method inference so
+  a mispaired schema fails to compile, with a `describeService` helper
+  deriving ids under an explicit revision; kit identity becomes
+  deterministic — the live-role key derives from the service key and
+  `replayable` memoizes the core kit per service tag; the session
+  runtime moves onto `ReplayShape.run` at a declared freeze-postdating
+  re-freeze, retiring the runtime WeakMap and making `session` ordinary
+  (wrapped-method types untouched); interpreter invariant breaches die
+  as defects — `StoreFailure` is reserved for genuine storage and
+  encoding failures; and the unary-request constraint, the tracing
+  trap, and the birth-frozen surface documents get truthful statements.
+  Witness re-freeze (the held-open M3 exit): the count-plus-root stored
+  representation is ratified as selected — consumed entries stay
+  recoverable through the root chain — and the context entry's code
+  label gains its TypeScript half. Descriptor Pass A pre-rulings:
+  acyclicity is a per-projection obligation only — store admission is
+  untouched, so no clause growth and no version bump (the M4 load guard
+  is the operational realization); and the leaf-first descriptor design
+  (`Cas.value` over a project-owned canonical JSON of the Encoded form,
+  typed roots that never bypass runtime kind validation, projection
+  decode failures outside `CasError`, eager `Cas.service` hydration
+  with `layerAs` targeting the kit's live role) is adopted as the
+  working draft the descriptor grill amends rather than reopens. New
+  descriptor obligations enter plan section 7 first; a family misfit
+  stops for a WGR-2 catalog event.

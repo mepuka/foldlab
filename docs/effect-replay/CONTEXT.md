@@ -193,7 +193,9 @@ enters as an ordinary refactor proposal at that time.
 
 ### Replay witness
 - **Kind:** schema. **Code label:** `Effects/Replay/Witness.lean`
-  (immutable carrier); provisional `src/Witness.ts`.
+  (immutable carrier); `src/ReplayStorage.ts` (`StoredWitness`,
+  internal: consumed count plus history root — the ratified selected
+  representation; entries stay recoverable through the root chain).
 - **Form:** mode, execution identity, consumed history, decision trace, and
   session outcome, immutable.
 - **Obligations:** carries execution identity, never program identity;
