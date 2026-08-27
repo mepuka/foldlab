@@ -23,13 +23,21 @@ open Effects.Cas (Bytes)
 
 /-- The kit address function: an injective-enough structural encoder
 over byte-list addresses. Vectors use the declared toy digest; kits
-need only computability. -/
+need only computability.
+
+An address here carries its whole pre-image, so it is as long as the
+subtree beneath it. Every kit below decides address equality by kernel
+evaluation of these lists, and the cost grows with both chunk width and
+tree depth. -/
 def mrkKitH : HP Bytes :=
   ⟨fun p => match p with
     | .leaf i b => 0 :: UInt8.ofNat i :: b
     | .parent l r => 1 :: UInt8.ofNat l.length :: (l ++ r)⟩
 
-/-- The kit decoder environment: two chunks, full range. -/
+/-- The kit decoder environment: two chunks, full range. Two one-byte
+chunks is a bound the kits depend on, not an arbitrary sample — the
+entitlement kits decide `dstep` over this environment by kernel
+evaluation, so widening it lengthens every address compared. -/
 def mrkKitD : DParams Bytes :=
   ⟨mrkKitH, 2, mrkKitH.H (.parent (mrkKitH.H (.leaf 0 [7]))
     (mrkKitH.H (.leaf 1 [8]))), 0, 2⟩
