@@ -4,7 +4,9 @@ Status: RATIFIED by grilling 2026-08-26 (operator, in-session; recommendations
 accepted, with one operator strengthening: full independence from the Entity
 Store context). Amended 2026-08-26 at the M1 interface freeze
 (operator-ratified): the append-failure mechanism is a structural session
-abort through the transport seam — see the replay session entry. Kind:
+abort through the transport seam — see the replay session entry. Amended
+2026-08-27 at the CMP-001 ratification (operator-ratified): two entries
+minted — reified program and interpretation halt. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -200,6 +202,40 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** any field or prose implying "this is the program that recorded
   it" or "the code is unchanged"; reading a witness as evidence the external
   world would answer the same today.
+
+### Reified program
+- **Kind:** model (carrier). **Code label:** `Effects/Replay/Program.lean`;
+  interpreted in `Effects/Replay/Interp.lean`.
+- **Form:** a closed, terminating sequential program over invocation
+  leaves: a returned value, the program's own typed failure, or an
+  invocation whose continuation receives the recorded outcome envelope.
+- **Obligations:** the continuation receives both envelope channels, so
+  recovery fires exactly as it did live and re-raising is the
+  continuation's choice; a leaf interprets as one reducer step, and
+  sequential composition interprets as a monad morphism into the
+  interpretation carrier. Continuations are meta-level and
+  model-internal; the serializable first-order descriptor with a
+  defunctionalized continuation machine is a later, separately admitted
+  lane.
+- **Avoid:** serializing a continuation, or reading a history as a
+  checkpoint of one — a captured continuation is not a value snapshot;
+  presenting reified-program theorems as universal over ordinary
+  TypeScript orchestration (the G2 quantifier gap).
+
+### Interpretation halt
+- **Kind:** taxonomy. **Code label:** `Effects/Replay/Interp.lean`
+  (`Halt`).
+- **Form:** why an interpretation stopped short of a value: the program's
+  own typed failure; the session's typed rejection at a position; or
+  absorbed — a leaf reached under an already-aborted session.
+- **Obligations:** every halt carries the session state it stopped at —
+  the cursor neither resets nor forks across composition; the taxonomy
+  mirrors what the session boundary observes and never widens a wrapped
+  method's error union; absorbed is a totality case, not a behavior —
+  the interpreter split never starts a program on an aborted session,
+  and the reachable leaf results are pinned by theorem.
+- **Avoid:** folding halt cases into a wrapped method's error type;
+  reading absorbed as reachable behavior.
 
 ### Service kit
 - **Kind:** module. **Code label:** pending Pass B (provisional

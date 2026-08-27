@@ -461,3 +461,24 @@ Stop and return to grilling if:
   G4-labeled sampled agreement, never proof; the transition check holds
   it green. The tsSide rows (CTX-*) are not covered by this ruling and
   get their own mechanism decision when M4 delivers them.
+- **CMP-001 ratification (2026-08-27, no manifest surface):** the
+  operator ratified the CMP-001 statement-and-sentence pair —
+  HOMOMORPHISM over the reified sequential program, interpreted through
+  the reducer into Lean's built-in `EStateM` (its `Result` is the
+  family's ratified shape: ok-with-state or error-with-state), with the
+  bind law stated as a monad morphism so a nested program continues from
+  exactly the state its prefix reached. Rulings carried: the fail
+  channel is the three-case interpretation halt — the program's own
+  typed failure, the session's typed rejection, and the absorbed
+  totality case — mirroring the session boundary and never widening a
+  wrapped method's error union (`replay_invoke_result` pins the
+  reachable leaf results); the kit runs both branches through a leaf
+  over a failure-recording fixture (the positive program recovers, the
+  failing one re-raises); CMP-001 carries no manifest family on
+  principle — reified programs hold meta-level continuations and
+  nothing serializes a continuation — so its declared mutant is killed
+  on the two-leaf witness run, the stated direction-1 analogue for a
+  vectorless family; and the briefing consume list derives from the
+  actual manifest surface, so an unvectored instantiated family never
+  renders as consumable. Two context entries were minted at this
+  ratification: reified program and interpretation halt.
