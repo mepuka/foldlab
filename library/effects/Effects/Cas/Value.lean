@@ -31,18 +31,6 @@ abbrev Bytes := List UInt8
 
 open Effects.Wire
 
-/-! ## Self-contained helpers -/
-
-private theorem take_len_append (l r : List α) : (l ++ r).take l.length = l := by
-  induction l with
-  | nil => simp
-  | cons a t ih => simp [ih]
-
-private theorem drop_len_append (l r : List α) : (l ++ r).drop l.length = r := by
-  induction l with
-  | nil => simp
-  | cons a t ih => simp [ih]
-
 /-! ## Length-prefixed frames -/
 
 /-- Frame a byte string: its length as `nat32`, then its bytes. -/
@@ -60,7 +48,7 @@ theorem readFrame_frame (bs : Bytes) (h : bs.length < 4294967296) (rest : Bytes)
   simp only [frame, List.append_assoc, readFrame,
     readNat32_nat32 bs.length h (bs ++ rest)]
   rw [if_pos (by simp only [List.length_append]; omega)]
-  rw [take_len_append, drop_len_append]
+  rw [List.take_left, List.drop_left]
 
 theorem readFrame_exact {b : Bytes} {bs rest : Bytes}
     (h : readFrame b = some (bs, rest)) :
@@ -93,7 +81,7 @@ theorem readChunk_append {n : Nat} {l : Bytes} (r : Bytes) (h : l.length = n) :
   unfold readChunk
   rw [if_pos (by simp only [List.length_append]; omega)]
   subst h
-  rw [take_len_append, drop_len_append]
+  rw [List.take_left, List.drop_left]
 
 theorem readChunk_exact {n : Nat} {b c rest : Bytes}
     (h : readChunk n b = some (c, rest)) :
