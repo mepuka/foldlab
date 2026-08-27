@@ -54,7 +54,7 @@ export interface ReplayableValueKit<Self, S> {
 }
 
 const WrappedServiceBrand = "foldlab/effect-replay/ServiceAdapter/wrapped"
-let liveRoleSequence = 0
+const coreKits = new WeakMap<object, unknown>()
 
 type RuntimeMethod = (
   request: unknown,
@@ -128,8 +128,11 @@ const makeKit = <Self, S>(
   service: Context.Service<Self, S>,
   descriptions: ServiceDescriptions<S>,
 ): ReplayableKit<Self, S> => {
+  const cached = coreKits.get(service)
+  if (cached !== undefined) return cached as ReplayableKit<Self, S>
+
   const live = Context.Service<Live<Self>, S>(
-    `${service.key}/LiveRole/${++liveRoleSequence}`,
+    `${service.key}/LiveRole`,
   )
 
   const record = Layer.effect(
@@ -149,7 +152,9 @@ const makeKit = <Self, S>(
     Replay.use((runtime) => Effect.succeed(replayService(descriptions, runtime))),
   )
 
-  return { live, record, replay }
+  const kit: ReplayableKit<Self, S> = { live, record, replay }
+  coreKits.set(service, kit)
+  return kit
 }
 
 /** Construct the core live-role/record/replay kit. */

@@ -1,10 +1,12 @@
 /**
- * @foldlab/effect-replay — M1 interface freeze.
+ * @foldlab/effect-replay — Effect-native content-addressed record/replay.
  *
- * Declarations only: the boundary Schemas, service interfaces, and kit
- * signatures frozen at M1 under the ratified contract. Implementations
- * arrive with the M2–M4 slices; history and witness Schemas stay internal
- * until the M3 re-freeze. Nothing exported here is a claim.
+ * Implemented through M5: CAS admission and reverifying loads, the pure replay
+ * reducer, session execution, replayable service kits, and transparent
+ * orchestration through ordinary Effect layers. History/witness storage and
+ * live-handler binding remain internal implementation modules; their Schemas
+ * carry no public canonicality claim. TypeScript observations and Lean model
+ * claims remain separate surfaces.
  */
 export * from "./CasNode.ts"
 export * from "./CasStore.ts"

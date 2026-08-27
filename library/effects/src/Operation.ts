@@ -6,7 +6,7 @@
  * is caught at consumption as outcome inadmissibility (GR-2), never
  * silently accepted.
  */
-import type { Schema } from "effect"
+import type { Effect, Schema } from "effect"
 
 /** M4 admits service-free codecs: operation encoding and decoding cannot
  * smuggle ambient requirements into caller-facing method environments. */
@@ -33,7 +33,49 @@ export interface OperationDescription<
 
 export type AnyOperationDescription = OperationDescription
 
-/** One description per method of the wrapped service shape. */
+/** Infer one operation description from one service method.
+ *
+ * Described methods are deliberately unary: the single request value is the
+ * complete request carrier encoded into replay history. Zero-argument,
+ * variadic, and multi-argument methods must first expose a unary request
+ * object at the replay boundary. */
+export type MethodDescription<M> = M extends (
+  request: infer Req,
+) => Effect.Effect<infer Succ, infer Fail>
+  ? OperationDescription<
+      Schema.Codec<Req, unknown, never, never>,
+      Schema.Codec<Succ, unknown, never, never>,
+      Schema.Codec<Fail, unknown, never, never>
+    >
+  : never
+
+/** One statically checked description per method of the wrapped service
+ * shape. Hand-written description records remain legal. */
 export type ServiceDescriptions<S> = {
-  readonly [K in keyof S]: AnyOperationDescription
+  readonly [K in keyof S]: MethodDescription<S[K]>
 }
+
+type DescriptionSpecs<S> = {
+  readonly [K in keyof S]: Omit<
+    MethodDescription<S[K]>,
+    "id" | "leafReplay"
+  >
+}
+
+/** Build descriptions whose ids are `${prefix}/${method}` and whose admitted
+ * leaf-replay policy is the current substitutable default. Revisions stay
+ * explicit: changing a codec still requires a deliberate revision bump. */
+export const describeService =
+  <S>(prefix: string) =>
+  (specs: DescriptionSpecs<S>): ServiceDescriptions<S> => {
+    const descriptions: Partial<Record<keyof S, unknown>> = {}
+    const keys = Reflect.ownKeys(specs) as unknown as ReadonlyArray<keyof S>
+    for (const key of keys) {
+      descriptions[key] = {
+        ...specs[key],
+        id: `${prefix}/${String(key)}`,
+        leafReplay: "substitutable",
+      }
+    }
+    return descriptions as ServiceDescriptions<S>
+  }

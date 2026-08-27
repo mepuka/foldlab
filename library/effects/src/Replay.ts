@@ -358,6 +358,16 @@ export interface ReplayShape {
     operation: D,
     request: D["request"]["Type"],
   ) => Effect.Effect<D["success"]["Type"], D["failure"]["Type"]>
+
+  /** Session-facing: install the per-session invocation handler and execute
+   * one complete record or replay attempt. Replay mode replaces the default
+   * Clock and Random services with ambient-use tripwires. Effect.fn spans
+   * consult the default Clock, so replayed orchestration control should use
+   * Effect.fnUntraced unless a clock access is intentionally a violation. */
+  readonly run: <A, E, R>(
+    program: Effect.Effect<A, E, R>,
+    options: { readonly mode: ReplayMode; readonly history?: ContentId },
+  ) => Effect.Effect<SessionOutcome<A, E>, CasError, R>
 }
 
 export class Replay extends Context.Service<Replay, ReplayShape>()(
@@ -389,15 +399,6 @@ interface ActiveSession {
   readonly historyRoot: ContentId | undefined
   readonly trace: ReadonlyArray<Decision>
 }
-
-interface ReplayRuntime {
-  readonly run: <A, E, R>(
-    program: Effect.Effect<A, E, R>,
-    options: { readonly mode: ReplayMode; readonly history?: ContentId },
-  ) => Effect.Effect<SessionOutcome<A, E>, CasError, R>
-}
-
-const runtimes = new WeakMap<ReplayShape, ReplayRuntime>()
 
 const transportCasFailure = <A, R>(
   self: Effect.Effect<A, CasError, R>,
@@ -821,9 +822,9 @@ const finishSession = <A, E>(
     const active = yield* Ref.get(activeRef)
     const completed = reduce(active.state, { _tag: "Complete", terminal })
     if (completed.result._tag !== "SessionOutcome") {
-      return yield* new StoreFailure({
+      return yield* Effect.die(new RuntimeTransport({
         reason: `Session completion produced ${completed.result._tag}`,
-      })
+      }))
     }
 
     const next = appendDecisions(active, completed.state, completed.decisions)
@@ -841,19 +842,19 @@ const finishSession = <A, E>(
         terminalSoFar: terminal,
       }
     } else {
-      return yield* new StoreFailure({
+      return yield* Effect.die(new RuntimeTransport({
         reason: "Completion reducer returned an ambient violation",
-      })
+      }))
     }
     yield* persistWitness(store, executionId, next, outcome)
     return outcome
   })
 
-const makeReplayRuntime = (
+const makeReplayRun = (
   store: CasStoreShape,
   executionCounter: Ref.Ref<number>,
-): ReplayRuntime => ({
-  run: <A, E, R>(
+): ReplayShape["run"] => {
+  const run: ReplayShape["run"] = <A, E, R>(
     program: Effect.Effect<A, E, R>,
     options: { readonly mode: ReplayMode; readonly history?: ContentId },
   ): Effect.Effect<SessionOutcome<A, E>, CasError, R> =>
@@ -877,6 +878,7 @@ const makeReplayRuntime = (
       const scopedReplay = Replay.of({
         invoke: (operation, request) =>
           invokeInSession(store, activeRef, operation, request),
+        run,
       })
       const scopedProgram = options.mode === "replay"
         ? program.pipe(
@@ -897,9 +899,6 @@ const makeReplayRuntime = (
       return yield* attempted.pipe(
         Effect.catchDefect((defect): Effect.Effect<SessionOutcome<A, E>, CasError> => {
           if (defect instanceof CasTransport) return Effect.fail(defect.error)
-          if (defect instanceof RuntimeTransport) {
-            return Effect.fail(new StoreFailure({ reason: defect.reason }))
-          }
           if (defect instanceof MismatchTransport) {
             const outcome: SessionOutcome<A, E> = {
               _tag: "Rejected",
@@ -926,8 +925,9 @@ const makeReplayRuntime = (
           return Effect.die(defect)
         }),
       )
-    }),
-})
+    })
+  return run
+}
 
 /** Construct the replay runtime over the supplied CAS store. */
 export const layerReplay: Layer.Layer<Replay, never, CasStore> = Layer.effect(
@@ -935,12 +935,13 @@ export const layerReplay: Layer.Layer<Replay, never, CasStore> = Layer.effect(
   Effect.gen(function* () {
     const store = yield* CasStore
     const executionCounter = yield* Ref.make(0)
+    const run = makeReplayRun(store, executionCounter)
     const service = Replay.of({
       invoke: () => Effect.die(new RuntimeTransport({
         reason: "Replay.invoke used outside session",
       })),
+      run,
     })
-    runtimes.set(service, makeReplayRuntime(store, executionCounter))
     return service
   }),
 )
@@ -951,11 +952,4 @@ export const session = <A, E, R>(
   program: Effect.Effect<A, E, R>,
   options: { readonly mode: ReplayMode; readonly history?: ContentId },
 ): Effect.Effect<SessionOutcome<A, E>, CasError, R | Replay> =>
-  Effect.gen(function* () {
-    const replay = yield* Replay
-    const runtime = runtimes.get(replay)
-    if (runtime === undefined) {
-      return yield* new StoreFailure({ reason: "Replay service has no session runtime" })
-    }
-    return yield* runtime.run(program, options)
-  })
+  Replay.use((replay) => replay.run(program, options))
