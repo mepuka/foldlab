@@ -20,7 +20,7 @@ const ledgerRel = "library/effects/CONFORMANCE-LEDGER.md"
 
 const statusRows = (text: string): Map<string, string> => {
   const rows = new Map<string, string>()
-  for (const line of text.split("\n")) {
+  for (const line of text.split(/\r?\n/)) {
     const m = /^\| (\S+) \| (.+) \|$/.exec(line)
     if (m && m[1] !== "ID" && !/^-+$/.test(m[1])) rows.set(m[1], m[2])
   }
