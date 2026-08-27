@@ -664,3 +664,28 @@ Stop and return to grilling if:
   surfaces as the store's `UnknownKind` clause rather than a
   projection-side clause — a deliberate reuse worth revisiting if the
   M6 documentation finds it blurs the family boundary.
+- **Codec-discipline and structure ratification (2026-08-27):** the
+  operator ratified the Schema assessment's recommendations — S1, the
+  sanctioned JSON-safe constructor vocabulary for CAS value fields
+  (bytes as hex, big integers as decimal strings, instants as epoch
+  milliseconds, the Option encodings with the nullable-inner caveat),
+  documented as the README's value-schema discipline; S2, custom
+  codecs enter through `decodeTo`/`encodeTo` under three rules —
+  deterministic total encode, Encoded lands in the JSON subset, and a
+  per-descriptor put-get-put same-root fixture (a normalizing decode
+  silently splits one logical value across two roots), with set-like
+  data encoded as explicitly sorted arrays; S3, the static
+  `Schema.Json` bound on the value descriptor's Encoded form, adopted
+  behind an assignability verification and dropped without loss if it
+  fights hand-written interface Encoded types; S4 stays noted-only —
+  and directed a proper Effect-ecosystem file structure in place of
+  the flat single-depth `src/`. Ratified layout: `cas/` and `replay/`
+  plane directories mirroring the Lean tree's own structure, an
+  `internal/` subtree for the non-public storage and live-binding
+  carriers (the ecosystem's internal convention), top-level namespace
+  facades and the public barrel. The runtime session/reducer split
+  mirrors the Lean `Session`/`Reducer` split, so the correspondence
+  review aligns file by file. The restructure changes no public type
+  and no behavior — the compiler and the full suite are the proof —
+  and the context document's provisional TypeScript code labels update
+  at the acceptance review.
