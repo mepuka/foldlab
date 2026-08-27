@@ -1,10 +1,13 @@
 # Conformance workflow — dual-lane verified development
 
-Status: Pass-A workflow design, pending ratification, 2026-08-26
-Claim posture: planning input only; no workflow rule, harness role, trust
-statement, or metric is admitted by this document. Lane names and all new
-terms below are working labels pending the grilling pass. The two harness
-roles enter `TOOLS.md` only at ratification.
+Status: RATIFIED by grilling 2026-08-26 (operator, in-session; rulings
+WGR-1 through WGR-7 plus two rider rules — instructional closure and plain
+meaning; recommendations accepted throughout, with the staged option selected
+for cycle-state modeling). This document owns the workflow's process
+vocabulary; the library's domain vocabulary stays with the
+[Effect Replay context](../../docs/effect-replay/CONTEXT.md).
+Claim posture: workflow rules only; no model, theorem, or implementation
+claim is admitted by this document.
 
 ## 1. Purpose
 
@@ -20,8 +23,8 @@ observable surface as data: operations, decisions, histories, and outcomes
 are first-order values. Conformance-by-vectors works precisely because the
 seam is data; arbitrary imperative TypeScript has no comparably cheap seam.
 
-The claim ceiling is fixed up front: this workflow produces a kernel-checked
-model plus a forced-agreement implementation. It never produces "verified
+The claim ceiling is fixed: this workflow produces a kernel-checked model
+plus a forced-agreement implementation. It never produces "verified
 TypeScript." Gate vocabulary is unchanged — model theorems are G1/G2
 material, differential agreement is G4-labeled sampled evidence, and no
 metric below promotes a claim across a gate.
@@ -34,198 +37,346 @@ kernel guarantees the proofs but nothing guarantees the statements. A
 mis-quantified invariant proves cleanly and constrains nothing, and two
 harnesses drawing on similar priors can be wrong in the same direction.
 
-Every trust anchor below exists to break that correlation:
+Every trust anchor exists to break that correlation:
 
 | Anchor | What it secures | Who or what carries it |
 | --- | --- | --- |
 | Lean kernel | proofs of stated theorems | machine |
 | Ratified statement schemas | quantifier structure of every invariant | human, once per schema |
+| Ratified sentence templates | plain meaning of every invariant | human, once per schema |
 | Sampled vector review | vectors mean what the contract means | human, per ratification point |
 | Deterministic generation | manifests come from the model, not hands | generated-vectors law |
+| Anti-vacuity kits | statements are non-trivial | compile-checked `#guard`s |
 | Mutation kill-rate | vectors actually pin the semantics | machine, measured |
 | Lane independence | no shared blind spots between lanes | workflow rule |
 
-Both harnesses receive `TOOLS.md` rows with the estate's standard empty
-trust contribution. The gates and the anchors above carry all trust; the
-harnesses carry none.
+Both harnesses hold `TOOLS.md` rows with the estate's standard empty trust
+contribution. The gates and the anchors above carry all trust; the harnesses
+carry none.
 
 ## 3. The two lanes
 
-**Conformance lane** (working label): extends the Lean model from the
-ratified contract, instantiates statement schemas, proves obligations or
-marks them pending with exact statements, maintains the anti-vacuity kit,
-and generates the manifest by executing the model. It never edits the
-TypeScript tree.
+**Conformance lane**: extends the Lean model from the ratified contract,
+instantiates statement schemas with their sentences and anti-vacuity kits,
+maintains the declared mutants, and generates the manifest by executing the
+model. It never edits the TypeScript tree.
 
-**Implementation lane** (working label): edits the TypeScript implementation
-until the gate is green against the current ratified manifest. Failures
-carry obligation IDs pointing at exact Lean statements. It never edits the
-Lean tree and never edits the manifest.
+**Implementation lane**: edits the TypeScript implementation until the gate
+is green against the **last ratified manifest**. Failures carry obligation
+IDs pointing at exact Lean statements. It never edits the Lean tree and
+never edits a manifest.
 
 **Coupling rule:** the versioned manifest is the only interface between the
 lanes. A lane editing the other lane's tree, or either lane hand-editing a
 manifest, is a named defect.
 
+**Ratified-manifests-only rule:** a generated-but-unratified manifest is
+invisible to the implementation lane. While a new manifest version awaits
+ratification, the implementation lane keeps working against the previous
+ratified version — the pipeline never blocks on ratification.
+
 **Independence rule:** the lanes run in separate harness contexts. One
 context playing both roles in a single conversation is a named defect — the
 independence is part of the trust argument, not an operational convenience.
 
-**Ratification point:** between conformance-lane output and
-implementation-lane consumption, a human reviews statement-schema instances
-(as diffs against ratified schemas), sampled vectors, and any mutation
-survivors. Proofs are not reviewed by hand; the kernel and the axiom report
-carry them.
+## 4. Statement schemas — the ratified catalog
 
-## 4. Statement schemas — the auditable surface
+A **statement schema** fixes an obligation family's shape once, under
+grilling. A schema bundle has three ratified parts: the **statement
+template** (quantifier structure with named holes), the **sentence template**
+(plain meaning with the same holes; section 5), and the **kit template**
+(what a positive and a falsification witness look like for that shape;
+section 10). Harness-authored work only *instantiates* bundles; audit means
+reading a small diff against a known shape. A statement that fits no
+ratified schema is a stop condition.
 
-A **statement schema** (working label) fixes an obligation family's
-quantifier structure once, under grilling. Harness-authored work then only
-*instantiates* schemas, and audit means reading a small diff against a known
-shape — never parsing a novel quantifier structure. A statement that fits no
-ratified schema is a stop condition, not a contribution.
+The catalog (WGR-2), seeded from the obligation ledger:
 
-The schema catalog is seeded from the existing obligation ledger. The ledger
-row already carries the three ingredients:
+| Schema family | Statement shape | First instances |
+| --- | --- | --- |
+| WF-PRESERVE | `∀ s i, WF s → hyp → WF (step s i)` | reducer step well-formedness; record append |
+| TRACE-EXCLUDES | `∀ s i, mode/flag s = m → d ∈ decisions (step s i) → d ≠ bad` | RPL-002; SES-001 (poisoned never appends) |
+| EXACT-STEP | `∀ s q, hyp → measure (step s q) = measure s + δ` | RPL-003; record append length |
+| FAIL-CLOSED | `∀ s q, ¬hyp → step s q rejects ∧ consumes nothing` | RPL-004; RPL-005's completion form |
+| DISTINCTNESS | `∀ s q q', content q = content q' → occurrences distinct` | CMP-002 |
+| HOMOMORPHISM | `interp (bind p k) = …` over both outcome cases | CMP-001; return/bind laws |
+| CODEC | `decode ∘ encode = some` ∧ `encode` injective on canonical forms | CAS-001 |
+| REJECTION-CLAUSE | `∀ raw, admit raw = error c ↔ Clause c raw` | CAS-002 node admission |
 
-| Ledger column | Becomes |
-| --- | --- |
-| Obligation | the statement schema and its Lean instances |
-| Evidence target | the proof plus the vector families exercising it |
-| Negative/falsification case | the mutation that must be killed (section 6) |
+Cross-cutting: every checker carries the boolean-reflection iff
+(`check x = true ↔ Prop x`) — one judgment, one decision surface, one iff.
 
-The standard invariant form is boolean reflection — one executable checker,
-one iff that makes it the judgment, so both lanes share semantics through an
-executable artifact:
+Deliberate exclusions, ratified: **CTX-001/002 have no Lean schema** — they
+are TypeScript-side obligations (typecheck, layer graph, tripwire fixtures),
+and a Lean statement claiming them would fake coverage. **CAS-003 is a
+review rule, not a schema** — "every address law carries its lattice level"
+is checked by reading theorem signatures.
+
+## 5. The plain-meaning rule
+
+Auditability needs humans to read what is actually being tested and
+conformed to, in the domain language of the codebase. The plain-language
+layer therefore follows the same schema/instance discipline as the formal
+layer:
+
+- every schema family ratifies a **sentence template** with named holes;
+- every instance fills the holes **in the minted domain vocabulary** — the
+  Effect Replay context document is the glossary that makes those sentences
+  precise;
+- every declared mutant states **what killing it represents**, in the same
+  register;
+- sentences are **single-sourced** in the docstring beside the artifact they
+  describe (theorem, mutant, checker) and **projected** onto the ledger,
+  briefings, and manifest family headers. Hand-editing a projection is the
+  derived-surface defect. The ratification diff shows sentence and statement
+  together, so a statement that moved under an unmoved sentence is visible
+  in one review.
 
 ```lean
-def checkNoLiveDelegation (t : DecisionTrace) : Bool :=
-  t.all (fun d => d ≠ Decision.liveDelegate)
+/-- SCHEMA EXACT-STEP sentence: "When <hypothesis>, one reducer step changes
+    <measure> by exactly <δ> — <domain gloss>."
 
-theorem checkNoLiveDelegation_iff (t : DecisionTrace) :
-    checkNoLiveDelegation t = true ↔ NoLiveDelegation t := ...
+    When the emitted request matches the entry at the cursor, one reducer
+    step advances the cursor by exactly one — a matching request consumes
+    exactly one occurrence: never zero, never two. -/
+theorem RPL_003_exact_consumption ... := ...
 ```
 
-Every schema instance ships an **anti-vacuity kit**:
+Manifest rows stay data: the family header carries the obligation's
+sentence; case ids stay readable; boundary cases may carry a one-line note.
 
-```lean
--- positive witness: the property holds somewhere real
-#guard checkNoLiveDelegation exampleReplayTrace
--- falsification witness: the property fails somewhere real
-#guard !(checkNoLiveDelegation exampleRecordTrace)
--- (record mode delegates live; if this guard fails, the statement is vacuous)
+## 6. The manifest — the inter-lane contract
+
+Per-family JSON files, generated by executing the Lean model:
+
+```text
+library/effects/conformance/manifest/
+  RPL-003.json
+  RPL-004.json
+  ...
 ```
-
-A proved theorem whose kit is missing or whose falsification witness cannot
-be produced is treated as unproved for ledger purposes. This is the specific
-defense against the harness-authored-specification failure mode: proved but
-meaningless.
-
-## 5. The manifest — the inter-lane contract
-
-The manifest is a versioned, byte-deterministic case file generated by
-executing the Lean model (the generated-vectors law applied to this
-library). Handwritten scenarios may be canonical *inputs*; expected outputs
-are always produced by the model. A provisional row shape:
 
 ```json
 {
   "family": "RPL-003",
-  "case": "repeat-identical-002",
   "model": "effects-model@<version>",
-  "input": { "state": "...", "request": "..." },
-  "expect": { "decisions": ["consume", "substitute"], "outcome": "..." }
+  "meaning": "<projected obligation sentence>",
+  "rows": [
+    { "case": "repeat-identical-002",
+      "input":  { "state": "...", "request": "..." },
+      "expect": { "decisions": ["consume", "substitute"], "outcome": "..." } }
+  ]
 }
 ```
 
-The Lean side proves the per-row theorems (`model(row.input) = row.expect`,
-the machine's vector-theorem pattern); the TypeScript suite runs the same
-rows verbatim. Exact format, canonical ordering, and versioning are M1/Pass-B
-work. One name binds all surfaces: ledger ID = Lean theorem name = manifest
-family = TypeScript test name, so a red test is one grep from its statement.
+The five ratified rules (WGR-4):
 
-## 6. Mutation runs — the honesty metric
+1. **Lean writes it, through a canonical printer** — sorted keys, declared
+   number handling, rows sorted by case id.
+2. **Version binding is to the declared model version, not the commit.** Any
+   semantics-affecting model change bumps `effects-model@x.y.z`;
+   regeneration under an unchanged version must be byte-identical (the
+   gate's ratchet check); a bump is a declared transformation, and old
+   manifests are deleted — git history is the CAS that keeps them
+   recoverable.
+3. **Family digests live on the ledger** and nowhere else.
+4. **Inputs are authored as Lean fixtures** (handwritten scenarios are
+   canonical inputs; outputs are never written by hand). A scenario
+   conceived on the TypeScript side is transcribed into a Lean fixture by
+   the conformance lane.
+5. **The TypeScript suite consumes rows verbatim**, decodes, and compares
+   decision traces structurally under the declared normalization — never by
+   re-serialization, so printer quirks cannot masquerade as agreement.
 
-Row counts do not measure coverage; kill rates do. The **mutation catalog**
-(working label) is derived from the obligation ledger's falsification
-column — each declared mutation operationalizes a known failure mode:
+One name binds all surfaces: ledger ID = Lean theorem name = manifest
+family = TypeScript test name. A red test is one grep from its statement.
 
-| Ledger falsification case | Mutation |
-| --- | --- |
-| skip, duplicate, or reuse one occurrence | reducer variant that does not advance the cursor |
-| missing entry falls back to live adapter | reducer variant that emits live delegation on exhaustion |
-| deduplication shortens history | record variant that drops repeat-content occurrences |
-| comparator drops mismatch decisions | normalizer variant that filters rejections |
+## 7. Mutation runs — the honesty metric
 
-Two directions, both cheap:
+Row counts do not measure coverage; kill rates do. Ratified form (WGR-3):
 
-1. **Model mutation:** regenerate the manifest from a mutated model; the
-   regenerated bytes must differ from the ratified manifest. This proves the
-   vectors are sensitive to the semantics they claim to pin.
-2. **Implementation mutation:** run the ratified manifest against a mutated
-   TypeScript reducer; the suite must go red. This proves the suite can
-   discriminate.
+- **Declared mutants only** — no automated mutation tooling. One
+  hand-declared mutant per obligation-ledger falsification case is the
+  floor, named by the obligation it attacks
+  (`Effects/Mutants/RPL003_SkipAdvance.lean`, `test/mutants/RPL-003-*.ts`),
+  each carrying its plain-meaning header (what killing it represents).
+- **Quarantine:** mutants are never proof-bearing and never imported by the
+  real model; a gate grep asserts `Effects/` never imports
+  `Effects/Mutants/`.
+- **Two directions, both asserted by the gate:**
 
-A surviving mutant is a coverage hole: it becomes a conformance-lane task
-(new vectors) before any milestone exit, never a waiver. The kill rate per
-obligation family is recorded on the ledger surface and quoted as evidence,
-never as proof.
+```text
+direction 1 (vector sensitivity):    manifest(mutant model) ≠ manifest(model)
+direction 2 (suite discrimination):  suite(TS mutant, ratified manifest) = RED
+```
 
-## 7. Ledger and ratchet
+- **A survivor fails the task** — hard, never a warning — and becomes a
+  conformance-lane vector task before any milestone exit. No waivers.
+- Placement: `check:effects:mutation` runs inside the root check and at
+  every ledger regeneration; the inner dev loop may run it targeted. Kill
+  rate lands on the ledger per family and is quoted as evidence, never as
+  proof.
 
-A conformance ledger surface (form pending grilling; the house
-generated-ledger pattern is the reference) records per obligation: schema
-status, instance status, proof status with axiom report, vector rows green,
-mutation kill rate, and the highest gate stamp. The ratchet: a green row
-never regresses except through a declared model-version bump. "Model updated
-to verified" means exactly this surface updating — existing gate stamps plus
-the metric, no new claim vocabulary.
+## 8. Cycle state and harness alignment
 
-## 8. One loop iteration
+Ratified model (WGR-1): **cycle state is a derived projection of the tree at
+a commit.** Nothing about the cycle lives outside the repo. Ratification
+events are committed documents (the M0 pattern, now a rule); everything else
+is computed by gate tasks. The commit hash is the state identity.
+
+**Plane boundary:** git is the CAS of the development plane; the library's
+runtime CAS is a different plane. They share the discipline — canonical
+bytes, content addressing, derived-never-hand-maintained — and no
+implementation. Routing development state through the effects `CasStore` is
+a named defect.
+
+**Two generated surfaces**, each a deterministic function of
+`(commit, lane)`:
+
+- the **conformance ledger** (section 9) — committed, byte-compared, the
+  ratchet's substrate; and
+- the **briefing** — on-demand, never committed
+  (`mise run brief:effects -- --lane=<lane>`): commit and version identity,
+  the lane's next targets with statements and sentences excerpted from
+  source, red rows, and the standing rules in scope. Everything in it is
+  derived, so briefing drift is impossible by construction.
+
+**Ratchet-driven targeting:** obligations sit in the dependency DAG the plan
+already declares; `next()` is the least red obligation whose dependencies
+are green, per lane. Each run tells the next step.
+
+**Staged Lean lift:** phase 1 (M1) implements the ledger schema and the
+transition-legality check as gate scripts. Phase 2 — only after the workflow
+has survived real slices — lifts the transition system into a small Lean
+model with the monotonicity theorem and conformance-checks the script
+against it, entering through its own Pass A like any extension.
+
+**Statelessness rule (the alignment guarantee):** a lane harness must be
+fully resumable from `(commit, lane, briefing)` alone. Relying on
+conversation memory for cycle state is a named defect — sessions are
+stateless functions of the tree.
+
+**Instructional closure (rider):** everything that shapes a lane —
+`AGENTS.md`, context documents, lane role definitions, briefing inputs — is
+versioned in-tree, so `(commit, lane)` determines the full harness input.
+If anything load-bearing is ever found living outside the tree, it either
+moves in-tree or is declared here as an explicit exception.
+
+## 9. The conformance ledger
+
+`library/effects/CONFORMANCE-LEDGER.md`, generated by the gen task,
+byte-compared by the gate, transition-checked between commits (green never
+regresses except through a declared model-version bump). Shape (WGR-5): a
+narrow status table plus per-obligation sentence blocks:
+
+```markdown
+| ID      | Schema      | Proof   | Kit | Vectors   | Kill | Stamp |
+| ------- | ----------- | ------- | --- | --------- | ---- | ----- |
+| RPL-003 | EXACT-STEP  | proved  | ok  | 7/7 green | 2/2  | G1    |
+
+## RPL-003 — exact consumption
+<projected sentence>
+Manifest: RPL-003.json · sha256 <digest> · <n> rows
+```
+
+Mechanical rules: `Proof: proved` is written only when kernel evidence
+exists *and* the kit markers are found — proved-without-kit renders as
+`pending` by construction; the axiom report gates the G1 stamp; family
+digests live here and nowhere else. Wired into the root `gen`/`check` tasks
+like every derived surface.
+
+## 10. Anti-vacuity kits — gate-enforced
+
+`#guard` fails at compile time, so enforcement is nearly free (WGR-7):
+
+```lean
+#guard checkExactConsumption exampleMatchingStep          -- positive witness
+#guard !(checkExactConsumption exampleMismatchStep)       -- falsification witness
+```
+
+Presence is a gate grep by naming convention; truth is the Lean build
+itself; the ledger generator flips `Kit: ok` only when both markers exist.
+Review still reads kits at ratification — for meaning, not existence. Each
+schema family's kit template (ratified with the bundle) defines what its
+witnesses look like: a falsification witness for WF-PRESERVE is an
+ill-formed raw state; for TRACE-EXCLUDES it is the record-mode trace that
+does delegate.
+
+## 11. The ratification point
+
+Fires **per manifest version, not per commit** — whenever the conformance
+lane emits a version carrying new or changed statements. The ratifier sees a
+generated projection: schema-instance diffs (statement and sentence
+together), sampled vectors, mutation survivors, and the ledger delta. Proofs
+are not reviewed by hand; the kernel and the axiom report carry them. A
+rejection returns named corrections to the conformance lane while the
+implementation lane continues against the previous ratified version. In this
+repository the ratifier is the operator and the cadence rides the milestone
+rhythm.
+
+## 12. One loop iteration
 
 ```text
 ratified contract
       |
       v
-[conformance lane]  extend model, instantiate schemas, prove or mark pending,
-      |             maintain anti-vacuity kits, execute model -> manifest v(n)
+[conformance lane]  extend model, instantiate schema bundles (statement +
+      |             sentence + kit), maintain mutants, execute model
+      |             -> manifest v(n)
       v
-[human ratification]  review schema-instance diffs, sampled vectors,
-      |               mutation survivors; statements only, never proofs
+[ratification]  schema-instance diffs, sampled vectors, mutation survivors;
+      |         statements and sentences only, never proofs
       v
-[implementation lane]  edit TypeScript until gate green vs manifest v(n);
-      |                failures carry obligation IDs
+[implementation lane]  brief from (commit, lane); edit TypeScript until gate
+      |                green vs ratified manifest v(n)
       v
 [ledger update]  gate stamps, kill rates, green rows; ratchet holds
       |
       v
-next slice — or a contract-level surprise from either lane hits the
-existing stop conditions and returns to grilling
+next slice — or a contract-level surprise from either lane hits the stop
+conditions and returns to grilling
 ```
 
-## 9. Stop conditions
+## 13. Stop conditions
 
 Stop and return to grilling if:
 
 - a statement appears that fits no ratified schema;
 - a lane edits the other lane's tree, or any hand edits a manifest;
+- the implementation lane consumes an unratified manifest;
 - one harness context plays both lanes in a single conversation;
 - an anti-vacuity kit is missing, or a falsification witness cannot be
   produced for a stated invariant;
 - a mutation survivor is waived instead of covered;
+- a projected sentence is hand-edited, or a statement changes under an
+  unchanged sentence without review;
+- development state is routed through the library's runtime CAS, or a
+  load-bearing harness input is found out-of-tree and left undeclared;
 - a kill rate or vector count is quoted as proof, or any surface says
   "verified TypeScript";
 - a pending proof is treated as proved on any ledger or claim surface; or
-- manifest regeneration is not byte-identical from declared sources.
+- manifest or ledger regeneration is not byte-identical from declared
+  sources under an unchanged model version.
 
-## 10. Grilling agenda
+## 14. Ratification record (2026-08-26)
 
-1. Schema catalog: the first instances, seeded from `CAS-001..003`,
-   `RPL-001..005`, `SES-001`, `CMP-001..002`, `CTX-001..002`, `BRG-001`.
-2. The mutation catalog derivation and the two mutation directions.
-3. Manifest format, canonical ordering, and version binding to the model.
-4. The ledger surface form and where it lives.
-5. Lane role definitions and the exact `TOOLS.md` rows.
-6. Where the ratification point sits operationally (session cadence, what
-   the human sees, what a rejection returns to the conformance lane).
-7. Whether the anti-vacuity kit is enforced by the gate (a `#guard` audit
-   task) or by review alone.
+- **WGR-1** — cycle state as derived tree projection; git/runtime plane
+  boundary; ledger + briefing surfaces; ratchet-driven `next()`; staged Lean
+  lift (phase 1 scripts, phase 2 own Pass A); statelessness rule. Rider:
+  instructional closure.
+- **WGR-2** — the eight-family schema catalog with CTX-*/CAS-003 exclusions;
+  instances name their schema; bundles carry statement, sentence, and kit
+  templates.
+- **WGR-3** — declared mutants only, one per falsification case as floor,
+  quarantined and gate-grepped; both mutation directions asserted; survivor
+  fails the task.
+- **WGR-4** — per-family manifests under the five rules; model-version
+  binding with byte-identical regeneration; ledger-carried digests.
+- **WGR-5** — ledger shape as in section 9 with the mechanical
+  proved-without-kit rule.
+- **WGR-6** — lane roles landed in `TOOLS.md`; per-manifest-version
+  ratification cadence; ratified-manifests-only consumption.
+- **WGR-7** — gate-enforced kits via compile-checked `#guard`s plus
+  convention grep; kit templates ratified per schema family.
+- **Rider: plain meaning** — sentence templates per schema, mutant meanings,
+  single-source docstrings projected to ledger/briefing/manifest headers.

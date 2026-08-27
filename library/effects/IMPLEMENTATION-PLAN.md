@@ -76,7 +76,7 @@ Canonical repository documents remain authoritative. Copies under
 | [`DEVELOPMENT-INVARIANTS.md`](../../docs/DEVELOPMENT-INVARIANTS.md) | Requires project-owned semantic types, explicit state, typed failures, and separate adapters | Canonical development law |
 | [`sources.lock.json`](../../.reference/provenance/sources.lock.json) | Owns the Effect source identity | Effect commit `0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07`, package `effect@4.0.0-rc.111` |
 | [`MACHINE-ALGEBRA.md`](../machine/MACHINE-ALGEBRA.md) | Supplies the house canonicalization, framing, typed-reference, store-obligation, and hash-hypothesis patterns | Pre-grade design input; M0 must choose instantiation or a deliberate fork |
-| [`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md) | Dual-lane development workflow: statement schemas, manifests, mutation metric, lane roles | Pass-A draft, pending ratification |
+| [`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md) | Dual-lane development workflow: statement schemas, manifests, mutation metric, cycle state, lane roles | Ratified workflow authority, 2026-08-26 |
 | [LLVM Content Addressable Storage guide](https://llvm.org/docs/ContentAddressableStorage.html#cas-library-implementation-guide) | Supplies the `data + references`, object-store, identifier, loaded-object, and action-index pattern | Architecture pattern only; exact source pin and license receipt pending |
 
 ### Prior-art disposition ledger
@@ -579,10 +579,10 @@ IDs are provisional planning identifiers.
 
 ## 8. Test and evidence strategy
 
-Once [`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md) is ratified, the
-layers below become stages of its dual-lane loop: layers 5–6 belong to the
-conformance lane, layers 1–4 and 7 to the implementation lane, with the
-versioned manifest as the only coupling.
+The layers below are stages of the ratified dual-lane loop
+([`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md)): layers 5–6 belong to
+the conformance lane, layers 1–4 and 7 to the implementation lane, with the
+versioned ratified manifest as the only coupling.
 
 ### Test layers
 
@@ -684,12 +684,14 @@ Deliverables:
 - interface review for the CAS store, replay service, and live/record/replay
   adapter constructors;
 - replay-mode construction whose environment has no live-service requirement;
-- the conformance-workflow scaffolding per
-  [`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md) once it is ratified:
-  statement-schema catalog seeded from the obligation ledger, versioned
-  manifest generator, mutation catalog derived from the ledger's
-  falsification column, conformance ledger surface, and the two harness rows
-  proposed for `TOOLS.md`; and
+- the conformance-workflow scaffolding per the ratified
+  [`CONFORMANCE-WORKFLOW.md`](CONFORMANCE-WORKFLOW.md): the eight
+  schema-bundle templates (statement, sentence, kit) in Lean, the canonical
+  manifest printer and generator, the mutant quarantine layout with its gate
+  grep, the conformance-ledger and briefing generators with the
+  transition-legality check, and the mise task growth
+  (`gen`/`check:effects:mutation`/`brief:effects`) — the two harness rows
+  landed in `TOOLS.md` at ratification; and
 - a mise task that refreshes the requested `research/docs/` snapshots from
   their canonical owners and checks byte equality without admitting the copies
   as authorities.
