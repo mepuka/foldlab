@@ -357,6 +357,34 @@ export namespace CasBlob {
   }
 
   const make = (store: CasStoreShape): Shape => {
+    const resolve = (ref: BlobRef) => loadPlan(store, ref).pipe(
+      Effect.flatMap(requireRecipeOne),
+    )
+
+    const streamPlan = (
+      plan: ReadPlan,
+    ): Stream.Stream<Uint8Array, CasError | BlobError> =>
+      walk(store, plan, plan.treeRoot, 0, plan.leafCount)
+
+    const slicePlan = (
+      plan: ReadPlan,
+      range: ByteRange,
+    ): Stream.Stream<Uint8Array, CasError | BlobError> => {
+      const end = range.offset + range.length
+      if (range.offset < 0n || range.length < 0n || end > plan.totalBytes) {
+        return Stream.fail(new RangeError({
+          offset: range.offset,
+          length: range.length,
+          totalBytes: plan.totalBytes,
+        }))
+      }
+      if (range.length === 0n) return Stream.empty
+      return walk(store, plan, plan.treeRoot, 0, plan.leafCount, {
+        offset: range.offset,
+        end,
+      })
+    }
+
     const inspect = Effect.fn("CasBlob.inspect")(function* (ref: BlobRef) {
       const plan = yield* loadPlan(store, ref)
       return {
@@ -368,39 +396,22 @@ export namespace CasBlob {
     })
 
     const stream = (ref: BlobRef): Stream.Stream<Uint8Array, CasError | BlobError> =>
-      Stream.unwrap(loadPlan(store, ref).pipe(
-        Effect.flatMap(requireRecipeOne),
-        Effect.map((plan) => walk(store, plan, plan.treeRoot, 0, plan.leafCount)),
+      Stream.unwrap(resolve(ref).pipe(
+        Effect.map(streamPlan),
       ))
 
     const slice = (
       ref: BlobRef,
       range: ByteRange,
-    ): Stream.Stream<Uint8Array, CasError | BlobError> => Stream.unwrap(
-      loadPlan(store, ref).pipe(
-        Effect.flatMap(requireRecipeOne),
-        Effect.map((plan) => {
-          const end = range.offset + range.length
-          if (range.offset < 0n || range.length < 0n || end > plan.totalBytes) {
-            return Stream.fail(new RangeError({
-              offset: range.offset,
-              length: range.length,
-              totalBytes: plan.totalBytes,
-            }))
-          }
-          if (range.length === 0n) return Stream.empty
-          return walk(store, plan, plan.treeRoot, 0, plan.leafCount, {
-            offset: range.offset,
-            end,
-          })
-        }),
-      ),
-    )
+    ): Stream.Stream<Uint8Array, CasError | BlobError> =>
+      Stream.unwrap(resolve(ref).pipe(
+        Effect.map((plan) => slicePlan(plan, range)),
+      ))
 
     const get = Effect.fn("CasBlob.get")(function* (ref: BlobRef) {
-      const info = yield* inspect(ref)
-      const chunks = yield* Stream.runCollect(stream(ref))
-      return yield* join(chunks, info.totalBytes)
+      const plan = yield* resolve(ref)
+      const chunks = yield* Stream.runCollect(streamPlan(plan))
+      return yield* join(chunks, plan.totalBytes)
     })
 
     const put = <E, R>(

@@ -414,8 +414,8 @@ for (const [fault, title, expectedTag, expectedCode] of hostileCases) {
       })))
 }
 
-for (const fault of ["contentEncoding", "contentEncodingAck"] as const) {
-  it.effect(`hostile cas-http/0 rejects non-identity content-encoding on ${fault === "contentEncoding" ? "loads" : "acknowledgements"}`, () =>
+for (const fault of ["contentEncoding", "contentEncodingAck", "contentEncodingAck204"] as const) {
+  it.effect(`hostile cas-http/0 rejects non-identity content-encoding on ${fault === "contentEncoding" ? "loads" : fault === "contentEncodingAck204" ? "204 acknowledgements" : "acknowledgements"}`, () =>
     Effect.scoped(Effect.gen(function* () {
       const resident = node([4, 2, 4, 2])
       const bytes = encodeCasNode(resident)

@@ -34,18 +34,22 @@ export const classifyTransportFailure = (
     }
   }
   let current: unknown = "cause" in error.reason ? error.reason.cause : undefined
-  let causeCode: unknown
-  let causeName: unknown
+  let connectionReset = false
+  let timedOut = false
+  let cancelled = false
   for (let depth = 0; depth < 2 && typeof current === "object" && current !== null; depth += 1) {
-    if (causeCode === undefined && "code" in current) causeCode = current.code
-    if (causeName === undefined && "name" in current) causeName = current.name
+    const causeCode = "code" in current ? current.code : undefined
+    const causeName = "name" in current ? current.name : undefined
+    connectionReset ||= causeCode === "ECONNRESET"
+    timedOut ||= causeCode === "ETIMEDOUT"
+    cancelled ||= causeName === "AbortError"
     current = "cause" in current ? current.cause : undefined
   }
-  const code: RemoteTransportFailure["code"] = causeCode === "ECONNRESET"
+  const code: RemoteTransportFailure["code"] = connectionReset
     ? "connectionReset"
-    : causeCode === "ETIMEDOUT"
+    : timedOut
     ? "timeout"
-    : causeName === "AbortError"
+    : cancelled
     ? "cancelled"
     : "connectionFailed"
   return {
@@ -201,6 +205,7 @@ const controlResponse = (
 const emptyAcknowledgement = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
+  consumeBody = true,
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
   const declared = parseNonNegativeInteger(response.headers["content-length"])
   const contentType = response.headers["content-type"]
@@ -212,6 +217,9 @@ const emptyAcknowledgement = (
   }
   if (declared !== undefined && declared !== 0) {
     return responseEvent({ _tag: "Truncated" }, sentBytes, "unexpectedBody")
+  }
+  if (!consumeBody) {
+    return responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes)
   }
 
   return Channel.unwrap(response.stream.pipe(
@@ -238,9 +246,8 @@ const acknowledgementResponse = (
     ...sharedStatusCases(sentBytes),
     200: (accepted) => emptyAcknowledgement(accepted, sentBytes),
     201: (accepted) => emptyAcknowledgement(accepted, sentBytes),
-    // RFC 9110 defines 204 as terminating at the header section: it cannot
-    // carry content, so there is no response stream to decode.
-    204: () => responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes),
+    // Even a bodyless 204 must satisfy profile header discipline.
+    204: (accepted) => emptyAcknowledgement(accepted, sentBytes, false),
     409: () => responseEvent({ _tag: "IntegrityMismatch" }, sentBytes),
     orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
   })

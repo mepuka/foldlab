@@ -54,7 +54,11 @@ export interface ReplayableValueKit<Self, S> {
 }
 
 const WrappedServiceBrand = "foldlab/effect-replay/ServiceAdapter/wrapped"
-const coreKits = new WeakMap<object, unknown>()
+interface RegisteredKit {
+  readonly descriptions: ServiceDescriptions<unknown>
+  readonly kit: unknown
+}
+const coreKits = new WeakMap<object, RegisteredKit>()
 
 type RuntimeMethod = (
   request: unknown,
@@ -87,6 +91,28 @@ const descriptionAt = <S>(
   descriptions: ServiceDescriptions<S>,
   key: keyof S,
 ): AnyOperationDescription => descriptions[key]
+
+const sameDescriptions = <S>(
+  left: ServiceDescriptions<S>,
+  right: ServiceDescriptions<S>,
+): boolean => {
+  if (left === right) return true
+  const leftKeys = descriptionKeys(left)
+  const rightKeys = descriptionKeys(right)
+  if (leftKeys.length !== rightKeys.length) return false
+  for (const key of leftKeys) {
+    if (!Object.prototype.hasOwnProperty.call(right, key)) return false
+    const a = descriptionAt(left, key)
+    const b = descriptionAt(right, key)
+    if (a.id !== b.id
+      || a.revision !== b.revision
+      || a.request !== b.request
+      || a.success !== b.success
+      || a.failure !== b.failure
+      || a.leafReplay !== b.leafReplay) return false
+  }
+  return true
+}
 
 const asRuntimeMethod = <S>(service: S, key: keyof S): RuntimeMethod => {
   const method = (service as Record<keyof S, unknown>)[key]
@@ -129,7 +155,15 @@ const makeKit = <Self, S>(
   descriptions: ServiceDescriptions<S>,
 ): ReplayableKit<Self, S> => {
   const cached = coreKits.get(service)
-  if (cached !== undefined) return cached as ReplayableKit<Self, S>
+  if (cached !== undefined) {
+    const registered = cached.descriptions as ServiceDescriptions<S>
+    if (!sameDescriptions(registered, descriptions)) {
+      throw new TypeError(
+        `Replay service ${service.key} was registered with conflicting descriptions`,
+      )
+    }
+    return cached.kit as ReplayableKit<Self, S>
+  }
 
   const live = Context.Service<Live<Self>, S>(
     `${service.key}/LiveRole`,
@@ -153,7 +187,10 @@ const makeKit = <Self, S>(
   )
 
   const kit: ReplayableKit<Self, S> = { live, record, replay }
-  coreKits.set(service, kit)
+  coreKits.set(service, {
+    descriptions: descriptions as ServiceDescriptions<unknown>,
+    kit,
+  })
   return kit
 }
 

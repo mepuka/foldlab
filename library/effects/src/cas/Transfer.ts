@@ -1,6 +1,5 @@
 /** Streamed mechanics above the whole-node CasStore boundary. */
 import { Context, Effect, Stream } from "effect"
-import type { Scope } from "effect"
 import type { CasError, CasNodeInput, CasReference, ContentId, NodeKind } from "./Node.ts"
 import {
   oneShot,
@@ -59,7 +58,7 @@ export interface CasTransferShape {
   ) => Effect.Effect<ContentId, CasRemoteError | CasError>
 
   /**
-   * Return checked bytes in the caller's Scope. The current adapter uses a
+   * Return checked bytes after internally managing transport scope. The current adapter uses a
    * decoded-budget-bounded in-memory whole-object spool before emitting any
    * byte. A cold reference-carrying parent whose children are absent locally
    * fails as RemoteFailure(DanglingReference); discovery-order closure pull is
@@ -70,8 +69,7 @@ export interface CasTransferShape {
     id: ContentId,
   ) => Effect.Effect<
     Stream.Stream<Uint8Array, CasRemoteError | CasError>,
-    CasRemoteError | CasError,
-    Scope.Scope
+    CasRemoteError | CasError
   >
 }
 

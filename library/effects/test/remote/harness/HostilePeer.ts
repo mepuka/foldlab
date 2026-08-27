@@ -24,6 +24,7 @@ export const HostileFault = Schema.Literals([
   "redirect",
   "contentEncoding",
   "contentEncodingAck",
+  "contentEncodingAck204",
   "rateLimitedAbsent",
   "rateLimitedDate",
   "rateLimitedNumeric",
@@ -143,12 +144,15 @@ export const HostilePeer: ConformancePeer = {
             ]))
             return
           }
-          if (fault === "contentEncodingAck" && isPut) {
-            socket.end(headers("201 Created", [
+          if ((fault === "contentEncodingAck" || fault === "contentEncodingAck204") && isPut) {
+            socket.end(headers(
+              fault === "contentEncodingAck204" ? "204 No Content" : "201 Created",
+              [
               ["Content-Type", "application/octet-stream"],
               ["Content-Encoding", "gzip"],
               ["Content-Length", "0"],
-            ]))
+              ],
+            ))
             return
           }
           if (fault === "declaredOversize") {

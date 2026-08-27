@@ -68,11 +68,20 @@ type DescriptionSpecs<S> = {
 export const describeService =
   <S>(prefix: string) =>
   (specs: DescriptionSpecs<S>): ServiceDescriptions<S> => {
+    if (prefix.length === 0) {
+      throw new TypeError("Replay service description prefix must be non-empty")
+    }
     const descriptions: Partial<Record<keyof S, unknown>> = {}
     const keys = Reflect.ownKeys(specs) as unknown as ReadonlyArray<keyof S>
     for (const key of keys) {
+      const spec = specs[key]
+      if (!Number.isInteger(spec.revision) || spec.revision < 0) {
+        throw new TypeError(
+          `Replay operation ${prefix}/${String(key)} revision must be a non-negative integer`,
+        )
+      }
       descriptions[key] = {
-        ...specs[key],
+        ...spec,
         id: `${prefix}/${String(key)}`,
         leafReplay: "substitutable",
       }

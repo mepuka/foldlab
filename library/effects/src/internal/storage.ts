@@ -33,9 +33,14 @@ export const StoredHistoryEntry = Schema.Struct({
 })
 export type StoredHistoryEntry = typeof StoredHistoryEntry.Type
 
+const StoredTerminalValue = Schema.Union([
+  Schema.String,
+  Schema.TaggedStruct("Unrepresentable", {}),
+])
+
 const StoredTerminal = Schema.Union([
-  Schema.TaggedStruct("Succeeded", { value: Schema.String }),
-  Schema.TaggedStruct("Failed", { error: Schema.String }),
+  Schema.TaggedStruct("Succeeded", { value: StoredTerminalValue }),
+  Schema.TaggedStruct("Failed", { error: StoredTerminalValue }),
 ])
 
 const StoredSessionOutcome = Schema.Union([

@@ -73,6 +73,20 @@ export interface SessionResult<A, E> {
   readonly history?: ContentId
 }
 
+/** Optional durable projections for a program's terminal channels. When
+ * omitted, values unsupported by the internal witness carrier are recorded as
+ * an explicit unrepresentable marker rather than failing the session. */
+export interface TerminalSchemas<A, E> {
+  readonly success: Schema.Codec<A, unknown, never, never>
+  readonly failure: Schema.Codec<E, unknown, never, never>
+}
+
+export interface SessionOptions<A, E> {
+  readonly mode: ReplayMode
+  readonly history?: ContentId
+  readonly terminal?: TerminalSchemas<A, E>
+}
+
 /** A channel-preserving outcome stored in one history occurrence. */
 export type Outcome<A, E> =
   | { readonly _tag: "Success"; readonly value: A }

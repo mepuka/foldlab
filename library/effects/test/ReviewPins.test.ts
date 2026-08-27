@@ -2,11 +2,9 @@
  * Executable pins for the verified host-boundary review of 0fa1bde7.
  *
  * Discipline: each pin exercises one confirmed finding's exact fault
- * scenario and asserts the CURRENT defective behavior, so the suite is
- * green while the defect stands and fails loudly the moment a fix lands —
- * the fix author flips the pin to the fixed assertion in the same change.
- * Findings resolved before this file exist as locks (they assert the
- * fixed behavior).
+ * scenario. Remediated pins assert the fixed behavior; a pin intentionally
+ * left standing documents a ruled deferral beside its current expectation.
+ * Findings resolved before this review exist as locks.
  *
  * Not pinned here, with reasons:
  * - CQ-2 (manufactured budget evidence in `resultError`) and CQ-3 (the
@@ -39,10 +37,10 @@ import {
   Schema,
   Stream,
 } from "effect"
-import type { Scope } from "effect"
+import { TestClock } from "effect/testing"
 import * as HttpClient from "effect/unstable/http/HttpClient"
 import * as HttpClientError from "effect/unstable/http/HttpClientError"
-import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse"
+import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest"
 import { createHash, randomBytes } from "node:crypto"
 import * as barrel from "../src/index.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
@@ -58,7 +56,7 @@ import { CasRemoteConfig, RemoteAuthority, restartable } from "../src/cas/Remote
 import type { CasTransferShape } from "../src/cas/Transfer.ts"
 import { CasBlob } from "../src/cas/Blob.ts"
 import { makeRemoteAdapter } from "../src/internal/remote.ts"
-import { makeRemoteHttp } from "../src/internal/remoteHttp.ts"
+import { classifyTransportFailure, makeRemoteHttp } from "../src/internal/remoteHttp.ts"
 import { encodeCapabilityDocument } from "../src/internal/remoteControl.ts"
 import type { RemoteCasTransport } from "../src/internal/remoteTransport.ts"
 import type { ServiceDescriptions } from "../src/replay/Operation.ts"
@@ -130,10 +128,11 @@ const TestCrypto = Layer.succeed(Crypto.Crypto, Crypto.make({
 }))
 
 const pinConfig = (overrides: Partial<{
+  readonly authority: string
   readonly maxEncodedBytes: number
   readonly maxQueuedBytes: number
 }> = {}) => new CasRemoteConfig({
-  authority: RemoteAuthority.make("http://127.0.0.1:1"),
+  authority: RemoteAuthority.make(overrides.authority ?? "http://127.0.0.1:1"),
   authorityMode: "remote-authoritative",
   maxEncodedBytes: overrides.maxEncodedBytes ?? 4096,
   maxDecodedBytes: 4096,
@@ -276,7 +275,7 @@ it.effect("lock 2: overlapping record invocation is refused as DelegationOutstan
 /* Finding 3 — interruption between CAS commit and state publication    */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 3: interruption after the history put commits a node the aborted witness never reports", () =>
+it.effect("pin 3: history commit and session-state publication form one masked cell update", () =>
   Effect.gen(function* () {
     const reachedWindow = yield* Deferred.make<void>()
     const holdWindow = yield* Deferred.make<void>()
@@ -287,7 +286,7 @@ it.effect("pin 3: interruption after the history put commits a node the aborted 
         historyPuts += 1
         if (historyPuts === 2) {
           // The second history node is committed; hold the fiber inside
-          // the window before Ref.set publishes it into session state.
+          // the masked cell update before it publishes the new state.
           yield* Deferred.succeed(reachedWindow, undefined)
           yield* Deferred.await(holdWindow)
         }
@@ -313,7 +312,12 @@ it.effect("pin 3: interruption after the history put commits a node the aborted 
       Effect.forkChild,
     )
     yield* Deferred.await(reachedWindow)
-    yield* Fiber.interrupt(fiber)
+    const interruptor = yield* Fiber.interrupt(fiber).pipe(Effect.forkChild)
+    // Give the interrupt request a scheduling turn while the target remains
+    // parked in the masked update, then let that update publish atomically.
+    yield* Effect.yieldNow
+    yield* Deferred.succeed(holdWindow, undefined)
+    yield* Fiber.join(interruptor)
 
     const historyIds = spy.captured
       .filter((p) => p.node.kind.tag === HistoryTag)
@@ -327,42 +331,68 @@ it.effect("pin 3: interruption after the history put commits a node the aborted 
     // The second node IS committed in the store...
     const committed = yield* spy.underlying.load(second)
     expect(committed.kind.tag).toBe(HistoryTag)
-    // ...but the aborted witness reports the STALE root: publication
-    // never ran. Fixed behavior: commit plus publication is one masked
-    // critical section, and the witness reports the committed root.
+    // The masked cell update publishes the committed root before the pending
+    // interruption can reach the aborted-witness finalizer.
     const witness = spy.captured.find((p) => p.node.kind.tag === WitnessTag)
     if (witness === undefined) {
       return yield* Effect.die("expected a persisted aborted witness")
     }
     const stored = decodeStoredWitness(witness.node.payload)
     expect(stored.outcome).toEqual({ _tag: "Aborted", reason: "Interrupted" })
-    expect(stored.historyRoot).toBe(first)
-    expect(stored.historyRoot).not.toBe(second)
+    expect(stored.historyRoot).toBe(second)
+    expect(stored.historyRoot).not.toBe(first)
   }))
 
 /* ------------------------------------------------------------------ */
 /* Finding 4 — generic terminals die in the plain-object codec          */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 4: a session whose terminal value has a non-plain prototype fails at witness persistence", () => {
-  const store = layerMemory(deterministicAddress())
-  return Effect.gen(function* () {
-    // The program itself succeeds; persisting its terminal does not.
-    // Fixed behavior: explicit terminal codecs or a projected terminal
-    // representation persist this witness.
-    const error = yield* session(
+it.effect("pin 4: an unsupported terminal persists the declared unrepresentable marker", () =>
+  Effect.gen(function* () {
+    const spy = yield* makeSpyStore()
+    const result = yield* session(
       Effect.succeed(new Date(0)),
       { mode: "record" },
-    ).pipe(Effect.flip)
-    expect(error).toMatchObject({
-      _tag: "CasError/StoreFailure",
-      reason: expect.stringContaining("Witness terminal encoding failed"),
+    ).pipe(Effect.provide(runtimeOver(Layer.succeed(CasStore, spy.shape))))
+    expect(result.outcome).toMatchObject({
+      _tag: "Completed",
+      terminal: { _tag: "Succeeded", value: new Date(0) },
     })
-  }).pipe(Effect.provide(runtimeOver(store)))
-})
+    const witness = spy.captured.find((put) => put.node.kind.tag === WitnessTag)
+    if (witness === undefined) return yield* Effect.die("expected terminal witness")
+    expect(decodeStoredWitness(witness.node.payload).outcome).toEqual({
+      _tag: "Completed",
+      terminal: {
+        _tag: "Succeeded",
+        value: { _tag: "Unrepresentable" },
+      },
+    })
+  }))
+
+it.effect("explicit terminal schemas project non-plain values before witness storage", () =>
+  Effect.gen(function* () {
+    const spy = yield* makeSpyStore()
+    yield* session(
+      Effect.succeed(new Date(0)),
+      {
+        mode: "record",
+        terminal: {
+          success: Schema.DateFromMillis,
+          failure: Schema.Never,
+        },
+      },
+    ).pipe(Effect.provide(runtimeOver(Layer.succeed(CasStore, spy.shape))))
+    const witness = spy.captured.find((put) => put.node.kind.tag === WitnessTag)
+    if (witness === undefined) return yield* Effect.die("expected projected witness")
+    const outcome = decodeStoredWitness(witness.node.payload).outcome
+    expect(outcome._tag).toBe("Completed")
+    if (outcome._tag === "Completed" && outcome.terminal._tag === "Succeeded") {
+      expect(outcome.terminal.value).not.toEqual({ _tag: "Unrepresentable" })
+    }
+  }))
 
 /* ------------------------------------------------------------------ */
-/* Finding 5 — aborted witnesses are unreachable; the mask is unbounded */
+/* Finding 5 — receipt deferred; bounded persistence remediated           */
 /* ------------------------------------------------------------------ */
 
 it.effect("pin 5a: the aborted witness is persisted but its receipt is discarded", () =>
@@ -387,7 +417,7 @@ it.effect("pin 5a: the aborted witness is persisted but its receipt is discarded
     expect(String(caught)).not.toContain(witness.id)
   }))
 
-it.effect("pin 5b: a hanging store makes session cancellation uninterruptible without bound", () =>
+it.effect("pin 5b: aborted-witness persistence is masked but bounded", () =>
   Effect.gen(function* () {
     const witnessStarted = yield* Deferred.make<void>()
     const releaseStore = yield* Deferred.make<void>()
@@ -413,107 +443,60 @@ it.effect("pin 5b: a hanging store makes session cancellation uninterruptible wi
       })),
       Effect.forkChild,
     )
-    for (let i = 0; i < 200; i += 1) yield* Effect.yieldNow
-    // Pinned defect: cancellation is stuck behind the unbounded
-    // uninterruptible witness write. Fixed behavior: the masked store
-    // operation is bounded, so interruption settles without the store's
-    // cooperation.
-    expect(interruptSettled).toBe(false)
-    yield* Deferred.succeed(releaseStore, undefined)
+    yield* TestClock.adjust(1_001)
     yield* Fiber.join(interruptor)
     expect(interruptSettled).toBe(true)
+    yield* Deferred.succeed(releaseStore, undefined)
   }))
 
 /* ------------------------------------------------------------------ */
 /* Finding 6 — nested cancellation is misclassified                     */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 6: an AbortError nested under a TypeError classifies as connectionFailed", () =>
-  Effect.scoped(Effect.gen(function* () {
-    const remoteConfig = pinConfig()
-    const client = HttpClient.make((request) => Effect.fail(
-      new HttpClientError.HttpClientError({
-        reason: new HttpClientError.TransportError({
-          request,
-          cause: Object.assign(new TypeError("fetch failed"), {
-            cause: Object.assign(new Error("the operation was aborted"), {
-              name: "AbortError",
-            }),
-          }),
+it("pin 6: an AbortError nested under a TypeError classifies as cancelled", () => {
+  const request = HttpClientRequest.get("http://127.0.0.1/cas/pin")
+  const error = new HttpClientError.HttpClientError({
+    reason: new HttpClientError.TransportError({
+      request,
+      cause: Object.assign(new TypeError("fetch failed"), {
+        cause: Object.assign(new Error("the operation was aborted"), {
+          name: "AbortError",
         }),
       }),
-    ))
-    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
-      Effect.provideService(HttpClient.HttpClient, client),
-    )
-    const address = yield* makeSha256Address
-    const error = yield* makeRemoteAdapter(remoteConfig, transport, address).pipe(
-      Effect.flip,
-    )
-    // Pinned defect: the outer TypeError's name masks the inner
-    // AbortError. Fixed behavior: every inspected level is searched for
-    // recognized codes and names, and this classifies as "cancelled".
-    expect(error).toMatchObject({
-      _tag: "CasRemoteError/Unavailable",
-      code: "connectionFailed",
-    })
-  }).pipe(Effect.provide(TestCrypto))))
+    }),
+  })
+  expect(classifyTransportFailure(error, 0).code).toBe("cancelled")
+})
 
 /* ------------------------------------------------------------------ */
 /* Finding 7 — 204 bypasses the content-encoding guard                  */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 7: a 204 acknowledgement with a hostile content-encoding is accepted", () =>
+it.effect("pin 7: a 204 acknowledgement rejects a hostile content-encoding", () =>
   Effect.scoped(Effect.gen(function* () {
-    const bytes = capabilityBytes()
-    const client = HttpClient.make((request) => Effect.sync(() => {
-      if (request.url.includes("/control/capabilities")) {
-        return HttpClientResponse.fromWeb(
-          request,
-          new Response(Buffer.from(bytes), {
-            status: 200,
-            headers: {
-              "content-type": "application/octet-stream",
-              "content-length": String(bytes.length),
-            },
-          }),
-        )
-      }
-      return HttpClientResponse.fromWeb(
-        request,
-        new Response(null, {
-          status: 204,
-          headers: { "content-encoding": "gzip" },
-        }),
-      )
-    }))
-    const remoteConfig = pinConfig()
-    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
-      Effect.provideService(HttpClient.HttpClient, client),
-    )
-    const address = yield* makeSha256Address
-    const adapter = yield* makeRemoteAdapter(remoteConfig, transport, address)
+    const endpoint = yield* HostilePeer.serve({ fault: "contentEncodingAck204" })
+    const remoteConfig = pinConfig({ authority: endpoint.authority })
+    const transport = yield* makeRemoteHttp(remoteConfig)
+    const adapter = yield* makeRemoteAdapter(remoteConfig, transport, yield* makeSha256Address)
     const uploaded = CasNodeInput.make({
       kind: { version: 0, tag: 3 },
       payload: Uint8Array.from([9, 9, 9]),
       refs: [],
     })
-    // Pinned defect: the upload succeeds — 204 returns Ok directly and
-    // never reaches the header validation 200/201 run through. Fixed
-    // behavior: the hostile encoding is an invalidHeaders protocol
-    // outcome on every acknowledgement status.
-    const id = yield* adapter.store.put(uploaded)
-    const digest = ContentId.make(
-      createHash("sha256").update(encodeCasNode(uploaded)).digest("hex"),
-    )
-    expect(id).toBe(digest)
+    const error = yield* adapter.store.put(uploaded).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasError/RemoteFailure",
+      cause: { _tag: "CasRemoteError/Protocol", code: "invalidHeaders" },
+    })
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
   }).pipe(Effect.provide(TestCrypto))))
 
 /* ------------------------------------------------------------------ */
 /* Finding 8 — raw payload length labeled as encoded-node evidence      */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 8: putStream reports raw payload length as encoded-stage evidence", () =>
+it.effect("pin 8: putStream reports canonical node length as encoded-stage evidence", () =>
   Effect.gen(function* () {
     const remoteConfig = pinConfig({ maxEncodedBytes: 8, maxQueuedBytes: 4096 })
     const address = yield* makeSha256Address
@@ -534,14 +517,10 @@ it.effect("pin 8: putStream reports raw payload length as encoded-stage evidence
       refs: [],
     })).length
     expect(trueEncoded).toBeGreaterThan(payload.length)
-    // Pinned defect: the "encoded" stage reports the accumulated raw
-    // payload (11), not the canonical encoded-node size. Fixed behavior:
-    // the machine evaluates the fully encoded node, so observed is the
-    // canonical size.
     expect(error).toMatchObject({
       _tag: "CasRemoteError/Budget",
       stage: "encoded",
-      observed: payload.length,
+      observed: trueEncoded,
       bound: 8,
     })
   }).pipe(Effect.provide(TestCrypto)))
@@ -600,7 +579,7 @@ class Dup extends Context.Service<Dup, DupShape>()(
   "test/effect-replay/ReviewPins/Dup",
 ) {}
 
-it("pin DX-1: kit memoization silently ignores a conflicting registration", () => {
+it("pin DX-1: kit memoization rejects a conflicting registration", () => {
   const descA = {
     ping: {
       id: "pins/Dup/ping",
@@ -622,25 +601,21 @@ it("pin DX-1: kit memoization silently ignores a conflicting registration", () =
     },
   } satisfies ServiceDescriptions<DupShape>
   const first = replayable(Dup, descA)
-  const second = replayable(Dup, descB)
-  // Pinned defect: the second registration hands back the first kit and
-  // its schemas without a word. Fixed behavior: a conflicting
-  // registration is rejected at construction.
-  expect(second).toBe(first)
+  expect(replayable(Dup, descA)).toBe(first)
+  expect(() => replayable(Dup, descB)).toThrowError(
+    /registered with conflicting descriptions/,
+  )
 })
 
-it("pin DX-3: loadStream declares a phantom Scope requirement", () => {
+it("pin DX-3: loadStream hides its internally managed scope", () => {
   type LoadStreamEffect = ReturnType<CasTransferShape["loadStream"]>
   type ContextOf<T> = T extends Effect.Effect<infer _A, infer _E, infer R>
     ? R
     : never
-  // Pinned shape: the double-effect signature requires Scope even though
-  // acquisition is internal. Fixed behavior: the requirement disappears
-  // (this type equality fails) when the deep module hides its scope.
-  expectTypeOf<ContextOf<LoadStreamEffect>>().toEqualTypeOf<Scope.Scope>()
+  expectTypeOf<ContextOf<LoadStreamEffect>>().toEqualTypeOf<never>()
 })
 
-it.effect("pin DX-4: blob get plans the manifest twice", () =>
+it.effect("pin DX-4: blob get shares one resolved read plan", () =>
   Effect.gen(function* () {
     const underlying = yield* makeMemoryCasStore(deterministicAddress())
     const loads = new Map<ContentId, number>()
@@ -659,35 +634,22 @@ it.effect("pin DX-4: blob get plans the manifest twice", () =>
       loads.clear()
       const bytes = yield* CasBlob.get(ref)
       expect(Array.from(bytes)).toEqual([1, 2, 3])
-      // Pinned defect: get = inspect + stream, and each resolves the
-      // manifest independently. Fixed behavior: one resolved read plan
-      // is shared, and the manifest loads once.
-      expect(loads.get(ContentId.make(ref))).toBe(2)
+      expect(loads.get(ContentId.make(ref))).toBe(1)
     }).pipe(Effect.provide(blobLayer))
   }))
 
-it("pin DX-5: describeService accepts degenerate prefixes and revisions unvalidated", () => {
-  const empty = describeService<DupShape>("")({
+it("pin DX-5: describeService validates prefixes and revisions", () => {
+  const spec = (revision: number) => ({
     ping: {
-      revision: 0,
+      revision,
       request: Schema.String,
       success: Schema.Number,
       failure: PinFail,
     },
   })
-  const fractional = describeService<DupShape>("pins/frac")({
-    ping: {
-      revision: 1.5,
-      request: Schema.String,
-      success: Schema.Number,
-      failure: PinFail,
-    },
-  })
-  // Pinned defect: an empty prefix yields a degenerate id and a
-  // fractional revision passes through. Fixed behavior: construction
-  // rejects both immediately.
-  expect(empty.ping.id).toBe("/ping")
-  expect(fractional.ping.revision).toBe(1.5)
+  expect(() => describeService<DupShape>("")(spec(0))).toThrowError(/prefix/)
+  expect(() => describeService<DupShape>("pins/frac")(spec(1.5))).toThrowError(/revision/)
+  expect(() => describeService<DupShape>("pins/negative")(spec(-1))).toThrowError(/revision/)
 })
 
 it("lock DX-7: the barrel is exactly the two plane doors", () => {

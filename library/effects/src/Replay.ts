@@ -27,12 +27,14 @@ export type {
   Invocation,
   Outcome,
   SessionOutcome,
+  SessionOptions,
   SessionResult,
   SessionState,
   SessionStatus,
   StepOut,
   StepResult,
   Terminal,
+  TerminalSchemas,
 } from "./replay/Session.ts"
 
 // Decision traces observed by sessions.
