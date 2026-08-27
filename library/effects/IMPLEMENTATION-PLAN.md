@@ -219,10 +219,13 @@ Effect-provided default services such as Clock or Random except through a
 described leaf operation. `R = never` is not treated as evidence of purity.
 The ratified policy is reject-first: time, randomness, and jittered scheduling
 are rejected from conforming examples; replay-mode sessions install tripwire
-Clock/Random defaults that surface ambient use as a `Violated` session outcome
-(mechanism verified against the pinned surface at M1); deterministic overrides
-are deferred until a fixture demands one. The raw-host channel (`Date.now`)
-remains discipline plus permanent counterexample fixtures.
+Clock/Random defaults that surface ambient use as a `Violated` session outcome;
+deterministic overrides are deferred until a fixture demands one. The raw-host
+channel (`Date.now`) remains discipline plus permanent counterexample fixtures.
+The tripwire mechanism is verified against the pinned source (2026-08-26):
+`Clock.Clock` and `Random.Random` are `Context.Reference` keys overridable per
+scope with `Effect.provideService`; `Effect.sleep` routes through the clock
+service, and `Schedule.jittered` draws through the random reference.
 
 Deferred:
 
@@ -665,7 +668,10 @@ Deliverables:
 - package manifest, exact `effect`, TypeScript, and `@effect/tsgo` versions,
   lockfile, TypeScript configuration, public exports, test runner, and mise
   tasks;
-- Source Lock expansion for Effect files used by service/layer integration;
+- Source Lock expansion for Effect files used by service/layer integration —
+  candidates enumerated by the 2026-08-26 service verification: `Context.ts`,
+  `References.ts`, `Clock.ts`, `Random.ts`, `Schedule.ts`, `Effect.ts`,
+  `Layer.ts`, `Schema.ts`, `Exit.ts`, `Cause.ts`, `internal/effect.ts`;
 - Schema declarations for operation descriptions, CAS nodes, typed outcomes,
   replay modes, and mismatches;
 - interface review for the CAS store, replay service, and live/record/replay
@@ -902,8 +908,9 @@ The M0 grilling session resolved every open decision:
    replay requires the replay service only; runtime string-keyed brand checked
    at construction; double wrap rejects.
 7. **Ambient policy:** reject-first; replay-mode tripwire Clock/Random
-   defaults surfacing as `Violated` (mechanism verified at M1); deterministic
-   overrides deferred until a fixture demands one.
+   defaults surfacing as `Violated` (mechanism verified against the pinned
+   source, 2026-08-26); deterministic overrides deferred until a fixture
+   demands one.
 8. **Opaque substitution:** deferred to the M7 extension list; M5 is
    transparent chaining only.
 9. **Package:** private until the M6 gate; name candidate

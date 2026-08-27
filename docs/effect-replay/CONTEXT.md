@@ -124,8 +124,9 @@ enters as an ordinary refactor proposal at that time.
   later wrapped operation fails with a typed error, so histories are truthful
   prefixes, never gapped subsequences. Replay mode is hermetic: no live service
   exists in its environment, and tripwire Clock/Random defaults surface ambient
-  use as a `Violated` outcome (mechanism verified against the pinned surface at
-  M1).
+  use as a `Violated` outcome (mechanism verified against the pinned source,
+  2026-08-26: both are `Context.Reference` keys overridable per scope with
+  `Effect.provideService`).
 - **Avoid:** recording past an append failure; giving a replay session a live
   dependency.
 
