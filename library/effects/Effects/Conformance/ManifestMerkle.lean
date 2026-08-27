@@ -1,4 +1,5 @@
 import Effects.Conformance.ManifestRemote
+import Effects.Merkle.Parser
 import Effects.Conformance.Instances.MRK001
 import Effects.Conformance.Instances.MRK002
 import Effects.Conformance.Instances.MRK003
@@ -425,12 +426,106 @@ def mrk014BlobManifest : Value :=
     "The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision."
     (some blobGraphOracle) (mrk014BlobRows blobTreeNodes)
 
+/-! ## The fragmentation family (MRK-015): every split of one body
+parses identically
+
+Rows carry a fragment list in; the expectation is the incremental
+parser's fold — the parsed items, the partial-frame remainder, or
+malformed — computed by executing the model. Five fragmentations of
+ONE frame body (single-shot, byte-by-byte, a split inside a length
+prefix, a split inside a parent address, a ragged multisplit) carry
+identical expectations, making the invariance a visible fixture; the
+truncation row completes with a nonempty remainder, never silently;
+the unknown tag is malformed wherever it falls. An implementation
+binds its incremental framer to these rows, so buffering across
+fragment boundaries is tested from the model rather than
+self-tested. -/
+
+/-- The incremental parser under test: transport fragments in, the
+accumulated items and partial-frame remainder out; malformed is
+`none`. -/
+abbrev FeedFn :=
+  List (List UInt8) → Option (List (DInput Addr32) × List UInt8)
+
+def realFeed : FeedFn := feedAll
+
+def fragAddrA : Addr32 := merkleH.H (.leaf 0 [1])
+def fragAddrB : Addr32 := merkleH.H (.leaf 1 [2])
+
+/-- The one frame body every positive fragmentation row splits: all
+three frame tags, a nonempty and an empty chunk payload. -/
+def fragItems : List (DInput Addr32) :=
+  [ .skipNode
+  , .chunkNode [1, 2]
+  , .parentNode fragAddrA fragAddrB
+  , .chunkNode [] ]
+
+def fragBody : List UInt8 := fragItems.flatMap encodeItem
+
+/-- Split a byte string at the given fragment sizes, any remainder
+becoming the final fragment. -/
+def fragSplit (sizes : List Nat) (bs : List UInt8) : List (List UInt8) :=
+  match sizes with
+  | [] => if bs.isEmpty then [] else [bs]
+  | n :: rest => bs.take n :: fragSplit rest (bs.drop n)
+
+def fragParseRow (feedF : FeedFn) (caseId : String)
+    (frags : List (List UInt8)) : String × Value :=
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", match feedF frags with
+             | some (items, rem) =>
+                 .obj [ ("_tag", .str "Parsed")
+                      , ("items", .arr (items.map dInputJson))
+                      , ("remainder", bytesJson rem) ]
+             | none => .obj [("_tag", .str "Malformed")])
+         , ("input", .obj [("fragments", .arr (frags.map bytesJson))]) ] )
+
+def mrk015FragRows (feedF : FeedFn) : List (String × Value) :=
+  [ fragParseRow feedF "single-shot-000" [fragBody]
+  , fragParseRow feedF "byte-by-byte-001" (fragBody.map ([·]))
+  , fragParseRow feedF "split-inside-length-prefix-002"
+      [fragBody.take 3, fragBody.drop 3]
+  , fragParseRow feedF "split-inside-parent-address-003"
+      [fragBody.take 40, fragBody.drop 40]
+  , fragParseRow feedF "ragged-multisplit-004"
+      (fragSplit [1, 5, 1, 33, 33] fragBody)
+  , fragParseRow feedF "empty-fragments-interleaved-005"
+      [[], fragBody.take 10, [], fragBody.drop 10, []]
+  , fragParseRow feedF "truncated-remainder-never-completes-006"
+      [fragBody.take 77]
+  , fragParseRow feedF "malformed-tag-rejected-007" [fragBody ++ [3]]
+  , fragParseRow feedF "empty-input-completes-empty-008" [] ]
+
+/-- Rendered rows of the fragmentation family under a parser. -/
+def merkleFragRowsRendered (feedF : FeedFn) : String :=
+  renderRows (mrk015FragRows feedF)
+
+-- The fixtures witness the carrier laws concretely: one body's
+-- fragmentations agree, and the truncation leaves a nonempty
+-- partial-frame remainder.
+#guard feedAll [fragBody] = feedAll (fragBody.map ([·]))
+#guard (feedAll [fragBody]).map (·.1) = some fragItems
+#guard (feedAll [fragBody.take 77]).map (·.2.isEmpty) = some false
+
+/-- The fragmentation oracle. -/
+def fragOracle : String :=
+  "Fragments are transport-level splits of proof-stream frame bodies — a skip tag, a length-prefixed chunk, a parent carrying two 32-byte addresses (toy digests, the declared 32-lane byte fold, not cryptographic) — so an implementation binds its incremental framer with the fragments replayed verbatim: identical items and remainder across every fragmentation of one body, a nonempty remainder on truncation, malformed on an unknown tag."
+
+/-- The fragmentation family document, attached to the MRK-015 carrier
+row as its implementation-side evidence. -/
+def mrk015FragManifest : Value :=
+  familyDocAt modelVersion "MRK-015"
+    "Byte-level frame parsing is incremental and fragmentation-invariant: all fragmentations of one complete body yield the same parsed inputs and terminal, and truncation never yields completion."
+    (some fragOracle) (mrk015FragRows realFeed)
+
 /-- The committed Merkle manifest files, additive at the declared model
 version. -/
 def merkleFiles : List (String × String) :=
   merkleFamilies.map (fun (family, meaning, rows) =>
     (family ++ ".json", Json.document
       (merkleFamilyManifestAt modelVersion family meaning rows)))
-  ++ [("MRK-014.json", Json.document mrk014BlobManifest)]
+  ++ [ ("MRK-014.json", Json.document mrk014BlobManifest)
+     , ("MRK-015.json", Json.document mrk015FragManifest) ]
 
 end Effects.Conformance.Manifest

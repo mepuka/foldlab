@@ -2,8 +2,7 @@ import Effects.Conformance.Obligations
 import Effects.Conformance.Registry
 import Effects.Conformance.ModelVersion
 import Effects.Conformance.Generate
-import Effects.Conformance.ManifestReplay
-import Effects.Conformance.ManifestMerkle
+import Effects.Conformance.ManifestIndex
 
 /-!
 # The lane briefing (phase 1)
@@ -152,13 +151,11 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
               else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
       else
         let versions := String.intercalate ", " ratifiedManifestVersions
-        let manifestNames :=
-          (Manifest.files ++ Manifest.replayFiles ++ Manifest.remoteFiles
-            ++ Manifest.merkleFiles).map (·.1)
+        let manifestNames := Manifest.allFiles.map (·.1)
         let consumable :=
           rows.filter fun e => manifestNames.contains (e.id ++ ".json")
         [ Markdown.Block.h2 "Consume the ratified manifests"
-        , .p [.text s!"Families under conformance/manifest/, bound to {versions}. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
+        , .p [.text s!"Families under conformance/manifest/, bound to {versions}. INDEX.json names every consumable manifest — it is the authority for what must be bound: a family it names without a suite binding is a red gate, never a silent gap. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
         , .ul (consumable.map fun e => [.text s!"{e.id} ({e.family})"]) ]
           ++ nextGroupBlocks targets
   let rules := [Markdown.Block.h2 "Standing rules in scope", .ul (laneRules lane)]
