@@ -67,14 +67,12 @@ def Scenario.inputs (sc : Scenario) : List RIn :=
 
 /-! ## Wire encodings -/
 
-def addrJson32 (a : Addr32) : Value := bytesJson a.val
-
 def keyStatusJson : KeyStatus Addr32 Bytes → Value
   | .found key bytes =>
       .obj [ ("_tag", .str "Found"), ("bytes", bytesJson bytes)
-           , ("key", addrJson32 key) ]
-  | .missing key => .obj [("_tag", .str "Missing"), ("key", addrJson32 key)]
-  | .failed key => .obj [("_tag", .str "Failed"), ("key", addrJson32 key)]
+           , ("key", addrJson key) ]
+  | .missing key => .obj [("_tag", .str "Missing"), ("key", addrJson key)]
+  | .failed key => .obj [("_tag", .str "Failed"), ("key", addrJson key)]
 
 def limitsJson (l : Limits) : Value :=
   .obj [ ("maxBatchKeys", .nat l.maxBatchKeys)
@@ -103,54 +101,54 @@ def eventJson : Event Addr32 Bytes → Value
   | .interrupted => .obj [("_tag", .str "Interrupted")]
 
 def opJson : Op Addr32 Bytes → Value
-  | .load key => .obj [("_tag", .str "Load"), ("key", addrJson32 key)]
+  | .load key => .obj [("_tag", .str "Load"), ("key", addrJson key)]
   | .upload key bytes =>
       .obj [ ("_tag", .str "Upload"), ("bytes", bytesJson bytes)
-           , ("key", addrJson32 key) ]
+           , ("key", addrJson key) ]
   | .findMissing keys =>
       .obj [ ("_tag", .str "FindMissing")
-           , ("keys", .arr (keys.map addrJson32)) ]
+           , ("keys", .arr (keys.map addrJson)) ]
   | .publishRoot key closure =>
       .obj [ ("_tag", .str "PublishRoot")
-           , ("closure", .arr (closure.map addrJson32))
-           , ("key", addrJson32 key) ]
+           , ("closure", .arr (closure.map addrJson))
+           , ("key", addrJson key) ]
 
 def commandJson : Command Addr32 Bytes → Value
   | .probeCapabilities => .obj [("_tag", .str "ProbeCapabilities")]
-  | .load key => .obj [("_tag", .str "Load"), ("key", addrJson32 key)]
+  | .load key => .obj [("_tag", .str "Load"), ("key", addrJson key)]
   | .findMissing keys =>
       .obj [ ("_tag", .str "FindMissing")
-           , ("keys", .arr (keys.map addrJson32)) ]
+           , ("keys", .arr (keys.map addrJson)) ]
   | .upload key bytes =>
       .obj [ ("_tag", .str "Upload"), ("bytes", bytesJson bytes)
-           , ("key", addrJson32 key) ]
+           , ("key", addrJson key) ]
   | .queryCommitted key =>
-      .obj [("_tag", .str "QueryCommitted"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "QueryCommitted"), ("key", addrJson key)]
   | .publishRoot key =>
-      .obj [("_tag", .str "PublishRoot"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "PublishRoot"), ("key", addrJson key)]
 
 def rDecisionJson : RDecision Addr32 Bytes → Value
   | .issued command =>
       .obj [("_tag", .str "Issued"), ("command", commandJson command)]
-  | .verified key => .obj [("_tag", .str "Verified"), ("key", addrJson32 key)]
-  | .cached key => .obj [("_tag", .str "Cached"), ("key", addrJson32 key)]
-  | .returned key => .obj [("_tag", .str "Returned"), ("key", addrJson32 key)]
+  | .verified key => .obj [("_tag", .str "Verified"), ("key", addrJson key)]
+  | .cached key => .obj [("_tag", .str "Cached"), ("key", addrJson key)]
+  | .returned key => .obj [("_tag", .str "Returned"), ("key", addrJson key)]
   | .budgetRejected key =>
-      .obj [("_tag", .str "BudgetRejected"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "BudgetRejected"), ("key", addrJson key)]
   | .integrityRejected key =>
-      .obj [("_tag", .str "IntegrityRejected"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "IntegrityRejected"), ("key", addrJson key)]
   | .repeatRefused key =>
-      .obj [("_tag", .str "RepeatRefused"), ("key", addrJson32 key)]
-  | .gaveUp key => .obj [("_tag", .str "GaveUp"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "RepeatRefused"), ("key", addrJson key)]
+  | .gaveUp key => .obj [("_tag", .str "GaveUp"), ("key", addrJson key)]
   | .presenceNoted found missing =>
       .obj [ ("_tag", .str "PresenceNoted")
-           , ("found", .arr (found.map addrJson32))
-           , ("missing", .arr (missing.map addrJson32)) ]
+           , ("found", .arr (found.map addrJson))
+           , ("missing", .arr (missing.map addrJson)) ]
   | .batchRejected => .obj [("_tag", .str "BatchRejected")]
   | .batchGaveUp => .obj [("_tag", .str "BatchGaveUp")]
-  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson32 key)]
+  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson key)]
   | .orderingRefused key =>
-      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson key)]
 
 def taggedDecisionJson (d : OpId × RDecision Addr32 Bytes) : Value :=
   .obj [("decision", rDecisionJson d.2), ("op", .nat d.1)]
@@ -162,33 +160,33 @@ def rResultJson : MResult Addr32 Bytes → Value
   | .commanded => .obj [("_tag", .str "Commanded")]
   | .delivered key bytes =>
       .obj [ ("_tag", .str "Delivered"), ("bytes", bytesJson bytes)
-           , ("key", addrJson32 key) ]
-  | .uploaded key => .obj [("_tag", .str "Uploaded"), ("key", addrJson32 key)]
-  | .notFound key => .obj [("_tag", .str "NotFound"), ("key", addrJson32 key)]
+           , ("key", addrJson key) ]
+  | .uploaded key => .obj [("_tag", .str "Uploaded"), ("key", addrJson key)]
+  | .notFound key => .obj [("_tag", .str "NotFound"), ("key", addrJson key)]
   | .budgetRejected key =>
-      .obj [("_tag", .str "BudgetRejected"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "BudgetRejected"), ("key", addrJson key)]
   | .integrityRejected key =>
-      .obj [("_tag", .str "IntegrityRejected"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "IntegrityRejected"), ("key", addrJson key)]
   | .repeatRefused key =>
-      .obj [("_tag", .str "RepeatRefused"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "RepeatRefused"), ("key", addrJson key)]
   | .transportFailed key =>
-      .obj [("_tag", .str "TransportFailed"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "TransportFailed"), ("key", addrJson key)]
   | .authFailed key =>
-      .obj [("_tag", .str "AuthFailed"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "AuthFailed"), ("key", addrJson key)]
   | .duplicateId => .obj [("_tag", .str "DuplicateId")]
   | .absorbed => .obj [("_tag", .str "Absorbed")]
   | .batchAnswered found missing =>
       .obj [ ("_tag", .str "BatchAnswered")
-           , ("found", .arr (found.map addrJson32))
-           , ("missing", .arr (missing.map addrJson32)) ]
+           , ("found", .arr (found.map addrJson))
+           , ("missing", .arr (missing.map addrJson)) ]
   | .batchRejected => .obj [("_tag", .str "BatchRejected")]
   | .batchFailed => .obj [("_tag", .str "BatchFailed")]
   | .keyBudgetRejected => .obj [("_tag", .str "KeyBudgetRejected")]
-  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson32 key)]
+  | .published key => .obj [("_tag", .str "Published"), ("key", addrJson key)]
   | .orderingRefused key =>
-      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "OrderingRefused"), ("key", addrJson key)]
   | .publishFailed key =>
-      .obj [("_tag", .str "PublishFailed"), ("key", addrJson32 key)]
+      .obj [("_tag", .str "PublishFailed"), ("key", addrJson key)]
 
 def seqRefJson : SeqRef → Value
   | .opRef index => .obj [("_tag", .str "OpRef"), ("index", .nat index)]
@@ -447,11 +445,7 @@ def remoteOracle : String :=
 
 def remoteFamilyManifestAt (version family meaning : String)
     (rows : List (String × Value)) : Value :=
-  .obj [ ("family", .str family)
-       , ("meaning", .str meaning)
-       , ("model", .str version)
-       , ("oracle", .str remoteOracle)
-       , ("rows", .arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
+  familyDocAt version family meaning (some remoteOracle) rows
 
 /-- The capability-document codec oracle. -/
 def controlOracle : String :=
@@ -475,24 +469,18 @@ mutation task's comparison unit. -/
 def remoteFamilyRowsRendered (stepF : RStep) (family : String) : String :=
   match (remoteFamilies stepF).find? (·.1 == family) with
   | some (_, _, rows) =>
-      Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
+      renderRows rows
   | none => ""
 
 /-- Rendered rows of the capability-codec family under a decoder — the
 mutation task's comparison unit for RMT-014. -/
 def rmt014RowsRendered (decodeF : List UInt8 → Option Limits) : String :=
-  Json.document (.arr
-    (((rmt014Rows decodeF).mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
+  renderRows (rmt014Rows decodeF)
 
 /-- The capability-codec family manifest. -/
 def rmt014Manifest : Value :=
-  .obj [ ("family", .str "RMT-014")
-       , ("meaning", .str rmt014.sentence)
-       , ("model", .str modelVersion)
-       , ("oracle", .str controlOracle)
-       , ("rows", .arr
-           (((rmt014Rows decodeLimits?).mergeSort
-             fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
+  familyDocAt modelVersion "RMT-014" rmt014.sentence (some controlOracle)
+    (rmt014Rows decodeLimits?)
 
 /-- The committed remote manifest files, additive at the declared model
 version. -/

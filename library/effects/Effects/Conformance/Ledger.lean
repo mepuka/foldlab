@@ -37,7 +37,4 @@ def ledgerBlocks (rows : List LedgerEntry) : List Markdown.Block :=
 def emitLedger (rows : List LedgerEntry) : String :=
   Markdown.render (ledgerBlocks rows)
 
-instance : Markdown.ToMarkdown (List LedgerEntry) where
-  blocks := ledgerBlocks
-
 end Effects.Conformance

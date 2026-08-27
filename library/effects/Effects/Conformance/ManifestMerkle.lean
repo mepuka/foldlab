@@ -71,8 +71,8 @@ def realManifestDecode : ManifestDecodeFn := decodeManifest?
 
 def dInputJson : DInput Addr32 → Value
   | .parentNode l r =>
-      .obj [ ("_tag", .str "ParentNode"), ("left", addrJson32 l)
-           , ("right", addrJson32 r) ]
+      .obj [ ("_tag", .str "ParentNode"), ("left", addrJson l)
+           , ("right", addrJson r) ]
   | .chunkNode b => .obj [("_tag", .str "ChunkNode"), ("bytes", bytesJson b)]
   | .skipNode => .obj [("_tag", .str "SkipNode")]
 
@@ -97,7 +97,7 @@ def chunkRow (chunkF : ChunkFn) (caseId : String) (bytes : Bytes) :
   , .obj [ ("case", .str caseId)
          , ("expect", .obj
              [ ("chunks", .arr (chunks.map bytesJson))
-             , ("root", addrJson32 (root merkleH 0 chunks)) ])
+             , ("root", addrJson (root merkleH 0 chunks)) ])
          , ("input", .obj
              [ ("bytes", bytesJson bytes)
              , ("chunkSize", .nat mrkRecipe.chunkSize) ]) ] )
@@ -125,7 +125,7 @@ def decoderRow (stepF : MStep) (caseId : String)
              [ ("hi", .nat hi)
              , ("inputs", .arr (inputs.map dInputJson))
              , ("lo", .nat lo)
-             , ("root", addrJson32 (root merkleH 0 chunks))
+             , ("root", addrJson (root merkleH 0 chunks))
              , ("total", .nat total) ]) ] )
 
 def mrk002Rows (stepF : MStep) : List (String × Value) :=
@@ -162,8 +162,8 @@ def verifyRow (vF : VerifyFn) (caseId : String) (m n : Nat) (bytes : Bytes)
              [ ("bytes", bytesJson bytes)
              , ("count", .nat n)
              , ("index", .nat m)
-             , ("root", addrJson32 r)
-             , ("siblings", .arr (sibs.map addrJson32)) ]) ] )
+             , ("root", addrJson r)
+             , ("siblings", .arr (sibs.map addrJson)) ]) ] )
 
 def mrk006Rows (vF : VerifyFn) : List (String × Value) :=
   [ verifyRow vF "honest-opening-accepted-000" 1 3 [2]
@@ -180,11 +180,11 @@ def consRow (vF : ConsFn) (caseId : String) (m n : Nat)
          , ("expect", .obj
              [("accepted", .bool (vF m n oldRoot newRoot proof))])
          , ("input", .obj
-             [ ("newRoot", addrJson32 newRoot)
+             [ ("newRoot", addrJson newRoot)
              , ("newSize", .nat n)
-             , ("oldRoot", addrJson32 oldRoot)
+             , ("oldRoot", addrJson oldRoot)
              , ("oldSize", .nat m)
-             , ("proof", .arr (proof.map addrJson32)) ]) ] )
+             , ("proof", .arr (proof.map addrJson)) ]) ] )
 
 def mrk007Rows (vF : ConsFn) : List (String × Value) :=
   [ consRow vF "honest-2-of-3-accepted-000" 2 3
@@ -215,7 +215,7 @@ def openingRow (dF : OpeningDecodeFn) (caseId : String)
                       , ("doc", .obj
                           [ ("index", .nat d.index)
                           , ("leaf", bytesJson d.leaf)
-                          , ("siblings", .arr (d.sibs.map addrJson32))
+                          , ("siblings", .arr (d.sibs.map addrJson))
                           , ("total", .nat d.total) ]) ]
              | none => .obj [("_tag", .str "Rejected")])
          , ("input", .obj [("bytes", bytesJson bytes)]) ] )
@@ -292,11 +292,7 @@ def merkleOracle : String :=
 
 def merkleFamilyManifestAt (version family meaning : String)
     (rows : List (String × Value)) : Value :=
-  .obj [ ("family", .str family)
-       , ("meaning", .str meaning)
-       , ("model", .str version)
-       , ("oracle", .str merkleOracle)
-       , ("rows", .arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
+  familyDocAt version family meaning (some merkleOracle) rows
 
 /-- The Merkle families with their instance-projected sentences, each
 paired with its rendered-rows function for the mutation task. -/
@@ -310,9 +306,6 @@ def merkleFamilies : List (String × String × List (String × Value)) :=
   , ("MRK-011", mrk011.sentence, mrk011Rows realOpeningDecode)
   , ("MRK-012", mrk012.sentence, mrk012Rows realStreamDecode)
   , ("MRK-018", mrk018.sentence, mrk018Rows realManifestDecode) ]
-
-private def renderRows (rows : List (String × Value)) : String :=
-  Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
 
 /-- Rendered rows of the chunk family under a chunk function. -/
 def merkleChunkRowsRendered (chunkF : ChunkFn) : String :=
@@ -345,11 +338,99 @@ def merkleStreamRowsRendered (dF : StreamDecodeFn) : String :=
 def merkleManifestRowsRendered (dF : ManifestDecodeFn) : String :=
   renderRows (mrk018Rows dF)
 
+/-! ## The blob-graph family (MRK-014): the model materializes, the
+implementation must agree byte-for-byte
+
+Rows carry chunk lists in; the expectation is the COMPLETE recipe-1
+node graph the model materializes — every chunk-data, leaf, parent,
+and manifest node with its exact payload bytes, reference list, and
+address under the declared toy digest over the ratified CAS node
+codec — plus the blob identity. An implementation binds its graph
+construction to these rows with the digest injected, so node shapes,
+payload layouts, split points, and cross-position chunk deduplication
+are all tested from the model rather than self-tested. -/
+
+/-- A node's vector address: the toy digest over its canonical
+encoding. -/
+def blobNodeAddr (n : Node) : Addr32 := toyAddr (encodeNode n)
+
+/-- The tree materializer under test: chunks and a base index in,
+dependency-ordered nodes and the subtree root address out. -/
+abbrev BlobGraphFn := List Bytes → Nat → List Node × Addr32
+
+/-- The model materializer: post-order over the standards split,
+leaves referencing content-addressed chunk data. -/
+def blobTreeNodes (chunks : List Bytes) (base : Nat) :
+    List Node × Addr32 :=
+  if _h : chunks.length ≤ 1 then
+    let c := chunkDataNode (chunks.headD [])
+    let l := leafRefNode base (chunks.headD []).length (blobNodeAddr c)
+    ([c, l], blobNodeAddr l)
+  else
+    let k := pow2Below chunks.length
+    let left := blobTreeNodes (chunks.take k) base
+    let right := blobTreeNodes (chunks.drop k) (base + k)
+    let p := parentRefNode left.2 right.2
+    (left.1 ++ right.1 ++ [p], blobNodeAddr p)
+termination_by chunks.length
+decreasing_by
+  · have hk := pow2Below_lt chunks.length (by omega)
+    simp only [List.length_take]
+    omega
+  · have hk := pow2Below_pos chunks.length
+    simp only [List.length_drop]
+    omega
+
+def blobNodeEntryJson (n : Node) : Value :=
+  .obj [ ("address", addrJson (blobNodeAddr n))
+       , ("node", nodeJson n) ]
+
+def blobGraphRow (graphF : BlobGraphFn) (caseId : String)
+    (chunks : List Bytes) : String × Value :=
+  let built := graphF chunks 0
+  let total := chunks.flatten.length
+  let manifest := manifestNode recipeReferencedChunk total chunks.length
+    built.2
+  ( caseId
+  , .obj [ ("case", .str caseId)
+         , ("expect", .obj
+             [ ("blobRef", addrJson (blobNodeAddr manifest))
+             , ("manifest", blobNodeEntryJson manifest)
+             , ("nodes", .arr (built.1.map blobNodeEntryJson))
+             , ("treeRoot", addrJson built.2) ])
+         , ("input", .obj
+             [ ("chunks", .arr (chunks.map bytesJson))
+             , ("leafCount", .nat chunks.length)
+             , ("recipeId", .nat recipeReferencedChunk)
+             , ("totalBytes", .nat total) ]) ] )
+
+def mrk014BlobRows (graphF : BlobGraphFn) : List (String × Value) :=
+  [ blobGraphRow graphF "single-chunk-000" [[7, 7]]
+  , blobGraphRow graphF "identical-chunks-share-address-001" [[1], [1]]
+  , blobGraphRow graphF "three-chunk-ragged-002" [[1, 2], [3, 4], [5]]
+  , blobGraphRow graphF "empty-blob-one-empty-chunk-003" [[]] ]
+
+/-- Rendered rows of the blob-graph family under a materializer. -/
+def merkleBlobRowsRendered (graphF : BlobGraphFn) : String :=
+  renderRows (mrk014BlobRows graphF)
+
+/-- The blob-graph oracle. -/
+def blobGraphOracle : String :=
+  "Graphs are materialized from the given chunk lists under the declared toy digest (the 32-lane byte fold, not cryptographic) over CANONICAL NODE ENCODINGS from the ratified CAS codec — real node bytes, honest toy addresses — so node shapes, payload layouts, reference tags, split points, and cross-position chunk deduplication bind the implementation's graph construction with the digest injected; the shipping fixed-size chunker is bound separately by its recipe law."
+
+/-- The blob-graph family document, attached to the MRK-014 carrier
+row as its implementation-side evidence. -/
+def mrk014BlobManifest : Value :=
+  familyDocAt modelVersion "MRK-014"
+    "The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision."
+    (some blobGraphOracle) (mrk014BlobRows blobTreeNodes)
+
 /-- The committed Merkle manifest files, additive at the declared model
 version. -/
 def merkleFiles : List (String × String) :=
-  merkleFamilies.map fun (family, meaning, rows) =>
+  merkleFamilies.map (fun (family, meaning, rows) =>
     (family ++ ".json", Json.document
-      (merkleFamilyManifestAt modelVersion family meaning rows))
+      (merkleFamilyManifestAt modelVersion family meaning rows)))
+  ++ [("MRK-014.json", Json.document mrk014BlobManifest)]
 
 end Effects.Conformance.Manifest

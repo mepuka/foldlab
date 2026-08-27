@@ -121,12 +121,31 @@ def cas002Row (caseId : String) (n : Node) : Value :=
 
 /-! ## The family documents -/
 
+/-- The one row ordering every family document and rendered comparison
+uses: case-id ascending. -/
+def sortRows (rows : List (String × Value)) : List (String × Value) :=
+  rows.mergeSort fun a b => decide (a.1 ≤ b.1)
+
+/-- The one rendered-rows form the mutation task compares. -/
+def renderRows (rows : List (String × Value)) : String :=
+  Json.document (.arr ((sortRows rows).map (·.2)))
+
+/-- The one family-document builder: family, meaning, model, an
+optional declared oracle, sorted rows — field order fixed here and
+nowhere else. -/
+def familyDocAt (version family meaning : String)
+    (oracle : Option String) (rows : List (String × Value)) : Value :=
+  .obj ([ ("family", .str family)
+        , ("meaning", .str meaning)
+        , ("model", .str version) ]
+    ++ (match oracle with
+        | some o => [("oracle", .str o)]
+        | none => [])
+    ++ [("rows", .arr ((sortRows rows).map (·.2)))])
+
 def familyManifestAt (version family meaning : String)
     (rows : List (String × Value)) : Value :=
-  .obj [ ("family", .str family)
-       , ("meaning", .str meaning)
-       , ("model", .str version)
-       , ("rows", .arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2))) ]
+  familyDocAt version family meaning none rows
 
 def familyManifest (family meaning : String) (rows : List (String × Value)) :
     Value :=

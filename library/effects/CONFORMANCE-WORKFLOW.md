@@ -1403,6 +1403,40 @@ Stop and return to grilling if:
   in-flight CasScheme0 slice must reconcile its CasHash service
   with that existing seam rather than minting a parallel one,
   flagged for that delivery's review.
+- **Track C batches and the blob-graph family; Lean-as-oracle
+  directive (2026-08-27):** the operator directed making more use of
+  the Lean code to test correctness, which folded into the batch as
+  its centerpiece. Landed across three commits: the split-point
+  characterization (`pow2Below_spec` — a power of two, strictly
+  below the total, total at most its double — the spec the RFC-shape
+  interop claim rests on), the remote-kit environment extracted so
+  instance files import it and the laws directly instead of chaining
+  through one another, the remote-vectors and registry import
+  corrections, the dead Markdown constructors and unused projection
+  typeclass deleted with the module rule rewritten to
+  constructors-follow-surfaces, and the emitter consolidation — one
+  `sortRows`, one `renderRows`, one `familyDocAt` with an optional
+  oracle carrying the field order in exactly one place, the
+  duplicate address encoder dropped — with every committed manifest
+  regenerating byte-identical through all of it. The directive's
+  deliverable: the BLOB-GRAPH FAMILY, emitted as `MRK-014.json` and
+  attached to the MRK-014 carrier row as its implementation-side
+  evidence — the model materializes the complete recipe-1 node
+  graph for each chunk-list case (every chunk-data, leaf, parent,
+  and manifest node with exact payload bytes, reference lists, and
+  toy-digest addresses over the ratified codec's canonical
+  encodings), so an implementation binds its graph construction to
+  the model with the digest injected instead of self-testing node
+  shapes; the identical-chunks case makes cross-position
+  deduplication visible as shared addresses, and a
+  position-free-leaf mutant is declared and killed —
+  twenty-eight declared mutants total. Consumption lands as a rider
+  on the Track B packet: bind `CasBlob`'s materialization to the
+  family through the harness. Queued next under the same
+  directive: a fragmentation vector family from the incremental
+  parser (vectors first, driving the TypeScript framer that Track
+  B's transport work will need), and the emitter-fold-to-runner tie
+  deferred from the review.
 - **F4 acceptance — scheme evidence and policy tests
   (2026-08-27):** the redirected scheme-slice delivery was reviewed
   first-hand in its worktree and merged; gates run personally, one

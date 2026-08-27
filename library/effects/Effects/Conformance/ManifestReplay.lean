@@ -241,7 +241,7 @@ comparison unit. -/
 def familyRowsRendered (step : RReducer) (family : String) : String :=
   match (replayFamilies step).find? (·.1 == family) with
   | some (_, _, rows) =>
-      Json.document (.arr ((rows.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)))
+      renderRows rows
   | none => ""
 
 /-- The committed replay manifest files, additive at the declared model
