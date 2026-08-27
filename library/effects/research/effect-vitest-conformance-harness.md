@@ -218,3 +218,10 @@ the harness's first implementation slice generalizes what R2 delivers
 (the remote runner, the peer interface, the adapter layers) rather than
 prescribing shapes into codex's working tree mid-delivery. The docket,
 if ratified, binds that future slice.
+
+**Post-ratification status (2026-08-27):** V1–V8 ratified with two
+operator riders — upstream vitest/Effect testing semantics lead the
+integration (no custom runners; the section-14 record is binding), and
+the sequencing above is amended: the harness dogfoods on the current
+R2 slice as a packet rider, absorbing the in-flight structures. See
+`CONFORMANCE-WORKFLOW.md` §14, "Conformance-harness ratification".

@@ -925,7 +925,12 @@ declared mutant per falsification case in both directions.
   vector-conformance carrier. The R2 Lean half is landed:
   the machine's dedup amendment, `RMT-004` (EXACT-STEP), and
   `RMT-015` (the first relational AGREEMENT), with their schedule
-  families and mutants.
+  families and mutants. The slice also dogfoods the ratified
+  conformance harness (V1–V8 plus the upstream-semantics rider,
+  section 14): the remote families are consumed through the generic
+  family-binding machinery, expressed in the test library's own
+  idioms with no custom runners, and the replay fixture module
+  delegates compatibly.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
 - **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`. The standards bind
   the retry obligations: an HTTP retry requires application

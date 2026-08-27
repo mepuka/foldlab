@@ -800,6 +800,27 @@ Stop and return to grilling if:
   within the byte budget. Two schedule families emit additively, two
   declared mutants join (thirteen killed), and the ledger transition
   is two newly green, legal.
+- **Conformance-harness ratification (2026-08-27):** the operator
+  ratified the vitest-harness design docket
+  (`research/effect-vitest-conformance-harness.md`, V1–V8) with two
+  riders. First, **upstream semantics lead**: the harness integrates
+  with the existing vitest and Effect testing APIs at their own
+  idioms — `layer()` blocks as the lane selector, `it.effect` and
+  `it.effect.each` as the testers, `it.prop` for properties, the
+  library's own `expect`/`assert` with the Equal-aware testers, and
+  Schema decoding for loading. No custom describe or it wrappers and
+  no `makeMethods` runner: harness surface is plain data and Effect
+  functions called inside ordinary tests, so a reader who knows
+  @effect/vitest reads the suites unaided (the note's custom-runner
+  sugar is DEMOTED to not-planned). Second, **dogfood on the current
+  slice**: V6's after-R2 sequencing is amended — the test-tree
+  harness lands inside R2 itself as a packet rider, with the remote
+  families consumed through it and the existing replay fixture
+  module delegating to it compatibly so the committed green suites
+  stay untouched; the shipped `/conformance` subpath still waits for
+  the M6 packaging review. The rider is written to absorb the
+  implementation lane's in-flight structures, never to restart them,
+  and shape conflicts come back as questions per the workflow.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the
