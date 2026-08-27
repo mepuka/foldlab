@@ -80,17 +80,11 @@ the operation revision remains explicit.
 
 ## Remote CAS profile
 
-`Cas.layerRemote` speaks `cas-http/0`, a versioned project profile—not an HTTP
-or CAS standard. One authority owns three resource spaces: node bytes under
-`{authority}/cas/{hex}`, capability and missing-key documents under
-`{authority}/control/...`, and published roots under
-`{authority}/roots/{hex}`. All non-empty bodies use exact
-`application/octet-stream` binary framings; successful upload and publish
-acknowledgements are closed empty bodies. A load accepts only `200` with the
-exact media type; `404` is `ContentNotFound`, `401` and `403` are typed
-authorization failures, `429` becomes rate-limited machine input, and every
-`3xx` remains a redirect event. Uploads and publishes accept `200`, `201`, or
-`204`; `409` is an integrity mismatch.
+`Cas.layerRemote` speaks `cas-http/0`. The wire contract — resource
+spaces, framings, status mappings, the capability document, batch and
+publish semantics, and the blob node graph — is normative in
+[`PROFILE-CAS-HTTP-0.md`](PROFILE-CAS-HTTP-0.md); this section
+describes the library's behavior above that wire.
 
 Every remote layer acquisition probes `GET /control/capabilities`; the
 eight-byte document is required and is not persisted across layers.

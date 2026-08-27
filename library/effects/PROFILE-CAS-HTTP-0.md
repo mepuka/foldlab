@@ -8,12 +8,11 @@ binds wire syntax to that model and never introduces semantics of its
 own. Endpoints are added to `/0` only additively; any change to the
 meaning of an existing exchange mints `cas-http/1`.
 
-Status of each section is marked: **implemented** (shipping client
-behavior, described operationally in the package README),
-**ratified** (normative now; client landing in progress), or
-**planned** (design authority in the research tree; not yet
-normative). The README's profile section consolidates into this
-document at the next acceptance review.
+Status of each section is marked: **implemented** (normative and
+shipping in the client), or **planned** (design authority in the
+research tree; not yet normative). This document is the sole wire
+authority; the package README describes library behavior above the
+wire and points here for protocol law.
 
 ## 1. Common rules (implemented)
 
@@ -42,7 +41,13 @@ document at the next acceptance review.
   integrity mismatch. The client verifies content against the
   address before issue and re-verifies at the acknowledgment.
 
-## 3. Canonical key-list document (ratified — W2)
+Acknowledgment closure (implemented): successful upload and publish
+acknowledgments are CLOSED EMPTY bodies — `204` terminates at its
+header section per its standard, and a nonempty body on any
+acknowledgment is a typed protocol violation, never silently
+drained.
+
+## 3. Canonical key-list document (implemented — W2)
 
 The shared framing for key collections: a 4-byte big-endian count N
 followed by exactly N×32-byte addresses. Total length exactly
@@ -50,7 +55,7 @@ followed by exactly N×32-byte addresses. Total length exactly
 decode's input is exactly the canonical encoding of its result.
 Order is significant and preserved.
 
-## 4. Capabilities (ratified — W3)
+## 4. Capabilities (implemented — W3)
 
 `GET {authority}/control/capabilities` → `200` with a body of exactly
 the eight canonical bytes: big-endian u32 `maxBatchKeys`, then
@@ -66,7 +71,7 @@ capabilities across sessions. The endpoint is REQUIRED before any
 batch use on this profile; its absence fails the probe as a typed
 protocol violation.
 
-## 5. Find-missing (ratified — W4)
+## 5. Find-missing (implemented — W4)
 
 `POST {authority}/control/missing` with a canonical key-list document
 as the request body. The client refuses locally with the typed
@@ -85,7 +90,7 @@ covers richer profiles; here there is strictly less to trust.
 Presence answers are planning data only: they steer upload
 scheduling, admit nothing, and are never negatively cached.
 
-## 6. Publish (ratified — W5)
+## 6. Publish (implemented — W5)
 
 `PUT {authority}/roots/{hex}` with the root's DECLARED CLOSURE as a
 canonical key-list document body (count 0 for a leaf root). The
@@ -101,7 +106,7 @@ verification is OPTIONAL at `/0`; the client gate is the law.
 Publishing an identical root and closure again is an idempotent
 acceptance.
 
-## 7. Caller surface (ratified — W6)
+## 7. Caller surface (implemented — W6)
 
 The three primitives land on the streamed-transfer service,
 identifier-tagged through the machine internally:
@@ -136,7 +141,37 @@ transport failures classify through the existing classes by cause.
 Presence-style operations are scoped by the authority; no global
 does-this-digest-exist query exists on any surface of this profile.
 
-## 9. Planned planes (not yet normative)
+## 9. Blob representation (implemented model; client landing at F2b)
+
+A blob is a NODE GRAPH under the ordinary data plane — no new
+endpoints and no second identity. Four node shapes, version byte 0:
+
+| Kind | Tag | Payload | References |
+|---|---|---|---|
+| chunk data | 8 | the raw chunk bytes | none |
+| tree leaf | 9 | u32 index ++ u32 chunk length | one, expected tag 8 |
+| tree parent | 9 | empty | two (left, right), expected tag 9 |
+| manifest | 10 | u32 recipe id ++ u64 total bytes ++ u32 leaf count | one (tree root), expected tag 9 |
+
+All scalar fields big-endian. The blob's identity is the manifest
+node's ordinary content identifier. Chunk data is content-addressed
+WITHOUT position, so equal chunks deduplicate across positions and
+blobs; position binding lives in the leaf. The manifest payload
+decodes fail-closed and recipe-gated: an unknown recipe identifier
+is rejected, never guessed, and changing any identity-affecting
+recipe parameter changes the manifest identity.
+
+Recipe registry: `0` — inline-leaf (model substrate; no client
+implements it); `1` — referenced-chunk, the shipping recipe:
+fixed-size chunking at 65536 bytes, empty input is one empty chunk,
+and the tree splits at the largest power of two strictly below the
+leaf count. The chunk recipe is a PROFILE constant, never a server
+capability — a capability-derived chunk size would fragment content
+identity across authorities. A server whose node-body budget cannot
+hold a chunk node cannot host recipe-1 blobs; that is a typed policy
+refusal at push, never a silent re-chunk.
+
+## 10. Planned planes (not yet normative)
 
 Design authority: the server-reference and verified-reads survey in
 the research tree. In brief: a proof plane serving inclusion openings
