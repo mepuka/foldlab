@@ -1,6 +1,10 @@
 import Effects.Cas.Value
 import Effects.Cas.Node
 import Effects.Cas.Codec
+import Effects.Cas.Separation
+import Effects.Cas.Address
+import Effects.Cas.Store
+import Effects.Cas.Admission
 import Effects.Conformance
 
 /-!
