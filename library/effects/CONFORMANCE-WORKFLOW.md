@@ -862,6 +862,53 @@ Stop and return to grilling if:
   DEFERRED to R3, whose closure slice gains discovery-order pull
   explicitly; the fixtures' pull planner already models both orders.
   Acceptance review remains open until the correction delivery.
+- **R2 correction acceptance (2026-08-27):** the correction delivery
+  was reviewed first-hand — the full diff read against the ratified
+  docket item by item, both gates run personally (ninety TypeScript
+  tests across fourteen files; the Lean gate untouched and green;
+  zero ledger transitions, as expected — no remote row is
+  TypeScript-primary, so the delivered halves complete evidence
+  columns of rows already green) — and ACCEPTED. Blockers: cleanup
+  evidence is real (socket counts asserted inside the live peer
+  scope at eight sites, and a gated peer holds a response mid-body
+  while a caller fiber is interrupted — socket closed, in-flight
+  cleared, nothing cached, all observed with the peer alive);
+  interruption clears machine state on every drive path and on the
+  invalid-acknowledgement arm, each with a test; the transport
+  itself supplies manual-redirect semantics around every request, so
+  plain fetch wiring keeps redirects observable machine denials — a
+  test proves it with the plain client. Majors: budget errors report
+  actually-observed quantities; the queued budget is a buffered
+  counter with a one-chunk-versus-many equivalence fixture and the
+  README's honest four-stage binding table (the decompressed stage
+  documented as shared in this profile); oversize uploads flow
+  through the machine step so the transcripts agree; transport
+  failures classify by the typed reason (pre-send failures
+  known-unprocessed, reset/timeout/cancelled reachable, defects no
+  longer laundered, prepared-byte witness documented); the
+  differential table holds seven named scenarios; headers decode
+  through Schema with exact media-type comparison and shared status
+  cases; the missing span landed. The harness rider is absorbed to
+  its ratified letter: closed strict envelopes with the oracle TEXT
+  pinned as a literal, a non-empty rows floor, named kill witnesses,
+  the step-service tag with layer-selected lanes, five
+  direction-2 TypeScript mutants whose meanings are byte-verbatim
+  the Lean mutant sentences, the replay fixture module delegating
+  under its unchanged signature, a self-test labeled
+  never-evidence, and the mirrored guards' first consumers asserting
+  law shadows over the manifest rows. The cold-pull ruling landed as
+  directed, which required widening the sanctioned `RemoteFailure`
+  cause to admit `DanglingReference` — a second touch of the frozen
+  file reviewed and accepted as the ruling's own carrier. Recorded
+  observations: the exact media-type comparison is now
+  case-sensitive (profile-owned; the R4 header-discipline pass may
+  revisit); manual-redirect ownership rides the fetch client's
+  request-options reference, so a hypothetical non-fetch client that
+  follows redirects internally would still bypass — the transport
+  matrix slice owns that; the budget error's operation identifier
+  became optional for the one non-operation construction site; the
+  differential lanes share the mirror's step function, so full
+  implementation independence waits on the Lean executable lane.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the
