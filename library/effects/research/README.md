@@ -106,6 +106,16 @@ repository locations.
   eight-item decision docket (transport never a service key, tagged
   upload restartability, completion witness as a typed channel terminal)
   for the R2 slice — recommendations only, nothing ratified.
+- [`effect-vitest-conformance-harness.md`](effect-vitest-conformance-harness.md)
+  designs the generic @effect/vitest harness for consuming Lean
+  conformance families: one wire-schema binding per family over two
+  kind-level runners, the system under test as a Layer so the four
+  evidence lanes select by substitution, a manifest-source service with
+  closed decoding as the drift tripwire, a peer matrix whose expected
+  divergences make LeanServer's audited gaps detection-target
+  assertions, and TestClock as the R4 deterministic-time hook — an
+  eight-item decision docket, nothing implemented while R2 is in
+  flight.
 
 ## Local external inputs
 
