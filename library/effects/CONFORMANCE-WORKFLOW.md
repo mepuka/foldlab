@@ -641,3 +641,26 @@ Stop and return to grilling if:
   map encodes that order. One implementation packet carries the R1
   and session-result riders first, then E2, then E3; PRJ rows flip
   through the tsSide evidence list at the delivery review.
+- **E2/E3 acceptance (2026-08-27):** the descriptor-slice delivery was
+  reviewed first-hand and accepted. Both riders landed as ratified:
+  replay construction provides `TracerTimingEnabled = false` — proved
+  live by flipping an M5 orchestration method back to a traced
+  `Effect.fn` that now replays clean while the semantic-Clock fixtures
+  still surface `Violated` — and sessions return the widened result
+  (outcome, witness id, optional history root), with record mode
+  reporting a root only when the attempt appended an occurrence.
+  `Cas.value` enforces the declared canonical JSON inside the exact
+  revision/value envelope, on write and on read — the decoder
+  re-canonicalizes and byte-compares, a closed-input read mirroring
+  the codec discipline — with reserved kind tags guarded and leaf-only
+  nodes enforced; `ProjectionCodecFailure` carries both directions and
+  is never folded into the store's failure clause. `Cas.service`
+  hydrates eagerly with construction errors on the layer channel and
+  `layerAs` feeding the kit's internal live role, wrapped-live-role
+  rejection intact. PRJ-001 through PRJ-005 flip through the tsSide
+  evidence list; PRJ-003's coverage exceeds the floor (typed decode
+  failure, dangling-root pass-through, non-finite encode, noncanonical
+  bytes). Observation recorded, no action owed: a wrong-kind root
+  surfaces as the store's `UnknownKind` clause rather than a
+  projection-side clause — a deliberate reuse worth revisiting if the
+  M6 documentation finds it blurs the family boundary.

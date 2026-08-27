@@ -23,11 +23,11 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | BRG-001 | evidenced — differential suite (test/ReplayReducer.test.ts) |
 | BRG-002 | pending — differential evidence at M6 |
 | DUR-001 | standing review rule |
-| PRJ-001 | pending — TypeScript evidence at E2 |
-| PRJ-002 | pending — TypeScript evidence at E2 |
-| PRJ-003 | pending — TypeScript evidence at E2 |
-| PRJ-004 | pending — TypeScript evidence at E3 |
-| PRJ-005 | pending — TypeScript evidence at E3 |
+| PRJ-001 | evidenced — TypeScript evidence (test/CasValue.test.ts) |
+| PRJ-002 | evidenced — TypeScript evidence (test/CasValue.test.ts) |
+| PRJ-003 | evidenced — TypeScript evidence (test/CasValue.test.ts) |
+| PRJ-004 | evidenced — TypeScript evidence (test/CasService.test.ts) |
+| PRJ-005 | evidenced — TypeScript evidence (test/CasService.test.ts) |
 | PRJ-006 | standing review rule |
 
 ## CAS-001
