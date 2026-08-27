@@ -1,11 +1,50 @@
-import { Effect, Equal, Option, Schema } from "effect"
+import { Effect, Encoding, Equal, Option, Schema } from "effect"
 import {
   CasBlob,
 } from "../../src/cas/Blob.ts"
+import { ContentId, type CasNodeInput } from "../../src/cas/Node.ts"
+import type { CasStoreShape } from "../../src/cas/Store.ts"
+import { materializeBlobGraph } from "../../src/internal/blobGraph.ts"
 import { ManifestModel } from "../conformance/harness.ts"
 
 const Byte = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xff }))
 const UInt32 = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xffff_ffff }))
+const Bytes = Schema.Array(Byte)
+const Address = Bytes.check(Schema.isLengthBetween(32, 32))
+
+const BlobNodeSchema = Schema.Struct({
+  version: Schema.Literal(0),
+  tag: Byte,
+  payload: Bytes,
+  refs: Schema.Array(Schema.Struct({
+    addr: Address,
+    expectedTag: Byte,
+  })),
+})
+
+const AddressedNodeSchema = Schema.Struct({
+  address: Address,
+  node: BlobNodeSchema,
+})
+
+export const BlobGraphRowSchema = Schema.Struct({
+  case: Schema.String,
+  expect: Schema.Struct({
+    blobRef: Address,
+    manifest: AddressedNodeSchema,
+    nodes: Schema.Array(AddressedNodeSchema),
+    treeRoot: Address,
+  }),
+  input: Schema.Struct({
+    chunks: Schema.Array(Bytes),
+    leafCount: UInt32,
+    recipeId: Schema.Literal(1),
+    totalBytes: Schema.Number.check(
+      Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+    ),
+  }),
+})
+export type BlobGraphRow = typeof BlobGraphRowSchema.Type
 
 const ManifestSchema = Schema.Struct({
   recipeId: UInt32,
@@ -32,16 +71,69 @@ export type ManifestRow = typeof ManifestRowSchema.Type
 
 export const MerkleOracle = "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice."
 
-/** One binding slot; a later Lean-computed blob-graph family can be appended. */
-export const blobFamilyBindings = [{
+export const BlobGraphOracle = "Graphs are materialized from the given chunk lists under the declared toy digest (the 32-lane byte fold, not cryptographic) over CANONICAL NODE ENCODINGS from the ratified CAS codec — real node bytes, honest toy addresses — so node shapes, payload layouts, reference tags, split points, and cross-position chunk deduplication bind the implementation's graph construction with the digest injected; the shipping fixed-size chunker is bound separately by its recipe law."
+
+export const mrk014Binding = {
+  family: "MRK-014",
+  model: ManifestModel,
+  row: BlobGraphRowSchema,
+  hasOracle: true as const,
+  oracle: BlobGraphOracle,
+}
+
+export const mrk018Binding = {
   family: "MRK-018",
   model: ManifestModel,
   row: ManifestRowSchema,
   hasOracle: true as const,
   oracle: MerkleOracle,
-}] as const
+}
 
-export const mrk018Binding = blobFamilyBindings[0]
+export const blobFamilyBindings = [mrk014Binding, mrk018Binding] as const
+
+const idFromBytes = (bytes: ReadonlyArray<number>): ContentId =>
+  ContentId.make(Encoding.encodeHex(Uint8Array.from(bytes)))
+
+const bytesFromId = (id: ContentId): ReadonlyArray<number> => {
+  const decoded = Encoding.decodeHex(id)
+  if (decoded._tag === "Failure") throw new Error(`invalid ContentId in fixture: ${id}`)
+  return Array.from(decoded.success)
+}
+
+const renderNode = (resident: CasNodeInput) => ({
+  version: resident.kind.version,
+  tag: resident.kind.tag,
+  payload: Array.from(resident.payload),
+  refs: resident.refs.map((ref) => ({
+    addr: bytesFromId(ref.id),
+    expectedTag: ref.expectedTag,
+  })),
+})
+
+export const runBlobGraphRow = (
+  store: CasStoreShape,
+  row: BlobGraphRow,
+) => Effect.gen(function* () {
+  const graph = yield* materializeBlobGraph(
+    store,
+    row.input.chunks.map((chunk) => Uint8Array.from(chunk)),
+  )
+  const manifest = yield* store.load(graph.blobRef)
+  const nodes = yield* Effect.forEach(row.expect.nodes, (expected) =>
+    store.load(idFromBytes(expected.address)).pipe(Effect.map((resident) => ({
+      address: expected.address,
+      node: renderNode(resident),
+    }))))
+  return {
+    blobRef: bytesFromId(graph.blobRef),
+    manifest: {
+      address: bytesFromId(graph.blobRef),
+      node: renderNode(manifest),
+    },
+    nodes,
+    treeRoot: bytesFromId(graph.treeRoot),
+  }
+})
 
 export type ManifestDecode = (
   bytes: Uint8Array,

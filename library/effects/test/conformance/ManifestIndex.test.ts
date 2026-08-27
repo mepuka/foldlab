@@ -51,14 +51,8 @@ const REGISTRY: Record<string, Binding> = {
   "MRK-007": { status: "bound", by: "merkle/Merkle.test.ts" },
   "MRK-011": { status: "bound", by: "merkle/Merkle.test.ts" },
   "MRK-012": { status: "bound", by: "merkle/Merkle.test.ts" },
-  "MRK-014": {
-    status: "leads",
-    until: "Track E item 3 — blob-graph binding over the injected toy digest",
-  },
-  "MRK-015": {
-    status: "leads",
-    until: "Track E item 4 — the incremental framer the transport work needs",
-  },
+  "MRK-014": { status: "bound", by: "blob/Blob.test.ts" },
+  "MRK-015": { status: "bound", by: "merkle/Merkle.test.ts" },
   "MRK-018": { status: "bound", by: "blob/Blob.test.ts" },
   "RMT-001": { status: "bound", by: "remote/Machine.test.ts" },
   "RMT-002": { status: "bound", by: "remote/Machine.test.ts" },

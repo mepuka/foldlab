@@ -15,16 +15,24 @@ import {
 } from "./Node.ts"
 import { CasStore, type CasStoreShape } from "./Store.ts"
 import { pow2Below } from "../internal/merkleTree.ts"
+import {
+  BlobGraphError,
+  BlobManifestTag as BlobManifestTagValue,
+  BlobNodeTag as BlobNodeTagValue,
+  ChunkDataTag as ChunkDataTagValue,
+  encodeBlobManifestPayload,
+  materializeBlobGraph,
+  ReferencedChunkRecipe as ReferencedChunkRecipeValue,
+} from "../internal/blobGraph.ts"
 
 export namespace CasBlob {
-  export const ChunkDataTag = 8 as const
-  export const BlobNodeTag = 9 as const
-  export const BlobManifestTag = 10 as const
-  export const ReferencedChunkRecipe = 1 as const
+  export const ChunkDataTag = ChunkDataTagValue
+  export const BlobNodeTag = BlobNodeTagValue
+  export const BlobManifestTag = BlobManifestTagValue
+  export const ReferencedChunkRecipe = ReferencedChunkRecipeValue
   export const ChunkSize = 65_536 as const
 
   const MaxUint32 = 0xffff_ffff
-  const MaxUint64 = 0xffff_ffff_ffff_ffffn
   const KnownRecipes = new Set([0, ReferencedChunkRecipe])
 
   /** Blob identity is the manifest ContentId with a compile-time-only brand. */
@@ -109,26 +117,11 @@ export namespace CasBlob {
     "foldlab/effect-replay/CasBlob",
   ) {}
 
-  const writeNat32 = (target: Uint8Array, offset: number, value: number): void => {
-    target[offset] = (value >>> 24) & 0xff
-    target[offset + 1] = (value >>> 16) & 0xff
-    target[offset + 2] = (value >>> 8) & 0xff
-    target[offset + 3] = value & 0xff
-  }
-
   const readNat32 = (source: Uint8Array, offset: number): number =>
     (source[offset] ?? 0) * 0x1000000
     + (source[offset + 1] ?? 0) * 0x10000
     + (source[offset + 2] ?? 0) * 0x100
     + (source[offset + 3] ?? 0)
-
-  const writeNat64 = (target: Uint8Array, offset: number, value: bigint): void => {
-    let remaining = value
-    for (let index = 7; index >= 0; index -= 1) {
-      target[offset + index] = Number(remaining & 0xffn)
-      remaining >>= 8n
-    }
-  }
 
   const readNat64 = (source: Uint8Array, offset: number): bigint => {
     let value = 0n
@@ -139,13 +132,7 @@ export namespace CasBlob {
   }
 
   /** Canonical 16-byte manifest payload encoder. */
-  export const encodeManifestPayload = (manifest: ManifestContent): Uint8Array => {
-    const bytes = new Uint8Array(16)
-    writeNat32(bytes, 0, manifest.recipeId)
-    writeNat64(bytes, 4, manifest.totalBytes)
-    writeNat32(bytes, 12, manifest.leafCount)
-    return bytes
-  }
+  export const encodeManifestPayload = encodeBlobManifestPayload
 
   /**
    * Closed recipe-gated manifest decoder mirrored from Manifest.lean.
@@ -166,23 +153,6 @@ export namespace CasBlob {
 
   const format = (reason: string, id?: ContentId): FormatError =>
     new FormatError(id === undefined ? { reason } : { id, reason })
-
-  const node = (
-    tag: number,
-    payload: Uint8Array,
-    refs: CasNodeInput["refs"],
-  ): CasNodeInput => CasNodeInput.make({
-    kind: { version: 0, tag },
-    payload,
-    refs,
-  })
-
-  const leafPayload = (index: number, chunkLength: number): Uint8Array => {
-    const payload = new Uint8Array(8)
-    writeNat32(payload, 0, index)
-    writeNat32(payload, 4, chunkLength)
-    return payload
-  }
 
   interface ReadPlan extends BlobInfo {
     readonly ref: BlobRef
@@ -436,77 +406,34 @@ export namespace CasBlob {
     const put = <E, R>(
       source: Stream.Stream<Uint8Array, E, R>,
     ): Effect.Effect<BlobRef, E | CasError | BlobError, R> => Effect.gen(function* () {
-      const leaves: Array<ContentId> = []
-      let pending = new Uint8Array(0)
-      let totalBytes = 0n
+      const chunks: Array<Uint8Array> = []
+      let pending = new Uint8Array(ChunkSize)
+      let pendingLength = 0
 
-      const admitChunk = (bytes: Uint8Array): Effect.Effect<void, CasError | BlobError> =>
-        Effect.gen(function* () {
-          if (leaves.length >= MaxUint32) {
-            return yield* format("recipe 1 exceeds the u32 leaf-count field")
-          }
-          const chunkId = yield* store.put(node(ChunkDataTag, bytes.slice(), []))
-          const leafId = yield* store.put(node(
-            BlobNodeTag,
-            leafPayload(leaves.length, bytes.length),
-            [{ id: chunkId, expectedTag: ChunkDataTag }],
-          ))
-          leaves.push(leafId)
-        })
-
-      yield* Stream.runForEach(source, (part) => Effect.gen(function* () {
-        totalBytes += BigInt(part.length)
-        if (totalBytes > MaxUint64) {
-          return yield* format("recipe 1 exceeds the u64 total-bytes field")
-        }
-
+      yield* Stream.runForEach(source, (part) => Effect.sync(() => {
         let offset = 0
         while (offset < part.length) {
-          const take = Math.min(ChunkSize - pending.length, part.length - offset)
-          const combined = new Uint8Array(pending.length + take)
-          combined.set(pending)
-          combined.set(part.subarray(offset, offset + take), pending.length)
-          pending = combined
+          const take = Math.min(ChunkSize - pendingLength, part.length - offset)
+          pending.set(part.subarray(offset, offset + take), pendingLength)
+          pendingLength += take
           offset += take
-          if (pending.length === ChunkSize) {
-            yield* admitChunk(pending)
-            pending = new Uint8Array(0)
+          if (pendingLength === ChunkSize) {
+            chunks.push(pending)
+            pending = new Uint8Array(ChunkSize)
+            pendingLength = 0
           }
         }
       }))
 
-      if (pending.length > 0 || leaves.length === 0) yield* admitChunk(pending)
-
-      const buildTree = (
-        base: number,
-        count: number,
-      ): Effect.Effect<ContentId, CasError> => Effect.gen(function* () {
-        if (count === 1) {
-          const leaf = leaves[base]
-          if (leaf === undefined) return yield* Effect.die("missing admitted blob leaf")
-          return leaf
-        }
-        const split = pow2Below(count)
-        const left = yield* buildTree(base, split)
-        const right = yield* buildTree(base + split, count - split)
-        return yield* store.put(node(BlobNodeTag, new Uint8Array(0), [
-          { id: left, expectedTag: BlobNodeTag },
-          { id: right, expectedTag: BlobNodeTag },
-        ]))
-      })
-
-      const treeRoot = yield* buildTree(0, leaves.length)
-      const manifest = encodeManifestPayload({
-        recipeId: ReferencedChunkRecipe,
-        totalBytes,
-        leafCount: leaves.length,
-      })
-      const id = yield* store.put(node(
-        BlobManifestTag,
-        manifest,
-        [{ id: treeRoot, expectedTag: BlobNodeTag }],
-      ))
-      return BlobRef.make(id)
+      if (pendingLength > 0 || chunks.length === 0) {
+        chunks.push(pending.slice(0, pendingLength))
+      }
+      const graph = yield* materializeBlobGraph(store, chunks).pipe(
+        Effect.mapError((error) => error instanceof BlobGraphError
+          ? format(error.message)
+          : error),
+      )
+      return BlobRef.make(graph.blobRef)
     })
 
     return Service.of({ put, get, stream, slice, inspect })

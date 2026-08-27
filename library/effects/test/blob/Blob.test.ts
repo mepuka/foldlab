@@ -2,6 +2,7 @@ import { expect, it, layer, type Vitest } from "@effect/vitest"
 import {
   Context,
   Crypto,
+  Encoding,
   Effect,
   Layer,
   Stream,
@@ -22,6 +23,7 @@ import {
 import {
   CasStore,
   layerMemory,
+  type CasAddress,
   type CasStoreShape,
 } from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
@@ -33,13 +35,16 @@ import {
   bytesEqual,
   bytesOfSize,
   invalidSliceCases,
+  mrk014Binding,
   mrk018Binding,
   realManifestDecode,
   roundTripCases,
+  runBlobGraphRow,
   runManifestRow,
   sliceCases,
   sliceSourceSize,
 } from "./BlobFixtures.ts"
+import { toyAddress } from "../merkle/MerkleFixtures.ts"
 import {
   awaitPeerSocketsReleased,
   type PeerEndpoint,
@@ -167,6 +172,18 @@ const firstChunkId = (
 it.effect("MRK-018 consumes every ratified blob-manifest row structurally", () =>
   assertFamilyRows(mrk018Binding, (row) =>
     runManifestRow(realManifestDecode, row)))
+
+const toyCasAddress: CasAddress = {
+  digest: (bytes) => Effect.succeed(ContentId.make(
+    Encoding.encodeHex(Uint8Array.from(toyAddress(Array.from(bytes)))),
+  )),
+}
+
+it.effect("MRK-014 consumes every ratified blob-graph row structurally", () =>
+  CasStore.use((store) => assertFamilyRows(
+    mrk014Binding,
+    (row) => runBlobGraphRow(store, row).pipe(Effect.orDie),
+  )).pipe(Effect.provide(layerMemory(toyCasAddress))))
 
 const registerBlobSuite = (
   test: Vitest.MethodsNonLive<CasBlob.Service | CasStore>,

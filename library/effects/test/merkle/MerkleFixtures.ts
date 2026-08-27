@@ -19,6 +19,7 @@ import {
 } from "../../src/internal/merkleProofCodec.ts"
 import { type HP, type Pre, root } from "../../src/internal/merkleTree.ts"
 import { verifyInclusion } from "../../src/internal/merkleVerify.ts"
+import { feedAll, type FramerResult } from "../../src/internal/proofFramer.ts"
 import { ManifestModel } from "../conformance/harness.ts"
 
 export type MerkleAddress = ReadonlyArray<number>
@@ -137,7 +138,24 @@ export const StreamRowSchema = Schema.Struct({
 })
 export type StreamRow = typeof StreamRowSchema.Type
 
+const FramerResultSchema = Schema.Union([
+  Schema.Struct({
+    _tag: Schema.Literal("Parsed"),
+    items: Schema.Array(DInputSchema),
+    remainder: BytesSchema,
+  }),
+  Schema.Struct({ _tag: Schema.Literal("Malformed") }),
+])
+
+export const FramerRowSchema = Schema.Struct({
+  case: Schema.String,
+  expect: FramerResultSchema,
+  input: Schema.Struct({ fragments: Schema.Array(BytesSchema) }),
+})
+export type FramerRow = typeof FramerRowSchema.Type
+
 export const MerkleOracle = "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice."
+export const FramerOracle = "Fragments are transport-level splits of proof-stream frame bodies — a skip tag, a length-prefixed chunk, a parent carrying two 32-byte addresses (toy digests, the declared 32-lane byte fold, not cryptographic) — so an implementation binds its incremental framer with the fragments replayed verbatim: identical items and remainder across every fragmentation of one body, a nonempty remainder on truncation, malformed on an unknown tag."
 
 const binding = <Family extends string, Row extends Schema.Top & {
   readonly DecodingServices: never
@@ -158,6 +176,13 @@ export const mrk006Binding = binding("MRK-006", InclusionRowSchema)
 export const mrk007Binding = binding("MRK-007", ConsistencyRowSchema)
 export const mrk011Binding = binding("MRK-011", OpeningRowSchema)
 export const mrk012Binding = binding("MRK-012", StreamRowSchema)
+export const mrk015Binding = {
+  family: "MRK-015",
+  model: ManifestModel,
+  row: FramerRowSchema,
+  hasOracle: true as const,
+  oracle: FramerOracle,
+}
 
 /** The manifest-declared 32-lane toy digest. Test-side only. */
 export const toyAddress = (bytes: Bytes): MerkleAddress =>
@@ -320,3 +345,10 @@ export const realInclusion: InclusionFunction = verifyInclusion
 export const realConsistency: ConsistencyFunction = verifyConsistency
 export const realOpeningDecode: OpeningDecodeFunction = decodeOpening
 export const realStreamDecode: StreamDecodeFunction = decodeStream
+
+export const runFramerRow = (
+  parse: (fragments: ReadonlyArray<ReadonlyArray<number>>) => FramerResult,
+  row: FramerRow,
+) => Effect.sync(() => parse(row.input.fragments))
+
+export const realFeedAll = feedAll

@@ -1,5 +1,6 @@
-import { it } from "@effect/vitest"
-import { assertFamilyRows } from "../conformance/harness.ts"
+import { expect, it } from "@effect/vitest"
+import { Effect } from "effect"
+import { assertFamilyRows, loadFamily } from "../conformance/harness.ts"
 import {
   mrk001Binding,
   mrk002Binding,
@@ -9,19 +10,24 @@ import {
   mrk007Binding,
   mrk011Binding,
   mrk012Binding,
+  mrk015Binding,
   realChunk,
   realConsistency,
   realInclusion,
   realOpeningDecode,
   realStep,
   realStreamDecode,
+  realFeedAll,
   runChunkRow,
   runConsistencyRow,
   runDecoderRow,
   runInclusionRow,
   runOpeningRow,
   runStreamRow,
+  runFramerRow,
 } from "./MerkleFixtures.ts"
+import { drain } from "../../src/internal/proofFramer.ts"
+import { makeRng } from "../remote/fixtures/Rng.ts"
 
 it.effect("MRK-001 consumes every ratified chunk-recipe row structurally", () =>
   assertFamilyRows(mrk001Binding, (row) => runChunkRow(realChunk, row)))
@@ -46,3 +52,35 @@ it.effect("MRK-011 consumes every ratified opening-codec row structurally", () =
 
 it.effect("MRK-012 consumes every ratified stream-codec row structurally", () =>
   assertFamilyRows(mrk012Binding, (row) => runStreamRow(realStreamDecode, row)))
+
+it.effect("MRK-015 consumes every ratified incremental-framer row structurally", () =>
+  assertFamilyRows(mrk015Binding, (row) => runFramerRow(realFeedAll, row)))
+
+it.effect("MRK-015 seeded refragmentations equal single-shot parsing and final-frame truncations never complete", () =>
+  Effect.gen(function* () {
+    const manifest = yield* loadFamily(mrk015Binding)
+    const singleShot = manifest.rows.find((row) => row.case === "single-shot-000")
+    const body = singleShot?.input.fragments[0]
+    if (body === undefined) return yield* Effect.die("MRK-015 has no single-shot body")
+    const expected = drain(body)
+
+    for (let seed = 0; seed < 128; seed += 1) {
+      const rng = makeRng(seed)
+      const fragments: Array<ReadonlyArray<number>> = []
+      let offset = 0
+      while (offset < body.length) {
+        const length = rng.int(1, Math.min(17, body.length - offset))
+        fragments.push(body.slice(offset, offset + length))
+        offset += length
+      }
+      expect(realFeedAll(fragments), `splitmix32 seed ${seed}`).toEqual(expected)
+    }
+
+    for (let removed = 1; removed < 5; removed += 1) {
+      const truncated = drain(body.slice(0, body.length - removed))
+      expect(truncated._tag).toBe("Parsed")
+      if (truncated._tag === "Parsed") {
+        expect(truncated.remainder.length).toBeGreaterThan(0)
+      }
+    }
+  }))
