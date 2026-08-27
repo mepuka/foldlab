@@ -12,15 +12,18 @@ open Effects.Remote Effects.Conformance Effects.Conformance.Manifest
 /-- A client that re-issues an upload for content already
 integrity-rejected — the terminal-integrity memory ignored. -/
 def mutantStep : RStep := fun s i =>
-  match s.phase, i with
-  | .idle, .request (.upload key bytes) =>
-      if s.rejected[key]? == some bytes then
+  match i with
+  | .request id (.upload key bytes) =>
+    match s.inFlight[id]? with
+    | none =>
+      if s.rejected.contains (key, bytes) then
         { result := .commanded
-          state := { s with phase := .uploading key bytes }
-          commands := [.upload key bytes]
-          decisions := [.issued (.upload key bytes)] }
-      else Effects.Remote.step rmtParams s i
-  | _, _ => Effects.Remote.step rmtParams s i
+          state := { s with inFlight := s.inFlight.insert id (.uploading key bytes) }
+          commands := [(id, .upload key bytes)]
+          decisions := [(id, .issued (.upload key bytes))] }
+      else Effects.Remote.step vecParams s i
+    | some _ => Effects.Remote.step vecParams s i
+  | _ => Effects.Remote.step vecParams s i
 
 def mutant : Mutant RStep where
   id := "RMT003_RetryUnchangedBytes"

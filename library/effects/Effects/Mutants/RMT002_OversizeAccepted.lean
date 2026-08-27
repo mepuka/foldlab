@@ -12,7 +12,7 @@ open Effects.Remote Effects.Conformance Effects.Conformance.Manifest
 /-- A client whose budget checks are vacuous: every declaration fits. -/
 def mutantStep : RStep :=
   Effects.Remote.step
-    { rmtParams with budgets := ⟨1000000, 1000000⟩ }
+    { vecParams with budgets := ⟨1000000, 1000000⟩ }
 
 def mutant : Mutant RStep where
   id := "RMT002_OversizeAccepted"

@@ -592,7 +592,7 @@ IDs are provisional planning identifiers.
 | `PRJ-005` | Hydrated record construction stays non-recursive and single-wrapped: layerAs targets the internal live role only, never resolves the public wrapper, and double wrapping stays rejected | must-fail TypeScript fixtures | the wrapper resolves its public tag or accepts a wrapped live role | service kit |
 | `PRJ-006` | Equal roots imply no stronger value equality than the hash-hypothesis lattice permits | standing review rule | prose or API implying content equality from address equality | hash-hypothesis lattice |
 | `RMT-001` | No remote-loaded node reaches the cache or the caller without passing standard admission; a wire-supplied digest is a routing hint, never an identity | Lean TRACE-EXCLUDES instance and TS fixtures | a node cached or returned before admission | remote client machine |
-| `RMT-002` | Declared sizes and counts are checked against declared budgets before any hashing or decoding | Lean FAIL-CLOSED instance | an oversized declaration reaches hashing or decoding | exchange-alphabet budgets |
+| `RMT-002` | Declared sizes and counts are checked against declared budgets before any hashing or decoding | Lean FAIL-CLOSED instance (no verification or admission decision past budget) and R2 TypeScript streaming-budget fixtures (declared oversize prevents body consumption; a byte counter stops underreported or chunked bodies) | an oversized declaration reaches hashing or decoding | exchange-alphabet budgets; key-count budget at R3 |
 | `RMT-003` | An integrity failure is terminal for those bytes: no wire attempt ever repeats unchanged content | Lean TRACE-EXCLUDES instance | a retry decision with unchanged bytes after integrity rejection | remote client machine |
 | `RMT-004` | An already-present exact-digest upload resolves as success with zero additional transfer commands | Lean EXACT-STEP instance | a duplicate upload emits a transfer command | find-missing negotiation |
 | `RMT-005` | No admission or publication decision is taken on a presence answer alone, and absence is never negatively cached by default | Lean TRACE-EXCLUDES instance | presence alone admits, publishes, or writes a negative cache | presence semantics |
@@ -877,7 +877,23 @@ declared mutant per falsification case in both directions.
   mutants.
 - **R2** — the single-operation TypeScript baseline: sans-io core,
   thin shell, deterministic fake-remote; `RMT-004` and the first
-  AGREEMENT instance (`RMT-015`).
+  AGREEMENT instance (`RMT-015`); RMT-002's shell half (a streaming
+  byte counter so a declared oversize is never read or buffered).
+  R2's architecture, per the R1 review corrections: the deep seam
+  `CasStore → verified semantic adapter → RemoteCasTransport →
+  HttpClient`, with the raw transport never a `CasStore`, canonical
+  decoding and address verification enforced by the semantic adapter,
+  and graph closure either a named backend capability (pin, lease, or
+  transactional publication) or an explicitly weaker graph-publication
+  capability; retries and redirects decided by the semantic core,
+  never the HTTP shell (`HttpClient.retryTransient` and
+  `followRedirects` are prohibited at this seam); typed remote errors
+  replacing the catch-all store failure (not-found, unauthenticated,
+  denied, rate-limited, capacity, protocol violation, oversize body,
+  integrity rejection, indeterminate upload); explicit authority modes
+  (remote-authoritative, local-authoritative, offline) with no silent
+  fallback; and concurrency by client-assigned operation identifiers
+  matching the machine — never ambient fiber identity.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
 - **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`.
 - **R5** — the property/state-machine lane, entering as declared

@@ -170,19 +170,19 @@ Equal roots imply no stronger value equality than the hash-hypothesis lattice pe
 
 No remote-loaded node reaches the cache or the caller without passing standard admission; a wire-supplied digest is a routing hint, never an identity.
 
-**Sentence:** When the pending input is not entitled — its bytes do not pass the declared budget and verify for the in-flight key — no step ever emits a cache decision: a wire-supplied digest is a routing hint, never an identity, and only verification admits a remote-loaded node.
+**Sentence:** When the pending input is not entitled — its bytes do not answer an in-flight operation, pass the declared budget, and verify for that operation's key — no step ever emits a cache decision or a return to the caller: a wire-supplied digest is a routing hint, never an identity, and only verification admits a remote-loaded node in either direction.
 
 ## RMT-002
 
 Declared sizes and counts are checked against declared budgets before any hashing or decoding.
 
-**Sentence:** When a declaration exceeds the declared budgets — an upload whose content size is over the byte budget, or a load response whose declared length is — the step rejects with the typed budget rejection and the cache is unchanged: the budget check reads only declarations, so nothing over budget is ever hashed, decoded, or admitted.
+**Sentence:** When a declaration exceeds the declared budgets — a fresh upload whose content size is over the byte budget, or a load response whose declared length is — the step rejects with the typed budget rejection, the cache is unchanged, and no verification, cache, or return decision occurs: at the model's altitude nothing over budget proceeds toward admission, and the shell obligation that an oversized declared body is never read or buffered arrives with the R2 streaming byte counter.
 
 ## RMT-003
 
 An integrity failure is terminal for those bytes: no wire attempt ever repeats unchanged content.
 
-**Sentence:** When a key's content stands integrity-rejected, no step ever issues an upload command carrying that key and that exact content again — an integrity failure is terminal for those bytes, and only changed content can try the wire.
+**Sentence:** When a key-content pair stands integrity-rejected, no step ever issues an upload command carrying that key and that exact content again, under any operation identifier — the rejection memory only grows, so an integrity failure is terminal for those bytes over the whole run, and only changed content can try the wire.
 
 ## RMT-004
 

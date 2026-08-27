@@ -9,16 +9,19 @@ namespace Effects.Mutants.RMT001CacheBeforeAdmission
 
 open Effects.Remote Effects.Conformance Effects.Conformance.Manifest
 
-/-- A client that caches whatever the wire returned for the in-flight
-key, verification be damned. -/
+/-- A client that caches and returns whatever the wire answered for an
+in-flight load, verification be damned. -/
 def mutantStep : RStep := fun s i =>
-  match s.phase, i with
-  | .loading key, .fromWire (.ok _ bytes) =>
-      { result := .delivered key bytes
-        state := { s with phase := .idle, cache := s.cache.insert key }
-        commands := []
-        decisions := [.cached key] }
-  | _, _ => Effects.Remote.step rmtParams s i
+  match i with
+  | .fromWire id (.ok _ bytes) =>
+    match s.inFlight[id]? with
+    | some (.loading key) =>
+        { result := .delivered key bytes
+          state := { s with inFlight := s.inFlight.erase id, cache := s.cache.insert key }
+          commands := []
+          decisions := [(id, .cached key), (id, .returned key)] }
+    | _ => Effects.Remote.step vecParams s i
+  | _ => Effects.Remote.step vecParams s i
 
 def mutant : Mutant RStep where
   id := "RMT001_CacheBeforeAdmission"

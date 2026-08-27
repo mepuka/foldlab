@@ -640,6 +640,73 @@ Stop and return to grilling if:
   bespoke map carriers, the same built-ins-first posture as the
   EStateM ruling; a carrier that fights a proof falls back only with
   the divergence documented. R1 opens as conformance-lane model work.
+- **R1 ratification point: REJECTED with named corrections
+  (2026-08-27).** The operator's review of the landed R1 candidate
+  (`42257bba`) returned corrections to the conformance lane per
+  section 11; the accurate status of that commit is a landed R1
+  candidate pending acceptance, and its manifests, though committed
+  under the conformance-leads ruling, are not accepted conformance
+  evidence until the corrected slice ratifies. Named corrections:
+  (1) RMT-001's law must exclude the caller path as well as the cache
+  — no delivered result without admission — and the vector
+  instantiation must verify through the real CAS discipline (canonical
+  node bytes and addresses under a declared toy digest), not a toy
+  length oracle; (2) RMT-002's sentence overclaims — the model
+  supports "no verification or admission decision after an over-budget
+  declaration", the body-consumption half is a TypeScript shell
+  obligation at R2 with a streaming byte counter, and the key-count
+  budget is R3's; (3) RMT-003 must be temporally terminal — the
+  rejection memory becomes a set of key-content pairs with a
+  monotonicity theorem and a trace-level corollary, closing the
+  overwrite hole; (4) the machine gains client-assigned operation
+  identifiers and an in-flight map before any shared Effect service
+  exists — busy-serialization of unrelated operations is rejected;
+  (5) the schedule-vector shape returns to separate operations and
+  schedule fields with per-entry correlation to operation identifiers
+  and complete schedule accounting, and the event encoder becomes
+  total (batch results and capability limits fully encoded); these
+  vector corrections land inside the open ratification cycle, nothing
+  having consumed the candidate vectors; (6) AGREEMENT is regrilled
+  before any instance: the family generalizes to a relational form
+  (two observations and an explicit relation, equality as the
+  diagonal) so remote-load refinement and trace-inclusive cache
+  observation are both expressible; (7) the owed Part-I provenance
+  receipts are minted; (8) the R2 architecture records the deep seam —
+  CasStore, verified semantic adapter, remote transport, HttpClient —
+  with the raw transport never a CasStore, closure as a named backend
+  capability, retries and redirects decided by the semantic core never
+  the HTTP shell, and the typed remote error surface replacing the
+  catch-all store failure.
+- **R1 correction landing (2026-08-27):** the conformance lane landed
+  the corrected slice against every named correction. The machine now
+  carries client-assigned operation identifiers with an in-flight map
+  — unrelated operations proceed concurrently, wire events correlate
+  per operation, and commands and decisions are identifier-tagged;
+  the caching law covers both halves of RMT-001 (`returned` mirrors
+  delivery, and neither cache nor return is reachable without
+  entitlement); RMT-002 gains the exclusion theorem — no verification,
+  cache, or return decision after an over-budget declaration — with
+  the sentence restated to the model's altitude, the shell half
+  recorded as R2 evidence in the plan row, and the key-count budget
+  deferred to R3; RMT-003 is temporal — the rejection memory is a set
+  of key-content pairs, monotonicity is a theorem, and the whole-run
+  corollary composes them; the schedule-vector shape carries separate
+  identifier-tagged operations, correlated schedule entries, and an
+  explicit interleaving with complete accounting by construction; the
+  event encoder is total; vector keys are 32-byte addresses computed
+  by a declared toy digest over canonical admitted-node encodings from
+  the ratified codec, the oracle named in every family document; the
+  AGREEMENT family is generalized to the relational form (two
+  observations and an explicit relation, equality as the diagonal)
+  with no instances yet; and the Part-I byte receipts are minted at
+  `.reference/provenance/receipts/remote-cas-wire-sweep-sources.json`.
+  Documented divergence per the standard-carrier rider: the
+  monotonicity theorem, the temporal corollary, and the three instance
+  kits draw `Classical.choice` through the standard library's
+  container lemmas — the per-step laws stay `propext`/`Quot.sound` —
+  and the constructive fallback (a list-backed rejection memory) is on
+  the table if the operator prefers axiom purity over the ratified
+  carrier posture.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the

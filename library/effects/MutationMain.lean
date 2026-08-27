@@ -90,7 +90,7 @@ def main : IO UInt32 := do
     else
       IO.println s!"killed {m.id} ({m.attacks})"
   for m in remoteMutants do
-    let model := remoteFamilyRowsRendered (Effects.Remote.step rmtParams) m.attacks
+    let model := remoteFamilyRowsRendered (Effects.Remote.step vecParams) m.attacks
     let mutated := remoteFamilyRowsRendered m.mutant m.attacks
     if model.isEmpty then
       IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"

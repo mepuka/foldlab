@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "remote-cas-wire-sweep-sources",
+  "observedAt": "2026-08-27T07:07:51.7673420-05:00",
+  "scope": "Pinned primary-source spec, proto, man, and implementation files read by the remote-CAS wire-protocol prior-art sweep (compendium Part I). Bytes preserved off-repo at C:/Users/kokok/AppData/Local/Temp/foldlab-remote-cas-wiresweep-2026-08-27 and re-fetchable at the named pins; digests below are over the preserved bytes.",
+  "pins": [
+    "git tag v2.55.0 (git/git Documentation)",
+    "opencontainers distribution-spec v1.1.1 + image-spec v1.1.1 descriptor",
+    "distribution/distribution commit 5cb406d511b7b9163bff9b6439072e4892e5ae3b (Docker Registry HTTP API V2, the commit OCI v1.1.1 cites)",
+    "bazelbuild/remote-apis commit becdd8f9ff811df88a22d3eadd6341753d51d167",
+    "googleapis/googleapis commit de3c0d362adbaafc7a0cd1254a8cd49a528505ee (bytestream.proto)",
+    "NixOS/nix tag 2.35.2",
+    "ostreedev/ostree commit 1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+    "systemd/casync commit b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+    "folbricht/desync commit ff9ccfab7db1dc89395f56079f4de66626f2af1d"
+  ],
+  "files": [
+    {
+      "file": "bytestream.proto",
+      "pin": "googleapis@de3c0d362adbaafc7a0cd1254a8cd49a528505ee",
+      "sha256": "961b833f35f4bdc51df4bca017cffdba299893e89762bf8041465560106dd3d6",
+      "bytes": 7524
+    },
+    {
+      "file": "casync-caprotocol.h",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "f68fd244e02a1f61e070612c2820f1b061713796c202ebd1597ea8895d7d85c3",
+      "bytes": 4708
+    },
+    {
+      "file": "casync-README.md",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "6e5b0617d8ac20d561eabed79fe6109fec7cba006e54cde9d7820f90916efa9f",
+      "bytes": 7550
+    },
+    {
+      "file": "casync-src-caremote.c",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "fd29b5a993e56c1cffb3437528d60ed6dfbd62cc521fc59d742e21c41823bef2",
+      "bytes": 83161
+    },
+    {
+      "file": "casync-src-castore.c",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "091552ac3d00044f163a1964d5030568fadab429f4e5fec7aa1ec6d8a80954e2",
+      "bytes": 11418
+    },
+    {
+      "file": "casync-src-casync.c",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "27ba6d9f17c2e543e05d637758f303e84e46a4d9ad8e19b3d69e2da5642d98a9",
+      "bytes": 130863
+    },
+    {
+      "file": "casync.rst",
+      "pin": "casync@b4b7e5606f785572b78a43626a27a45fe3df2fbd",
+      "sha256": "f0dec7fc111732c18e9db7d28eb4d64e2377d89078cbb5c159960a00e678c2d2",
+      "bytes": 13588
+    },
+    {
+      "file": "desync-README.md",
+      "pin": "desync@ff9ccfab7db1dc89395f56079f4de66626f2af1d",
+      "sha256": "4530fe7bd276c86f10b276d20fe39ef369c39648e90d1ccadbbfb2fb73f47c7d",
+      "bytes": 58804
+    },
+    {
+      "file": "docker-registry-api.md",
+      "pin": "distribution@5cb406d511b7b9163bff9b6439072e4892e5ae3b",
+      "sha256": "f3976ea400c75aae7ece19be08157e973359e54d4e01a76ac2893295b5f29faf",
+      "bytes": 146664
+    },
+    {
+      "file": "git-config-fetch.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "b0ede4622b54b5342f58c40ce2dd00d9a3d9524e3908d8af33c45c7cb4dc616a",
+      "bytes": 5853
+    },
+    {
+      "file": "git-config-receive.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "4c50a43076bf4bbaca5f0697b13c49487fe75687f786f88a7476d641405e3a40",
+      "bytes": 6351
+    },
+    {
+      "file": "git-config-transfer.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "41778b268e1f27f72aeba1035e14c8b42b8af84515e9d1f6da56a2744fcc8544",
+      "bytes": 6253
+    },
+    {
+      "file": "git-format-loose.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "adcc1b8c22b5a60881e75876e9f7ab5b3a128b62c1903bfc960bce0c746ebc52",
+      "bytes": 5536
+    },
+    {
+      "file": "git-format-pack.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "ec285ba4f4e15a68ad83a570eaf74e8549b477496e49933126ef935d9291381b",
+      "bytes": 27494
+    },
+    {
+      "file": "git-index-pack.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "7a8b4c963beb5809cc9e9ef17effbbffa1775f086cd06e017c94d227635319a4",
+      "bytes": 6297
+    },
+    {
+      "file": "git-protocol-http.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "7eef045c485eb363e2841f93874384895d5c240d8ad4cd240851db6c1a995708",
+      "bytes": 18078
+    },
+    {
+      "file": "git-protocol-pack.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "7b65e9c17d4138d2f678c49c0d90a694a90472cb8bcbcc4c78d98d7acf1b9f5f",
+      "bytes": 27693
+    },
+    {
+      "file": "git-protocol-v2.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "82ec1f02d4cb4cfb7f492576ae01abf6aa3224b41bc79fae5a688da852f65604",
+      "bytes": 36229
+    },
+    {
+      "file": "git-receive-pack.adoc",
+      "pin": "git@v2.55.0",
+      "sha256": "4d7b0315834dcfca41f6e4e5e9a24c866d9cca5771745a302b4045ca0025c06a",
+      "bytes": 10219
+    },
+    {
+      "file": "nix-archive.md",
+      "pin": "nix@2.35.2",
+      "sha256": "11d16341595cdc287935e00bdb8062618ecb43a26c643c5f4cdd709d3b0713f1",
+      "bytes": 2304
+    },
+    {
+      "file": "nix-binary-cache-index.md",
+      "pin": "nix@2.35.2",
+      "sha256": "9681cdb83f9d47bcc488b9077a00fecd10992525ae9b2dc65e6bd1c5be909c71",
+      "bytes": 1336
+    },
+    {
+      "file": "nix-cache-info.md",
+      "pin": "nix@2.35.2",
+      "sha256": "a9d66aa96fe654b8d3c5398851caf81c812fc51107ed4d611e09425865b74f53",
+      "bytes": 1527
+    },
+    {
+      "file": "nix-content-address.md",
+      "pin": "nix@2.35.2",
+      "sha256": "ac15eb067e2cf4085d17ca73e11502c32fe05db933aa2d07b76312deeaa44286",
+      "bytes": 6858
+    },
+    {
+      "file": "nix-local-store-addToStore.cc",
+      "pin": "nix@2.35.2",
+      "sha256": "bb658e334e85c1122ed86d0a0329c530ffbe612e68c94b9413e346cdbfa99737",
+      "bytes": 58633
+    },
+    {
+      "file": "nix-narinfo.md",
+      "pin": "nix@2.35.2",
+      "sha256": "ad1d23e1194b0d059669b855900ac037b195cd8ec3925e3b170fa8975b46b188",
+      "bytes": 3245
+    },
+    {
+      "file": "nix-path-info.cc",
+      "pin": "nix@2.35.2",
+      "sha256": "21514f32d770d4296cbaf6b032d56a4cf80e03c8d0a88e16f44692e15e501e16",
+      "bytes": 10462
+    },
+    {
+      "file": "nix-store-path.md",
+      "pin": "nix@2.35.2",
+      "sha256": "c18f0e24614a6169716a0544150e5350f806f30da767fa4db71a11cca2aa55b7",
+      "bytes": 6031
+    },
+    {
+      "file": "nix-substitution-goal.cc",
+      "pin": "nix@2.35.2",
+      "sha256": "dee6a5fdd0359c78140e8a66aa84700c37e9087fb2c790d40d54305058bdc933",
+      "bytes": 11371
+    },
+    {
+      "file": "oci-distribution-spec.md",
+      "pin": "opencontainers@v1.1.1",
+      "sha256": "360b29820869bfaac5f73ebfa30669c9172c069ef619f8c6689acc3bcef6f719",
+      "bytes": 47162
+    },
+    {
+      "file": "oci-image-descriptor.md",
+      "pin": "opencontainers@v1.1.1",
+      "sha256": "89399b5ffabfeb9688b66de9afcf08b60691710d94d0f5b061cb30e6fbc75428",
+      "bytes": 12152
+    },
+    {
+      "file": "ostree-atomic-upgrades.md",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "392cd530d9c4c49eae1d1d89f77c43def69ffd8a6a0bfdc510ad9fb1935f83c6",
+      "bytes": 7240
+    },
+    {
+      "file": "ostree-formats.md",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "84e7a3ce98c733384c5285b86f2b3dd5947c8c43eb13e1e0445d3fa8d1cf7535",
+      "bytes": 8554
+    },
+    {
+      "file": "ostree-pull.xml",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "ee14f26f740c277bb8e6929a3f01035964cccc1c1e504753dd636292b7b839e9",
+      "bytes": 8314
+    },
+    {
+      "file": "ostree-repo-config.xml",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "4e1aa6b5c9188f849ed4ba4798d16ba68f67fa5a47a7e2e9424f009fa9ac0152",
+      "bytes": 22619
+    },
+    {
+      "file": "ostree-repo-pull.c",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "15a4fa8c5f7b8f5f65af616bd4a851b17bd918761466b0fcf6d6e413d17ea209",
+      "bytes": 268653
+    },
+    {
+      "file": "ostree-repo.md",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "a14aea2f4ce2338e132e9bbcc1d5dcbd8f69b559e457877f197711d95ba37e6f",
+      "bytes": 8611
+    },
+    {
+      "file": "ostree-repository-management.md",
+      "pin": "ostree@1d5a312a3189b0fbd70fe6769aadb19a366fedb2",
+      "sha256": "ffbe1620a1a955dbc0ab8368711c256d28cd319ee96f3ac787961f02579046cd",
+      "bytes": 11189
+    },
+    {
+      "file": "reapi-remote_execution.proto",
+      "pin": "remote-apis@becdd8f9ff811df88a22d3eadd6341753d51d167",
+      "sha256": "f0b237af779fd1de3a9a3a851915a09de3288538856bc5f5199701e0030cb70d",
+      "bytes": 115765
+    }
+  ]
+}
