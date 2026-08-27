@@ -121,6 +121,136 @@
             "digest": "53ee1ee0237744ec07557dc96e577e202117d0f548511668b61bad43ba848732"
           },
           "bytes": 230301
+        },
+        {
+          "path": "packages/effect/src/Context.ts",
+          "role": "service-key-and-context-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "3db89c975c135495308f6da34b2c46409640dac3"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "835c9a875b91520cc205aa25fad2eb6f8b8cd23265d22bef8238738ce8160bc0"
+          },
+          "bytes": 38910
+        },
+        {
+          "path": "packages/effect/src/References.ts",
+          "role": "runtime-default-reference-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "5d5e51dd98d785222a4fe05406b1f455f820ddd9"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "4e637a086a5d9de3764b7c86b040ce9098f6be247ef393a841b5da3433f6b83b"
+          },
+          "bytes": 20570
+        },
+        {
+          "path": "packages/effect/src/Clock.ts",
+          "role": "clock-reference-and-accessors",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "5434197be2e453057da07db04a49a25fd5fe79ca"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "acc538a10d8a45879e8a252fd5bc05acc2c037c8a0751443e98edd7863019453"
+          },
+          "bytes": 10420
+        },
+        {
+          "path": "packages/effect/src/Random.ts",
+          "role": "random-reference-and-accessors",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "2afe37ea199a3faedc2604318d517d38311414b7"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "a7ad781eadeb7b9802855468b2968d5edc5c93a1fef54871965ef83ea7e753f6"
+          },
+          "bytes": 17152
+        },
+        {
+          "path": "packages/effect/src/Schedule.ts",
+          "role": "schedule-and-jitter-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "a9d4816dac087639d31ffcaad46d04639cc46604"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "723fa4d62fb35aacc85a33b1ac1227f55e226879bbe09cff6c1a85d4ad392cff"
+          },
+          "bytes": 48142
+        },
+        {
+          "path": "packages/effect/src/Effect.ts",
+          "role": "public-effect-combinator-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "3afd6618b100fe78dae27348ad55a5d994f3f44c"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "e26177a8df298e27b0a1f14194beff152711b97c118b6e1a31d61e444f85fbaf"
+          },
+          "bytes": 460650
+        },
+        {
+          "path": "packages/effect/src/Layer.ts",
+          "role": "layer-construction-surface",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "ede9373c18069aaf2385861246bbff15f9575cf4"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "12964358ed35ab8306ea656999b7b1420c8c5003c6e63535cab28a51cb7c9ebb"
+          },
+          "bytes": 89696
+        },
+        {
+          "path": "packages/effect/src/Exit.ts",
+          "role": "exit-carrier",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "889d81d481efd7bb48342ccfea7316aabb64bb72"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "2c16fd123e696796655e578bb916e3841521d6987b713b3c860dab9d049c7009"
+          },
+          "bytes": 28074
+        },
+        {
+          "path": "packages/effect/src/Cause.ts",
+          "role": "cause-carrier",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "2511f27bce3b9e9a2180f5aabde776779b7474bb"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "6cbc3af9a0ab9775d641efdccd0d5577d0bedd6b93fa23f10aa81eae3c30ecba"
+          },
+          "bytes": 51042
+        },
+        {
+          "path": "packages/effect/src/internal/effect.ts",
+          "role": "internal-default-service-plumbing",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "bb6e4bcafb3d9c76f93fb3af54f99d5b4afcbeb3"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "0e32b42fbc8901ae75419fbd2999bf5c96b40e4bb54cc42c4fc2ec778cc641f0"
+          },
+          "bytes": 212712
         }
       ]
     },

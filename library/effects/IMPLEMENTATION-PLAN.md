@@ -677,6 +677,12 @@ Exit:
 
 ### M1 — bootstrap the TypeScript package and freeze foundational interfaces
 
+Status: completed 2026-08-26. Three workflow-scaffolding items are deferred
+into the milestones where their consumers land: the manifest printer and
+generator plus the mutation tasks and quarantine grep arrive with the first
+model slices (M2/M3), and the ledger transition-legality check arrives with
+the first status flip.
+
 Deliverables:
 
 - package manifest, exact `effect`, TypeScript, and `@effect/tsgo` versions,

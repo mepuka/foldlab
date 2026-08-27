@@ -57,6 +57,10 @@ The machine-readable [sources.lock.json](../../.reference/provenance/sources.loc
 - root tree 68a2b3baeed509bc291cc3788c9b2c04bf53a80f;
 - Effect package version 4.0.0-rc.111;
 - full Git blob, SHA-256, and size identities for the selected Schema source artifacts;
+- full Git blob, SHA-256, and size identities for the ten Effect service,
+  runtime, and carrier files backing the effect-replay surface verification
+  (Context, References, Clock, Random, Schedule, Effect, Layer, Exit, Cause,
+  internal/effect);
 - XET Internet-Draft `draft-denis-xet-05`, published 2026-06-29;
 - XET source commit b29b7d1564b382245aabb65ede5fc9cfc8e93d4c and root tree
   cff859aa964cf50ecda49bb01ca4fcbf0ac94bfd; and
