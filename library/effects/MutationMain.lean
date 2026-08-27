@@ -130,123 +130,86 @@ def sameRun :
   | .error e s, .error f t => decide (e = f) && decide (s.val = t.val)
   | _, _ => false
 
-def main : IO UInt32 := do
+/-- One mutant's verdict. Moving the vectors kills it; standing still is
+a survivor, and a survivor counts one. -/
+def report {F : Type} (m : Mutant F) (moved : Bool) : IO Nat := do
+  if moved then
+    IO.println s!"killed {m.id} ({m.attacks})"
+    return 0
+  IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
+  return 1
+
+/-- Direction 1 over a group whose renderer covers exactly one family:
+the vectors rendered under the model and under the mutant must differ. -/
+def checkGroup {F : Type} (rendered : F → String) (model : F)
+    (ms : List (Mutant F)) : IO Nat := do
   let mut survivors := 0
-  for m in declaredMutants do
-    let model := familyRowsRendered Effects.Replay.reduce m.attacks
-    let mutated := familyRowsRendered m.mutant m.attacks
-    if model.isEmpty then
+  for m in ms do
+    survivors := survivors + (← report m (rendered model != rendered m.mutant))
+  return survivors
+
+/-- Direction 1 over a group whose renderer dispatches on the attacked
+family name. An empty rendering means the named family does not exist —
+a declaration error, counted as a survivor so it cannot pass silently. -/
+def checkFamilyGroup {F : Type} (rendered : F → String → String) (model : F)
+    (ms : List (Mutant F)) : IO Nat := do
+  let mut survivors := 0
+  for m in ms do
+    let modelRows := rendered model m.attacks
+    if modelRows.isEmpty then
       IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"
       survivors := survivors + 1
-    else if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
     else
-      IO.println s!"killed {m.id} ({m.attacks})"
+      survivors := survivors +
+        (← report m (modelRows != rendered m.mutant m.attacks))
+  return survivors
+
+/-- CMP-001's kill condition: no manifest family exists, so the model's
+interpretation and the mutated one must disagree on the witness run. -/
+def checkWitness : IO Nat := do
   let modelRun := interpE cmpWitness cmpStart
+  let mut survivors := 0
   for m in cmpMutants do
-    let mutated := m.mutant cmpWitness cmpStart
-    if sameRun modelRun mutated then
+    if sameRun modelRun (m.mutant cmpWitness cmpStart) then
       IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): witness run did not move"
       survivors := survivors + 1
     else
       IO.println s!"killed {m.id} ({m.attacks})"
-  for m in remoteMutants do
-    let model := remoteFamilyRowsRendered (Effects.Remote.step vecParams) m.attacks
-    let mutated := remoteFamilyRowsRendered m.mutant m.attacks
-    if model.isEmpty then
-      IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"
-      survivors := survivors + 1
-    else if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in controlCodecMutants do
-    let model := rmt014RowsRendered Effects.Remote.decodeLimits?
-    let mutated := rmt014RowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleChunkMutants do
-    let model := merkleChunkRowsRendered realChunk
-    let mutated := merkleChunkRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleStepMutants do
-    let model := merkleDecoderRowsRendered realMStep m.attacks
-    let mutated := merkleDecoderRowsRendered m.mutant m.attacks
-    if model.isEmpty then
-      IO.eprintln s!"UNKNOWN FAMILY {m.attacks} for mutant {m.id}"
-      survivors := survivors + 1
-    else if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleVerifyMutants do
-    let model := merkleVerifyRowsRendered realVerify
-    let mutated := merkleVerifyRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleConsMutants do
-    let model := merkleConsRowsRendered realConsVerify
-    let mutated := merkleConsRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleOpeningMutants do
-    let model := merkleOpeningRowsRendered realOpeningDecode
-    let mutated := merkleOpeningRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleStreamMutants do
-    let model := merkleStreamRowsRendered realStreamDecode
-    let mutated := merkleStreamRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleManifestMutants do
-    let model := merkleManifestRowsRendered realManifestDecode
-    let mutated := merkleManifestRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleBlobMutants do
-    let model := merkleBlobRowsRendered blobTreeNodes
-    let mutated := merkleBlobRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
-  for m in merkleFragMutants do
-    let model := merkleFragRowsRendered realFeed
-    let mutated := merkleFragRowsRendered m.mutant
-    if model == mutated then
-      IO.eprintln s!"SURVIVOR {m.id} ({m.attacks}): vectors did not move"
-      survivors := survivors + 1
-    else
-      IO.println s!"killed {m.id} ({m.attacks})"
+  return survivors
+
+/-- Every declared group, in report order: the model under attack, its
+row renderer, and the mutants aimed at it. -/
+def groups : List (IO Nat) :=
+  [ checkFamilyGroup familyRowsRendered Effects.Replay.reduce declaredMutants
+  , checkWitness
+  , checkFamilyGroup remoteFamilyRowsRendered (Effects.Remote.step vecParams)
+      remoteMutants
+  , checkGroup rmt014RowsRendered Effects.Remote.decodeLimits? controlCodecMutants
+  , checkGroup merkleChunkRowsRendered realChunk merkleChunkMutants
+  , checkFamilyGroup merkleDecoderRowsRendered realMStep merkleStepMutants
+  , checkGroup merkleVerifyRowsRendered realVerify merkleVerifyMutants
+  , checkGroup merkleConsRowsRendered realConsVerify merkleConsMutants
+  , checkGroup merkleOpeningRowsRendered realOpeningDecode merkleOpeningMutants
+  , checkGroup merkleStreamRowsRendered realStreamDecode merkleStreamMutants
+  , checkGroup merkleManifestRowsRendered realManifestDecode merkleManifestMutants
+  , checkGroup merkleBlobRowsRendered blobTreeNodes merkleBlobMutants
+  , checkGroup merkleFragRowsRendered realFeed merkleFragMutants ]
+
+/-- How many mutants the groups declare between them. -/
+def declaredCount : Nat :=
+  declaredMutants.length + cmpMutants.length + remoteMutants.length
+    + controlCodecMutants.length + merkleChunkMutants.length
+    + merkleStepMutants.length + merkleVerifyMutants.length
+    + merkleConsMutants.length + merkleOpeningMutants.length
+    + merkleStreamMutants.length + merkleManifestMutants.length
+    + merkleBlobMutants.length + merkleFragMutants.length
+
+def main : IO UInt32 := do
+  let mut survivors := 0
+  for group in groups do
+    survivors := survivors + (← group)
   if survivors > 0 then
     IO.eprintln s!"{survivors} mutation survivor(s); a survivor fails the task"
     return 1
-  IO.println s!"mutation clean: {declaredMutants.length + cmpMutants.length + remoteMutants.length + controlCodecMutants.length + merkleChunkMutants.length + merkleStepMutants.length + merkleVerifyMutants.length + merkleConsMutants.length + merkleOpeningMutants.length + merkleStreamMutants.length + merkleManifestMutants.length + merkleBlobMutants.length + merkleFragMutants.length} declared mutants killed"
+  IO.println s!"mutation clean: {declaredCount} declared mutants killed"
   return 0
