@@ -23,11 +23,21 @@ wire and points here for protocol law.
 - Every request and response body is `application/octet-stream` with
   a closed binary framing. The framing is the codec; the profile
   carries no JSON. Media-type comparison is exact.
+- Every request carries `cas-profile` naming this profile and
+  `accept: application/octet-stream`. A server may refuse a request
+  whose profile header is absent or names a profile it does not
+  serve. A client that omits either header does not conform.
 - One status→event table for every endpoint: `401` unauthenticated,
   `403` denied, `429` rate-limited (with retry-after), every `3xx` a
   redirect event that the shell never follows, `503`/`507` capacity.
   Malformed bodies and lengths map to the existing exchange alphabet
   (truncation), never to invented events.
+- A `429` may carry `retry-after`. Only a non-negative integer count
+  of seconds is honored; any other value, including the date form
+  HTTP also permits, leaves the rate-limit event without a delay
+  rather than making the response a protocol violation. That
+  tolerance is specific to `retry-after` — a malformed
+  `content-length` is a violation.
 - The HTTP shell performs no retry and follows no redirect; retries
   and redirects are semantic-core decisions.
 - Content encoding is identity-only at `/0`: any non-identity
@@ -66,7 +76,10 @@ Acknowledgment closure (implemented): successful upload and publish
 acknowledgments are CLOSED EMPTY bodies — `204` terminates at its
 header section per its standard, and a nonempty body on any
 acknowledgment is a typed protocol violation, never silently
-drained.
+drained. An acknowledgment may omit `content-type`; if it carries
+one, the value is exactly `application/octet-stream`. A declared
+non-zero `content-length`, or any body byte at all, is the
+unexpected-body violation.
 
 ## 4. Canonical key-list document (implemented — W2)
 
