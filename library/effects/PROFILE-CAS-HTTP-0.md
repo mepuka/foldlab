@@ -36,7 +36,22 @@ wire and points here for protocol law.
   nothing at `/0` may silently inflate bytes past the decoded
   counter.
 
-## 2. Data plane (implemented)
+## 2. Addressing — scheme 0 (ratified)
+
+The production address scheme, without which no two installations
+interoperate: an address is the full thirty-two-byte SHA-256 digest
+of the node's canonical encoding — exactly those bytes, nothing
+prepended, never truncated. Domain separation lives inside the
+digest input, because the canonical encoding already carries the
+version byte, kind tag, and length frames. The scheme is pinned by
+this profile revision; addresses carry no per-address scheme prefix,
+and migration to any future scheme is a new profile revision with
+registered decoders per scheme, derived alias indexes that are never
+identity evidence, and unknown schemes failing closed. Path hex is
+lowercase. Digests are public identity, not secrets; constant-time
+comparison discipline belongs to credentials alone.
+
+## 3. Data plane (implemented)
 
 - `GET {authority}/cas/{hex}` — load one node. Accepts only `200`
   with `application/octet-stream`; `404` is content-not-found. The
@@ -53,7 +68,7 @@ header section per its standard, and a nonempty body on any
 acknowledgment is a typed protocol violation, never silently
 drained.
 
-## 3. Canonical key-list document (implemented — W2)
+## 4. Canonical key-list document (implemented — W2)
 
 The shared framing for key collections: a 4-byte big-endian count N
 followed by exactly N×32-byte addresses. Total length exactly
@@ -61,7 +76,7 @@ followed by exactly N×32-byte addresses. Total length exactly
 decode's input is exactly the canonical encoding of its result.
 Order is significant and preserved.
 
-## 4. Capabilities (implemented — W3)
+## 5. Capabilities (implemented — W3)
 
 `GET {authority}/control/capabilities` → `200` with a body of exactly
 the eight canonical bytes: big-endian u32 `maxBatchKeys`, then
@@ -77,7 +92,7 @@ capabilities across sessions. The endpoint is REQUIRED before any
 batch use on this profile; its absence fails the probe as a typed
 protocol violation.
 
-## 5. Find-missing (implemented — W4)
+## 6. Find-missing (implemented — W4)
 
 `POST {authority}/control/missing` with a canonical key-list document
 as the request body. The client refuses locally with the typed
@@ -96,7 +111,7 @@ covers richer profiles; here there is strictly less to trust.
 Presence answers are planning data only: they steer upload
 scheduling, admit nothing, and are never negatively cached.
 
-## 6. Publish (implemented — W5)
+## 7. Publish (implemented — W5)
 
 `PUT {authority}/roots/{hex}` with the root's DECLARED CLOSURE as a
 canonical key-list document body (count 0 for a leaf root). The
@@ -112,7 +127,7 @@ verification is OPTIONAL at `/0`; the client gate is the law.
 Publishing an identical root and closure again is an idempotent
 acceptance.
 
-## 7. Caller surface (implemented — W6)
+## 8. Caller surface (implemented — W6)
 
 The three primitives land on the streamed-transfer service,
 identifier-tagged through the machine internally:
@@ -142,7 +157,7 @@ budget stages (the key-count budget); `publishUnconfirmed` joins the
 policy codes (the local ordering refusal). Publish and batch
 transport failures classify through the existing classes by cause.
 
-## 8. Authentication (ratified)
+## 9. Authentication (ratified)
 
 The credential model at `/0` is deliberately minimal: an OPAQUE
 bearer credential per authority, supplied in layer configuration and
@@ -165,7 +180,7 @@ exactly that authority. Rules:
   independent of authorization for object upload; credential
   comparison is constant-time where the platform provides it.
 
-## 9. Deadlines (ratified)
+## 10. Deadlines (ratified)
 
 Every wire operation carries a client-side deadline from layer
 configuration (`requestTimeout`, default thirty seconds), covering
@@ -180,12 +195,12 @@ an idle-progress deadline defined with the proof plane, not this
 one. The deadline is validated positive and finite; opting out is an
 explicit configuration value, never an accidental zero.
 
-## 10. Namespacing rule (standing)
+## 11. Namespacing rule (standing)
 
 Presence-style operations are scoped by the authority; no global
 does-this-digest-exist query exists on any surface of this profile.
 
-## 11. Blob representation (implemented model; client landing at F2b)
+## 12. Blob representation (implemented model; client landing at F2b)
 
 A blob is a NODE GRAPH under the ordinary data plane — no new
 endpoints and no second identity. Four node shapes, version byte 0:
@@ -215,7 +230,7 @@ identity across authorities. A server whose node-body budget cannot
 hold a chunk node cannot host recipe-1 blobs; that is a typed policy
 refusal at push, never a silent re-chunk.
 
-## 12. Planned planes (not yet normative)
+## 13. Planned planes (not yet normative)
 
 Design authority: the server-reference and verified-reads survey in
 the research tree. In brief: a proof plane serving inclusion openings

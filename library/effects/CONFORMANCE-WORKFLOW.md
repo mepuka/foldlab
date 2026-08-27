@@ -1367,3 +1367,17 @@ Stop and return to grilling if:
   example, the claim matrix, the axiom-profile gate, client
   concurrency documentation, memory bounds on large-graph push, and
   stable trace-span names.
+- **CasScheme0 ratified (2026-08-27):** the operator ratified the
+  hash docket as recommended, H1 through H6. The profile gains the
+  addressing section: an address is the full thirty-two-byte
+  SHA-256 digest of the canonical node encoding, nothing prepended
+  and never truncated, domain separation inside the digest input,
+  the scheme pinned by the profile revision with no per-address
+  prefix, migration reserved to a future revision through
+  registered decoders and non-authoritative alias indexes, and the
+  digests-are-not-secrets boundary. The implementation packet cut
+  with this record carries the injected `CasHash` service with the
+  WebCrypto SHA-256 default layer, generated known-answer fixtures
+  anchored on the FIPS 180 reference digests, and the
+  authentication and deadline riders — one slice, the publication
+  gate's last semantic prerequisite on the client side.
