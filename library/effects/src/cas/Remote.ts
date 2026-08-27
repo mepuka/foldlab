@@ -6,14 +6,15 @@ export const RemoteAuthority = Schema.String.check(
   Schema.makeFilter((value) => {
     try {
       const url = new URL(value)
-      return url.username === ""
+      return (url.protocol === "http:" || url.protocol === "https:")
+          && url.username === ""
           && url.password === ""
           && url.pathname === "/"
           && url.search === ""
           && url.hash === ""
           && url.origin === value
         ? undefined
-        : "authority must be an origin with no userinfo, path, query, or fragment"
+        : "authority must be an http(s) origin with no userinfo, path, query, or fragment"
     } catch {
       return "authority must be a valid URL origin"
     }
@@ -106,6 +107,7 @@ export const RemotePolicyCode = Schema.Literals([
   "oneShotRetryRefused",
   "attemptLimit",
   "publishUnconfirmed",
+  "attestRefused",
 ])
 
 export class RemoteIntegrityError extends Schema.TaggedError<RemoteIntegrityError>()(
@@ -240,6 +242,45 @@ export class CasRemoteConfig extends Schema.Class<CasRemoteConfig>("CasRemoteCon
   redirectPolicy: RedirectPolicy,
   credentials: Schema.optionalKey(Schema.Redacted(Schema.String, {
     disallowJsonEncode: true,
-    label: "CAS credentials",
   })),
 }) {}
+
+export interface RemoteConfigOptions {
+  readonly authorityMode?: RemoteAuthorityMode
+  readonly maxEncodedBytes?: number
+  readonly maxDecodedBytes?: number
+  readonly maxDecompressedBytes?: number
+  readonly maxQueuedBytes?: number
+  readonly maxAttempts?: number
+  readonly operationDeadlineMs?: number
+  readonly decisionTranscriptCapacity?: number
+  readonly capabilityProbe?: CapabilityProbeMode
+  readonly redirectPolicy?: RedirectPolicy
+  readonly credentials?: CasRemoteConfig["credentials"]
+}
+
+const DefaultRemoteBudgetBytes = 1_000_000
+
+/**
+ * Validate a plain HTTP(S) authority and fill the ordinary remote policy
+ * defaults without weakening the fully explicit CasRemoteConfig contract.
+ */
+export const remoteConfig = (
+  authority: string,
+  options: RemoteConfigOptions = {},
+): CasRemoteConfig => new CasRemoteConfig({
+  authority: RemoteAuthority.make(authority),
+  authorityMode: options.authorityMode ?? "remote-authoritative",
+  maxEncodedBytes: options.maxEncodedBytes ?? DefaultRemoteBudgetBytes,
+  maxDecodedBytes: options.maxDecodedBytes ?? DefaultRemoteBudgetBytes,
+  maxDecompressedBytes: options.maxDecompressedBytes ?? DefaultRemoteBudgetBytes,
+  maxQueuedBytes: options.maxQueuedBytes ?? DefaultRemoteBudgetBytes,
+  maxAttempts: options.maxAttempts ?? 1,
+  operationDeadlineMs: options.operationDeadlineMs ?? 10_000,
+  ...(options.decisionTranscriptCapacity === undefined
+    ? {}
+    : { decisionTranscriptCapacity: options.decisionTranscriptCapacity }),
+  capabilityProbe: options.capabilityProbe ?? "eager",
+  redirectPolicy: options.redirectPolicy ?? { maxRedirects: 0, crossOrigin: "deny" },
+  ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
+})

@@ -81,7 +81,7 @@ const NonNegativeIntegerHeader = Schema.String.check(
   Schema.isPattern(/^(0|[1-9][0-9]*)$/),
 ).pipe(
   Schema.decodeTo(
-    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER })),
     {
       decode: SchemaGetter.transform((value) => Number(value)),
       encode: SchemaGetter.transform((value) => String(value)),
@@ -89,10 +89,16 @@ const NonNegativeIntegerHeader = Schema.String.check(
   ),
 )
 
-const parseNonNegativeInteger = (value: string | undefined): number | undefined | "invalid" => {
-  if (value === undefined) return undefined
+type ParsedNonNegativeInteger =
+  | { readonly _tag: "Valid"; readonly value: number | undefined }
+  | { readonly _tag: "Invalid" }
+
+const parseNonNegativeInteger = (value: string | undefined): ParsedNonNegativeInteger => {
+  if (value === undefined) return { _tag: "Valid", value: undefined }
   const decoded = Schema.decodeUnknownOption(NonNegativeIntegerHeader)(value)
-  return Option.isSome(decoded) && Number.isSafeInteger(decoded.value) ? decoded.value : "invalid"
+  return Option.isSome(decoded)
+    ? { _tag: "Valid", value: decoded.value }
+    : { _tag: "Invalid" }
 }
 
 const unsupportedContentEncoding = (value: string | undefined): boolean =>
@@ -116,8 +122,8 @@ const rateLimitedEvent = (
 ) => {
   const retryAfter = parseNonNegativeInteger(response.headers["retry-after"])
   return responseEvent(
-    typeof retryAfter === "number"
-      ? { _tag: "RateLimited", retryAfter }
+    retryAfter._tag === "Valid" && retryAfter.value !== undefined
+      ? { _tag: "RateLimited", retryAfter: retryAfter.value }
       : { _tag: "RateLimited" },
     sentBytes,
   )
@@ -138,12 +144,13 @@ const binaryBody = (
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
   const contentType = response.headers["content-type"]
   const contentEncoding = response.headers["content-encoding"]
-  const declared = parseNonNegativeInteger(response.headers["content-length"])
-  if (declared === "invalid"
+  const parsedDeclared = parseNonNegativeInteger(response.headers["content-length"])
+  if (parsedDeclared._tag === "Invalid"
     || contentType !== "application/octet-stream"
     || unsupportedContentEncoding(contentEncoding)) {
     return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
   }
+  const declared = parsedDeclared.value
 
   let receivedBytes = 0
   let framing: CompletionWitness["terminalFraming"] = "complete"
@@ -207,14 +214,15 @@ const emptyAcknowledgement = (
   sentBytes: number,
   consumeBody = true,
 ): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
-  const declared = parseNonNegativeInteger(response.headers["content-length"])
+  const parsedDeclared = parseNonNegativeInteger(response.headers["content-length"])
   const contentType = response.headers["content-type"]
   const contentEncoding = response.headers["content-encoding"]
-  if (declared === "invalid"
+  if (parsedDeclared._tag === "Invalid"
     || (contentType !== undefined && contentType !== "application/octet-stream")
     || unsupportedContentEncoding(contentEncoding)) {
     return responseEvent({ _tag: "Reset" }, sentBytes, "invalidHeaders")
   }
+  const declared = parsedDeclared.value
   if (declared !== undefined && declared !== 0) {
     return responseEvent({ _tag: "Truncated" }, sentBytes, "unexpectedBody")
   }

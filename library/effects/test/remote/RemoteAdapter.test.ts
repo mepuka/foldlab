@@ -8,6 +8,7 @@ import {
   HashMap,
   HashSet,
   Layer,
+  Redacted,
   Ref,
   Stream,
 } from "effect"
@@ -28,8 +29,14 @@ import { CasStore } from "../../src/cas/Store.ts"
 import {
   CasRemoteConfig,
   RemoteAuthority,
+  remoteConfig,
 } from "../../src/cas/Remote.ts"
-import { encodeCasNode, makeMemoryCasStore, makeSha256Address } from "../../src/cas/Store.ts"
+import {
+  encodeCasNode,
+  makeMemoryCasStore,
+  makeSha256Address,
+  type CasAddress,
+} from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
 import { makeRemoteAdapter, type RemoteAdapter } from "../../src/internal/remote.ts"
 import { encodeCapabilityDocument } from "../../src/internal/remoteControl.ts"
@@ -61,6 +68,7 @@ import {
   type RemoteKey,
   RemoteStepSUT,
 } from "../conformance/harness.ts"
+import { deterministicAddress } from "../fixtures/address.ts"
 
 const digest = (bytes: Uint8Array): ContentId =>
   ContentId.make(createHash("sha256").update(bytes).digest("hex"))
@@ -564,13 +572,26 @@ it.effect("queued admission budgeting is invariant under one-chunk and many-chun
         stage: "stage" in error ? error.stage : undefined,
         observed: "observed" in error ? error.observed : undefined,
         bound: "bound" in error ? error.bound : undefined,
+        attemptId: "attemptId" in error ? error.attemptId : undefined,
       })),
     ))).pipe(Effect.provide(remoteLayer(config(endpoint.authority, {
       maxQueuedBytes: 3,
     }))))
     expect(outcomes).toEqual([
-      { _tag: "CasRemoteError/Budget", stage: "queued", observed: 4, bound: 3 },
-      { _tag: "CasRemoteError/Budget", stage: "queued", observed: 4, bound: 3 },
+      {
+        _tag: "CasRemoteError/Budget",
+        stage: "queued",
+        observed: 4,
+        bound: 3,
+        attemptId: undefined,
+      },
+      {
+        _tag: "CasRemoteError/Budget",
+        stage: "queued",
+        observed: 4,
+        bound: 3,
+        attemptId: undefined,
+      },
     ])
     // Layer acquisition performs the required capability probe; the rejected
     // uploads themselves still issue no wire request.
@@ -712,8 +733,8 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
         alreadyPresent: [childId, parentId],
       })
       expect(endpoint.observe()).toMatchObject({
-        requests: 7,
-        gets: 2,
+        requests: 5,
+        gets: 0,
         puts: 2,
       })
       expect(endpoint.observe().putIds?.slice(putOffset)).toEqual([childId, parentId])
@@ -726,12 +747,121 @@ it.effect("push negotiates a complete graph children-first and publishes last", 
 
       // The registry PUT is idempotent for an identical root and closure.
       yield* transfer.publish(parentId, [childId])
-      expect(endpoint.observe().requests).toBe(8)
+      expect(endpoint.observe().requests).toBe(6)
     }).pipe(Effect.provide(remoteLayer(config(endpoint.authority))))
 
     yield* awaitPeerSocketsReleased(endpoint)
     expect(endpoint.observe().openSockets).toBe(0)
   })))
+
+it.effect("push rejects a later oversized node before negotiation or upload", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const child = node([1], 91)
+    const childBytes = encodeCasNode(child)
+    const childId = digest(childBytes)
+    const parent = CasNodeInput.make({
+      kind: { version: 0, tag: 92 },
+      payload: Uint8Array.from({ length: 128 }, (_, index) => index),
+      refs: [{ id: childId, expectedTag: child.kind.tag }],
+    })
+    const parentBytes = encodeCasNode(parent)
+    const endpoint = yield* ReferencePeer.serve({
+      capabilities: { maxBatchKeys: 1, maxBlobBytes: childBytes.length },
+    })
+    const remoteConfig = config(endpoint.authority)
+    const address = yield* makeSha256Address
+    const localStore = yield* makeMemoryCasStore(address)
+    yield* localStore.put(child)
+    const parentId = yield* localStore.put(parent)
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+      { localStore },
+    )
+
+    const error = yield* adapter.transfer.push(parentId).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Budget",
+      stage: "encoded",
+      observed: parentBytes.length,
+      bound: childBytes.length,
+    })
+    if (error._tag === "CasRemoteError/Budget") {
+      expect(error.attemptId).toBeUndefined()
+      expect(error.opId).toBeUndefined()
+    }
+    expect(endpoint.observe()).toMatchObject({ requests: 1, gets: 0, puts: 0 })
+    expect(endpoint.observe().events).toEqual([])
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("push attests locally-held present nodes without loading or caching them", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const resident = node([8, 9, 10], 93)
+    const bytes = encodeCasNode(resident)
+    const id = digest(bytes)
+    const endpoint = yield* ReferencePeer.serve({ nodes: new Map([[id, bytes]]) })
+    const remoteConfig = config(endpoint.authority)
+    const address = yield* makeSha256Address
+    const localStore = yield* makeMemoryCasStore(address)
+    yield* localStore.put(resident)
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+      { localStore },
+    )
+
+    expect(yield* adapter.transfer.push(id)).toEqual({
+      transferred: [],
+      alreadyPresent: [id],
+    })
+    expect(endpoint.observe()).toMatchObject({ requests: 3, gets: 0, puts: 0 })
+    expect(yield* adapter.snapshot).toMatchObject({
+      cacheSize: 0,
+      confirmedSize: 1,
+      publishedSize: 1,
+    })
+  }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("a refused local attestation is a typed policy failure with no attempt evidence", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const base = deterministicAddress()
+    let digestCalls = 0
+    const address: CasAddress = {
+      digest: (bytes) => {
+        digestCalls += 1
+        return digestCalls === 4
+          ? Effect.succeed(ContentId.make("ff".repeat(32)))
+          : base.digest(bytes)
+      },
+    }
+    const localStore = yield* makeMemoryCasStore(address)
+    const resident = node([13, 21, 34], 94)
+    const id = yield* localStore.put(resident)
+    const bytes = encodeCasNode(resident)
+    const endpoint = yield* ReferencePeer.serve({ nodes: new Map([[id, bytes]]) })
+    const remoteConfig = config(endpoint.authority)
+    const adapter = yield* makeRemoteAdapter(
+      remoteConfig,
+      yield* makeRemoteHttp(remoteConfig),
+      address,
+      { localStore },
+    )
+
+    const error = yield* adapter.transfer.push(id).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Policy",
+      code: "attestRefused",
+      receivedBytes: 0,
+      sentBytes: 0,
+    })
+    if (error._tag === "CasRemoteError/Policy") {
+      expect(error.attemptId).toBeUndefined()
+    }
+    expect(endpoint.observe()).toMatchObject({ requests: 2, gets: 0, puts: 0 })
+    expect(yield* adapter.snapshot).toMatchObject({ cacheSize: 0, confirmedSize: 0 })
+  }).pipe(Effect.provide(TestCrypto))))
 
 it.effect("push uploads an early batch before the final batch is materialized", () =>
   Effect.scoped(Effect.gen(function* () {
@@ -904,6 +1034,7 @@ it.effect("a mid-download deadline surfaces typed completion evidence and releas
             _tag: "CasRemoteError/Unavailable",
             code: "timeout",
             completion: "possiblyProcessed",
+            receivedBytes: Math.max(1, Math.floor(bytes.length / 2)),
           })
         }
 
@@ -960,7 +1091,13 @@ it.effect("a one-shot upload reset is never retried and carries indeterminate co
           expect(error).toMatchObject({
             code: "oneShotRetryRefused",
             completion: "possiblyProcessed",
-            cause: { _tag: "CasRemoteError/Unavailable" },
+            receivedBytes: 0,
+            sentBytes: bytes.length,
+            cause: {
+              _tag: "CasRemoteError/Unavailable",
+              receivedBytes: 0,
+              sentBytes: bytes.length,
+            },
           })
         }
         expect(endpoint.observe().puts).toBe(1)
@@ -1189,6 +1326,47 @@ it.effect("interrupting the first lazy capability probe does not poison its cach
     expect(fixture.blockedIssues()).toBe(2)
     yield* Fiber.interrupt(second)
   }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("a retryable lazy capability failure is invalidated for the next call", () =>
+  Effect.gen(function* () {
+    let probes = 0
+    const limits = { maxBatchKeys: 7, maxBlobBytes: 8_192 }
+    const bytes = encodeCapabilityDocument(limits)
+    const transport: RemoteCasTransport = {
+      issue: () => {
+        probes += 1
+        if (probes === 1) {
+          return Channel.fromEffectDone(Effect.fail({
+            _tag: "RemoteTransportFailure" as const,
+            code: "connectionFailed" as const,
+            completion: "knownUnprocessed" as const,
+            receivedBytes: 0,
+            sentBytes: 0,
+          }))
+        }
+        return Channel.fromArray<RemoteWireEvent>([
+          { _tag: "ResponseStarted", declared: bytes.length },
+          { _tag: "BodyChunk", bytes },
+        ]).pipe(Channel.concatWith(() => Channel.fromEffectDone(Effect.succeed({
+          receivedBytes: bytes.length,
+          sentBytes: 0,
+          terminalFraming: "complete" as const,
+        }))))
+      },
+    }
+    const adapter = yield* makeRemoteAdapter(
+      config("http://127.0.0.1:1", { capabilityProbe: "lazy" }),
+      transport,
+      yield* makeSha256Address,
+    )
+
+    expect(yield* adapter.transfer.capabilities.pipe(Effect.flip)).toMatchObject({
+      _tag: "CasRemoteError/Unavailable",
+      code: "connectionFailed",
+    })
+    expect(yield* adapter.transfer.capabilities).toEqual(limits)
+    expect(probes).toBe(2)
+  }).pipe(Effect.provide(TestCrypto)))
 
 it.effect("find-missing interruption finalizes transport and clears in-flight state", () =>
   Effect.scoped(Effect.gen(function* () {
@@ -1470,6 +1648,23 @@ it("nested fetch causes retain connection-reset classification", () => {
     _tag: "RemoteTransportFailure",
     code: "connectionReset",
   })
+})
+
+it("remoteConfig validates schemes, accepts ordinary Redacted credentials, and applies named defaults", () => {
+  expect(() => remoteConfig("ftp://example.com")).toThrow()
+  const built = remoteConfig("https://example.com", {
+    maxAttempts: 3,
+    credentials: Redacted.make("secret"),
+  })
+  expect(built).toMatchObject({
+    authority: "https://example.com",
+    authorityMode: "remote-authoritative",
+    maxAttempts: 3,
+    capabilityProbe: "eager",
+    redirectPolicy: { maxRedirects: 0, crossOrigin: "deny" },
+  })
+  expect(built.maxEncodedBytes).toBeGreaterThan(0)
+  expect(built.operationDeadlineMs).toBeGreaterThan(0)
 })
 
 it.effect("offline puts are observably distinct from local-authoritative admission", () => {

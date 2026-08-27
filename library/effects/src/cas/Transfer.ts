@@ -21,7 +21,10 @@ export interface PutStreamOptions {
 }
 
 export interface CasTransferShape {
-  /** Capabilities probed once while the remote layer is acquired. */
+  /**
+   * Capabilities probed once per remote layer, either during acquisition or
+   * lazily on first wire-backed use according to the configured probe mode.
+   */
   readonly capabilities: Effect.Effect<RemoteCapabilities, CasRemoteError>
 
   /**

@@ -5,13 +5,6 @@
  * the namespace already carries it. Everything else in `src/cas/` and
  * `src/internal/` is implementation.
  */
-import { Context, Crypto, Effect, Layer } from "effect"
-import { CasRemoteConfig, type CasRemoteError } from "./cas/Remote.ts"
-import { CasStore, makeSha256Address } from "./cas/Store.ts"
-import { CasTransfer } from "./cas/Transfer.ts"
-import { makeRemoteAdapter } from "./internal/remote.ts"
-import { makeRemoteHttp } from "./internal/remoteHttp.ts"
-
 // Node vocabulary and the typed error family.
 export {
   AddressMismatch,
@@ -99,7 +92,9 @@ export {
   RemoteStage,
   RemoteUnavailableCode,
   RemoteUnavailableError,
+  remoteConfig,
 } from "./cas/Remote.ts"
+export type { RemoteConfigOptions } from "./cas/Remote.ts"
 
 /**
  * Build the remote store and transfer views once over one shared adapter.
@@ -108,18 +103,4 @@ export {
  * `capabilityProbe: "lazy"` defers its one memoized probe until a wire-backed
  * operation first needs it. Platform Crypto remains a visible layer requirement.
  */
-export const layerRemote = (
-  config: CasRemoteConfig,
-): Layer.Layer<
-  CasStore | CasTransfer,
-  CasRemoteError,
-  Crypto.Crypto
-> => Layer.effectContext(Effect.gen(function* () {
-  const transport = yield* makeRemoteHttp(config)
-  const address = yield* makeSha256Address
-  const adapter = yield* makeRemoteAdapter(config, transport, address)
-  return Context.empty().pipe(
-    Context.add(CasStore, adapter.store),
-    Context.add(CasTransfer, adapter.transfer),
-  )
-}))
+export { layerRemote } from "./internal/remote.ts"

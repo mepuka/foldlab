@@ -1918,3 +1918,43 @@ Stop and return to grilling if:
   regenerate identically, thirty-four mutants stand. With this the
   ratified R1–R11 sheet is fully executed on the model lane; the
   remaining rulings live in the implementation packet.
+- **Remote-lane remediation accepted (2026-08-27):** the
+  implementation lane delivered the full addendum, reviewed
+  first-hand hunk-by-hunk against the pre-registered attack list,
+  both gates run personally — thirty-four mutants, two hundred
+  eighty-four tests across twenty-nine files, build and dist smoke.
+  The P1: push now preflights the COMPLETE closure retaining only
+  identifiers and a running maximum encoded length, checked after
+  capability acquisition and before any negotiation or upload — the
+  regression pins the exact geometry (batch cap one, oversized
+  parent behind a small child) and proves the withheld prefix: one
+  wire request total, zero gets, zero puts, and a typed budget
+  error carrying no fabricated operation or attempt identity.
+  ATTESTED PRESENCE IS NOW LOAD-BEARING ON THE WIRE: the push
+  present-path attests locally-held bytes (re-digested, not
+  trusted) instead of downloading nodes to confirm them — the exact
+  TOCTOU the RMT-017 amendment was ruled for — with the adapter
+  tests observing zero gets, cache size zero, confirmed size one;
+  `AttestRefused` lifted from an invariant-breach die to the typed
+  policy code `attestRefused` (additive public-union extension).
+  Also verified in force: timeout errors carry the bytes actually
+  received through a shared reference; policy errors derive
+  evidence from their underlying exchange and preflight budget
+  errors carry no identity; retryable capability-probe failures
+  invalidate the infinite-TTL cache while auth failures stay
+  memoized; the decision transcript is a true ring with an exposed
+  dropped counter; the authority Schema admits only http(s) and the
+  credential label constraint is gone; `remoteConfig` names its
+  defaults out loud; the header codec's bound lives in the Schema
+  and the tri-state became a tagged pair; the five error
+  constructors closed over config (thirty-seven call sites
+  shortened); the wire drivers carry spans; the dispatch and
+  interrupt-cleanup helpers deduplicate nine and four sites; and
+  the barrel is pure re-exports again. Two observations, neither
+  blocking: the probe docstrings still say "one memoized probe"
+  while failed probes now retry — under-promising, one-line
+  truth-up owed; and the batch-cap-zero path avoids a zero-step
+  loop only because presence negotiation fails typed first — an
+  explicit guard would state it. With the streaming push landed,
+  the queued exchange-count arithmetic suite and the deferred test
+  consolidations unblock.
