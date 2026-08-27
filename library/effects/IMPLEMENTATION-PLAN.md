@@ -893,9 +893,28 @@ declared mutant per falsification case in both directions.
   integrity rejection, indeterminate upload); explicit authority modes
   (remote-authoritative, local-authoritative, offline) with no silent
   fallback; and concurrency by client-assigned operation identifiers
-  matching the machine — never ambient fiber identity.
+  matching the machine — never ambient fiber identity. Streaming, per
+  the R1-acceptance ruling, is first-class but separated: `CasStore`
+  (whole admitted nodes) / `CasTransfer` (streamed mechanics, spooled
+  whole-object verification, restartable-source retries, explicit
+  byte budgets) / `CasEvents` (advisory notifications; HTTP and gRPC
+  stay the primary data planes) / `RemoteCasTransport`
+  (adapter-internal untrusted streams). The differential lane binds
+  to an abstract conformance-peer interface with LeanServer as the
+  ratified first peer, its audited gaps as named detection targets.
+  Streaming obligation candidates entering section 7 with their
+  slices: fragmentation invariance, terminal completion before
+  admission, interruption exclusion, budget enforcement, and
+  per-operation stream isolation.
 - **R3** — batching and closure: `RMT-005`–`RMT-008`, `RMT-014`.
-- **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`.
+- **R4** — policy: `RMT-009`–`RMT-012`, `RMT-016`. The standards bind
+  the retry obligations: an HTTP retry requires application
+  idempotency or evidence the original request was not applied
+  (RFC 9110 §9.2.2), and gRPC success is final-trailer gated with an
+  explicit commitment boundary — so the machine gains `AttemptId`,
+  explicit `knownUnprocessed | possiblyProcessed` evidence, and a
+  protocol-completion witness carrying byte counts and terminal
+  framing, entering through section 7.
 - **R5** — the property/state-machine lane, entering as declared
   evidence.
 - **R6** — the live lane and one real backend layer under scoped

@@ -11,7 +11,9 @@ the descriptor Pass A (operator-ratified): four entries minted — value
 descriptor, typed root, projection codec failure, hydrated service
 layer. Amended 2026-08-27 at the remote Pass A (operator-ratified):
 four entries minted — remote exchange event, wire command, fault
-schedule, remote client machine. Kind:
+schedule, remote client machine. Amended 2026-08-27 at the R1
+acceptance (operator-ratified): three entries minted — streamed
+transfer service, event notification service, remote transport. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -297,13 +299,14 @@ enters as an ordinary refactor proposal at that time.
   service root read as replay identity.
 
 ### Remote exchange event
-- **Kind:** taxonomy. **Code label:** pending R1 (provisional
-  `Effects/Remote/Event.lean`).
+- **Kind:** taxonomy. **Code label:** `Effects/Remote/Event.lean`.
 - **Form:** the abstract server-event alphabet the remote client
-  machine consumes: ok with bytes; absent; truncated; reset; silence;
-  unauthenticated; denied; rate-limited with retry-after; capacity;
-  redirected; per-key batch results; capabilities with limits; and
-  declared interruption.
+  machine consumes: ok with declared length and bytes; absent;
+  truncated; reset; silence; unauthenticated; denied; rate-limited
+  with retry-after; capacity; redirected; integrity mismatch (a
+  server-side integrity rejection — neither absence nor transport);
+  per-key batch results; capabilities with limits; and declared
+  interruption.
 - **Obligations:** absence and corruption never share a member; every
   event is data carrying no wall-clock or host detail; the alphabet is
   the model's entire view of the wire.
@@ -311,8 +314,7 @@ enters as an ordinary refactor proposal at that time.
   into transport members; events carrying credentials.
 
 ### Wire command
-- **Kind:** taxonomy. **Code label:** pending R1 (provisional
-  `Effects/Remote/Command.lean`).
+- **Kind:** taxonomy. **Code label:** `Effects/Remote/Command.lean`.
 - **Form:** what the machine emits toward the shell: capability probe,
   load, find-missing, upload, query-committed, publish-root.
 - **Obligations:** commands are data and the shell owns their transport
@@ -322,11 +324,14 @@ enters as an ordinary refactor proposal at that time.
   whose meaning depends on transport origin.
 
 ### Fault schedule
-- **Kind:** schema. **Code label:** pending R1 (the schedule-vector
-  manifest row shape).
-- **Form:** the ordered scripted server-event list a vector row
-  carries, including declared interruption points; executed by the
-  model to compute the row's expectations.
+- **Kind:** schema. **Code label:** the schedule-vector rows emitted by
+  `Effects/Conformance/ManifestRemote.lean`.
+- **Form:** identifier-tagged operations, scripted server events each
+  correlated to the operation they answer (declared interruption
+  included), and an explicit interleaving sequence referencing every
+  operation and event exactly once — complete accounting by
+  construction; executed by the model to compute the row's
+  expectations.
 - **Obligations:** schedules are fixture data under the
   generated-vectors law; retry delays and attempt counts are decision
   data, never wall-clock; any randomness derives from a row-carried
@@ -335,17 +340,67 @@ enters as an ordinary refactor proposal at that time.
   field; schedules that embed server internals beyond the alphabet.
 
 ### Remote client machine
-- **Kind:** model (state machine). **Code label:** pending R1
-  (provisional `Effects/Remote/Machine.lean`).
-- **Form:** sans-io: state and one exchange event in; wire commands,
-  decisions, and outcome out. The Effect shell owns all I/O; state
-  carriers prefer the Lean standard library's structures.
+- **Kind:** model (state machine). **Code label:**
+  `Effects/Remote/Machine.lean` with the laws in
+  `Effects/Remote/Laws.lean`.
+- **Form:** sans-io: state and one input in; a result, wire commands,
+  and decisions out, commands and decisions identifier-tagged.
+  Operations carry client-assigned identifiers with an in-flight map,
+  so unrelated operations proceed concurrently and every wire event
+  correlates to one operation — never an ambient fiber identity. The
+  Effect shell owns all I/O; state carriers prefer the Lean standard
+  library's structures.
 - **Obligations:** total on the alphabet; every invariant is stated
   over its decisions and commands; the machine never models the
   server, HTTP, TLS, or time.
 - **Avoid:** I/O or services inside the machine; modeling server
   behavior beyond the alphabet; treating shell behavior as
   model-covered.
+
+### Streamed transfer service
+- **Kind:** module. **Code label:** pending R2 (provisional
+  `src/cas/Transfer.ts`, `CasTransfer`).
+- **Form:** streamed upload and download mechanics above the logical
+  store: `putStream` checks or computes the address incrementally and
+  succeeds only after complete consumption and remote commitment; a
+  public download stream emits early only when each chunk is
+  independently content-addressed or carries a valid Merkle proof —
+  under a whole-object hash, complete verification precedes any
+  trusted byte, through a scoped temporary spool where needed.
+- **Obligations:** `CasStore.load` still returns whole admitted nodes,
+  never a partially received stream; upload retry requires a
+  restartable or replayable source — a one-shot stream is never
+  transparently retried; explicit encoded, decoded, decompressed, and
+  queued-byte limits are enforced — backpressure is not a budget.
+- **Avoid:** collapsing transfer mechanics into the logical store;
+  releasing unverified bytes early; retrying one-shot sources.
+
+### Event notification service
+- **Kind:** module. **Code label:** pending R2+ (provisional
+  `src/cas/Events.ts`, `CasEvents`).
+- **Form:** advisory notification and progress streams (server-sent
+  events, WebSocket) beside the data planes — HTTP and gRPC remain
+  the primary CAS data planes.
+- **Obligations:** notification delivery never constitutes CAS
+  admission; the channels stay advisory unless acknowledgement,
+  deduplication, replay, and resumption are defined above them
+  (server-sent-event cursors are not exactly-once).
+- **Avoid:** admitting on a notification; treating an event stream as
+  a data plane.
+
+### Remote transport
+- **Kind:** module (adapter-internal). **Code label:** pending R2
+  (provisional `src/cas/internal — RemoteCasTransport`).
+- **Form:** the raw untrusted protocol streams behind the verified
+  semantic adapter: one command executed at a time, responses mapped
+  into the exchange alphabet before the semantic core sees them.
+- **Obligations:** never a `CasStore`; raw chunks stay untrusted here;
+  retries and redirects are decided by the semantic core, never the
+  shell; `Scope` owns connections, response bodies, temporary spools,
+  subscriptions, and cancellation.
+- **Avoid:** exposing transport streams as store results; invisible
+  shell-level retry or redirect-following; credentials crossing
+  redirect hosts.
 
 ### Service kit
 - **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.

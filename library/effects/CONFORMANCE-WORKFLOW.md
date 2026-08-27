@@ -707,6 +707,59 @@ Stop and return to grilling if:
   and the constructive fallback (a list-backed rejection memory) is on
   the table if the operator prefers axiom purity over the ratified
   carrier posture.
+- **R1 acceptance (2026-08-27):** the operator ratified the corrected
+  slice as recommended. The three restated pairs stand; the two
+  amendments stand — `integrityMismatch` joins the alphabet, and the
+  split operations/schedule/sequence form is THE schedule-vector
+  shape; the in-cycle vector correction reading is affirmed; and the
+  standard-library carriers are KEPT with the `Classical.choice`
+  divergence standing documented ("keep std"). Rulings landing with
+  the acceptance, from the transport-standards survey
+  (`research/remote-transport-standards-and-lean-models.md`, receipt
+  minted) and the operator's streaming direction: (a) weak trace
+  refinement is the R-lane's conformance shape — real protocol
+  transcript, normalized events, the remote machine, CAS admission —
+  with PolyFun noted as the reusable weak-simulation machinery and
+  `Std.Http`/lean-grpc as harness substrates; (b) HTTP and gRPC are
+  the primary CAS data planes; SSE and WebSocket are advisory
+  notification/progress channels unless acknowledgement,
+  deduplication, replay, and resumption are defined above them;
+  (c) the standards bind the R4 retry obligations — HTTP retries
+  require application idempotency or evidence the original request
+  was not applied (RFC 9110 §9.2.2), gRPC success is final-trailer
+  gated with an explicit commitment boundary, and the machine's next
+  additions are `AttemptId`, explicit `knownUnprocessed |
+  possiblyProcessed` evidence, and a protocol-completion witness
+  carrying byte counts and terminal framing, entering with their R
+  slices through plan section 7; (d) LeanServer is ratified as a
+  first-class differential conformance PEER — never a standards
+  oracle — admitted in the tool register, bound through an abstract
+  peer interface so conformance suites stay isolated, its audited
+  gaps named detection targets; (e) the streaming architecture is
+  ratified as the four-service separation — `CasStore` (whole
+  admitted nodes, backend-independent), `CasTransfer` (streamed
+  upload/download mechanics), `CasEvents` (notifications and
+  progress), `RemoteCasTransport` (raw untrusted protocol streams,
+  adapter-internal) — under the ruled laws: `load` returns admitted
+  nodes never partial streams; raw chunks stay untrusted inside the
+  transport; a public download stream emits early only when each
+  chunk is independently content-addressed or Merkle-proven,
+  otherwise whole-object verification precedes any trusted byte
+  (scoped temporary spool permitted); `putStream` checks the address
+  incrementally and succeeds only after complete consumption and
+  remote commitment; upload retry requires a restartable source —
+  a one-shot stream is never transparently retried; notification
+  delivery never constitutes admission; `Scope` owns connections,
+  bodies, spools, subscriptions, and cancellation, and backpressure
+  never substitutes for explicit encoded, decoded, decompressed, and
+  queued-byte limits; the library enforces user-chosen policy bounds,
+  prevents partial admission, closes scoped resources, and redacts
+  errors. Five streaming obligation candidates are named for their R
+  slices: fragmentation invariance, terminal completion before
+  admission, interruption exclusion, budget enforcement, and
+  per-operation stream isolation. The remote context labels fill at
+  this acceptance, and three entries are minted for the streaming
+  planes.
 - **R1 ratification (2026-08-27):** the operator ratified the
   scope-and-ambient analysis's first recommendation: replay
   construction provides `TracerTimingEnabled = false` alongside the
