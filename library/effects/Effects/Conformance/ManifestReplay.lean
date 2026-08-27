@@ -20,6 +20,10 @@ reducer function so the mutation task can regenerate rows under a
 declared mutant and assert the vectors move (direction 1 of the ratified
 mutation form).
 
+Rows are folded by `Effects.Replay.runSteps`, the same fold the session
+run projects. The emitter cannot drift from the interpreter the laws are
+proved about, because there is only one fold to drift from.
+
 The families are committed at effects-model@0.2.0 — the first
 semantics-affecting bump: the record-mode delegation protocol (SES-003)
 made the bare recorded shorthand two fixtures used unlawful, so those
@@ -34,21 +38,11 @@ namespace Effects.Conformance.Manifest
 
 open Effects.Replay Json
 
-/-! ## Concrete replay atoms and the parameterized runner -/
+/-! ## Concrete replay atoms -/
 
 abbrev RS := SessionState String String String String
 abbrev RI := Input String String String String
 abbrev RReducer := RS → RI → StepOut String String String String
-
-/-- Run a reducer over an input list, collecting per-step results and the
-concatenated decision trace. -/
-def runWith (step : RReducer) : RS → List RI →
-    RS × List (StepResult String String) × List (Decision String)
-  | s, [] => (s, [], [])
-  | s, i :: is =>
-    let o := step s i
-    let rest := runWith step o.state is
-    (rest.1, o.result :: rest.2.1, o.decisions ++ rest.2.2)
 
 /-! ## Wire encodings (runtime literal names) -/
 
@@ -146,7 +140,7 @@ expectation — per-step results, the decision trace, and the final state
 summary (with its well-formedness bit, mirrorable by the suite). -/
 def scenarioRow (step : RReducer) (caseId : String) (s : RS)
     (inputs : List RI) : String × Value :=
-  let (final, results, decisions) := runWith step s inputs
+  let (final, results, decisions) := runSteps step s inputs
   ( caseId
   , .obj [ ("case", .str caseId)
          , ("expect", .obj
