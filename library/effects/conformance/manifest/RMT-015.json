@@ -1,7 +1,7 @@
 {
   "family": "RMT-015",
   "meaning": "On leaf admitted nodes within the declared byte budget, the remote client's completed load run and the logical admitted-node store load agree at the delivered bytes under exact canonical encoding — a successful remote load implements the logical admitted-node load: what the machine delivers is precisely the canonical encoding of the node the store holds at that address, so remote success can never produce a node the logical load would not.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

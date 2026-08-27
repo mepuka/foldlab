@@ -29,6 +29,8 @@ import Effects.Mutants.RPL004_ConsumeOnMismatch
 import Effects.Mutants.RPL005_AcceptSuffix
 import Effects.Mutants.SES001_AppendPastAbort
 import Effects.Mutants.SES002_CursorUnpinned
+import Effects.Mutants.SES003_AcceptInterleavedInvoke
+import Effects.Mutants.SES003_AcceptUnsolicited
 import Effects.Mutants.CMP002_CollapseIdentical
 
 /-!
@@ -52,6 +54,8 @@ def declaredMutants : List (Mutant RReducer) :=
   , Effects.Mutants.RPL005AcceptSuffix.mutant
   , Effects.Mutants.SES001AppendPastAbort.mutant
   , Effects.Mutants.SES002CursorUnpinned.mutant
+  , Effects.Mutants.SES003AcceptInterleavedInvoke.mutant
+  , Effects.Mutants.SES003AcceptUnsolicited.mutant
   , Effects.Mutants.CMP002CollapseIdentical.mutant ]
 
 def cmpMutants : List (Mutant Effects.Mutants.CMP001ForkNestedCursor.CmpInterp) :=
@@ -106,7 +110,7 @@ cursor. -/
 def cmpStart : ReplayState String String String String :=
   ⟨⟨.replay, .active,
       [ ⟨"acme/Rates/get", 1, "req-0", .success "ok-0"⟩
-      , ⟨"acme/Rates/get", 1, "req-1", .success "ok-1"⟩], 0⟩, rfl⟩
+      , ⟨"acme/Rates/get", 1, "req-1", .success "ok-1"⟩], 0, none⟩, rfl⟩
 
 /-- The CMP-001 witness: a two-leaf sequential composition through
 `Prog.bind` — the second leaf must continue from the state the first one

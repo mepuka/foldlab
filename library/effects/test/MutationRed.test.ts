@@ -35,6 +35,14 @@ import {
   meaning as ses002Meaning,
   mutant as ses002,
 } from "./mutants/SES002_CursorUnpinned.ts"
+import {
+  meaning as ses003InterleavedMeaning,
+  mutant as ses003Interleaved,
+} from "./mutants/SES003_AcceptInterleavedInvoke.ts"
+import {
+  meaning as ses003UnsolicitedMeaning,
+  mutant as ses003Unsolicited,
+} from "./mutants/SES003_AcceptUnsolicited.ts"
 
 const assertRed = (
   family: ReplayFamily,
@@ -68,6 +76,14 @@ it.effect("SES-001 mutant suite is RED under append past abort", () =>
 
 it.effect("SES-002 mutant suite is RED under cursor unpinning", () =>
   assertRed("SES-002", ses002Meaning, ses002, "wf-preserved-record-000"))
+
+it.effect("SES-003 mutant suite is RED under interleaved-invoke acceptance", () =>
+  assertRed("SES-003", ses003InterleavedMeaning, ses003Interleaved,
+    "interleaved-invoke-rejected-001"))
+
+it.effect("SES-003 mutant suite is RED under unsolicited-outcome acceptance", () =>
+  assertRed("SES-003", ses003UnsolicitedMeaning, ses003Unsolicited,
+    "unsolicited-outcome-rejected-002"))
 
 it.effect("CMP-002 mutant suite is RED under identical occurrence collapse", () =>
   assertRed("CMP-002", cmp002Meaning, cmp002, "repeated-occurrence-distinct-000"))

@@ -1,7 +1,7 @@
 {
   "family": "SES-002",
   "meaning": "On every input, one reducer step from a well-formed session state yields a well-formed session state — the cursor stays inside the history, and record mode keeps it pinned to the history length.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "rows": [
     {
       "case": "wf-preserved-record-000",

@@ -1,7 +1,7 @@
 {
   "family": "RMT-005",
   "meaning": "When the pending input answers an in-flight find-missing operation, no step ever caches: a presence answer is planning data that steers upload scheduling and nothing else — it admits nothing, returns nothing, publishes nothing, and absence is never negatively cached, because no admission reading of the reported-missing set exists at all.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

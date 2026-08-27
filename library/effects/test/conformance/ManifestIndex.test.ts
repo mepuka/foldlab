@@ -1,0 +1,137 @@
+/**
+ * The manifest-corpus invariants: INDEX.json is the authority for what
+ * must be bound, and this suite makes the authority enforcing.
+ *
+ * - The index names exactly the committed family manifests — an orphan
+ *   file or a missing named file is red.
+ * - Every named family decodes through one closed envelope at the model
+ *   version the index declares, with non-empty rows, unique case ids, in
+ *   canonical ascending order.
+ * - Every family is either BOUND (a suite consumes its rows) or declared
+ *   LEADING (vectors precede the implementation, with the packet item
+ *   that will bind them named). A family in neither state is red — a
+ *   model-side addition can never be a silent gap.
+ */
+import { expect, it } from "@effect/vitest"
+import { Effect, Schema } from "effect"
+import { readdir, readFile } from "node:fs/promises"
+import { ManifestModel, manifestIndexNames } from "./harness.ts"
+
+const manifestDir = new URL("../../conformance/manifest/", import.meta.url)
+
+const RowSchema = Schema.Struct({
+  case: Schema.String,
+  expect: Schema.Unknown,
+  input: Schema.Unknown,
+})
+
+const FamilyDocSchema = Schema.Struct({
+  family: Schema.String,
+  meaning: Schema.String,
+  model: Schema.Literal(ManifestModel),
+  oracle: Schema.optionalKey(Schema.String),
+  rows: Schema.Array(RowSchema),
+})
+
+type Binding =
+  | { readonly status: "bound"; readonly by: string }
+  | { readonly status: "leads"; readonly until: string }
+
+/** Every consumable family, bound to its consuming suite or declared
+ * leading with the packet item that will bind it. */
+const REGISTRY: Record<string, Binding> = {
+  "CAS-001": { status: "bound", by: "CasStore.test.ts" },
+  "CAS-002": { status: "bound", by: "CasStore.test.ts" },
+  "CMP-002": { status: "bound", by: "ReplayReducer.test.ts" },
+  "MRK-001": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-002": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-003": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-005": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-006": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-007": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-011": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-012": { status: "bound", by: "merkle/Merkle.test.ts" },
+  "MRK-014": {
+    status: "leads",
+    until: "Track E item 3 — blob-graph binding over the injected toy digest",
+  },
+  "MRK-015": {
+    status: "leads",
+    until: "Track E item 4 — the incremental framer the transport work needs",
+  },
+  "MRK-018": { status: "bound", by: "blob/Blob.test.ts" },
+  "RMT-001": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-002": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-003": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-004": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-005": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-006": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-007": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-008": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-014": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-015": { status: "bound", by: "remote/Machine.test.ts" },
+  "RPL-002": { status: "bound", by: "ReplayReducer.test.ts" },
+  "RPL-003": { status: "bound", by: "ReplayReducer.test.ts" },
+  "RPL-004": { status: "bound", by: "ReplayReducer.test.ts" },
+  "RPL-005": { status: "bound", by: "ReplayReducer.test.ts" },
+  "SES-001": { status: "bound", by: "ReplayReducer.test.ts" },
+  "SES-002": { status: "bound", by: "ReplayReducer.test.ts" },
+  "SES-003": { status: "bound", by: "ReplayReducer.test.ts" },
+}
+
+it.effect("the index names exactly the committed family manifests", () =>
+  Effect.gen(function* () {
+    const entries = yield* Effect.promise(() => readdir(manifestDir))
+    const committed = entries
+      .filter((name) => name.endsWith(".json") && name !== "INDEX.json")
+      .sort()
+    expect([...manifestIndexNames]).toEqual(committed)
+    // The index itself is canonically sorted.
+    expect([...manifestIndexNames]).toEqual([...manifestIndexNames].sort())
+  }))
+
+it.effect("every named family decodes through the closed envelope at the declared model", () =>
+  Effect.gen(function* () {
+    for (const name of manifestIndexNames) {
+      const text = yield* Effect.promise(() =>
+        readFile(new URL(name, manifestDir), "utf8"))
+      const decoded = yield* Schema.decodeUnknownEffect(FamilyDocSchema)(
+        JSON.parse(text),
+        { onExcessProperty: "error" },
+      ).pipe(Effect.mapError((issue) =>
+        new Error(`${name}: ${String(issue)}`)))
+      expect({ name, family: decoded.family }).toEqual({
+        name,
+        family: name.replace(/\.json$/, ""),
+      })
+      expect({ name, rows: decoded.rows.length > 0 }).toEqual({
+        name,
+        rows: true,
+      })
+      const ids = decoded.rows.map((row) => row.case)
+      const canonical = [...ids].sort()
+      expect({ name, ids }).toEqual({ name, ids: canonical })
+      expect({ name, unique: new Set(ids).size }).toEqual({
+        name,
+        unique: ids.length,
+      })
+    }
+  }))
+
+it.effect("every family is bound to a suite or declared leading — never a silent gap", () =>
+  Effect.gen(function* () {
+    const families = manifestIndexNames.map((name) => name.replace(/\.json$/, ""))
+    expect(Object.keys(REGISTRY).sort()).toEqual([...families].sort())
+    for (const family of families) {
+      const binding = REGISTRY[family]
+      if (binding === undefined) {
+        return yield* Effect.die(new Error(`${family}: no binding declared`))
+      }
+      if (binding.status === "leads") {
+        expect({ family, until: binding.until.length > 0 }).toEqual({
+          family,
+          until: true,
+        })
+      }
+    }
+  }))

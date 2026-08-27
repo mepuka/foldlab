@@ -1,7 +1,7 @@
 {
   "family": "CAS-001",
   "meaning": "Canonicalization is idempotent, canonical values round-trip, and the encoding is injective on canonical forms — every admitted CAS node has exactly one byte representation: canonicalization is the identity on the admitted-node carrier, the decoder accepts nothing outside the encoder image, and trailing bytes are rejected.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "rows": [
     {
       "case": "reject-trailing-byte-001",

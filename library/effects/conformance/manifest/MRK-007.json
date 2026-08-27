@@ -1,7 +1,7 @@
 {
   "family": "MRK-007",
   "meaning": "On every claimed relation — an old size, a new size, two roots, and a proof — the executable consistency verifier and the decided consistency judgment agree at the boolean: the verifier accepts exactly the proofs whose size-derived rebuild reproduces both roots with the proof exactly consumed, honestly generated proofs relate the committed prefix root to the whole root, and an accepted proof against an honest new tree forces the old root to be the committed prefix's root or exhibits a computable hash collision.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

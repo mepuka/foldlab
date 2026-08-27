@@ -39,7 +39,7 @@ private def call : Invocation String String := ⟨"acme/Rates/get", 1, "req-0"�
 /-- One entry recording a typed failure — both kit branches run through
 it. -/
 private def start : RS :=
-  ⟨⟨.replay, .active, [⟨"acme/Rates/get", 1, "req-0", .failure "err-0"⟩], 0⟩,
+  ⟨⟨.replay, .active, [⟨"acme/Rates/get", 1, "req-0", .failure "err-0"⟩], 0, none⟩,
     rfl⟩
 
 /-- CMP-001: sequential interpretation threads replay state

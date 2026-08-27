@@ -20,8 +20,8 @@ private abbrev St := SessionState String String String String
 private def entry0 : Entry String String String String :=
   ⟨"acme/Rates/get", 1, "req-0", .success "ok"⟩
 
-private def unconsumed : St := ⟨.replay, .active, [entry0], 0⟩
-private def consumed : St := ⟨.replay, .active, [entry0], 1⟩
+private def unconsumed : St := ⟨.replay, .active, [entry0], 0, none⟩
+private def consumed : St := ⟨.replay, .active, [entry0], 1, none⟩
 private def doneTerminal : Terminal String String := .succeeded "final"
 
 /-- RPL-005: completing with an unconsumed suffix rejects, carrying the

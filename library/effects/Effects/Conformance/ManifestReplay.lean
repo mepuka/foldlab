@@ -6,12 +6,13 @@ import Effects.Conformance.Instances.RPL004
 import Effects.Conformance.Instances.RPL005
 import Effects.Conformance.Instances.SES001
 import Effects.Conformance.Instances.SES002
+import Effects.Conformance.Instances.SES003
 import Effects.Conformance.Instances.CMP002
 
 /-!
 # The replay manifest families
 
-Scenario vectors for the seven replay obligations, executed from the
+Scenario vectors for the eight replay obligations, executed from the
 model. Every row runs the reducer over a fixture state and input list and
 records the results, the decision trace, and the final state summary —
 outputs are never written by hand. Row generation is parameterized by the
@@ -19,12 +20,14 @@ reducer function so the mutation task can regenerate rows under a
 declared mutant and assert the vectors move (direction 1 of the ratified
 mutation form).
 
-The families are committed additively under the declared model version:
-no pre-existing statement changed and the CAS families regenerate
-byte-identical, so rule 2's ratchet holds without a version bump — bumps
-stay reserved for semantics-affecting model changes. Wire names mirror
-the frozen TypeScript literals — mismatch categories, decision tags, and
-session-outcome tags use the runtime's names.
+The families are committed at effects-model@0.2.0 — the first
+semantics-affecting bump: the record-mode delegation protocol (SES-003)
+made the bare recorded shorthand two fixtures used unlawful, so those
+fixtures are restated as solicited sequences under their unchanged
+sentences. Wire names mirror the frozen TypeScript literals — mismatch
+categories, decision tags, and session-outcome tags use the runtime's
+names; a state's outstanding delegation renders as `pending` only when
+present.
 -/
 
 namespace Effects.Conformance.Manifest
@@ -64,6 +67,8 @@ def categoryJson : MismatchCategory → Value
   | .historyExhausted => .str "HistoryExhausted"
   | .unconsumedSuffix => .str "UnconsumedSuffix"
   | .outcomeInadmissible => .str "OutcomeInadmissible"
+  | .delegationOutstanding => .str "DelegationOutstanding"
+  | .unsolicitedOutcome => .str "UnsolicitedOutcome"
 
 def outcomeJson : Outcome String String → Value
   | .success v => .obj [("_tag", .str "Success"), ("value", .str v)]
@@ -82,10 +87,13 @@ def entryJson (e : Entry String String String String) : Value :=
        , ("request", .str e.request), ("revision", .nat e.revision) ]
 
 def stateJson (s : RS) : Value :=
-  .obj [ ("cursor", .nat s.cursor)
-       , ("history", .arr (s.history.map entryJson))
-       , ("mode", modeJson s.mode)
-       , ("status", statusJson s.status) ]
+  .obj ([ ("cursor", .nat s.cursor)
+        , ("history", .arr (s.history.map entryJson))
+        , ("mode", modeJson s.mode)
+        , ("status", statusJson s.status) ]
+    ++ (match s.pending with
+        | some inv => [("pending", invocationJson inv)]
+        | none => []))
 
 def inputJson : RI → Value
   | .invoke inv =>
@@ -168,9 +176,14 @@ def errEntry : Entry String String String String :=
   ⟨rates, 1, "req-0", .failure "err-0"⟩
 
 def replayOn (h : List (Entry String String String String)) : RS :=
-  ⟨.replay, .active, h, 0⟩
+  ⟨.replay, .active, h, 0, none⟩
 
-def recordEmpty : RS := ⟨.record, .active, [], 0⟩
+def recordEmpty : RS := ⟨.record, .active, [], 0, none⟩
+
+/-- A record state with an outstanding delegation — the fixture the
+protocol-refusal rows start from. -/
+def recordPending (inv : Invocation String String) : RS :=
+  ⟨.record, .active, [], 0, some inv⟩
 
 def doneT : Terminal String String := .succeeded "final"
 
@@ -208,7 +221,9 @@ def rpl005Rows (step : RReducer) : List (String × Value) :=
 def ses001Rows (step : RReducer) : List (String × Value) :=
   [ scenarioRow step "append-failure-truncates-000"
       recordEmpty
-      [ .recorded invRates (.success "ok-0")
+      [ .invoke invRates
+      , .recorded invRates (.success "ok-0")
+      , .invoke invFx
       , .appendFailed
       , .recorded invFx (.success "ok-1")
       , .invoke invFx
@@ -220,10 +235,30 @@ def ses002Rows (step : RReducer) : List (String × Value) :=
   , scenarioRow step "wf-preserved-replay-001"
       (replayOn [okEntry]) [.invoke invRates] ]
 
+def ses003Rows (step : RReducer) : List (String × Value) :=
+  [ scenarioRow step "lawful-protocol-appends-in-order-000"
+      recordEmpty
+      [ .invoke invRates
+      , .recorded invRates (.success "ok-0")
+      , .invoke invFx
+      , .recorded invFx (.success "ok-1")
+      , .complete doneT ]
+  , scenarioRow step "interleaved-invoke-rejected-001"
+      recordEmpty [.invoke invRates, .invoke invFx]
+  , scenarioRow step "unsolicited-outcome-rejected-002"
+      recordEmpty [.recorded invRates (.success "ok-0")]
+  , scenarioRow step "mismatched-outcome-rejected-003"
+      recordEmpty [.invoke invRates, .recorded invFx (.success "ok-1")]
+  , scenarioRow step "pending-clears-after-append-004"
+      (recordPending invRates)
+      [.recorded invRates (.success "ok-0"), .invoke invFx] ]
+
 def cmp002Rows (step : RReducer) : List (String × Value) :=
   [ scenarioRow step "repeated-occurrence-distinct-000"
       recordEmpty
-      [ .recorded invRates (.success "ok-0")
+      [ .invoke invRates
+      , .recorded invRates (.success "ok-0")
+      , .invoke invRates
       , .recorded invRates (.success "ok-0") ] ]
 
 /-- The replay families with their instance-projected sentences. -/
@@ -234,6 +269,7 @@ def replayFamilies (step : RReducer) : List (String × String × List (String ×
   , ("RPL-005", rpl005.sentence, rpl005Rows step)
   , ("SES-001", ses001.sentence, ses001Rows step)
   , ("SES-002", ses002.sentence, ses002Rows step)
+  , ("SES-003", ses003.sentence, ses003Rows step)
   , ("CMP-002", cmp002.sentence, cmp002Rows step) ]
 
 /-- Rendered rows of one family under a reducer — the mutation task's

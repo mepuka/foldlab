@@ -17,8 +17,8 @@ open Effects.Replay
 private abbrev St := SessionState String String String String
 private abbrev In := Input String String String String
 
-private def wfState : St := ⟨.record, .active, [], 0⟩
-private def illState : St := ⟨.record, .active, [], 5⟩
+private def wfState : St := ⟨.record, .active, [], 0, none⟩
+private def illState : St := ⟨.record, .active, [], 5, none⟩
 
 /-- SES-002: reducer steps preserve session-state well-formedness. -/
 def ses002 : WfPreserve St In where

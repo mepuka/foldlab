@@ -1,7 +1,7 @@
 {
   "family": "MRK-003",
   "meaning": "When the pending input is not a verified final chunk, no step ever validates the length: the declared length is exposed to the caller only when the final chunk itself validates against the root, so a truncated or length-tweaked stream can never make the decoder vouch for a length it did not verify.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

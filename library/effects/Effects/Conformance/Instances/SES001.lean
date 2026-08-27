@@ -21,8 +21,11 @@ open Effects.Replay
 private abbrev St := SessionState String String String String
 private abbrev In := Input String String String String
 
-private def posState : St := ⟨.record, .aborted, [], 0⟩
-private def negState : St := ⟨.record, .active, [], 0⟩
+private def posState : St := ⟨.record, .aborted, [], 0, none⟩
+/-- The negative kit is a SOLICITED append: the outstanding delegation
+names the arriving invocation, so the append fires. -/
+private def negState : St :=
+  ⟨.record, .active, [], 0, some ⟨"acme/Rates/get", 1, "req-0"⟩⟩
 private def appendIn : In :=
   .recorded ⟨"acme/Rates/get", 1, "req-0"⟩ (.success "ok")
 

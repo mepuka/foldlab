@@ -22,56 +22,79 @@ export const absorb = <Op extends string, Req extends string, Val, Err>(
   decisions: [],
 })
 
-/** Reject at the current cursor, freezing history and aborting the session. */
+/** Reject at the current cursor, freezing history, discarding any
+ * outstanding delegation, and aborting the session. */
 export const rejectStep = <Op extends string, Req extends string, Val, Err>(
   state: SessionState<Op, Req, Val, Err>,
   category: MismatchCategory,
 ): StepOut<Op, Req, Val, Err> => ({
   result: { _tag: "Rejected", category, at: state.cursor },
-  state: { ...state, status: "aborted" },
+  state: { ...state, status: "aborted", pending: undefined },
   decisions: [{ _tag: "TypedRejection", category, at: state.cursor }],
 })
 
-/** Record mode, invocation: request live delegation without claiming an
- * occurrence. */
+/** Record mode, invocation: register the outstanding delegation and
+ * request live execution; the occurrence is not claimed until the outcome
+ * arrives. Delegation is exclusive — a second invocation while one is
+ * outstanding is the interleaving the sequential protocol refuses. */
 export const invokeRecord = <Op extends string, Req extends string, Val, Err>(
   state: SessionState<Op, Req, Val, Err>,
   invocation: Invocation<Op, Req>,
-): StepOut<Op, Req, Val, Err> => ({
-  result: { _tag: "Delegated" },
-  state,
-  decisions: [{
-    _tag: "LiveDelegation",
-    operation: invocation.op,
-    at: state.cursor,
-  }],
-})
+): StepOut<Op, Req, Val, Err> => {
+  if (state.pending !== undefined) {
+    return rejectStep(state, "DelegationOutstanding")
+  }
+  return {
+    result: { _tag: "Delegated" },
+    state: { ...state, pending: invocation },
+    decisions: [{
+      _tag: "LiveDelegation",
+      operation: invocation.op,
+      at: state.cursor,
+    }],
+  }
+}
 
-/** Record mode, outcome arrived: append exactly one occurrence. */
+/** Record mode, outcome arrived: append the occurrence the outstanding
+ * delegation solicited and clear it. An outcome nobody solicited — none
+ * outstanding, or a different invocation than registered — is refused. */
 export const appendRecord = <Op extends string, Req extends string, Val, Err>(
   state: SessionState<Op, Req, Val, Err>,
   invocation: Invocation<Op, Req>,
   outcome: Outcome<Val, Err>,
-): StepOut<Op, Req, Val, Err> => ({
-  result: { _tag: "Appended" },
-  state: {
-    ...state,
-    history: [...state.history, { ...invocation, outcome }],
-    cursor: state.cursor + 1,
-  },
-  decisions: [{
-    _tag: "OccurrenceAppended",
-    operation: invocation.op,
-    at: state.cursor,
-  }],
-})
+): StepOut<Op, Req, Val, Err> => {
+  const pending = state.pending
+  if (pending === undefined) return rejectStep(state, "UnsolicitedOutcome")
+  if (
+    pending.op !== invocation.op ||
+    pending.revision !== invocation.revision ||
+    pending.request !== invocation.request
+  ) {
+    return rejectStep(state, "UnsolicitedOutcome")
+  }
+  return {
+    result: { _tag: "Appended" },
+    state: {
+      ...state,
+      pending: undefined,
+      history: [...state.history, { ...invocation, outcome }],
+      cursor: state.cursor + 1,
+    },
+    decisions: [{
+      _tag: "OccurrenceAppended",
+      operation: invocation.op,
+      at: state.cursor,
+    }],
+  }
+}
 
-/** Record mode, append refused: abort without recording the occurrence. */
+/** Record mode, append refused: abort without recording the occurrence,
+ * discarding the outstanding delegation. */
 export const abortRecord = <Op extends string, Req extends string, Val, Err>(
   state: SessionState<Op, Req, Val, Err>,
 ): StepOut<Op, Req, Val, Err> => ({
   result: { _tag: "Aborted" },
-  state: { ...state, status: "aborted" },
+  state: { ...state, status: "aborted", pending: undefined },
   decisions: [],
 })
 
@@ -102,7 +125,7 @@ export const completeStep = <Op extends string, Req extends string, Val, Err>(
         terminalSoFar: terminal,
       },
     },
-    state: { ...state, status: "aborted" },
+    state: { ...state, status: "aborted", pending: undefined },
     decisions: [{
       _tag: "TypedRejection",
       category: "UnconsumedSuffix",

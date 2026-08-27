@@ -17,6 +17,12 @@ totality by explicit no-op, never by panic.
 
 Rules of note:
 
+- record-mode delegation is exclusive and outcome-solicited: `invoke`
+  registers the outstanding invocation and a second `invoke` while one is
+  outstanding is a typed rejection; `recorded` appends only the outcome
+  its outstanding delegation solicited — none outstanding, or a different
+  invocation than registered, is a typed rejection — so lawful record
+  runs append in invocation order;
 - an aborted session absorbs EVERY input and emits nothing — the
   structural session abort: nothing appends past a failure, so histories
   are truthful prefixes without a mutable poisoned flag;
@@ -72,34 +78,51 @@ def absorb (s : SessionState Op Req Val Err) : StepOut Op Req Val Err :=
   { result := .absorbed, state := s, decisions := [] }
 
 /-- A typed rejection at the current position: the cursor and history are
-frozen, and the session aborts — the mismatch is terminal for the
-attempt. -/
+frozen, any outstanding delegation is discarded, and the session aborts —
+the mismatch is terminal for the attempt. -/
 def rejectStep (s : SessionState Op Req Val Err) (c : MismatchCategory) :
     StepOut Op Req Val Err :=
   { result := .rejected c s.cursor
-    state := { s with status := .aborted }
+    state := { s with status := .aborted, pending := none }
     decisions := [.typedRejection c s.cursor] }
 
-/-- Record mode, invocation: request live delegation; the occurrence is
-not claimed until the outcome arrives. -/
+/-- Record mode, invocation: register the outstanding delegation and
+request live execution; the occurrence is not claimed until the outcome
+arrives. Delegation is exclusive — a second invocation while one is
+outstanding is the interleaving the sequential protocol refuses. -/
 def invokeRecord (s : SessionState Op Req Val Err) (inv : Invocation Op Req) :
     StepOut Op Req Val Err :=
-  { result := .delegated, state := s
-    decisions := [.liveDelegation inv.op s.cursor] }
+  match s.pending with
+  | some _ => rejectStep s .delegationOutstanding
+  | none =>
+    { result := .delegated
+      state := { s with pending := some inv }
+      decisions := [.liveDelegation inv.op s.cursor] }
 
-/-- Record mode, outcome arrived: append the occurrence at the cursor. -/
-def appendRecord (s : SessionState Op Req Val Err) (inv : Invocation Op Req)
+/-- Record mode, outcome arrived: append the occurrence the outstanding
+delegation solicited and clear it. An outcome nobody solicited — none
+outstanding, or a different invocation than the one registered — is
+refused; nothing unsolicited ever enters a history. -/
+def appendRecord [DecidableEq Op] [DecidableEq Req]
+    (s : SessionState Op Req Val Err) (inv : Invocation Op Req)
     (out : Outcome Val Err) : StepOut Op Req Val Err :=
-  { result := .appended
-    state := { s with
-               history := s.history ++ [inv.entry out],
-               cursor := s.cursor + 1 }
-    decisions := [.occurrenceAppended inv.op s.cursor] }
+  match s.pending with
+  | none => rejectStep s .unsolicitedOutcome
+  | some p =>
+    if p = inv then
+      { result := .appended
+        state := { s with
+                   pending := none,
+                   history := s.history ++ [inv.entry out],
+                   cursor := s.cursor + 1 }
+        decisions := [.occurrenceAppended inv.op s.cursor] }
+    else rejectStep s .unsolicitedOutcome
 
 /-- Record mode, append refused: abort the session structurally; the
-occurrence is NOT recorded and nothing later will be. -/
+occurrence is NOT recorded, the outstanding delegation is discarded, and
+nothing later will append. -/
 def abortRecord (s : SessionState Op Req Val Err) : StepOut Op Req Val Err :=
-  { result := .aborted, state := { s with status := .aborted }
+  { result := .aborted, state := { s with status := .aborted, pending := none }
     decisions := [] }
 
 /-- Completion, uniform in both modes: complete exactly when the cursor
@@ -112,7 +135,7 @@ def completeStep (s : SessionState Op Req Val Err) (t : Terminal Val Err) :
       decisions := [.completed s.cursor] }
   else
     { result := .outcome (.rejected .unconsumedSuffix s.cursor (some t))
-      state := { s with status := .aborted }
+      state := { s with status := .aborted, pending := none }
       decisions := [.typedRejection .unconsumedSuffix s.cursor] }
 
 variable [DecidableEq Op] [DecidableEq Req]

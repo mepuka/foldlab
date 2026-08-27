@@ -225,20 +225,18 @@ it.effect("CTX-001 runs one caller program through live, record, and replay laye
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })
 
-it.effect("concurrent record appends serialize one durable two-occurrence history", () => {
-  const tracked = trackingAddress(true)
+it.effect("overlapping record invocations are refused as DelegationOutstanding", () => {
+  // SES-003: record-mode delegation is exclusive. A second invocation
+  // while one delegation is in flight is a typed session rejection —
+  // never a completion-ordered history. Sound concurrent recording needs
+  // event identity and causality, reserved as its own milestone.
+  const tracked = trackingAddress()
   const kit = replayable(Rates, RatesDescriptions)
 
   return Effect.gen(function* () {
-    const bothStarted = yield* Deferred.make<void>()
-    const starts = yield* Ref.make(0)
+    const parked = yield* Deferred.make<void>()
     const live = Rates.of({
-      quote: () => Effect.gen(function* () {
-        const count = yield* Ref.updateAndGet(starts, (value) => value + 1)
-        if (count === 2) yield* Deferred.succeed(bothStarted, undefined)
-        yield* Deferred.await(bothStarted)
-        return 3
-      }),
+      quote: () => Deferred.await(parked).pipe(Effect.as(3)),
     })
     const concurrent = Rates.use((rates) =>
       Effect.all([
@@ -250,17 +248,17 @@ it.effect("concurrent record appends serialize one durable two-occurrence histor
       Effect.provide(kit.record),
       Effect.provideService(kit.live, live),
     ), { mode: "record" })
-    if (recorded.history === undefined) {
-      return yield* Effect.die("concurrent recording returned no history")
-    }
-    expect(tracked.historyDepth(recorded.history)).toBe(2)
-
-    const replayed = yield* session(
-      concurrent.pipe(Effect.provide(kit.replay)),
-      { mode: "replay", history: recorded.history },
-    )
-    expect(replayed.outcome).toEqual(recorded.outcome)
-    expect(replayed.history).toBe(recorded.history)
+    expect(recorded.outcome).toMatchObject({
+      _tag: "Rejected",
+      category: "DelegationOutstanding",
+      at: 0,
+    })
+    // Nothing appended: the refusal fired before any occurrence existed,
+    // and the persisted witness reports the rejection.
+    expect(recorded.history).toBeUndefined()
+    expect(tracked.witnessedOutcomes()).toEqual([
+      { _tag: "Rejected", category: "DelegationOutstanding", at: 0 },
+    ])
   }).pipe(Effect.provide(runtimeLayer(tracked.address)))
 })
 

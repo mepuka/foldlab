@@ -19,8 +19,8 @@ open Effects.Replay
 private abbrev St := SessionState String String String String
 private abbrev In := Input String String String String
 
-private def posState : St := ⟨.replay, .active, [], 0⟩
-private def negState : St := ⟨.record, .active, [], 0⟩
+private def posState : St := ⟨.replay, .active, [], 0, none⟩
+private def negState : St := ⟨.record, .active, [], 0, none⟩
 private def probe : In := .invoke ⟨"acme/Rates/get", 1, "req-0"⟩
 
 /-- RPL-002: replay-mode decision traces never select live delegation. -/

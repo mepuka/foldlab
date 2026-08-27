@@ -45,4 +45,46 @@ theorem run_preserves_wf (s : SessionState Op Req Val Err)
     simp only [run]
     exact ih _ (SES_002_reduce_preserves_wf s i h)
 
+/-- The soliciting input list of a call sequence: each invocation
+immediately followed by its recorded outcome — the lawful record-mode
+protocol. -/
+def soliciting (ps : List (Invocation Op Req × Outcome Val Err)) :
+    List (Input Op Req Val Err) :=
+  ps.flatMap fun io => [.invoke io.1, .recorded io.1 io.2]
+
+/-- SES-003, run half: a solicited record run appends exactly its calls,
+in invocation order — invocation order IS append order — advances the
+cursor by the call count, and returns to a clean active record state. -/
+theorem SES_003_solicited_run_appends_in_order
+    (ps : List (Invocation Op Req × Outcome Val Err))
+    (s : SessionState Op Req Val Err)
+    (ha : s.status = .active) (hm : s.mode = .record)
+    (hp : s.pending = none) :
+    (run s (soliciting ps)).1.history
+        = s.history ++ ps.map (fun io => io.1.entry io.2) ∧
+      (run s (soliciting ps)).1.cursor = s.cursor + ps.length ∧
+      (run s (soliciting ps)).1.status = .active ∧
+      (run s (soliciting ps)).1.mode = .record ∧
+      (run s (soliciting ps)).1.pending = none := by
+  induction ps generalizing s with
+  | nil =>
+    simp only [soliciting, List.flatMap_nil]
+    exact ⟨by simp [run], by simp [run], by simp [run, ha],
+      by simp [run, hm], by simp [run, hp]⟩
+  | cons io rest ih =>
+    simp only [soliciting, List.flatMap_cons, List.cons_append,
+      List.nil_append, run]
+    simp only [reduce, ha, hm, invokeRecord, hp, appendRecord]
+    rw [if_pos trivial]
+    dsimp only
+    have step := ih ⟨.record, .active, s.history ++ [io.1.entry io.2],
+      s.cursor + 1, none⟩ rfl rfl rfl
+    simp only [soliciting] at step
+    refine ⟨?_, ?_, step.2.2.1, step.2.2.2.1, step.2.2.2.2⟩
+    · rw [step.1]
+      simp [List.append_assoc]
+    · rw [step.2.1]
+      simp only [List.length_cons]
+      omega
+
 end Effects.Replay

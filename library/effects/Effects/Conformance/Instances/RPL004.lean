@@ -21,8 +21,8 @@ private abbrev St := SessionState String String String String
 private def entry0 : Entry String String String String :=
   ⟨"acme/Rates/get", 1, "req-0", .success "ok"⟩
 
-private def exhausted : St := ⟨.replay, .active, [], 0⟩
-private def replayOne : St := ⟨.replay, .active, [entry0], 0⟩
+private def exhausted : St := ⟨.replay, .active, [], 0, none⟩
+private def replayOne : St := ⟨.replay, .active, [entry0], 0, none⟩
 private def probe : Invocation String String := ⟨"acme/Rates/get", 1, "req-0"⟩
 
 /-- RPL-004: a request-side mismatch rejects and consumes nothing. -/

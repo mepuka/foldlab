@@ -1628,3 +1628,62 @@ Stop and return to grilling if:
   green across twenty-three files. The codex packet consumes these
   pins as its per-item exit criteria: an item is done when its pin
   is flipped to the fixed assertion and green.
+- **SES-003 delegation protocol at effects-model@0.2.0; version pin
+  corrected (2026-08-27):** the operator ruled the full sequential
+  protocol in — both clauses, no shortcuts — and directed the
+  version machinery to stop taxing development. This is the FIRST
+  GENUINE SEMANTICS-AFFECTING BUMP: `effects-model@0.2.0` appended
+  to the ratified list, every manifest re-stamped, and the two
+  fixtures whose bare recorded shorthand became unlawful (SES-001,
+  CMP-002) RESTATED as solicited sequences under their unchanged
+  sentences. The protocol: session state carries the outstanding
+  delegation (`pending`); a record-mode invocation registers it and
+  a second invocation while one is outstanding is the typed
+  `DelegationOutstanding` rejection; a recorded outcome appends
+  only when it names exactly the registered invocation — none
+  outstanding, or a different invocation, is the typed
+  `UnsolicitedOutcome` rejection — so cross-wired, duplicated, and
+  interleaved outcomes can never enter a durable history. SES-003
+  minted plan-§7-first (FAIL-CLOSED; the solicitation predicate is
+  the hypothesis, history length the frozen measure), with the
+  refusal laws, the append-solicitation INVERSION (an append
+  happened only for the registered invocation), and the run-level
+  ORDER-COINCIDENCE theorem: a solicited run appends exactly its
+  calls in invocation order and returns to a clean state — the
+  Lean carrier for "invocation order IS append order". The Step
+  relation splits the record rules four ways with explicit
+  premises, mirroring the replay side's rule-per-rule form;
+  `step_iff_reduce` and every law re-proved over the extended
+  state; WF gains the replay-carries-no-delegation clause. CMP-002
+  restates its emission as the solicited pair. Five-row SES-003
+  family committed; TWO mutant directions declared and killed in
+  BOTH lanes (accept-interleaved-invoke, accept-unsolicited;
+  thirty-one Lean mutants, direction-2 red suites TS-side with the
+  Lean meanings verbatim). Runtime enforcement (Layer 2): the
+  session layer converts the model's record-mode rejection into the
+  same typed session outcome as a replay mismatch, and a late
+  outcome arriving after an abort is ABSORBED per the model rather
+  than dying; overlapping record invocations now refuse
+  deterministically — the M4-era concurrent-serialization test is
+  rewritten to the refusal semantics and review lock 2 asserts it
+  with zero history nodes committed. VERSION PIN CORRECTED: the
+  TypeScript suites derive the expected model from committed
+  `INDEX.json` (one shared `ManifestModel` now sourced, not
+  hand-pinned), so this bump — and every future one — edits ONE
+  Lean line and zero suites. The manifest-corpus invariants suite
+  landed with it: the index names exactly the committed files, every
+  family decodes through one closed envelope at the declared model
+  with unique canonically-ordered case ids, and every family is
+  BOUND to a named suite or DECLARED LEADING with its packet item —
+  a model-side family can never again be a silent gap (MRK-014 and
+  MRK-015 are the two declared leads). One hundred eighty-seven
+  tests across twenty-four files; thirty-one mutants killed; ledger
+  gains SES-003 instantiated. Named observations: (1) completion
+  with an outstanding delegation remains model-permitted — the
+  runtime cannot reach it (a live handler in flight means the
+  program is not terminal) — revisit with Layer 3; (2) sound
+  CONCURRENT recording (event identity, per-key causal matching,
+  soundness resting on the ambient tripwires intercepting all
+  nondeterminism) is reserved as its own designed milestone, per
+  the plan's standing line — the refusal is the boundary, not the
+  end state.

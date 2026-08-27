@@ -19,5 +19,8 @@ it.effect("SES-001 consumes every ratified structural-abort row structurally", (
 it.effect("SES-002 consumes every ratified well-formedness row structurally", () =>
   assertFamily("SES-002"))
 
+it.effect("SES-003 consumes every ratified delegation-protocol row structurally", () =>
+  assertFamily("SES-003"))
+
 it.effect("CMP-002 consumes every ratified occurrence-distinctness row structurally", () =>
   assertFamily("CMP-002"))

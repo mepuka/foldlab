@@ -1,7 +1,7 @@
 {
   "family": "MRK-006",
   "meaning": "On every opening — an index, a count, leaf bytes, a sibling list, and an expected root — the executable inclusion verifier and the decided inclusion judgment agree at the boolean: the verifier accepts exactly the openings whose derived-side recomputation reaches the expected root, honestly generated paths verify, and two accepted openings of one root and index carry the same bytes or exhibit a computable hash collision.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

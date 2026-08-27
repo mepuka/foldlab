@@ -1,7 +1,7 @@
 {
   "family": "MRK-001",
   "meaning": "Chunking under the declared recipe is a lossless partition: rejoining the chunks restores the bytes exactly, two different contents never chunk alike, and the checked inverse accepts exactly the lists chunking produces — the recipe is declared, never inferred, so one root exists per recipe and content and no rechunk can mint a second identity.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

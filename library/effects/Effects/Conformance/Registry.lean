@@ -15,6 +15,7 @@ import Effects.Conformance.Instances.RPL004
 import Effects.Conformance.Instances.RPL005
 import Effects.Conformance.Instances.SES001
 import Effects.Conformance.Instances.SES002
+import Effects.Conformance.Instances.SES003
 import Effects.Conformance.Instances.CMP002
 import Effects.Conformance.Instances.RMT001
 import Effects.Conformance.Instances.RMT002
@@ -51,7 +52,7 @@ namespace Effects.Conformance
 def registry : List LedgerEntry :=
   [ cas001.entry, cas002.entry
   , rpl002.entry, rpl003.entry, rpl004.entry, rpl005.entry
-  , ses001.entry, ses002.entry, cmp001.entry, cmp002.entry
+  , ses001.entry, ses002.entry, ses003.entry, cmp001.entry, cmp002.entry
   , rmt001.entry, rmt002.entry, rmt003.entry
   , rmt004.entry, rmt005.entry, rmt006.entry, rmt007.entry
   , rmt008.entry, rmt014.entry, rmt015.entry
@@ -61,18 +62,18 @@ def registry : List LedgerEntry :=
 
 #guard registry.map (·.id) ==
   ["CAS-001", "CAS-002", "RPL-002", "RPL-003", "RPL-004", "RPL-005",
-   "SES-001", "SES-002", "CMP-001", "CMP-002", "RMT-001", "RMT-002",
-   "RMT-003", "RMT-004", "RMT-005", "RMT-006", "RMT-007", "RMT-008",
-   "RMT-014", "RMT-015", "MRK-001", "MRK-002", "MRK-003",
+   "SES-001", "SES-002", "SES-003", "CMP-001", "CMP-002", "RMT-001",
+   "RMT-002", "RMT-003", "RMT-004", "RMT-005", "RMT-006", "RMT-007",
+   "RMT-008", "RMT-014", "RMT-015", "MRK-001", "MRK-002", "MRK-003",
    "MRK-005", "MRK-006", "MRK-007", "MRK-011", "MRK-012", "MRK-018"]
 #guard registry.map (·.family) ==
   ["CODEC", "REJECTION-CLAUSE", "TRACE-EXCLUDES", "EXACT-STEP",
    "FAIL-CLOSED", "FAIL-CLOSED", "TRACE-EXCLUDES", "WF-PRESERVE",
-   "HOMOMORPHISM", "DISTINCTNESS", "TRACE-EXCLUDES", "FAIL-CLOSED",
-   "TRACE-EXCLUDES", "EXACT-STEP", "TRACE-EXCLUDES", "FAIL-CLOSED",
-   "TRACE-EXCLUDES", "FAIL-CLOSED", "FAIL-CLOSED", "AGREEMENT", "CODEC",
-   "TRACE-EXCLUDES", "TRACE-EXCLUDES", "AGREEMENT", "AGREEMENT",
-   "AGREEMENT", "CODEC", "CODEC", "CODEC"]
+   "FAIL-CLOSED", "HOMOMORPHISM", "DISTINCTNESS", "TRACE-EXCLUDES",
+   "FAIL-CLOSED", "TRACE-EXCLUDES", "EXACT-STEP", "TRACE-EXCLUDES",
+   "FAIL-CLOSED", "TRACE-EXCLUDES", "FAIL-CLOSED", "FAIL-CLOSED",
+   "AGREEMENT", "CODEC", "TRACE-EXCLUDES", "TRACE-EXCLUDES", "AGREEMENT",
+   "AGREEMENT", "AGREEMENT", "CODEC", "CODEC", "CODEC"]
 #guard (emitLedger registry).take 20 == "# Conformance ledger"
 
 end Effects.Conformance

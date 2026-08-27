@@ -1,15 +1,20 @@
 /-!
 # Mismatch categories and the decision trace
 
-The six ratified mismatch categories. Request-side, checked against the
+The eight ratified mismatch categories. Request-side, checked against the
 entry at the cursor: operation mismatch, revision mismatch, request
 mismatch, history exhausted. Completion-side: unconsumed suffix.
-Outcome-side, checked at consumption: outcome inadmissible. There is
-deliberately no "order mismatch" — it always manifests as a request-side
-case at the current position — and CAS storage failures are a distinct
-typed family, never folded in. `outcomeInadmissible` is emitted only when
-raw recorded outcomes enter the model (a later slice); the constructor is
-present because the category set is ratified caller-visible API.
+Outcome-side, checked at consumption: outcome inadmissible.
+Protocol-side, checked in record mode: delegation outstanding (a second
+invocation while one delegation is in flight — the interleaving the
+sequential protocol refuses) and unsolicited outcome (a recorded outcome
+that no outstanding delegation asked for, or that names a different
+invocation than the one registered). There is deliberately no "order
+mismatch" — it always manifests as a request-side case at the current
+position — and CAS storage failures are a distinct typed family, never
+folded in. `outcomeInadmissible` is emitted only when raw recorded
+outcomes enter the model (a later slice); the constructor is present
+because the category set is ratified caller-visible API.
 
 The decision trace is the primary observable: the ordered decisions the
 pure reducer emits. Whether a live adapter was requested is a derived
@@ -19,7 +24,7 @@ a separate Boolean oracle.
 
 namespace Effects.Replay
 
-/-- The six ratified mismatch categories. -/
+/-- The eight ratified mismatch categories. -/
 inductive MismatchCategory where
   | operationMismatch
   | revisionMismatch
@@ -27,6 +32,8 @@ inductive MismatchCategory where
   | historyExhausted
   | unconsumedSuffix
   | outcomeInadmissible
+  | delegationOutstanding
+  | unsolicitedOutcome
   deriving DecidableEq
 
 /-- One reducer decision. `pos` fields carry the occurrence position the

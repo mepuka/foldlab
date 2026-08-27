@@ -14,6 +14,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RPL-005 | instantiated (FAIL-CLOSED) |
 | SES-001 | instantiated (TRACE-EXCLUDES) |
 | SES-002 | instantiated (WF-PRESERVE) |
+| SES-003 | instantiated (FAIL-CLOSED) |
 | CMP-001 | instantiated (HOMOMORPHISM) |
 | CMP-002 | instantiated (DISTINCTNESS) |
 | CMP-003 | deferred to M7 |
@@ -127,6 +128,12 @@ Every reducer step preserves session-state well-formedness.
 
 **Sentence:** On every input, one reducer step from a well-formed session state yields a well-formed session state — the cursor stays inside the history, and record mode keeps it pinned to the history length.
 
+## SES-003
+
+Record-mode delegation is exclusive and outcome-solicited; unsolicited steps fail closed and lawful record runs append in invocation order.
+
+**Sentence:** When record-mode delegation is not solicited — an invocation while one is outstanding, or a recorded outcome without or beside its outstanding invocation — the step rejects with a typed category and the history length is unchanged; delegation is exclusive, outcomes append only as solicited, and lawful record runs append in invocation order.
+
 ## CMP-001
 
 Sequential interpretation threads replay state compositionally across success and typed-failure outcomes.
@@ -137,7 +144,7 @@ Sequential interpretation threads replay state compositionally across success an
 
 Identical requests remain separate occurrences.
 
-**Sentence:** Two occurrences with identical invocation content remain distinct occurrence positions — the store deduplicates request nodes while the history keeps entries distinct; position is the occurrence identity, and every append claims a fresh one.
+**Sentence:** Two occurrences with identical invocation content remain distinct occurrence positions — the store deduplicates request nodes while the history keeps entries distinct; position is the occurrence identity, and every solicited call pair claims a fresh one.
 
 ## CMP-003
 

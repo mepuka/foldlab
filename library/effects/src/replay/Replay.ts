@@ -438,6 +438,11 @@ const appendRecordedOutcome = <D extends AnyOperationDescription>(
       invocation,
       outcome: stored,
     })
+    if (appended.result._tag === "Absorbed") {
+      // The session aborted while this outcome was in flight — the model
+      // absorbs it, so the late outcome is discarded, never persisted.
+      return
+    }
     if (appended.result._tag !== "Appended") {
       return yield* Effect.die(new RuntimeTransport({
         reason: `Record append produced ${appended.result._tag}`,
@@ -507,6 +512,15 @@ const invokeInSession = <D extends AnyOperationDescription>(
           transition.decisions,
         )] as const
       })
+      if (invoked.result._tag === "Rejected") {
+        // The model refused the invocation — delegation is exclusive, so
+        // an interleaved record-mode call is a typed session rejection,
+        // exactly like a replay mismatch.
+        return yield* Effect.die(new MismatchTransport({
+          category: invoked.result.category,
+          at: invoked.result.at,
+        }))
+      }
       if (invoked.result._tag !== "Delegated") {
         return yield* Effect.die(new RuntimeTransport({
           reason: `Record invocation produced ${invoked.result._tag}`,

@@ -19,7 +19,7 @@ private abbrev St := SessionState String String String String
 private def entry0 : Entry String String String String :=
   ⟨"acme/Rates/get", 1, "req-0", .success "ok"⟩
 
-private def replayOne : St := ⟨.replay, .active, [entry0], 0⟩
+private def replayOne : St := ⟨.replay, .active, [entry0], 0, none⟩
 
 /-- RPL-003: a match consumes exactly one occurrence. -/
 def rpl003 : ExactStep St (Invocation String String) where

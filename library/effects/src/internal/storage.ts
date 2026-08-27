@@ -16,6 +16,8 @@ const MismatchCategory = Schema.Literals([
   "HistoryExhausted",
   "UnconsumedSuffix",
   "OutcomeInadmissible",
+  "DelegationOutstanding",
+  "UnsolicitedOutcome",
 ])
 
 const StoredOutcome = Schema.Union([

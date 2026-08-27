@@ -36,20 +36,27 @@ inductive Status where
   | aborted
   deriving DecidableEq
 
-/-- The session state: mode, status, flat history, cursor. -/
+/-- The session state: mode, status, flat history, cursor, and the
+outstanding record-mode delegation. `pending` carries the invocation a
+live delegation is currently executing — set by the record-mode invoke,
+cleared by the solicited append; record-mode delegation is exclusive, so
+`some` refuses further invocations until the outcome arrives. -/
 structure SessionState (Op Req Val Err : Type) where
   mode : Mode
   status : Status
   history : List (Entry Op Req Val Err)
   cursor : Nat
+  pending : Option (Invocation Op Req)
   deriving DecidableEq
 
-/-- Well-formedness: the cursor sits inside the history, and record mode
-pins it to the history length. -/
+/-- Well-formedness: the cursor sits inside the history, record mode
+pins it to the history length, and replay mode carries no outstanding
+delegation. -/
 def SessionState.WF {Op Req Val Err : Type}
     (s : SessionState Op Req Val Err) : Prop :=
   s.cursor ≤ s.history.length ∧
-    (s.mode = .record → s.cursor = s.history.length)
+    (s.mode = .record → s.cursor = s.history.length) ∧
+    (s.mode = .replay → s.pending = none)
 
 instance {Op Req Val Err : Type} (s : SessionState Op Req Val Err) :
     Decidable s.WF := by

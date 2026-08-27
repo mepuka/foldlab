@@ -1,21 +1,37 @@
 {
   "family": "SES-001",
   "meaning": "In an aborted session, no step ever emits an occurrence-append decision — a record-mode append failure aborts the session structurally, nothing appends past the failure, and histories stay truthful prefixes, never gapped subsequences.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "rows": [
     {
       "case": "append-failure-truncates-000",
       "expect": {
         "decisions": [
           {
+            "_tag": "LiveDelegation",
+            "at": 0,
+            "operation": "acme/Rates/get"
+          },
+          {
             "_tag": "OccurrenceAppended",
             "at": 0,
             "operation": "acme/Rates/get"
+          },
+          {
+            "_tag": "LiveDelegation",
+            "at": 1,
+            "operation": "acme/Fx/list"
           }
         ],
         "results": [
           {
+            "_tag": "Delegated"
+          },
+          {
             "_tag": "Appended"
+          },
+          {
+            "_tag": "Delegated"
           },
           {
             "_tag": "Aborted"
@@ -40,6 +56,14 @@
       "input": {
         "inputs": [
           {
+            "_tag": "Invoke",
+            "invocation": {
+              "op": "acme/Rates/get",
+              "request": "req-0",
+              "revision": 1
+            }
+          },
+          {
             "_tag": "Recorded",
             "invocation": {
               "op": "acme/Rates/get",
@@ -49,6 +73,14 @@
             "outcome": {
               "_tag": "Success",
               "value": "ok-0"
+            }
+          },
+          {
+            "_tag": "Invoke",
+            "invocation": {
+              "op": "acme/Fx/list",
+              "request": "req-0",
+              "revision": 1
             }
           },
           {

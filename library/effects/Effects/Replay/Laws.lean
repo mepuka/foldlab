@@ -26,10 +26,11 @@ theorem SES_001_aborted_emits_nothing (s : SessionState Op Req Val Err)
 in SES-001 is not vacuous. -/
 theorem record_append_emits_occurrence (s : SessionState Op Req Val Err)
     (inv : Invocation Op Req) (out : Outcome Val Err)
-    (ha : s.status = .active) (hm : s.mode = .record) :
+    (ha : s.status = .active) (hm : s.mode = .record)
+    (hp : s.pending = some inv) :
     (reduce s (.recorded inv out)).decisions
       = [.occurrenceAppended inv.op s.cursor] := by
-  simp [reduce, ha, hm, appendRecord]
+  simp [reduce, ha, hm, appendRecord, hp]
 
 /-! ## RPL-002 — replay-mode traces never select live delegation -/
 
@@ -66,9 +67,9 @@ theorem RPL_002_replay_excludes_live_delegation
 not vacuous. -/
 theorem record_invoke_delegates (s : SessionState Op Req Val Err)
     (inv : Invocation Op Req) (ha : s.status = .active)
-    (hm : s.mode = .record) :
+    (hm : s.mode = .record) (hp : s.pending = none) :
     (reduce s (.invoke inv)).decisions = [.liveDelegation inv.op s.cursor] := by
-  simp [reduce, ha, hm, invokeRecord]
+  simp [reduce, ha, hm, invokeRecord, hp]
 
 /-! ## RPL-003 — matching consumes exactly the permitted occurrence -/
 
@@ -126,7 +127,7 @@ theorem RPL_005_suffix_rejects_with_terminal
     (ha : s.status = .active) (hc : ¬ s.cursor = s.history.length) :
     reduce s (.complete t) =
       { result := .outcome (.rejected .unconsumedSuffix s.cursor (some t))
-        state := { s with status := .aborted }
+        state := { s with status := .aborted, pending := none }
         decisions := [.typedRejection .unconsumedSuffix s.cursor] } := by
   cases hm : s.mode <;> simp [reduce, ha, hm, completeStep, hc]
 
@@ -142,66 +143,152 @@ theorem complete_at_end (s : SessionState Op Req Val Err)
 
 /-! ## CMP-002 — identical requests remain separate occurrences -/
 
-/-- Appending an occurrence advances the position by one, regardless of
-content — position is the occurrence identity, so identical invocation
-content never collapses occurrences. -/
+/-- Appending a solicited occurrence advances the position by one,
+regardless of content — position is the occurrence identity, so identical
+invocation content never collapses occurrences. -/
 theorem CMP_002_append_advances_position (s : SessionState Op Req Val Err)
     (inv : Invocation Op Req) (out : Outcome Val Err)
-    (ha : s.status = .active) (hm : s.mode = .record) :
+    (ha : s.status = .active) (hm : s.mode = .record)
+    (hp : s.pending = some inv) :
     (reduce s (.recorded inv out)).state.cursor = s.cursor + 1 := by
-  simp [reduce, ha, hm, appendRecord]
+  simp [reduce, ha, hm, appendRecord, hp]
 
-/-- The append preserves the active record flags, so occurrences can be
-appended in sequence. -/
+/-- The solicited append preserves the active record flags and clears
+the registration, so call pairs can be appended in sequence. -/
 theorem append_preserves_flags (s : SessionState Op Req Val Err)
     (inv : Invocation Op Req) (out : Outcome Val Err)
-    (ha : s.status = .active) (hm : s.mode = .record) :
+    (ha : s.status = .active) (hm : s.mode = .record)
+    (hp : s.pending = some inv) :
     (reduce s (.recorded inv out)).state.status = .active ∧
-      (reduce s (.recorded inv out)).state.mode = .record := by
-  simp [reduce, ha, hm, appendRecord]
+      (reduce s (.recorded inv out)).state.mode = .record ∧
+      (reduce s (.recorded inv out)).state.pending = none := by
+  simp [reduce, ha, hm, appendRecord, hp]
+
+/-! ## SES-003 — record-mode delegation is exclusive and outcome-solicited -/
+
+/-- SES-003, exclusivity half: a second invocation while a delegation is
+outstanding is a typed rejection. -/
+theorem SES_003_interleaved_invoke_rejects (s : SessionState Op Req Val Err)
+    (inv p : Invocation Op Req) (ha : s.status = .active)
+    (hm : s.mode = .record) (hp : s.pending = some p) :
+    reduce s (.invoke inv) = rejectStep s .delegationOutstanding := by
+  simp [reduce, ha, hm, invokeRecord, hp]
+
+/-- SES-003, solicitation half: an outcome nobody solicited — none
+outstanding, or a different invocation than registered — is a typed
+rejection. -/
+theorem SES_003_unsolicited_outcome_rejects (s : SessionState Op Req Val Err)
+    (inv : Invocation Op Req) (out : Outcome Val Err)
+    (ha : s.status = .active) (hm : s.mode = .record)
+    (hp : ¬ s.pending = some inv) :
+    reduce s (.recorded inv out) = rejectStep s .unsolicitedOutcome := by
+  simp only [reduce, ha, hm, appendRecord]
+  cases hpe : s.pending with
+  | none => rfl
+  | some p =>
+    have hne : ¬ p = inv := fun hpi => hp (by rw [hpe, hpi])
+    dsimp only
+    rw [if_neg hne]
+
+/-- SES-003, inversion: an append happened only for the invocation the
+outstanding delegation registered — nothing unsolicited enters a
+history. -/
+theorem SES_003_append_solicited (s : SessionState Op Req Val Err)
+    (inv : Invocation Op Req) (out : Outcome Val Err)
+    (h : (reduce s (.recorded inv out)).result = .appended) :
+    s.status = .active ∧ s.mode = .record ∧ s.pending = some inv := by
+  cases hst : s.status with
+  | aborted =>
+    simp only [reduce, hst, absorb] at h
+    exact nomatch h
+  | active =>
+    cases hm : s.mode with
+    | replay =>
+      simp only [reduce, hst, hm, absorb] at h
+      exact nomatch h
+    | record =>
+      refine ⟨rfl, rfl, ?_⟩
+      simp only [reduce, hst, hm, appendRecord] at h
+      cases hpe : s.pending with
+      | none =>
+        simp only [hpe, rejectStep] at h
+        exact nomatch h
+      | some p =>
+        by_cases hpi : p = inv
+        · rw [hpi]
+        · simp only [hpe, if_neg hpi, rejectStep] at h
+          exact nomatch h
 
 /-! ## SES-002 — every step preserves session-state well-formedness -/
 
+omit [DecidableEq Op] [DecidableEq Req] in
+/-- A typed rejection preserves well-formedness: cursor and history are
+frozen, the mode is kept, and the outstanding delegation is cleared. -/
+private theorem rejectStep_preserves_wf (s : SessionState Op Req Val Err)
+    (c : MismatchCategory) (h : s.WF) : (rejectStep s c).state.WF := by
+  obtain ⟨hle, hrec, _⟩ := h
+  exact ⟨hle, fun hr => hrec hr, fun _ => rfl⟩
+
 theorem SES_002_reduce_preserves_wf (s : SessionState Op Req Val Err)
     (i : Input Op Req Val Err) (h : s.WF) : (reduce s i).state.WF := by
-  obtain ⟨hle, hrec⟩ := h
+  obtain ⟨hle, hrec, hrep⟩ := h
   cases hst : s.status with
   | aborted =>
     simp only [reduce, hst, absorb]
-    exact ⟨hle, hrec⟩
+    exact ⟨hle, hrec, hrep⟩
   | active =>
     cases hm : s.mode with
     | record =>
       cases i with
       | invoke inv =>
         simp only [reduce, hst, hm, invokeRecord]
-        refine ⟨hle, fun habs => ?_⟩
-        first
-          | exact hrec habs
-          | exact hrec hm
+        cases hp : s.pending with
+        | none =>
+          refine ⟨hle, fun hr => ?_, fun hpp => ?_⟩
+          · first
+              | exact hrec hr
+              | exact hrec hm
+          · first
+              | exact nomatch hpp
+              | exact absurd (hm ▸ hpp) (by decide)
+        | some p =>
+          exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
       | recorded inv out =>
         have hcur := hrec hm
-        simp only [reduce, hst, hm, appendRecord, SessionState.WF,
-          List.length_append, List.length_cons, List.length_nil]
-        exact ⟨by omega, fun _ => by omega⟩
+        simp only [reduce, hst, hm, appendRecord]
+        cases hp : s.pending with
+        | none =>
+          exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
+        | some p =>
+          by_cases hpi : p = inv
+          · simp only [if_pos hpi]
+            refine ⟨?_, fun _ => ?_, fun _ => ?_⟩
+            · dsimp only
+              simp only [List.length_append, List.length_cons,
+                List.length_nil]
+              omega
+            · dsimp only
+              simp only [List.length_append, List.length_cons,
+                List.length_nil]
+              omega
+            · rfl
+          · simp only [if_neg hpi]
+            exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
       | appendFailed =>
-        simp only [reduce, hst, hm, abortRecord, SessionState.WF]
-        refine ⟨hle, fun habs => ?_⟩
+        simp only [reduce, hst, hm, abortRecord]
+        refine ⟨hle, fun hr => ?_, fun _ => rfl⟩
         first
-          | exact hrec habs
+          | exact hrec hr
           | exact hrec hm
       | complete t =>
         simp only [reduce, hst, hm, completeStep]
         by_cases hc : s.cursor = s.history.length
         · simp only [if_pos hc]
-          refine ⟨hle, fun habs => ?_⟩
+          exact ⟨hle, hrec, hrep⟩
+        · simp only [if_neg hc]
+          refine ⟨hle, fun hr => ?_, fun _ => rfl⟩
           first
-            | exact hrec habs
-            | exact hrec hm
-        · simp only [if_neg hc, SessionState.WF]
-          refine ⟨hle, fun habs => ?_⟩
-          first
-            | exact hrec habs
+            | exact hrec hr
             | exact hrec hm
     | replay =>
       cases i with
@@ -209,11 +296,8 @@ theorem SES_002_reduce_preserves_wf (s : SessionState Op Req Val Err)
         simp only [reduce, hst, hm]
         cases he : s.history[s.cursor]? with
         | none =>
-          simp only [invokeReplay, he, rejectStep, SessionState.WF]
-          refine ⟨hle, fun habs => ?_⟩
-          first
-            | exact hrec habs
-            | exact nomatch habs
+          simp only [invokeReplay, he]
+          exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
         | some e =>
           have hlt : s.cursor < s.history.length :=
             (List.getElem?_eq_some_iff.mp he).1
@@ -221,44 +305,36 @@ theorem SES_002_reduce_preserves_wf (s : SessionState Op Req Val Err)
           · by_cases hrev : e.revision = inv.revision
             · by_cases hreq : e.request = inv.request
               · simp only [invokeReplay, he, if_pos hop, if_pos hrev,
-                  if_pos hreq, SessionState.WF]
-                refine ⟨by omega, fun habs => ?_⟩
-                first
-                  | exact absurd (hm ▸ habs) (by intro hx; exact nomatch hx)
-                  | exact nomatch habs
+                  if_pos hreq]
+                refine ⟨?_, fun hr => ?_, fun _ => ?_⟩
+                · dsimp only
+                  omega
+                · simp [hm] at hr
+                · first
+                    | exact hrep hm
+                    | exact hrep rfl
               · simp only [invokeReplay, he, if_pos hop, if_pos hrev,
-                  if_neg hreq, rejectStep, SessionState.WF]
-                refine ⟨hle, fun habs => ?_⟩
-                first
-                  | exact hrec habs
-                  | exact nomatch habs
-            · simp only [invokeReplay, he, if_pos hop, if_neg hrev,
-                rejectStep, SessionState.WF]
-              refine ⟨hle, fun habs => ?_⟩
-              first
-                | exact hrec habs
-                | exact nomatch habs
-          · simp only [invokeReplay, he, if_neg hop, rejectStep,
-              SessionState.WF]
-            refine ⟨hle, fun habs => ?_⟩
-            first
-              | exact hrec habs
-              | exact nomatch habs
+                  if_neg hreq]
+                exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
+            · simp only [invokeReplay, he, if_pos hop, if_neg hrev]
+              exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
+          · simp only [invokeReplay, he, if_neg hop]
+            exact rejectStep_preserves_wf s _ ⟨hle, hrec, hrep⟩
       | recorded inv out =>
         simp only [reduce, hst, hm, absorb]
-        exact ⟨hle, hrec⟩
+        exact ⟨hle, hrec, hrep⟩
       | appendFailed =>
         simp only [reduce, hst, hm, absorb]
-        exact ⟨hle, hrec⟩
+        exact ⟨hle, hrec, hrep⟩
       | complete t =>
         simp only [reduce, hst, hm, completeStep]
         by_cases hc : s.cursor = s.history.length
         · simp only [if_pos hc]
-          exact ⟨hle, hrec⟩
-        · simp only [if_neg hc, SessionState.WF]
-          refine ⟨hle, fun habs => ?_⟩
+          exact ⟨hle, hrec, hrep⟩
+        · simp only [if_neg hc]
+          refine ⟨hle, fun hr => ?_, fun _ => rfl⟩
           first
-            | exact hrec habs
-            | exact nomatch habs
+            | exact nomatch hr
+            | exact absurd (hm ▸ hr) (by decide)
 
 end Effects.Replay

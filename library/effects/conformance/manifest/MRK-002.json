@@ -1,7 +1,7 @@
 {
   "family": "MRK-002",
   "meaning": "When the pending input is not entitled to emit — the decoder is not active on an in-range leaf frame whose expected address the input chunk's leaf pre-image hashes to — no step ever emits: emission IS verification, and against a committed list every emission matches the committed chunk at its index or a hash-collision witness exists in the consumed prefix, the decoder being under no obligation to detect the collision.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

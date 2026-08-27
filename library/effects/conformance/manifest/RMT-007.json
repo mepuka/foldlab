@@ -1,7 +1,7 @@
 {
   "family": "RMT-007",
   "meaning": "When the pending input is not an entitled publish request — the root and every key of its declared closure confirmed by verified acknowledgments or loads, on a free identifier — no step ever issues a publish command: children upload before parents, the root publishes last, the refusal is a typed ordering refusal, and server acceptance of any upload confirms exactly that key, never its children.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

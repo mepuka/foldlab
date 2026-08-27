@@ -1,7 +1,7 @@
 {
   "family": "RMT-004",
   "meaning": "When an upload request names a key already admitted in the cache with content that verifies for it — within the byte budget, not integrity-rejected, its identifier free — one machine step changes the issued-command count by exactly zero: an already-present exact-digest upload resolves as success with no transfer, and duplicate content never becomes duplicate wire traffic.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

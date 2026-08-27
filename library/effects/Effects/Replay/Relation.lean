@@ -25,16 +25,43 @@ inductive Step :
   | absorbAborted {s : SessionState Op Req Val Err}
       {i : Input Op Req Val Err} (h : s.status = .aborted) :
       Step s i (absorb s)
-  /-- Record mode requests live delegation for an invocation. -/
+  /-- Record mode registers the outstanding delegation for an invocation
+  when none is outstanding. -/
   | recordDelegates {s : SessionState Op Req Val Err}
       {inv : Invocation Op Req}
-      (ha : s.status = .active) (hm : s.mode = .record) :
-      Step s (.invoke inv) (invokeRecord s inv)
-  /-- Record mode appends the occurrence when the live outcome arrives. -/
+      (ha : s.status = .active) (hm : s.mode = .record)
+      (hp : s.pending = none) :
+      Step s (.invoke inv)
+        { result := .delegated
+          state := { s with pending := some inv }
+          decisions := [.liveDelegation inv.op s.cursor] }
+  /-- Record mode refuses an invocation while a delegation is
+  outstanding — delegation is exclusive. -/
+  | recordRefusesInterleaved {s : SessionState Op Req Val Err}
+      {inv p : Invocation Op Req}
+      (ha : s.status = .active) (hm : s.mode = .record)
+      (hp : s.pending = some p) :
+      Step s (.invoke inv) (rejectStep s .delegationOutstanding)
+  /-- Record mode appends the occurrence its outstanding delegation
+  solicited, clearing the registration. -/
   | recordAppends {s : SessionState Op Req Val Err}
       {inv : Invocation Op Req} {out : Outcome Val Err}
-      (ha : s.status = .active) (hm : s.mode = .record) :
-      Step s (.recorded inv out) (appendRecord s inv out)
+      (ha : s.status = .active) (hm : s.mode = .record)
+      (hp : s.pending = some inv) :
+      Step s (.recorded inv out)
+        { result := .appended
+          state := { s with
+                     pending := none,
+                     history := s.history ++ [inv.entry out],
+                     cursor := s.cursor + 1 }
+          decisions := [.occurrenceAppended inv.op s.cursor] }
+  /-- Record mode refuses an outcome nobody solicited — none outstanding,
+  or a different invocation than the one registered. -/
+  | recordRefusesUnsolicited {s : SessionState Op Req Val Err}
+      {inv : Invocation Op Req} {out : Outcome Val Err}
+      (ha : s.status = .active) (hm : s.mode = .record)
+      (hp : ¬ s.pending = some inv) :
+      Step s (.recorded inv out) (rejectStep s .unsolicitedOutcome)
   /-- Record mode aborts structurally when the append is refused. -/
   | recordAborts {s : SessionState Op Req Val Err}
       (ha : s.status = .active) (hm : s.mode = .record) :
@@ -106,10 +133,28 @@ theorem step_reduce (s : SessionState Op Req Val Err)
       cases i with
       | invoke inv =>
         simp only [reduce, hst, hm]
-        exact .recordDelegates hst hm
+        cases hp : s.pending with
+        | none =>
+          simp only [invokeRecord, hp]
+          exact .recordDelegates hst hm hp
+        | some p =>
+          simp only [invokeRecord, hp]
+          exact .recordRefusesInterleaved hst hm hp
       | recorded inv out =>
         simp only [reduce, hst, hm]
-        exact .recordAppends hst hm
+        cases hp : s.pending with
+        | none =>
+          simp only [appendRecord, hp]
+          exact .recordRefusesUnsolicited hst hm
+            (by rw [hp]; exact fun h => nomatch h)
+        | some p =>
+          by_cases hpi : p = inv
+          · subst hpi
+            simp only [appendRecord, hp]
+            exact .recordAppends hst hm hp
+          · simp only [appendRecord, hp, if_neg hpi]
+            exact .recordRefusesUnsolicited hst hm
+              (by rw [hp]; exact fun h => hpi (Option.some.inj h))
       | appendFailed =>
         simp only [reduce, hst, hm]
         exact .recordAborts hst hm
@@ -155,8 +200,27 @@ theorem step_eq_reduce {s : SessionState Op Req Val Err}
     (h : Step s i o) : reduce s i = o := by
   cases h with
   | absorbAborted hst => simp only [reduce, hst]
-  | recordDelegates hst hm => simp only [reduce, hst, hm]
-  | recordAppends hst hm => simp only [reduce, hst, hm]
+  | recordDelegates hst hm hp =>
+    simp only [reduce, hst, hm, invokeRecord, hp]
+  | recordRefusesInterleaved hst hm hp =>
+    simp only [reduce, hst, hm, invokeRecord, hp]
+  | recordAppends hst hm hp =>
+    simp only [reduce, hst, hm, appendRecord, hp]
+    split
+    · rfl
+    · rename_i hne
+      first
+        | exact absurd rfl hne
+        | exact absurd trivial hne
+  | recordRefusesUnsolicited hst hm hp =>
+    rename_i inv out
+    simp only [reduce, hst, hm, appendRecord]
+    cases hpe : s.pending with
+    | none => rfl
+    | some p =>
+      have hne : ¬ p = inv := fun hpi => hp (by rw [hpe, hpi])
+      dsimp only
+      rw [if_neg hne]
   | recordAborts hst hm => simp only [reduce, hst, hm]
   | replaySubstitutes hst hm he hmt =>
     obtain ⟨hop, hrev, hreq⟩ := hmt

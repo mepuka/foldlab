@@ -1,7 +1,7 @@
 {
   "family": "RMT-001",
   "meaning": "When the pending input is not entitled — its bytes do not answer an in-flight operation, pass the declared budget, and verify for that operation's key — no step ever emits a cache decision or a return to the caller: a wire-supplied digest is a routing hint, never an identity, and only verification admits a remote-loaded node in either direction.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

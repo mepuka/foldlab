@@ -41,6 +41,7 @@ const SessionStateSchema = Schema.Struct({
   history: Schema.Array(HistoryEntrySchema),
   mode: Schema.Literals(["record", "replay"]),
   status: Schema.Literals(["active", "aborted"]),
+  pending: Schema.optionalKey(InvocationSchema),
 })
 
 const InputSchema = Schema.Union([
@@ -60,6 +61,8 @@ const MismatchCategorySchema = Schema.Literals([
   "HistoryExhausted",
   "UnconsumedSuffix",
   "OutcomeInadmissible",
+  "DelegationOutstanding",
+  "UnsolicitedOutcome",
 ])
 
 const DecisionSchema = Schema.Union([
@@ -135,6 +138,7 @@ export type ReplayFamily =
   | "RPL-005"
   | "SES-001"
   | "SES-002"
+  | "SES-003"
   | "CMP-002"
 
 export type ReplayReducer = typeof reduce

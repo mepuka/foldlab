@@ -1,7 +1,7 @@
 {
   "family": "MRK-005",
   "meaning": "On nonempty chunk lists and any requested range, the slice decode over the range extractor's stream and the whole decode filtered to the range agree at their emission lists — a slice emits exactly the bytes the whole decode would emit at those offsets, never more, so slice and encoding carriers stay transport while roots and decoded bytes stay the identity.",
-  "model": "effects-model@0.1.0",
+  "model": "effects-model@0.2.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

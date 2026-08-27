@@ -1,5 +1,6 @@
 import { expect } from "@effect/vitest"
 import { Context, Effect, Equal, Layer, Schema, type SchemaIssue } from "effect"
+import { readFileSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import type {
   MInput,
@@ -8,7 +9,17 @@ import type {
   StepOut,
 } from "../../src/internal/remoteMachine.ts"
 
-export const ManifestModel = "effects-model@0.1.0" as const
+/** The committed manifest index: the authority for the expected model
+ * version and the consumable manifest set. Suites derive the model pin
+ * from here, so a model bump never edits a suite. */
+const manifestIndex: { readonly manifests: ReadonlyArray<string>; readonly model: string } =
+  JSON.parse(readFileSync(
+    new URL("../../conformance/manifest/INDEX.json", import.meta.url),
+    "utf8",
+  ))
+
+export const ManifestModel: string = manifestIndex.model
+export const manifestIndexNames: ReadonlyArray<string> = manifestIndex.manifests
 
 type ContextFreeSchema = Schema.Top & {
   readonly DecodingServices: never

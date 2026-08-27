@@ -7,11 +7,15 @@ import type { DecisionTrace } from "./Decision.ts"
 export const ReplayMode = Schema.Literals(["record", "replay"])
 export type ReplayMode = typeof ReplayMode.Type
 
-/** The six ratified mismatch categories (GR-2). Request-side, checked at
+/** The eight ratified mismatch categories (GR-2). Request-side, checked at
  * the cursor: operation, revision, request, history exhausted.
  * Completion-side: unconsumed suffix. Outcome-side, checked at consumption:
- * outcome inadmissible. "Order mismatch" is deliberately not a category;
- * CAS storage failures are a distinct typed family. */
+ * outcome inadmissible. Protocol-side, checked in record mode: delegation
+ * outstanding (a second invocation while one delegation is in flight) and
+ * unsolicited outcome (a recorded outcome no outstanding delegation asked
+ * for, or naming a different invocation than registered). "Order mismatch"
+ * is deliberately not a category; CAS storage failures are a distinct
+ * typed family. */
 export const MismatchCategory = Schema.Literals([
   "OperationMismatch",
   "RevisionMismatch",
@@ -19,6 +23,8 @@ export const MismatchCategory = Schema.Literals([
   "HistoryExhausted",
   "UnconsumedSuffix",
   "OutcomeInadmissible",
+  "DelegationOutstanding",
+  "UnsolicitedOutcome",
 ])
 export type MismatchCategory = typeof MismatchCategory.Type
 
@@ -94,7 +100,11 @@ export interface HistoryEntry<
 /** Structural session status. Aborted sessions absorb every later input. */
 export type SessionStatus = "active" | "aborted"
 
-/** State threaded through the pure reducer. */
+/** State threaded through the pure reducer. `pending` carries the
+ * invocation a record-mode live delegation is currently executing — set by
+ * the record-mode invoke, cleared by the solicited append; record-mode
+ * delegation is exclusive, so a present value refuses further invocations
+ * until the outcome arrives. */
 export interface SessionState<
   Op extends string = string,
   Req extends string = string,
@@ -105,6 +115,7 @@ export interface SessionState<
   readonly status: SessionStatus
   readonly history: ReadonlyArray<HistoryEntry<Op, Req, Val, Err>>
   readonly cursor: number
+  readonly pending?: Invocation<Op, Req> | undefined
 }
 
 /** Reducer input. The interpreter emits Recorded only after live delegation
@@ -156,4 +167,5 @@ export const isWellFormed = <
   Number.isInteger(state.cursor) &&
   state.cursor >= 0 &&
   state.cursor <= state.history.length &&
-  (state.mode === "replay" || state.cursor === state.history.length)
+  (state.mode === "replay" || state.cursor === state.history.length) &&
+  (state.mode === "record" || state.pending === undefined)

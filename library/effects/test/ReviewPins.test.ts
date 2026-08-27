@@ -18,11 +18,12 @@
  *   before a bounded retry" in remote/RemoteAdapter.test.ts.
  * - DX-6 (budget units in prose) is a naming finding; pin 8 covers the
  *   one place where the unlabeled number is also wrong.
- * - Finding 2's design question is answered by the model: the Lean
- *   reducer's record-mode invoke returns `delegated` with NO state change
- *   and no pending-delegation tracking (Effects/Replay/Reducer.lean,
- *   invokeRecord), so the model is silent on interleaving and the
- *   exclusivity rule must land in Lean before the runtime enforces it.
+ * - Finding 2 is RESOLVED by SES-003: the reducer tracks the outstanding
+ *   delegation, refuses interleaved invocations (DelegationOutstanding)
+ *   and unsolicited outcomes (UnsolicitedOutcome), and the runtime
+ *   converts the refusal into a typed session rejection — lock 2 below.
+ *   Sound concurrent recording (event identity and causality) remains a
+ *   designed future milestone, per IMPLEMENTATION-PLAN.md.
  */
 import { expect, it } from "@effect/vitest"
 import { expectTypeOf } from "vitest"
@@ -246,28 +247,20 @@ it.effect("pin 1: a client that silently follows a redirect passes the origin ch
 /* Finding 2 — concurrent record has completion-order semantics         */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 2: concurrent recording orders history by completion, so program-order replay rejects", () =>
+it.effect("lock 2: overlapping record invocation is refused as DelegationOutstanding", () =>
   Effect.gen(function* () {
-    const alphaGate = yield* Deferred.make<void>()
-    let historyCommits = 0
-    const spy = yield* makeSpyStore({
-      after: (node) => Effect.suspend(() => {
-        if (node.kind.tag !== HistoryTag) return Effect.void
-        historyCommits += 1
-        // beta's occurrence is durably committed before alpha may even
-        // resume, so history order is completion order by construction.
-        return historyCommits === 1
-          ? Deferred.succeed(alphaGate, undefined).pipe(Effect.asVoid)
-          : Effect.void
-      }),
-    })
+    // RESOLVED by SES-003: record-mode delegation is exclusive, so the
+    // completion-order history the original finding demonstrated is now
+    // unrepresentable — the second in-flight invocation is a typed
+    // rejection before any occurrence exists. Sound concurrent recording
+    // (event identity and causality) is reserved as its own milestone.
+    const spy = yield* makeSpyStore()
     const runtime = runtimeOver(Layer.succeed(CasStore, spy.shape))
+    const parked = yield* Deferred.make<void>()
     const live = Pair.of({
-      alpha: (x) => Deferred.await(alphaGate).pipe(Effect.as(`A:${x}`)),
+      alpha: (x) => Deferred.await(parked).pipe(Effect.as(`A:${x}`)),
       beta: (x) => Effect.succeed(`B:${x}`),
     })
-    // alpha is invoked first but completes last: history records [beta,
-    // alpha] — completion order, not invocation order.
     const concurrent = Pair.use((pair) =>
       Effect.all([pair.alpha("x"), pair.beta("y")], { concurrency: 2 }))
     const recorded = yield* session(
@@ -277,29 +270,14 @@ it.effect("pin 2: concurrent recording orders history by completion, so program-
       ),
       { mode: "record" },
     ).pipe(Effect.provide(runtime))
-    expect(recorded.outcome._tag).toBe("Completed")
-    if (recorded.history === undefined) {
-      return yield* Effect.die("concurrent recording returned no history")
-    }
-    // The same two operations invoked in program order now replay
-    // against a completion-ordered history and reject at position zero.
-    // Fixed behavior (post-ruling): interleaved record-mode invocation
-    // is rejected up front, or history carries event identity/causality.
-    const sequential = Pair.use((pair) =>
-      Effect.gen(function* () {
-        const a = yield* pair.alpha("x")
-        const b = yield* pair.beta("y")
-        return [a, b] as const
-      }))
-    const replayed = yield* session(
-      sequential.pipe(Effect.provide(pairKit.replay)),
-      { mode: "replay", history: recorded.history },
-    ).pipe(Effect.provide(runtime))
-    expect(replayed.outcome).toMatchObject({
+    expect(recorded.outcome).toMatchObject({
       _tag: "Rejected",
-      category: "OperationMismatch",
+      category: "DelegationOutstanding",
       at: 0,
     })
+    expect(recorded.history).toBeUndefined()
+    expect(spy.captured.filter((p) => p.node.kind.tag === HistoryTag))
+      .toHaveLength(0)
   }))
 
 /* ------------------------------------------------------------------ */
