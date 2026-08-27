@@ -1,7 +1,7 @@
 {
   "family": "RPL-005",
   "meaning": "When completion arrives before the cursor reaches the history length, the step rejects with the unconsumed-suffix category and the cursor is unchanged — the rejection carries the program's terminal so far, so a same-looking final value cannot hide a recorded action that was never re-emitted.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "complete-at-end-001",

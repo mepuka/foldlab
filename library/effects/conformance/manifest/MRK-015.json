@@ -1,7 +1,7 @@
 {
   "family": "MRK-015",
   "meaning": "Byte-level frame parsing is incremental and fragmentation-invariant: all fragmentations of one complete body yield the same parsed inputs and terminal, and truncation never yields completion.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Fragments are transport-level splits of proof-stream frame bodies — a skip tag, a length-prefixed chunk, a parent carrying two 32-byte addresses (toy digests, the declared 32-lane byte fold, not cryptographic) — so an implementation binds its incremental framer with the fragments replayed verbatim: identical items and remainder across every fragmentation of one body, a nonempty remainder on truncation, malformed on an unknown tag.",
   "rows": [
     {

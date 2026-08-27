@@ -1,7 +1,7 @@
 {
   "family": "SES-001",
   "meaning": "In an aborted session, no step ever emits an occurrence-append decision — a record-mode append failure aborts the session structurally, nothing appends past the failure, and histories stay truthful prefixes, never gapped subsequences.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "append-failure-truncates-000",

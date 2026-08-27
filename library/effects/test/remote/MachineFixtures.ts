@@ -44,11 +44,17 @@ const PublishRootCommandSchema = Schema.Struct({
   _tag: Schema.Literal("PublishRoot"),
   key: KeySchema,
 })
+const AttestSchema = Schema.Struct({
+  _tag: Schema.Literal("Attest"),
+  bytes: BytesSchema,
+  key: KeySchema,
+})
 const R3OperationSchema = Schema.Union([
   LoadSchema,
   FindMissingSchema,
   UploadSchema,
   PublishRootSchema,
+  AttestSchema,
 ])
 const R3CommandSchema = Schema.Union([
   LoadSchema,
@@ -116,6 +122,8 @@ const R3DecisionSchema = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("BatchGaveUp") }),
   Schema.Struct({ _tag: Schema.Literal("Published"), key: KeySchema }),
   Schema.Struct({ _tag: Schema.Literal("OrderingRefused"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("ConfirmedByAttestation"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("AttestationRefused"), key: KeySchema }),
 ])
 
 const R3ResultSchema = Schema.Union([
@@ -141,6 +149,8 @@ const R3ResultSchema = Schema.Union([
   Schema.Struct({ _tag: Schema.Literal("Published"), key: KeySchema }),
   Schema.Struct({ _tag: Schema.Literal("OrderingRefused"), key: KeySchema }),
   Schema.Struct({ _tag: Schema.Literal("PublishFailed"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("Attested"), key: KeySchema }),
+  Schema.Struct({ _tag: Schema.Literal("AttestRefused"), key: KeySchema }),
 ])
 
 const TaggedCommandSchema = Schema.Struct({ command: CommandSchema, op: Schema.Number })
@@ -195,7 +205,7 @@ export const RemoteR3RowSchema = Schema.Struct({
 export type RemoteR3Row = typeof RemoteR3RowSchema.Type
 
 export type RemoteFamily = "RMT-001" | "RMT-002" | "RMT-003" | "RMT-004" | "RMT-015"
-export type RemoteR3Family = "RMT-005" | "RMT-006" | "RMT-007" | "RMT-008"
+export type RemoteR3Family = "RMT-005" | "RMT-006" | "RMT-007" | "RMT-008" | "RMT-017"
 
 export const RemoteOracle = "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter."
 
@@ -345,7 +355,7 @@ export const assertRemoteGuards = (
   family: RemoteFamily | RemoteR3Family,
 ) => Effect.gen(function* () {
   if (family === "RMT-005" || family === "RMT-006"
-    || family === "RMT-007" || family === "RMT-008") {
+    || family === "RMT-007" || family === "RMT-008" || family === "RMT-017") {
     const manifest = yield* loadFamily(remoteR3Binding(family))
     for (const row of manifest.rows) {
       yield* assertInputGuards(row.case, yield* deriveR3Inputs(row))

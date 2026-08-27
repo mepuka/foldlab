@@ -1,7 +1,7 @@
 {
   "family": "RMT-003",
   "meaning": "When a key-content pair stands integrity-rejected, no step ever issues an upload command carrying that key and that exact content again, under any operation identifier — the rejection memory only grows, so an integrity failure is terminal for those bytes over the whole run, and only changed content can try the wire.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

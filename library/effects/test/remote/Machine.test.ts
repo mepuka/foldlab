@@ -73,6 +73,12 @@ layer(remoteStepLayer(step))("direction 1 remote machine mirror", (it) => {
       (row) => runRemoteR3Row(sut, row),
     )))
 
+  it.effect("RMT-017 consumes every ratified attested-presence row structurally", () =>
+    RemoteStepSUT.use((sut) => assertFamilyRows(
+      remoteR3Binding("RMT-017"),
+      (row) => runRemoteR3Row(sut, row),
+    )))
+
   it.effect("remote admission and budget guards agree with their manifest consumers", () =>
     Effect.forEach(
       [
@@ -85,6 +91,7 @@ layer(remoteStepLayer(step))("direction 1 remote machine mirror", (it) => {
         "RMT-006",
         "RMT-007",
         "RMT-008",
+        "RMT-017",
       ] as const,
       assertRemoteGuards,
       { discard: true },

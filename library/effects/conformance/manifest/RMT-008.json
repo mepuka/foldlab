@@ -1,7 +1,7 @@
 {
   "family": "RMT-008",
   "meaning": "When an interruption arrives for an operation in flight, the step resolves as a typed give-up with the cache, confirmed, and published sets exactly as they were — no partial node is admitted, no root is published, and the in-flight entry is cleared so resources release without semantic residue.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Keys are 32-byte addresses computed by a declared toy digest (a 32-lane byte fold, not cryptographic) over canonical admitted-node encodings from the ratified CAS codec; verification recomputes the digest over received bytes. The full pre-image discipline and the tie to CAS admission arrive with the R2 semantic adapter.",
   "rows": [
     {

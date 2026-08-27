@@ -1,7 +1,7 @@
 {
   "family": "RPL-003",
   "meaning": "When the emitted invocation matches the entry at the cursor, one reducer step advances the cursor by exactly one — a matching request consumes exactly the permitted occurrence: never zero, never two.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "exact-match-consumes-one-000",

@@ -47,6 +47,7 @@ Generated from the obligation inventory and the instance registry; do not edit b
 | RMT-014 | instantiated (FAIL-CLOSED) |
 | RMT-015 | instantiated (AGREEMENT) |
 | RMT-016 | pending — AGREEMENT instance at R4 |
+| RMT-017 | instantiated (FAIL-CLOSED) |
 | MRK-001 | instantiated (CODEC) |
 | MRK-002 | instantiated (TRACE-EXCLUDES) |
 | MRK-003 | instantiated (TRACE-EXCLUDES) |
@@ -287,6 +288,12 @@ A successful remote load implements the logical admitted-node load.
 ## RMT-016
 
 A local admitted-node hit is observationally equivalent to a successful remote load for immutable nodes.
+
+## RMT-017
+
+Attested presence confirms for publish: a key the peer reports present whose bytes the client holds and verifies locally enters the confirmed set; without the presence report or the local verification the attestation is refused, and attestation never admits to the cache.
+
+**Sentence:** When an attestation is not entitled — the peer never reported the key present, or the held bytes fail local verification — the step refuses with a typed result and the confirmed count is unchanged; an entitled attestation confirms the key for publication without admitting anything to the cache.
 
 ## MRK-001
 

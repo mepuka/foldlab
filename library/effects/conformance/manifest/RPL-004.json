@@ -1,7 +1,7 @@
 {
   "family": "RPL-004",
   "meaning": "When request-side compatibility at the cursor fails, the step rejects with a typed mismatch category and the cursor is unchanged — a mismatch fails closed: it consumes nothing, names its category, and is terminal for the attempt; nothing falls through to a live adapter.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "reject-history-exhausted-003",

@@ -11,6 +11,7 @@ import Effects.Mutants.RMT007_PublishUnconfirmed
 import Effects.Mutants.RMT008_InterruptAdmits
 import Effects.Mutants.RMT014_AcceptTruncated
 import Effects.Mutants.RMT015_SubstitutedDelivery
+import Effects.Mutants.RMT017_AttestWithoutPresence
 import Effects.Conformance.ManifestMerkle
 import Effects.Mutants.MRK001_LossyChunk
 import Effects.Mutants.MRK002_EmitUnverified
@@ -72,7 +73,8 @@ def remoteMutants : List (Mutant RStep) :=
   , Effects.Mutants.RMT006PartialBatch.mutant
   , Effects.Mutants.RMT007PublishUnconfirmed.mutant
   , Effects.Mutants.RMT008InterruptAdmits.mutant
-  , Effects.Mutants.RMT015SubstitutedDelivery.mutant ]
+  , Effects.Mutants.RMT015SubstitutedDelivery.mutant
+  , Effects.Mutants.RMT017AttestWithoutPresence.mutant ]
 
 def controlCodecMutants :
     List (Mutant (List UInt8 → Option Effects.Remote.Limits)) :=

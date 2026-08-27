@@ -32,6 +32,7 @@ export type Op<K, B> =
   | { readonly _tag: "FindMissing"; readonly keys: ReadonlyArray<K> }
   | { readonly _tag: "Upload"; readonly key: K; readonly bytes: B }
   | { readonly _tag: "PublishRoot"; readonly key: K; readonly closure: ReadonlyArray<K> }
+  | { readonly _tag: "Attest"; readonly key: K; readonly bytes: B }
 
 export type KeyStatus<K, B> =
   | { readonly _tag: "Found"; readonly key: K; readonly bytes: B }
@@ -87,6 +88,8 @@ export type MResult<K, B> =
   | { readonly _tag: "Published"; readonly key: K }
   | { readonly _tag: "OrderingRefused"; readonly key: K }
   | { readonly _tag: "PublishFailed"; readonly key: K }
+  | { readonly _tag: "Attested"; readonly key: K }
+  | { readonly _tag: "AttestRefused"; readonly key: K }
   | { readonly _tag: "Absorbed" }
 
 export type RDecision<K, B> =
@@ -103,6 +106,8 @@ export type RDecision<K, B> =
   | { readonly _tag: "BatchGaveUp" }
   | { readonly _tag: "Published"; readonly key: K }
   | { readonly _tag: "OrderingRefused"; readonly key: K }
+  | { readonly _tag: "ConfirmedByAttestation"; readonly key: K }
+  | { readonly _tag: "AttestationRefused"; readonly key: K }
 
 export interface TaggedCommand<K, B> {
   readonly op: OpId
@@ -544,6 +549,34 @@ export const step = <K, B>(
           { op: input.id, decision: { _tag: "IntegrityRejected", key } },
           { op: input.id, decision: { _tag: "GaveUp", key } },
         ],
+      }
+    }
+
+    if (input.op._tag === "Attest") {
+      // Attested presence confirms for publish (RMT-017): the peer
+      // reported the key present and the client verifies the held bytes
+      // locally — the cache is never touched, so presence stays planning
+      // data for every read path.
+      const { key, bytes } = input.op
+      if (params.verify(key, bytes) && HashSet.has(state.reportedPresent, key)) {
+        return {
+          result: { _tag: "Attested", key },
+          state: { ...state, confirmed: HashSet.add(state.confirmed, key) },
+          commands: [],
+          decisions: [{
+            op: input.id,
+            decision: { _tag: "ConfirmedByAttestation", key },
+          }],
+        }
+      }
+      return {
+        result: { _tag: "AttestRefused", key },
+        state,
+        commands: [],
+        decisions: [{
+          op: input.id,
+          decision: { _tag: "AttestationRefused", key },
+        }],
       }
     }
 

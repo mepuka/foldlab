@@ -1,7 +1,7 @@
 {
   "family": "RMT-014",
   "meaning": "When capability-document bytes are not the canonical encoding of representable limits, the closed decoder returns nothing — truncation, oversize fields, and trailing bytes are all rejected with the same fail-closed posture as node bytes, and a successful decode's input is exactly the canonical encoding of its result.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Capability documents are eight canonical bytes — two big-endian 32-bit naturals, the key-count limit then the blob-byte limit — parsed by a closed decoder that rejects truncation and trailing content; a successful decode's input is exactly the canonical encoding of its result.",
   "rows": [
     {

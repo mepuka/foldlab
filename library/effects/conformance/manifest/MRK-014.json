@@ -1,7 +1,7 @@
 {
   "family": "MRK-014",
   "meaning": "The Merkle address function instantiated as the address of the canonical blob-node encoding makes a blob root an ordinary content identifier, and a bounded pre-image collision transfers to a byte-level hash collision.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Graphs are materialized from the given chunk lists under the declared toy digest (the 32-lane byte fold, not cryptographic) over CANONICAL NODE ENCODINGS from the ratified CAS codec — real node bytes, honest toy addresses — so node shapes, payload layouts, reference tags, split points, and cross-position chunk deduplication bind the implementation's graph construction with the digest injected; the shipping fixed-size chunker is bound separately by its recipe law.",
   "rows": [
     {

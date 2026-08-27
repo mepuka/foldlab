@@ -1,7 +1,7 @@
 {
   "family": "SES-003",
   "meaning": "When record-mode delegation is not solicited — an invocation while one is outstanding, or a recorded outcome without or beside its outstanding invocation — the step rejects with a typed category and the history length is unchanged; delegation is exclusive, outcomes append only as solicited, and lawful record runs append in invocation order.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "interleaved-invoke-rejected-001",

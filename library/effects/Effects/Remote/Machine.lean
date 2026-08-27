@@ -55,6 +55,16 @@ the in-flight operation and admits, confirms, and publishes nothing;
 and the key-count budget binds find-missing requests, completing the
 count half the RMT-002 sentence always covered. Old input paths are
 unchanged and the pre-existing families regenerate byte-identical.
+
+Attested-presence amendment (RMT-017, operator-ratified): a key the
+peer reported present AND whose bytes the client holds and verifies
+locally enters the `confirmed` set through the wire-less `attest`
+request — downloading a present node proves only that the peer held it
+at confirmation time, which is exactly the retention exposure the
+presence claim already carries, so the local bytes are the strongest
+confirmation available. Attestation confirms for PUBLICATION only: it
+never admits to the cache, so presence stays planning data for every
+read path.
 -/
 
 namespace Effects.Remote
@@ -80,12 +90,15 @@ inductive OpState (K B : Type) where
   | publishing (key : K)
   deriving DecidableEq
 
-/-- A caller-requested operation. -/
+/-- A caller-requested operation. `attest` is the wire-less
+confirmation move: the caller holds bytes for a key the peer reported
+present and asks the machine to confirm it for publication. -/
 inductive Op (K B : Type) where
   | load (key : K)
   | upload (key : K) (bytes : B)
   | findMissing (keys : List K)
   | publishRoot (key : K) (closure : List K)
+  | attest (key : K) (bytes : B)
   deriving DecidableEq
 
 /-- Machine input: a caller request or a scheduled wire event, each
@@ -115,6 +128,8 @@ inductive MResult (K B : Type) where
   | published (key : K)
   | orderingRefused (key : K)
   | publishFailed (key : K)
+  | attested (key : K)
+  | attestRefused (key : K)
   deriving DecidableEq
 
 /-- The decision trace vocabulary. Issued commands are mirrored into the
@@ -135,6 +150,8 @@ inductive RDecision (K B : Type) where
   | batchGaveUp
   | published (key : K)
   | orderingRefused (key : K)
+  | confirmedByAttestation (key : K)
+  | attestationRefused (key : K)
   deriving DecidableEq
 
 /-- The tag projection for TRACE-EXCLUDES instances. -/
@@ -157,6 +174,8 @@ inductive RTag where
   | batchGaveUp
   | published
   | orderingRefused
+  | confirmedByAttestation
+  | attestationRefused
   deriving DecidableEq
 
 def RDecision.tag {K B : Type} : RDecision K B → RTag
@@ -178,13 +197,16 @@ def RDecision.tag {K B : Type} : RDecision K B → RTag
   | .batchGaveUp => .batchGaveUp
   | .published _ => .published
   | .orderingRefused _ => .orderingRefused
+  | .confirmedByAttestation _ => .confirmedByAttestation
+  | .attestationRefused _ => .attestationRefused
 
 /-- Machine state: the in-flight operations, the admitted cache, the
 set of integrity-rejected key-content pairs (the terminal-integrity
 memory, which only ever grows), the presence PLANNING sets (advisory —
-no admission state ever derives from them), the `confirmed` set (grown
-ONLY by verified upload acknowledgments and verified loads), and the
-published roots. -/
+no cache or return decision ever derives from them), the `confirmed`
+set (grown by verified upload acknowledgments, verified loads, and
+attested presence over locally verified bytes — never by presence
+alone), and the published roots. -/
 structure MachineState (K B : Type)
     [BEq K] [Hashable K] [BEq B] [Hashable B] where
   inFlight : Std.HashMap OpId (OpState K B)
@@ -419,6 +441,15 @@ def step (P : Params K B) (s : MachineState K B) :
             state := { s with rejected := s.rejected.insert (key, bytes) }
             commands := []
             decisions := [(id, .integrityRejected key), (id, .gaveUp key)] }
+      | .attest key bytes =>
+        if P.verify key bytes && s.reportedPresent.contains key then
+          { result := .attested key
+            state := { s with confirmed := s.confirmed.insert key }
+            commands := []
+            decisions := [(id, .confirmedByAttestation key)] }
+        else
+          { result := .attestRefused key, state := s
+            commands := [], decisions := [(id, .attestationRefused key)] }
   | .fromWire id event =>
     match s.inFlight[id]? with
     | none => absorbOut s

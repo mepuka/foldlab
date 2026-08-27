@@ -1,7 +1,7 @@
 {
   "family": "MRK-012",
   "meaning": "Range-stream documents parse fail-closed and exactly over the decoder's input alphabet: a twelve-byte header — the declared total and the requested range, echoed so a client fails closed on disagreement — then tagged items, a bare skip, a length-prefixed chunk, or a parent's two child addresses; unknown tags and truncated items are rejected, the framing is self-delimiting, and a successful decode's input is exactly the canonical encoding of its result.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Addresses are 32-byte toy digests (the declared 32-lane byte fold, not cryptographic) over structural pre-image encodings — a tag byte for leaf or parent, the leaf's absolute index and bytes, the parent's two child addresses — so domain separation and position binding live in the pre-image exactly as the model states them; the tie to a production hash arrives with the implementation slice.",
   "rows": [
     {

@@ -9,6 +9,7 @@ import Effects.Conformance.Instances.RMT007
 import Effects.Conformance.Instances.RMT008
 import Effects.Conformance.Instances.RMT014
 import Effects.Conformance.Instances.RMT015
+import Effects.Conformance.Instances.RMT017
 
 /-!
 # The remote manifest families — schedule vectors
@@ -112,6 +113,9 @@ def opJson : Op Addr32 Bytes → Value
       .obj [ ("_tag", .str "PublishRoot")
            , ("closure", .arr (closure.map addrJson))
            , ("key", addrJson key) ]
+  | .attest key bytes =>
+      .obj [ ("_tag", .str "Attest"), ("bytes", bytesJson bytes)
+           , ("key", addrJson key) ]
 
 def commandJson : Command Addr32 Bytes → Value
   | .probeCapabilities => .obj [("_tag", .str "ProbeCapabilities")]
@@ -149,6 +153,10 @@ def rDecisionJson : RDecision Addr32 Bytes → Value
   | .published key => .obj [("_tag", .str "Published"), ("key", addrJson key)]
   | .orderingRefused key =>
       .obj [("_tag", .str "OrderingRefused"), ("key", addrJson key)]
+  | .confirmedByAttestation key =>
+      .obj [("_tag", .str "ConfirmedByAttestation"), ("key", addrJson key)]
+  | .attestationRefused key =>
+      .obj [("_tag", .str "AttestationRefused"), ("key", addrJson key)]
 
 def taggedDecisionJson (d : OpId × RDecision Addr32 Bytes) : Value :=
   .obj [("decision", rDecisionJson d.2), ("op", .nat d.1)]
@@ -187,6 +195,9 @@ def rResultJson : MResult Addr32 Bytes → Value
       .obj [("_tag", .str "OrderingRefused"), ("key", addrJson key)]
   | .publishFailed key =>
       .obj [("_tag", .str "PublishFailed"), ("key", addrJson key)]
+  | .attested key => .obj [("_tag", .str "Attested"), ("key", addrJson key)]
+  | .attestRefused key =>
+      .obj [("_tag", .str "AttestRefused"), ("key", addrJson key)]
 
 def seqRefJson : SeqRef → Value
   | .opRef index => .obj [("_tag", .str "OpRef"), ("index", .nat index)]
@@ -415,6 +426,35 @@ def rmt008Rows (stepF : RStep) : List (String × Value) :=
         schedule := [(9, .interrupted)]
         sequence := [.eventRef 0] } ]
 
+def rmt017Rows (stepF : RStep) : List (String × Value) :=
+  [ remoteRowWithR3 stepF "attest-after-presence-confirms-and-publishes-000"
+      { ops := [ (1, .upload kGood goodBytes)
+               , (2, .findMissing [kSmall])
+               , (3, .attest kSmall smallBytes)
+               , (4, .publishRoot kGood [kSmall]) ]
+        schedule := [ (1, .ok 0 [])
+                    , (2, .batchResult [.found kSmall smallBytes])
+                    , (4, .ok 0 []) ]
+        sequence := [ .opRef 0, .eventRef 0, .opRef 1, .eventRef 1
+                    , .opRef 2, .opRef 3, .eventRef 2 ] }
+  , remoteRowWithR3 stepF "attest-without-presence-refused-001"
+      { ops := [(1, .attest kSmall smallBytes)]
+        schedule := []
+        sequence := [.opRef 0] }
+  , remoteRowWithR3 stepF "attest-wrong-bytes-refused-002"
+      { ops := [ (1, .findMissing [kSmall])
+               , (2, .attest kSmall goodBytes) ]
+        schedule := [(1, .batchResult [.found kSmall smallBytes])]
+        sequence := [.opRef 0, .eventRef 0, .opRef 1] }
+  , remoteRowWithR3 stepF "attestation-never-admits-to-cache-003"
+      { ops := [ (1, .findMissing [kSmall])
+               , (2, .attest kSmall smallBytes)
+               , (3, .load kSmall) ]
+        schedule := [ (1, .batchResult [.found kSmall smallBytes])
+                    , (3, .ok smallBytes.length smallBytes) ]
+        sequence := [ .opRef 0, .eventRef 0, .opRef 1, .opRef 2
+                    , .eventRef 1 ] } ]
+
 /-! ## RMT-014 rows: the capability-document codec family -/
 
 /-- One codec row: input bytes against the decoder under test. -/
@@ -462,7 +502,8 @@ def remoteFamilies (stepF : RStep) :
   , ("RMT-006", rmt006.sentence, rmt006Rows stepF)
   , ("RMT-007", rmt007.sentence, rmt007Rows stepF)
   , ("RMT-008", rmt008.sentence, rmt008Rows stepF)
-  , ("RMT-015", rmt015.sentence, rmt015Rows stepF) ]
+  , ("RMT-015", rmt015.sentence, rmt015Rows stepF)
+  , ("RMT-017", rmt017.sentence, rmt017Rows stepF) ]
 
 /-- Rendered rows of one remote family under a step function — the
 mutation task's comparison unit. -/

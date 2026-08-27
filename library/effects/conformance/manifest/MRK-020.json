@@ -1,7 +1,7 @@
 {
   "family": "MRK-020",
   "meaning": "A ranged blob read touches exactly the proof-necessary nodes: the manifest, the parents on intersecting paths, the intersecting leaves, and their chunk data — never a node outside the range's spine.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "oracle": "Access sets are node addresses under the declared toy digest (the 32-lane byte fold, not cryptographic) over canonical node encodings, listed in descent order: an implementation binds its read planner by recording which content identifiers a ranged read loads against a counting store and comparing the set — touching an out-of-range subtree or skipping a boundary leaf both move the vectors, so read complexity is conformance, never a benchmark.",
   "rows": [
     {

@@ -1,7 +1,7 @@
 {
   "family": "CAS-004",
   "meaning": "A value's canonical encoding is the UTF-8 bytes of its compact JSON rendering — codepoint-sorted keys, integers only, JSON short-escape strings — one encoding per structure, language-neutral.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "astral-key-after-private-use-005",

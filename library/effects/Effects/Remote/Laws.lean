@@ -49,6 +49,9 @@ theorem RMT_001_no_cache_or_return_without_admission (P : Params K B)
       | publishRoot key closure =>
         simp only [step, hm]
         split <;> simp [RDecision.tag]
+      | attest key bytes =>
+        simp only [step, hm]
+        split <;> simp [RDecision.tag]
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -107,6 +110,7 @@ theorem RMT_002_budget_rejects (P : Params K B)
         simp [overBudget, hm] at h
         simp [step, hm, h, MResult.isBudgetRejection]
     | publishRoot key closure => simp [overBudget] at h
+    | attest key bytes => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -149,6 +153,7 @@ theorem RMT_002_budget_excludes (P : Params K B)
         simp [overBudget, hm] at h
         simp [step, hm, h, RDecision.tag]
     | publishRoot key closure => simp [overBudget] at h
+    | attest key bytes => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -185,6 +190,7 @@ theorem RMT_002_budget_frozen (P : Params K B)
         simp [overBudget, hm] at h
         simp [step, hm, h]
     | publishRoot key closure => simp [overBudget] at h
+    | attest key bytes => simp [overBudget] at h
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => cases e <;> simp [overBudget, hm] at h
@@ -289,6 +295,9 @@ theorem RMT_003_no_repeat_after_integrity [LawfulBEq K] [LawfulBEq B]
       | publishRoot key closure =>
         simp only [step, hm]
         split <;> simp
+      | attest key bytes =>
+        simp only [step, hm]
+        split <;> simp
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -344,6 +353,9 @@ theorem RMT_003_rejection_monotone [LawfulBEq K] [LawfulBEq B]
         simp only [step, hm]
         split <;> simpa using h
       | publishRoot key closure =>
+        simp only [step, hm]
+        split <;> simpa using h
+      | attest key bytes =>
         simp only [step, hm]
         split <;> simpa using h
   | fromWire id e =>
@@ -498,6 +510,9 @@ theorem RMT_007_publish_only_entitled (P : Params K B)
           exfalso
           simp [publishRequestEntitled, hm, hent] at h
         · simp [RDecision.tag]
+      | attest key bytes =>
+        simp only [step, hm]
+        split <;> simp [RDecision.tag]
   | fromWire id e =>
     cases hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut]
@@ -628,6 +643,9 @@ theorem step_commands_mirrored (P : Params K B) (s : MachineState K B) :
                 simp at hc
                 simp [hc]
             · simp [step, hm, hb, hr, hv] at hc
+      | .attest key bytes =>
+        simp only [step, hm] at hc
+        split at hc <;> simp at hc
   | .fromWire id e =>
     match hm : s.inFlight[id]? with
     | none => simp [step, hm, absorbOut] at hc
@@ -647,5 +665,58 @@ theorem step_commands_mirrored (P : Params K B) (s : MachineState K B) :
       simp only [step, hm] at hc
       rw [publishEvent_commands] at hc
       exact absurd hc (by simp)
+
+/-! ## RMT-017 — attested presence confirms for publish -/
+
+/-- RMT-017, confirming half: a key the peer reported present whose
+bytes the client holds and verifies locally enters the confirmed set
+through the wire-less attest step — no command, one decision, and only
+`confirmed` moves. -/
+theorem RMT_017_attest_confirms (P : Params K B) (s : MachineState K B)
+    (id : OpId) (key : K) (bytes : B)
+    (hm : s.inFlight[id]? = none)
+    (hv : P.verify key bytes = true)
+    (hp : s.reportedPresent.contains key = true) :
+    step P s (.request id (.attest key bytes)) =
+      { result := .attested key
+        state := { s with confirmed := s.confirmed.insert key }
+        commands := []
+        decisions := [(id, .confirmedByAttestation key)] } := by
+  simp [step, hm, hv, hp]
+
+/-- RMT-017, fail-closed half: without the presence report the
+attestation is refused with the state unchanged. -/
+theorem RMT_017_attest_refused_without_presence (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (bytes : B)
+    (hm : s.inFlight[id]? = none)
+    (hp : s.reportedPresent.contains key = false) :
+    step P s (.request id (.attest key bytes)) =
+      { result := .attestRefused key, state := s, commands := []
+        decisions := [(id, .attestationRefused key)] } := by
+  simp [step, hm, hp]
+
+/-- RMT-017, fail-closed half: without local verification the
+attestation is refused with the state unchanged — a presence claim
+alone confirms nothing. -/
+theorem RMT_017_attest_refused_without_verification (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (bytes : B)
+    (hm : s.inFlight[id]? = none)
+    (hv : P.verify key bytes = false) :
+    step P s (.request id (.attest key bytes)) =
+      { result := .attestRefused key, state := s, commands := []
+        decisions := [(id, .attestationRefused key)] } := by
+  simp [step, hm, hv]
+
+/-- RMT-017, layering half: attestation never admits — the cache is
+untouched by every attest step, so presence stays planning data for
+every read path. -/
+theorem RMT_017_attest_never_caches (P : Params K B)
+    (s : MachineState K B) (id : OpId) (key : K) (bytes : B) :
+    (step P s (.request id (.attest key bytes))).state.cache = s.cache := by
+  cases hm : s.inFlight[id]? with
+  | some st => simp [step, hm]
+  | none =>
+    simp only [step, hm]
+    split <;> rfl
 
 end Effects.Remote

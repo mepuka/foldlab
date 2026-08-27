@@ -100,6 +100,16 @@ const normalizeInput = (
             closure: input.op.closure.map(keyBytes),
           },
         }
+      case "Attest":
+        return {
+          _tag: "Request",
+          id: input.id,
+          op: {
+            _tag: "Attest",
+            key: keyBytes(input.op.key),
+            bytes: Array.from(input.op.bytes),
+          },
+        }
     }
   }
   if (input.event._tag === "Ok") {

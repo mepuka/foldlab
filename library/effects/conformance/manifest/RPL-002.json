@@ -1,7 +1,7 @@
 {
   "family": "RPL-002",
   "meaning": "In replay mode, no step ever emits a live-delegation decision — replay is hermetic: whether a live adapter was requested is a projection of the decision trace, and in replay mode that projection is empty by law, never by luck.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "replay-match-stays-hermetic-000",

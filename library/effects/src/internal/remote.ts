@@ -707,12 +707,16 @@ export const makeRemoteAdapter = (
           : failureFromExchange(opId, attemptId, exchange)
       case "DuplicateId":
       case "Absorbed":
+      // No adapter operation issues Attest yet; when the streaming push
+      // adopts attested presence this becomes a typed policy failure.
+      case "AttestRefused":
         return Effect.die(new Error(`remote machine invariant breach: ${result._tag}`))
       case "Commanded":
       case "Delivered":
       case "Uploaded":
       case "BatchAnswered":
       case "Published":
+      case "Attested":
         return Effect.die(new Error(`remote machine result is not an error: ${result._tag}${key ?? ""}`))
     }
   }

@@ -1845,3 +1845,52 @@ Stop and return to grilling if:
   the shared read plan), and the paired-perturbation reducer sweep
   (every generated lawful script paired with a one-edit unlawful
   twin that must reject).
+- **Engineering rulings R1–R11 ratified; attested presence lands as
+  RMT-017 at effects-model@0.3.0 (2026-08-27):** the operator
+  ratified the recommendation sheet wholesale. In force: R1 a
+  witness-sink service with a no-op default, one receipt per
+  attempt, never able to fail the operation it observes; R2
+  attested presence (landed below); R3 every ratified sentence
+  conjunct gains a named law field — sentences never narrow; R4
+  peer dependencies stay exact-rc until effect 4 stable, alphas
+  only until then; R5 the decision-transcript capacity is
+  configuration (already shipped by the implementation lane,
+  default 4096 — confirmed ratified); R6 a `probeAt`
+  acquisition-versus-first-use configuration field; R7 publish
+  gates for 0.1.0-alpha.1 — private flips only when pins are
+  flipped, publish mechanics accepted, main pushed CI-green, and
+  R4 landed, explicitly NOT gated on a server; R8 the proof pause
+  lifts for MRK-017 only, after the optimization packet; R9 one
+  push to origin after the in-flight deliveries merge; R10 sound
+  concurrent recording stays a designed post-alpha milestone; R11
+  the CONTEXT.md vocabulary amendments. The R2 landing is the
+  program's second genuine semantics bump: the machine gains a
+  wire-less `attest` operation — a key the peer reported present
+  whose bytes the client holds and verifies locally enters the
+  confirmed set; without the presence report or the local
+  verification the attestation is refused with a typed result; and
+  attestation NEVER admits to the cache, so presence stays
+  non-admission for every read path. Rationale pinned in the
+  model's docstring: downloading a present node only proves
+  retention at confirmation time — the local bytes are the
+  stronger evidence, and the peer's own presence claim is the
+  entitlement. Four theorems (confirmation, both refusal
+  directions, cache non-admission), a FailClosed instance with
+  both kits, four schedule rows through upload-presence-publish
+  composition, and the AttestWithoutPresence mutant — a machine
+  confirming on local bytes alone — declared and killed:
+  thirty-four mutants. Every committed manifest re-stamped to
+  0.3.0 model-line-only, byte-identical elsewhere, and the
+  ratified-versions list append IS this record's event. The
+  TypeScript mirror was compiler-forced end to end: the op union
+  extension broke the step's narrowing-by-exclusion, the
+  differential normalizer's exhaustive switch, and the adapter's
+  result classifier, and the index registry's bound-or-leads suite
+  refused the new family until it was bound — every seam the
+  harness work was built to guard fired. Classification note: the
+  adapter maps `AttestRefused` to an invariant breach today
+  because no adapter operation issues an attest; the streaming
+  push rework adopts the operation for locally-held present nodes
+  and lifts that arm to a typed policy failure. Two hundred five
+  tests across twenty-seven files; both full gates green at the
+  commit.

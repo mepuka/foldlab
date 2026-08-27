@@ -1,7 +1,7 @@
 {
   "family": "CMP-002",
   "meaning": "Two occurrences with identical invocation content remain distinct occurrence positions — the store deduplicates request nodes while the history keeps entries distinct; position is the occurrence identity, and every solicited call pair claims a fresh one.",
-  "model": "effects-model@0.2.0",
+  "model": "effects-model@0.3.0",
   "rows": [
     {
       "case": "repeated-occurrence-distinct-000",

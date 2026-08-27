@@ -69,6 +69,7 @@ const REGISTRY: Record<string, Binding> = {
   "RMT-008": { status: "bound", by: "remote/Machine.test.ts" },
   "RMT-014": { status: "bound", by: "remote/Machine.test.ts" },
   "RMT-015": { status: "bound", by: "remote/Machine.test.ts" },
+  "RMT-017": { status: "bound", by: "remote/Machine.test.ts" },
   "RPL-002": { status: "bound", by: "ReplayReducer.test.ts" },
   "RPL-003": { status: "bound", by: "ReplayReducer.test.ts" },
   "RPL-004": { status: "bound", by: "ReplayReducer.test.ts" },
