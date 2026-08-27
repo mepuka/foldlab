@@ -46,6 +46,15 @@ description = "Build the effects library under --wfail"
 dir = "{{config_root}}/library/effects"
 run = "lake --wfail build"
 
+[tasks."check:effects:ts"]
+description = "Frozen install, typecheck, and test the effects TypeScript package"
+dir = "{{config_root}}/library/effects"
+run = [
+  "bun install --frozen-lockfile",
+  "bun run typecheck",
+  "bun test",
+]
+
 [tasks."check:ledger"]
 description = "Both packages green, harness green, committed LEDGER.md byte-equal to a fresh extraction"
 dir = "{{config_root}}/experiments/entity-store-ledger"
@@ -63,5 +72,6 @@ run = [
   "mise run check:entity-store",
   "mise run check:machine",
   "mise run check:effects",
+  "mise run check:effects:ts",
   "mise run check:ledger",
 ]

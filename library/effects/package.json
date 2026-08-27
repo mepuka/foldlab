@@ -1,0 +1,24 @@
+{
+  "name": "@foldlab/effect-replay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Effect-native CAS replay library (M1 bootstrap; contract ratified, implementation pending)",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "effect": "4.0.0-rc.111"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2"
+  },
+  "foldlab": {
+    "effectProvenance": {
+      "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+      "lock": "../../.reference/provenance/sources.lock.json"
+    }
+  }
+}
