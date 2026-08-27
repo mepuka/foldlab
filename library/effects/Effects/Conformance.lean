@@ -3,6 +3,8 @@ import Effects.Conformance.Reflected
 import Effects.Conformance.Ledger
 import Effects.Conformance.Mutant
 import Effects.Conformance.Registry
+import Effects.Conformance.Obligations
+import Effects.Conformance.Generate
 
 /-!
 # Conformance schema bundles

@@ -1,5 +1,9 @@
 name = "effects"
-defaultTargets = ["Effects"]
+defaultTargets = ["Effects", "conformance_ledger"]
 
 [[lean_lib]]
 name = "Effects"
+
+[[lean_exe]]
+name = "conformance_ledger"
+root = "LedgerMain"

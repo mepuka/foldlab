@@ -42,9 +42,18 @@ dir = "{{config_root}}/library/machine"
 run = "lake --wfail build"
 
 [tasks."check:effects"]
-description = "Build the effects library under --wfail"
+description = "Build the effects library under --wfail, regenerate the ledger, assert byte equality"
 dir = "{{config_root}}/library/effects"
-run = "lake --wfail build"
+run = [
+  "lake --wfail build",
+  "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
+  "git diff --exit-code -- CONFORMANCE-LEDGER.md",
+]
+
+[tasks."gen:effects"]
+description = "Regenerate the effects conformance ledger"
+dir = "{{config_root}}/library/effects"
+run = "lake exe conformance_ledger CONFORMANCE-LEDGER.md"
 
 [tasks."check:effects:ts"]
 description = "Frozen install, typecheck, and test the effects TypeScript package"
