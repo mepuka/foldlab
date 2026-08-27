@@ -1367,6 +1367,42 @@ Stop and return to grilling if:
   example, the claim matrix, the axiom-profile gate, client
   concurrency documentation, memory bounds on large-graph push, and
   stable trace-span names.
+- **F2a and F2b acceptance (2026-08-27):** both deliveries reviewed
+  first-hand, gates run personally — one hundred forty-five
+  TypeScript tests across nineteen files, and the full Lean gate
+  untouched and green (two hundred forty-one jobs, sixty-six ledger
+  rows, twenty-seven mutants, byte-exact manifests), confirming zero
+  Lean or vector surfaces moved. ACCEPTED. F2a: six pure mirrors
+  (chunk recipe, standards-split tree, derived-side inclusion,
+  anchored consistency rebuild, streaming decoder, closed proof
+  codecs with the committed 0-skip/1-chunk/2-parent tags), eight
+  families consumed through the strict harness with pinned oracles,
+  eight direction-2 mutants byte-verbatim with named kill
+  witnesses. F2b: the blob surface is contract-exact against the
+  profile's section 12 — tags eight, nine, and ten with the frozen
+  payload layouts, recipe gating with unknown recipes failing
+  closed, the sixty-five-thousand-five-hundred-thirty-six-byte
+  chunker with the empty-input one-empty-chunk rule and u32/u64
+  field guards, strict bigint byte ranges, subtree-pruned verified
+  walks with per-leaf geometry validated against the
+  manifest-derived plan, all-or-nothing get behind a
+  safe-integer materialization guard, and the boundary suite run
+  under both the memory lane and the reference-peer lane per the
+  harness addendum, with children-first deduplicated transfer and
+  publication-last ordering evidenced remotely. The push budget
+  guard checks the largest encoded node against the declared
+  node-body bound before any wire traffic — classified as an
+  encoded-stage budget error, which is accepted as the more precise
+  class than the packet's policy suggestion. Observations recorded:
+  (1) a small canonicality gap — the read plan does not enforce
+  that total bytes fit the leaf count under the fixed chunk size,
+  so a forged but self-consistent graph whose FINAL chunk exceeds
+  the recipe size reads successfully; one geometry guard in plan
+  loading closes it, queued as a rider on the next slice; (2) the
+  test tree already carries a Crypto service seam for digests — the
+  in-flight CasScheme0 slice must reconcile its CasHash service
+  with that existing seam rather than minting a parallel one,
+  flagged for that delivery's review.
 - **CasScheme0 ratified (2026-08-27):** the operator ratified the
   hash docket as recommended, H1 through H6. The profile gains the
   addressing section: an address is the full thirty-two-byte
