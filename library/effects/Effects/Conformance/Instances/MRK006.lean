@@ -22,6 +22,9 @@ open Effects.Cas (Bytes)
 
 private abbrev OpeningX := Nat × Nat × Bytes × List Bytes × Bytes
 
+/-- Two one-byte chunks. The negative kit decides inclusion by kernel
+evaluation, which rebuilds the root and walks the sibling path over this
+list, so it stays small. -/
 private def kitChunks : List Bytes := [[1], [2]]
 
 /-- MRK-006: the executable inclusion verifier agrees with the decided

@@ -96,6 +96,16 @@ def laneTargets (lane : Lane) (inv : List Obligation) (rows : List LedgerEntry) 
   (inv.filter fun o => relevant o && uninstantiated o && undischarged o)
     |>.mergeSort fun a b => Nat.ble a.rank b.rank
 
+/-- One consumable family, named by its manifest file and annotated with
+the evidence that carries it. The status comes from the same registry and
+discharge lists the ledger renders, so instantiated, discharged, and
+evidenced families read alike here and there. -/
+def consumableItem (inv : List Obligation) (rows : List LedgerEntry)
+    (file : String) : List Markdown.Inline :=
+  match inv.find? fun o => o.id ++ ".json" == file with
+  | some o => [.text s!"{o.id}: {statusOf rows o}"]
+  | none => [.text s!"{file}: names no inventory obligation"]
+
 def targetBlocks (o : Obligation) : List Markdown.Block :=
   let ms := (o.disposition.milestone?).getD "later"
   [ .h3 s!"{o.id} ({o.disposition.familyLabel}, {ms})"
@@ -151,12 +161,11 @@ def briefingBlocks (commit : String) (dirty : Bool) (lane : Lane)
               else [Markdown.Block.h2 "Later targets", .ul (targets.map laterItem)])
       else
         let versions := String.intercalate ", " ratifiedManifestVersions
-        let manifestNames := Manifest.allFiles.map (·.1)
         let consumable :=
-          rows.filter fun e => manifestNames.contains (e.id ++ ".json")
+          Manifest.allFiles.map fun f => consumableItem inv rows f.1
         [ Markdown.Block.h2 "Consume the ratified manifests"
-        , .p [.text s!"Families under conformance/manifest/, bound to {versions}. INDEX.json names every consumable manifest — it is the authority for what must be bound: a family it names without a suite binding is a red gate, never a silent gap. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
-        , .ul (consumable.map fun e => [.text s!"{e.id} ({e.family})"]) ]
+        , .p [.text s!"Families under conformance/manifest/, bound to {versions}. INDEX.json names every consumable manifest — it is the authority for what must be bound: a family it names without a suite binding is a red gate, never a silent gap. Every family the index names is listed below, including the ones a carrier discharge carries instead of a kit-bearing instance. The suite consumes rows verbatim, decodes, and compares structurally under the declared normalization — never by re-serialization. A red row names its obligation."]
+        , .ul consumable ]
           ++ nextGroupBlocks targets
   let rules := [Markdown.Block.h2 "Standing rules in scope", .ul (laneRules lane)]
   (title :: identity :: work) ++ rules
