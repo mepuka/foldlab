@@ -9,6 +9,7 @@ import { makeRemoteHttp } from "./internal/remoteHttp.ts"
 
 export { value } from "./cas/Value.ts"
 export { service } from "./cas/Service.ts"
+export { CasBlob as Blob } from "./cas/Blob.ts"
 export { RemoteCapabilities } from "./cas/Remote.ts"
 export type { CasPresence, CasPushReport } from "./cas/Remote.ts"
 export * as Transfer from "./cas/Transfer.ts"

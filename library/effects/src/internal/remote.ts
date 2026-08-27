@@ -1079,6 +1079,19 @@ export const makeRemoteAdapter = (
     // operation-specific wire request. Layer capability probing is separate.
     const graph = yield* collectLocalGraph(root)
     const limits = yield* capabilities
+    const largestNode = graph.reduce(
+      (largest, entry) => Math.max(largest, entry.bytes.length),
+      0,
+    )
+    if (largestNode > limits.maxBlobBytes) {
+      return yield* remoteBudget(
+        config,
+        undefined,
+        "encoded",
+        largestNode,
+        limits.maxBlobBytes,
+      )
+    }
     const keys = graph.map((entry) => entry.id)
     const present: Array<ContentId> = []
     const absent: Array<ContentId> = []

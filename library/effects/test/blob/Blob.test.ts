@@ -1,0 +1,431 @@
+import { expect, it, layer, type Vitest } from "@effect/vitest"
+import {
+  Context,
+  Crypto,
+  Effect,
+  Layer,
+  Stream,
+} from "effect"
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
+import { createHash, randomBytes } from "node:crypto"
+import * as Cas from "../../src/Cas.ts"
+import { CasBlob } from "../../src/cas/Blob.ts"
+import {
+  CasNodeInput,
+  ContentId,
+  type CasReference,
+} from "../../src/cas/Node.ts"
+import {
+  CasRemoteConfig,
+  RemoteAuthority,
+} from "../../src/cas/Remote.ts"
+import {
+  CasStore,
+  layerMemory,
+  type CasStoreShape,
+} from "../../src/cas/Store.ts"
+import { CasTransfer } from "../../src/cas/Transfer.ts"
+import {
+  assertCaseTable,
+  assertFamilyRows,
+} from "../conformance/harness.ts"
+import {
+  bytesEqual,
+  bytesOfSize,
+  invalidSliceCases,
+  mrk018Binding,
+  realManifestDecode,
+  roundTripCases,
+  runManifestRow,
+  sliceCases,
+  sliceSourceSize,
+} from "./BlobFixtures.ts"
+import {
+  awaitPeerSocketsReleased,
+  type PeerEndpoint,
+} from "../remote/harness/ConformancePeer.ts"
+import { ReferencePeer } from "../remote/harness/ReferencePeer.ts"
+
+const TestCrypto = Layer.succeed(Crypto.Crypto, Crypto.make({
+  randomBytes: (size) => new Uint8Array(randomBytes(size)),
+  digest: (algorithm, bytes) => Effect.sync(() => {
+    const name = algorithm.toLowerCase().replace("-", "")
+    return new Uint8Array(createHash(name).update(bytes).digest())
+  }),
+}))
+
+const HttpRuntime = Layer.mergeAll(FetchHttpClient.layer, TestCrypto)
+
+const remoteConfig = (authority: string) => new CasRemoteConfig({
+  authority: RemoteAuthority.make(authority),
+  authorityMode: "remote-authoritative",
+  maxEncodedBytes: 1_000_000,
+  maxDecodedBytes: 1_000_000,
+  maxDecompressedBytes: 1_000_000,
+  maxQueuedBytes: 1_000_000,
+  maxAttempts: 1,
+  operationDeadlineMs: 10_000,
+  redirectPolicy: { maxRedirects: 0, crossOrigin: "deny" },
+})
+
+interface BlobLaneShape {
+  readonly name: "local" | "remote"
+  readonly endpoint?: PeerEndpoint
+}
+
+class BlobLane extends Context.Service<BlobLane, BlobLaneShape>()(
+  "foldlab/effect-replay/test/BlobLane",
+) {}
+
+const localBacking = layerMemory().pipe(Layer.provide(TestCrypto))
+const localBlobLayer = Layer.merge(
+  CasBlob.layer.pipe(Layer.provideMerge(localBacking)),
+  Layer.succeed(BlobLane, { name: "local" }),
+)
+
+const remoteBlobLayer = (
+  capabilities = { maxBatchKeys: 16, maxBlobBytes: 70_000 },
+) => Layer.unwrap(ReferencePeer.serve({ capabilities }).pipe(
+  Effect.map((endpoint) => {
+    const backing = Cas.layerRemote(remoteConfig(endpoint.authority)).pipe(
+      Layer.provide(HttpRuntime),
+    )
+    return Layer.merge(
+      CasBlob.layer.pipe(Layer.provideMerge(backing)),
+      Layer.succeed(BlobLane, { name: "remote", endpoint }),
+    )
+  }),
+))
+
+const source = (
+  bytes: Uint8Array,
+  partition = [bytes.length],
+): Stream.Stream<Uint8Array> => {
+  const chunks: Array<Uint8Array> = []
+  let offset = 0
+  for (const requested of partition) {
+    if (offset >= bytes.length) break
+    const end = Math.min(offset + requested, bytes.length)
+    chunks.push(bytes.slice(offset, end))
+    offset = end
+  }
+  if (offset < bytes.length) chunks.push(bytes.slice(offset))
+  return Stream.fromIterable(chunks)
+}
+
+const join = (chunks: ReadonlyArray<Uint8Array>): Uint8Array => {
+  const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+  const output = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) {
+    output.set(chunk, offset)
+    offset += chunk.length
+  }
+  return output
+}
+
+const makeNode = (
+  tag: number,
+  payload: Uint8Array,
+  refs: ReadonlyArray<CasReference>,
+): CasNodeInput => CasNodeInput.make({
+  kind: { version: 0, tag },
+  payload,
+  refs,
+})
+
+const writeNat32 = (target: Uint8Array, offset: number, value: number): void => {
+  target[offset] = (value >>> 24) & 0xff
+  target[offset + 1] = (value >>> 16) & 0xff
+  target[offset + 2] = (value >>> 8) & 0xff
+  target[offset + 3] = value & 0xff
+}
+
+const leafPayload = (index: number, length: number): Uint8Array => {
+  const payload = new Uint8Array(8)
+  writeNat32(payload, 0, index)
+  writeNat32(payload, 4, length)
+  return payload
+}
+
+const firstChunkId = (
+  store: CasStoreShape,
+  ref: CasBlob.BlobRef,
+) => Effect.gen(function* () {
+  const manifest = yield* store.load(ContentId.make(ref))
+  const rootId = manifest.refs[0]?.id
+  if (rootId === undefined) return yield* Effect.die("manifest has no tree root")
+  const root = yield* store.load(rootId)
+  const leafId = root.payload.length === 8 ? rootId : root.refs[0]?.id
+  if (leafId === undefined) return yield* Effect.die("tree has no first leaf")
+  const leaf = yield* store.load(leafId)
+  const chunkId = leaf.refs[0]?.id
+  if (chunkId === undefined) return yield* Effect.die("leaf has no chunk")
+  return chunkId
+})
+
+it.effect("MRK-018 consumes every ratified blob-manifest row structurally", () =>
+  assertFamilyRows(mrk018Binding, (row) =>
+    runManifestRow(realManifestDecode, row)))
+
+const registerBlobSuite = (
+  test: Vitest.MethodsNonLive<CasBlob.Service | CasStore>,
+): void => {
+  test.effect("put and get agree on the complete recipe-1 boundary table", () =>
+    assertCaseTable(roundTripCases, (size) => Effect.gen(function* () {
+      const bytes = bytesOfSize(size)
+      const ref = yield* CasBlob.put(source(bytes, [1, 97, 8_191, 65_536]))
+      const loaded = yield* CasBlob.get(ref)
+      return { length: loaded.length, matches: bytesEqual(bytes, loaded) }
+    })))
+
+  test.effect("put is deterministic across source fragmentation and inspect reports committed geometry", () =>
+    Effect.gen(function* () {
+      const bytes = bytesOfSize(CasBlob.ChunkSize + 37)
+      const contiguous = yield* CasBlob.put(source(bytes))
+      const fragmented = yield* CasBlob.put(source(bytes, [1, 2, 3, 5, 8, 13, 21]))
+      expect(fragmented).toBe(contiguous)
+      expect(yield* CasBlob.inspect(contiguous)).toMatchObject({
+        recipeId: CasBlob.ReferencedChunkRecipe,
+        totalBytes: BigInt(bytes.length),
+        leafCount: 2,
+      })
+    }))
+
+  test.effect("slice agrees with get at every boundary and rejects every out-of-range request", () =>
+    Effect.gen(function* () {
+      const bytes = bytesOfSize(sliceSourceSize)
+      const ref = yield* CasBlob.put(source(bytes, [17, CasBlob.ChunkSize - 3, 11]))
+
+      yield* assertCaseTable(sliceCases, (range) =>
+        Stream.runCollect(CasBlob.slice(ref, range)).pipe(
+          Effect.map(join),
+          Effect.map((actual) => ({
+            length: actual.length,
+            matches: bytesEqual(
+              actual,
+              bytes.slice(Number(range.offset), Number(range.offset + range.length)),
+            ),
+          })),
+        ))
+
+      yield* assertCaseTable(invalidSliceCases, (range) =>
+        Stream.runCollect(CasBlob.slice(ref, range)).pipe(
+          Effect.match({
+            onFailure: (error) => ({ _tag: "Rejected" as const, error: error._tag }),
+            onSuccess: () => ({ _tag: "Accepted" as const, error: "none" }),
+          }),
+        ))
+    }))
+
+  test.effect("equal chunks deduplicate across positions and blobs through ordinary store references", () =>
+    Effect.gen(function* () {
+      const store = yield* CasStore
+      const shared = bytesOfSize(CasBlob.ChunkSize)
+      const leftBytes = new Uint8Array(CasBlob.ChunkSize + 1)
+      leftBytes.set(shared)
+      leftBytes[CasBlob.ChunkSize] = 1
+      const rightBytes = leftBytes.slice()
+      rightBytes[CasBlob.ChunkSize] = 2
+
+      const left = yield* CasBlob.put(source(leftBytes))
+      const right = yield* CasBlob.put(source(rightBytes))
+      expect(right).not.toBe(left)
+      expect(yield* firstChunkId(store, right)).toBe(yield* firstChunkId(store, left))
+    }))
+
+  test.effect("unknown recipes and tampered manifest geometry fail closed", () =>
+    Effect.gen(function* () {
+      const store = yield* CasStore
+      const chunkId = yield* store.put(makeNode(
+        CasBlob.ChunkDataTag,
+        Uint8Array.of(7),
+        [],
+      ))
+      const leafId = yield* store.put(makeNode(
+        CasBlob.BlobNodeTag,
+        leafPayload(0, 1),
+        [{ id: chunkId, expectedTag: CasBlob.ChunkDataTag }],
+      ))
+
+      const unknownId = yield* store.put(makeNode(
+        CasBlob.BlobManifestTag,
+        CasBlob.encodeManifestPayload({ recipeId: 9, totalBytes: 1n, leafCount: 1 }),
+        [{ id: leafId, expectedTag: CasBlob.BlobNodeTag }],
+      ))
+      const unknown = yield* CasBlob.get(CasBlob.BlobRef.make(unknownId)).pipe(Effect.flip)
+      expect(unknown).toMatchObject({
+        _tag: "CasBlobError/UnsupportedRecipe",
+        recipeId: 9,
+      })
+
+      const tamperedId = yield* store.put(makeNode(
+        CasBlob.BlobManifestTag,
+        CasBlob.encodeManifestPayload({ recipeId: 1, totalBytes: 1n, leafCount: 2 }),
+        [{ id: leafId, expectedTag: CasBlob.BlobNodeTag }],
+      ))
+      const tampered = yield* CasBlob.get(CasBlob.BlobRef.make(tamperedId)).pipe(Effect.flip)
+      expect(tampered).toMatchObject({ _tag: "CasBlobError/Format" })
+    }))
+
+  test.effect("stream emits only a verified prefix and preserves a later terminal failure", () =>
+    Effect.gen(function* () {
+      const store = yield* CasStore
+      const firstBytes = bytesOfSize(CasBlob.ChunkSize)
+      const firstChunk = yield* store.put(makeNode(CasBlob.ChunkDataTag, firstBytes, []))
+      const firstLeaf = yield* store.put(makeNode(
+        CasBlob.BlobNodeTag,
+        leafPayload(0, CasBlob.ChunkSize),
+        [{ id: firstChunk, expectedTag: CasBlob.ChunkDataTag }],
+      ))
+      const badChunk = yield* store.put(makeNode(
+        CasBlob.ChunkDataTag,
+        Uint8Array.of(1, 2),
+        [],
+      ))
+      const secondLeaf = yield* store.put(makeNode(
+        CasBlob.BlobNodeTag,
+        leafPayload(1, 1),
+        [{ id: badChunk, expectedTag: CasBlob.ChunkDataTag }],
+      ))
+      const root = yield* store.put(makeNode(
+        CasBlob.BlobNodeTag,
+        new Uint8Array(0),
+        [
+          { id: firstLeaf, expectedTag: CasBlob.BlobNodeTag },
+          { id: secondLeaf, expectedTag: CasBlob.BlobNodeTag },
+        ],
+      ))
+      const manifest = yield* store.put(makeNode(
+        CasBlob.BlobManifestTag,
+        CasBlob.encodeManifestPayload({
+          recipeId: 1,
+          totalBytes: BigInt(CasBlob.ChunkSize + 1),
+          leafCount: 2,
+        }),
+        [{ id: root, expectedTag: CasBlob.BlobNodeTag }],
+      ))
+
+      const observed: Array<number> = []
+      const result = yield* CasBlob.stream(CasBlob.BlobRef.make(manifest)).pipe(
+        Stream.runForEach((chunk) => Effect.sync(() => observed.push(chunk.length))),
+        Effect.result,
+      )
+      expect(observed).toEqual([CasBlob.ChunkSize])
+      expect(result._tag).toBe("Failure")
+      if (result._tag === "Failure") {
+        expect(result.failure).toMatchObject({ _tag: "CasBlobError/Format" })
+      }
+    }))
+
+}
+
+const registerRemoteFixtures = (
+  test: Vitest.MethodsNonLive<
+    CasBlob.Service | CasStore | CasTransfer | BlobLane
+  >,
+): void => {
+  test.effect("push publishes the multi-chunk graph last with children first and one deduplicated chunk transfer", () =>
+      Effect.gen(function* () {
+        const lane = yield* BlobLane
+        const endpoint = lane.endpoint
+        if (endpoint === undefined) return yield* Effect.die("remote lane has no peer")
+        const store = yield* CasStore
+        const transfer = yield* CasTransfer
+        const repeated = Uint8Array.from(
+          { length: CasBlob.ChunkSize },
+          (_, index) => (index * 19 + 23) % 251,
+        )
+        const bytes = new Uint8Array(CasBlob.ChunkSize * 2 + 3)
+        bytes.set(repeated, 0)
+        bytes.set(repeated, CasBlob.ChunkSize)
+        bytes.set([3, 1, 4], CasBlob.ChunkSize * 2)
+
+        const putOffset = endpoint.observe().putIds?.length ?? 0
+        const ref = yield* CasBlob.put(source(bytes, [7, 65_529, 4, 65_532]))
+        const root = ContentId.make(ref)
+        const graph = new Map<ContentId, CasNodeInput>()
+        const visit = (id: ContentId): Effect.Effect<void, never> =>
+          Effect.gen(function* () {
+            if (graph.has(id)) return
+            const current = yield* store.load(id).pipe(Effect.orDie)
+            for (const child of current.refs) yield* visit(child.id)
+            graph.set(id, current)
+          })
+        yield* visit(root)
+
+        const beforePush = endpoint.observe()
+        const putIds = (beforePush.putIds ?? []).slice(putOffset)
+        expect(new Set(putIds)).toEqual(new Set(graph.keys()))
+        expect(putIds).toHaveLength(graph.size)
+        const positions = new Map(putIds.map((id, position) => [id, position]))
+        for (const [id, current] of graph) {
+          for (const child of current.refs) {
+            const childPosition = positions.get(child.id)
+            const parentPosition = positions.get(id)
+            expect(childPosition).toBeDefined()
+            expect(parentPosition).toBeDefined()
+            expect(childPosition ?? Infinity).toBeLessThan(parentPosition ?? -1)
+          }
+        }
+
+        const info = yield* CasBlob.inspect(ref)
+        const tree = yield* store.load(info.treeRoot)
+        const leftParent = tree.refs[0]?.id
+        if (leftParent === undefined) return yield* Effect.die("three-leaf tree has no left parent")
+        const left = yield* store.load(leftParent)
+        const firstLeaf = left.refs[0]?.id
+        const secondLeaf = left.refs[1]?.id
+        if (firstLeaf === undefined || secondLeaf === undefined) {
+          return yield* Effect.die("left parent has no leaves")
+        }
+        const first = yield* store.load(firstLeaf)
+        const second = yield* store.load(secondLeaf)
+        expect(first.refs[0]?.id).toBe(second.refs[0]?.id)
+        expect(putIds.filter((id) => id === first.refs[0]?.id)).toHaveLength(1)
+
+        const report = yield* transfer.push(root)
+        expect(report.transferred).toEqual([])
+        expect(new Set(report.alreadyPresent)).toEqual(new Set(graph.keys()))
+        expect(endpoint.observe().puts).toBe(beforePush.puts)
+        expect(endpoint.observe().publishedRoots).toEqual([root])
+        expect(endpoint.observe().events?.at(-1)).toBe(`publish:${root}`)
+        yield* awaitPeerSocketsReleased(endpoint)
+        expect(endpoint.observe().openSockets).toBe(0)
+      }))
+
+}
+
+layer(localBlobLayer)("CasBlob local memory lane", (test) => {
+  registerBlobSuite(test)
+})
+
+layer(remoteBlobLayer())("CasBlob F1 reference-peer lane", (test) => {
+  registerBlobSuite(test)
+  registerRemoteFixtures(test)
+})
+
+it.effect("remote push refuses a recipe-1 graph when the peer node-body capability is too small", () =>
+  Effect.scoped(Effect.gen(function* () {
+    const result = yield* Effect.gen(function* () {
+      const lane = yield* BlobLane
+      const endpoint = lane.endpoint
+      if (endpoint === undefined) return yield* Effect.die("remote lane has no peer")
+      const transfer = yield* CasTransfer
+      const ref = yield* CasBlob.put(source(bytesOfSize(CasBlob.ChunkSize)))
+      const before = endpoint.observe().requests
+      const error = yield* transfer.push(ContentId.make(ref)).pipe(Effect.flip)
+      return { endpoint, before, error }
+    }).pipe(Effect.provide(remoteBlobLayer({
+      maxBatchKeys: 16,
+      maxBlobBytes: CasBlob.ChunkSize + 9,
+    })))
+
+    expect(result.error).toMatchObject({
+      _tag: "CasRemoteError/Budget",
+      stage: "encoded",
+      observed: CasBlob.ChunkSize + 10,
+      bound: CasBlob.ChunkSize + 9,
+    })
+    expect(result.endpoint.observe().requests).toBe(result.before)
+  })))

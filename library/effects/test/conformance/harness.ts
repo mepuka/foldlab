@@ -99,6 +99,35 @@ export type RowEvaluator<Row, Actual> = (
   row: Row,
 ) => Effect.Effect<Actual>
 
+export interface HarnessCase<Input, Expected> {
+  readonly case: string
+  readonly input: Input
+  readonly expect: Expected
+}
+
+/**
+ * Run a closed engineering case table with the same named structural report
+ * used for committed family rows. These observations are not model evidence.
+ */
+export const assertCaseTable = <Input, Expected, Error, Services>(
+  cases: ReadonlyArray<HarnessCase<Input, Expected>>,
+  evaluate: (
+    input: Input,
+    caseName: string,
+  ) => Effect.Effect<Expected, Error, Services>,
+): Effect.Effect<void, Error, Services> => Effect.gen(function* () {
+  if (cases.length === 0) {
+    return yield* Effect.die(new Error("harness case table must be non-empty"))
+  }
+  for (const item of cases) {
+    const actual = yield* evaluate(item.input, item.case)
+    expect({ case: item.case, result: actual }).toEqual({
+      case: item.case,
+      result: item.expect,
+    })
+  }
+})
+
 /** Compare every row structurally; an empty vector family is a harness error. */
 export const assertFamilyRows = <
   Family extends string,

@@ -42,6 +42,8 @@ export interface CasTransferShape {
   /**
    * Enumerate a complete local graph children-first, negotiate in capability-
    * sized batches, transfer only missing nodes, and publish the root last.
+   * The peer's maxBlobBytes capability is an identity-preserving node-body
+   * bound: an oversized node is refused rather than silently re-chunked.
    */
   readonly push: (
     root: ContentId,

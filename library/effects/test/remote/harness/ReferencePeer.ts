@@ -48,6 +48,9 @@ export const ReferencePeer: ConformancePeer = {
         puts: 0,
         bodyBytesWritten: 0,
         bodyBytesReceived: 0,
+        putIds: [] as Array<string>,
+        publishedRoots: [] as Array<string>,
+        events: [] as Array<string>,
       }
 
       const handler = (request: IncomingMessage, response: ServerResponse) => {
@@ -62,7 +65,10 @@ export const ReferencePeer: ConformancePeer = {
             response.writeHead(405).end()
             return
           }
-          const bytes = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4096 })
+          const bytes = encodeCapabilityDocument(realization.capabilities ?? {
+            maxBatchKeys: 4,
+            maxBlobBytes: 4096,
+          })
           response.writeHead(200, {
             "content-length": bytes.length,
             "content-type": "application/octet-stream",
@@ -122,6 +128,8 @@ export const ReferencePeer: ConformancePeer = {
               return
             }
             roots.add(root)
+            stats.publishedRoots.push(root)
+            stats.events.push(`publish:${root}`)
             const acknowledgement = realization.publishAcknowledgementBody
             if (acknowledgement === undefined) {
               response.writeHead(204).end()
@@ -170,6 +178,8 @@ export const ReferencePeer: ConformancePeer = {
               return
             }
             nodes.set(id, bytes.slice())
+            stats.putIds.push(id)
+            stats.events.push(`put:${id}`)
             const acknowledgement = realization.uploadAcknowledgementBody
             if (acknowledgement === undefined) {
               response.writeHead(201).end()
@@ -200,7 +210,13 @@ export const ReferencePeer: ConformancePeer = {
           resume(Effect.die(new Error("reference peer did not bind TCP")))
           return
         }
-        const observe = (): PeerObservation => ({ ...stats, openSockets: sockets.size })
+        const observe = (): PeerObservation => ({
+          ...stats,
+          putIds: [...stats.putIds],
+          publishedRoots: [...stats.publishedRoots],
+          events: [...stats.events],
+          openSockets: sockets.size,
+        })
         const close = Effect.callback<void>((closed) => {
           for (const socket of sockets) socket.destroy()
           sockets.clear()

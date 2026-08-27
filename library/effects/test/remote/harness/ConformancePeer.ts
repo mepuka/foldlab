@@ -12,6 +12,10 @@ export interface PeerObservation {
   readonly bodyBytesWritten: number
   readonly bodyBytesReceived: number
   readonly openSockets: number
+  /** Reference-peer-only ordering evidence; absent on hostile peers. */
+  readonly putIds?: ReadonlyArray<string>
+  readonly publishedRoots?: ReadonlyArray<string>
+  readonly events?: ReadonlyArray<string>
 }
 
 export interface PeerEndpoint {
@@ -88,6 +92,10 @@ export interface ScenarioRealization {
   readonly acknowledgementContentType?: string
   readonly uploadAcknowledgementBody?: Uint8Array
   readonly publishAcknowledgementBody?: Uint8Array
+  readonly capabilities?: {
+    readonly maxBatchKeys: number
+    readonly maxBlobBytes: number
+  }
 }
 
 /**

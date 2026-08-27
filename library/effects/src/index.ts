@@ -14,6 +14,7 @@ export * as Cas from "./Cas.ts"
 export * from "./cas/Node.ts"
 export * from "./cas/Store.ts"
 export * from "./cas/Value.ts"
+export { CasBlob } from "./cas/Blob.ts"
 export {
   CasRemoteConfig,
   CasRemoteError,
