@@ -10,27 +10,42 @@
  */
 import { Schema } from "effect"
 
+/** One byte in the version/tag plane. */
+export const Byte = Schema.Int.check(
+  Schema.isBetween({ minimum: 0, maximum: 0xff }),
+)
+export type Byte = typeof Byte.Type
+
 /** Content identifier: full digest bytes, hex-encoded, branded. Address laws
  * live on the Lean side under the hash-hypothesis lattice; this is the
  * transport representation. */
-export const ContentId = Schema.String.pipe(Schema.brand("ContentId"))
+export const ContentId = Schema.String.check(
+  Schema.isPattern(/^[0-9a-f]{64}$/),
+).pipe(Schema.brand("ContentId"))
 export type ContentId = typeof ContentId.Type
 
 /** Versioned kind: the scheme version byte and the kind tag byte (one-byte
- * plane, ruling D3). Byte-range refinement lands with the M2 codec. */
+ * plane, ruling D3). */
 export const NodeKind = Schema.Struct({
-  version: Schema.Number,
-  tag: Schema.Number,
+  version: Byte,
+  tag: Byte,
 })
 export type NodeKind = typeof NodeKind.Type
+
+/** A typed reference names both the target and the kind tag expected there. */
+export const CasReference = Schema.Struct({
+  id: ContentId,
+  expectedTag: Byte,
+})
+export type CasReference = typeof CasReference.Type
 
 /** Boundary shape of a CAS node: versioned kind, canonical payload bytes,
  * ordered references. References live inside the framed body as full-length
  * addresses in declared order (ruling D3, point 3). */
 export const CasNodeInput = Schema.Struct({
   kind: NodeKind,
-  payload: Schema.Uint8Array,
-  refs: Schema.Array(ContentId),
+  payload: Schema.Uint8Array.check(Schema.isMaxLength(0xffff_ffff)),
+  refs: Schema.Array(CasReference).check(Schema.isMaxLength(0xffff_ffff)),
 })
 export type CasNodeInput = typeof CasNodeInput.Type
 
@@ -48,7 +63,7 @@ export class NonCanonicalBytes extends Schema.TaggedError<NonCanonicalBytes>()(
 
 export class UnknownKind extends Schema.TaggedError<UnknownKind>()(
   "CasError/UnknownKind",
-  { version: Schema.Number, tag: Schema.Number },
+  { version: Byte, tag: Byte },
 ) {}
 
 export class DanglingReference extends Schema.TaggedError<DanglingReference>()(
@@ -58,7 +73,7 @@ export class DanglingReference extends Schema.TaggedError<DanglingReference>()(
 
 export class WrongKindReference extends Schema.TaggedError<WrongKindReference>()(
   "CasError/WrongKindReference",
-  { ref: ContentId, expectedTag: Schema.Number, actualTag: Schema.Number },
+  { ref: ContentId, expectedTag: Byte, actualTag: Byte },
 ) {}
 
 export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
