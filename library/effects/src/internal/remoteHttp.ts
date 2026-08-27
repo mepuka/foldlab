@@ -19,7 +19,7 @@ import type {
 
 const PROFILE = "cas-http/0"
 
-const transportFailure = (
+export const classifyTransportFailure = (
   error: HttpClientError.HttpClientError,
   preparedBytes: number,
   receivedBytes = 0,
@@ -216,7 +216,7 @@ const emptyAcknowledgement = (
 
   return Channel.unwrap(response.stream.pipe(
     Stream.runHead,
-    Effect.mapError((error) => transportFailure(error, sentBytes)),
+    Effect.mapError((error) => classifyTransportFailure(error, sentBytes)),
     Effect.map((head) => Option.isNone(head)
       ? responseEvent({ _tag: "Ok", declared: 0, bytes: new Uint8Array() }, sentBytes)
       : finishAfter(
@@ -296,18 +296,21 @@ const commandRequest = (
 }
 
 /**
- * Build a single-attempt transport over the caller-provided HttpClient.
- * Redirects are forced to manual observation here; redirectPolicy is
- * validated configuration whose bounded following semantics arrive in R4.
- * No retry combinator is applied, so attempts remain machine decisions.
+ * Build a single-attempt transport over the pinned FetchHttpClient. The
+ * transport owns this realization so every request honors `redirect: manual`;
+ * arbitrary HttpClient implementations are intentionally not accepted because
+ * they cannot prove that redirects remain observable machine events.
+ * redirectPolicy is validated configuration whose bounded following semantics
+ * arrive in R4. No retry combinator is applied, so attempts remain machine
+ * decisions.
  */
 export const makeRemoteHttp = (
   config: CasRemoteConfig,
-): Effect.Effect<RemoteCasTransport, never, HttpClient.HttpClient> =>
+): Effect.Effect<RemoteCasTransport> =>
   Effect.gen(function* () {
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
 
-    return {
+    const transport: RemoteCasTransport = {
       issue: (_opId, _attemptId, issue) => {
         const command = issue.command
         const prepared = commandRequest(config, issue)
@@ -315,17 +318,8 @@ export const makeRemoteHttp = (
         return Channel.unwrap(
           client.execute(prepared.request).pipe(
             Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
-            Effect.mapError((error) => transportFailure(error, prepared.sentBytes)),
+            Effect.mapError((error) => classifyTransportFailure(error, prepared.sentBytes)),
             Effect.map((response) => {
-              const expectedOrigin = new URL(config.authority).origin
-              const responseOrigin = new URL(response.request.url).origin
-              if (responseOrigin !== expectedOrigin) {
-                return responseEvent(
-                  { _tag: "Reset" },
-                  prepared.sentBytes,
-                  "invalidHeaders",
-                )
-              }
               switch (command._tag) {
                 case "ProbeCapabilities":
                   return controlResponse(response, prepared.sentBytes, false)
@@ -343,4 +337,5 @@ export const makeRemoteHttp = (
         )
       },
     }
-  })
+    return transport
+  }).pipe(Effect.provide(FetchHttpClient.layer))

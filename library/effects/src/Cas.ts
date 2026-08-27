@@ -6,7 +6,6 @@
  * `src/internal/` is implementation.
  */
 import { Context, Crypto, Effect, Layer } from "effect"
-import * as HttpClient from "effect/unstable/http/HttpClient"
 import { CasRemoteConfig, type CasRemoteError } from "./cas/Remote.ts"
 import { CasStore, makeSha256Address } from "./cas/Store.ts"
 import { CasTransfer } from "./cas/Transfer.ts"
@@ -97,14 +96,16 @@ export {
 
 /**
  * Build the remote store and transfer views once over one shared adapter.
- * HttpClient and platform Crypto remain visible layer requirements.
+ * The transport owns the pinned FetchHttpClient realization so manual redirect
+ * observation cannot be bypassed; platform Crypto remains a visible layer
+ * requirement.
  */
 export const layerRemote = (
   config: CasRemoteConfig,
 ): Layer.Layer<
   CasStore | CasTransfer,
   CasRemoteError,
-  HttpClient.HttpClient | Crypto.Crypto
+  Crypto.Crypto
 > => Layer.effectContext(Effect.gen(function* () {
   const transport = yield* makeRemoteHttp(config)
   const address = yield* makeSha256Address

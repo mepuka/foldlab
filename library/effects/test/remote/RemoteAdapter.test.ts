@@ -33,7 +33,10 @@ import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
 import { makeRemoteAdapter, type RemoteAdapter } from "../../src/internal/remote.ts"
 import { encodeCapabilityDocument } from "../../src/internal/remoteControl.ts"
-import { makeRemoteHttp } from "../../src/internal/remoteHttp.ts"
+import {
+  classifyTransportFailure,
+  makeRemoteHttp,
+} from "../../src/internal/remoteHttp.ts"
 import {
   initialMachineState,
   step,
@@ -1290,55 +1293,21 @@ it.effect("rate-limit evidence retains the Schema-decoded retry-after value", ()
     })
   }).pipe(Effect.provide(TestCrypto)))
 
-it.effect("nested fetch causes retain connection-reset classification", () =>
-  Effect.scoped(Effect.gen(function* () {
-    const remoteConfig = config("http://127.0.0.1:1")
-    const client = HttpClient.make((request) => Effect.fail(
-      new HttpClientError.HttpClientError({
-        reason: new HttpClientError.TransportError({
-          request,
-          cause: Object.assign(new TypeError("fetch failed"), {
-            cause: { code: "ECONNRESET" },
-          }),
-        }),
+it("nested fetch causes retain connection-reset classification", () => {
+  const request = HttpClientRequest.get("http://127.0.0.1:1/control/capabilities")
+  const error = new HttpClientError.HttpClientError({
+    reason: new HttpClientError.TransportError({
+      request,
+      cause: Object.assign(new TypeError("fetch failed"), {
+        cause: { code: "ECONNRESET" },
       }),
-    ))
-    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
-      Effect.provideService(HttpClient.HttpClient, client),
-    )
-    const address = yield* makeSha256Address
-    const error = yield* makeRemoteAdapter(remoteConfig, transport, address).pipe(Effect.flip)
-    expect(error).toMatchObject({
-      _tag: "CasRemoteError/Unavailable",
-      code: "connectionReset",
-    })
-  }).pipe(Effect.provide(TestCrypto))))
-
-it.effect("a non-fetch client cannot return a response from another origin", () =>
-  Effect.scoped(Effect.gen(function* () {
-    const remoteConfig = config("http://127.0.0.1:1")
-    const capabilities = encodeCapabilityDocument({ maxBatchKeys: 4, maxBlobBytes: 4_096 })
-    const foreignRequest = HttpClientRequest.get("https://foreign.invalid/control/capabilities")
-    const client = HttpClient.make(() => Effect.succeed(HttpClientResponse.fromWeb(
-      foreignRequest,
-      new Response(null, {
-        status: 200,
-        headers: {
-          "content-type": "application/octet-stream",
-          "content-length": String(capabilities.length),
-        },
-      }),
-    )))
-    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
-      Effect.provideService(HttpClient.HttpClient, client),
-    )
-    const address = yield* makeSha256Address
-    const error = yield* makeRemoteAdapter(remoteConfig, transport, address).pipe(Effect.flip)
-    expect(error).toMatchObject({
-      _tag: "CasRemoteError/Protocol",
-      code: "invalidHeaders",
-    })
-  }).pipe(Effect.provide(TestCrypto))))
+    }),
+  })
+  expect(classifyTransportFailure(error, 0)).toMatchObject({
+    _tag: "RemoteTransportFailure",
+    code: "connectionReset",
+  })
+})
 
 it.effect("offline puts are observably distinct from local-authoritative admission", () => {
   const authority = RemoteAuthority.make("http://127.0.0.1:1")

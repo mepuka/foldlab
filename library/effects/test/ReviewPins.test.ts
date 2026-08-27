@@ -66,6 +66,8 @@ import { describeService } from "../src/replay/Operation.ts"
 import { layerReplay, session } from "../src/replay/Replay.ts"
 import { replayable } from "../src/replay/ServiceAdapter.ts"
 import { decodeWitness, StoredWitness } from "../src/internal/storage.ts"
+import { awaitPeerSocketsReleased } from "./remote/harness/ConformancePeer.ts"
+import { HostilePeer } from "./remote/harness/HostilePeer.ts"
 
 const HistoryTag = 0x48
 const WitnessTag = 0x57
@@ -209,38 +211,28 @@ const runtimeOver = (store: Layer.Layer<CasStore>) =>
 /* Finding 1 — the redirect guarantee is not transport-independent      */
 /* ------------------------------------------------------------------ */
 
-it.effect("pin 1: a client that silently follows a redirect passes the origin check", () =>
+it.effect("pin 1: the owned Fetch transport observes a real redirect without following it", () =>
   Effect.scoped(Effect.gen(function* () {
-    // fromWeb carries the ORIGINAL request — exactly what the fetch
-    // adapter does after auto-following — so the origin comparison can
-    // never observe that the content came from another origin.
-    let followed = false
-    const bytes = capabilityBytes()
-    const client = HttpClient.make((request) => Effect.sync(() => {
-      followed = true
-      return HttpClientResponse.fromWeb(
-        request,
-        new Response(Buffer.from(bytes), {
-          status: 200,
-          headers: {
-            "content-type": "application/octet-stream",
-            "content-length": String(bytes.length),
-          },
-        }),
-      )
-    }))
-    const remoteConfig = pinConfig()
-    const transport = yield* makeRemoteHttp(remoteConfig).pipe(
-      Effect.provideService(HttpClient.HttpClient, client),
-    )
+    const endpoint = yield* HostilePeer.serve({
+      fault: "redirect",
+      body: new Uint8Array(),
+    })
+    const remoteConfig = new CasRemoteConfig({
+      ...pinConfig(),
+      authority: RemoteAuthority.make(endpoint.authority),
+    })
+    const transport = yield* makeRemoteHttp(remoteConfig)
     const address = yield* makeSha256Address
-    // Pinned defect: the adapter acquires cleanly — the followed
-    // redirect is invisible. Fixed behavior: the transport exposes the
-    // final response origin (or refuses unenforceable clients) and this
-    // acquisition fails with the redirect policy outcome.
     const adapter = yield* makeRemoteAdapter(remoteConfig, transport, address)
-    expect(followed).toBe(true)
-    expect(adapter).toBeDefined()
+    const id = ContentId.make("00".repeat(32))
+    const error = yield* adapter.store.load(id).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasError/RemoteFailure",
+      cause: { _tag: "CasRemoteError/Policy", code: "redirectDenied" },
+    })
+    expect(endpoint.observe().gets).toBe(1)
+    yield* awaitPeerSocketsReleased(endpoint)
+    expect(endpoint.observe().openSockets).toBe(0)
   }).pipe(Effect.provide(TestCrypto))))
 
 /* ------------------------------------------------------------------ */
