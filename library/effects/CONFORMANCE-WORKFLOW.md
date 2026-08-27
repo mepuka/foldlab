@@ -585,3 +585,23 @@ Stop and return to grilling if:
   working draft the descriptor grill amends rather than reopens. New
   descriptor obligations enter plan section 7 first; a family misfit
   stops for a WGR-2 catalog event.
+- **Hardening acceptance (2026-08-27):** the ergonomics-hardening
+  delivery was reviewed first-hand and accepted: statically checked
+  descriptions with the explicit-revision `describeService` helper and
+  a compile-time negative fixture; deterministic live-role keys with
+  the core kit memoized per service tag (tag-key identity verified
+  against the pin in a fixture); session execution on
+  `ReplayShape.run` with the runtime WeakMap and its failure path
+  deleted; interpreter invariant breaches kept on the defect channel
+  end to end; and the truthful surface documents, including the
+  claim-surface separation restated in the README. Both
+  freeze-postdating corrections (the widened shape, the defect
+  posture) landed as ratified. Observations recorded, no action owed:
+  a repeated `replayable` call returns the memoized kit and silently
+  ignores a differing descriptions argument — per-service contract
+  identity makes that a consumer error, and a stricter check can ride
+  a later slice; and record-mode `session` returns the session outcome
+  but not the recorded history root, which consumers today must
+  recover from their own address boundary — a named API gap for a
+  future ruling (the natural home is the descriptor slice or a widened
+  record-mode result).
