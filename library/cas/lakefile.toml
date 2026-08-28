@@ -26,3 +26,11 @@ root = "Vectors"
 name = "schemas"
 srcDir = "tools"
 root = "Schemas"
+
+# The wire-mirror emitter: `lake exe emitwire <path>` regenerates the
+# effects package's generated canonical-schema mirrors; `--check` is
+# the byte-identity gate.
+[[lean_exe]]
+name = "emitwire"
+srcDir = "tools"
+root = "EmitWire"

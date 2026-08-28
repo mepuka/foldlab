@@ -8,6 +8,7 @@ run = [
   "mise run gen:vectors",
   "mise run gen:cas-vectors",
   "mise run gen:cas-schemas",
+  "mise run gen:backend-wire",
   "mise run gen:ledger",
 ]
 
@@ -53,13 +54,19 @@ description = "Regenerate the canonical-schema payload fixtures from the Lean se
 dir = "{{config_root}}/library/cas"
 run = "lake exe schemas"
 
+[tasks."gen:backend-wire"]
+description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorAst.ts"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector and schema byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, and wire-mirror byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
   "lake exe schemas --check",
+  "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorAst.ts",
 ]
 
 [tasks."check:effects:archive"]

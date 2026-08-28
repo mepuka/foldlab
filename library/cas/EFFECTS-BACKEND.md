@@ -142,11 +142,15 @@ after slice 2's semantics gate.
 
 ## Slices
 
-1. **The generated mirror** — regenerate the effects package's
-   hand-mirrored wire schemas (`ConformanceVector`) from their codes;
-   the drift tripwire becomes derived. Builds L2 fragment, printer,
-   `Style` v1 (transcribed from the existing house look, not invented),
-   and the gates.
+1. **The generated mirror** — LANDED 2026-08-28: the six
+   canonical-schema mirrors of the vector wire format are generated
+   (`Cas/Backend/Ts.lean` fragment + fixed-layout printer with
+   `Style.house0`, `EmitAst.lean` lowering with structural sharing,
+   `lake exe emitwire` under the byte-identity gate in `check:cas`);
+   `ConformanceVector.ts` re-exports them, its public surface
+   unchanged, and the pin suite now compares GENERATED values against
+   the Lean fixtures — the drift tripwire derived on both sides,
+   generator correctness by independent evaluation.
 2. **The language's hello world** — compile `PutTree` to Effect TS, run
    both hosts, assert identical store words (R5's gate made real).
 3. **F3** — code points and step/cont sorts; programs become
