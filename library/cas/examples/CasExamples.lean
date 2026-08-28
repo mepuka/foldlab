@@ -1,6 +1,7 @@
 import CasExamples.AgentStep
 import CasExamples.ForeignRepresentation
 import CasExamples.PutTree
+import CasExamples.Roots
 import CasExamples.SchemaDeriving
 
 /-!

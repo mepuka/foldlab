@@ -61,6 +61,12 @@ inductive Tree : Ty → Type where
   | value (payload : Payload) : Tree .value
   /-- Position-free chunk data (profile tag 8). -/
   | chunk (bytes : Payload) : Tree .chunk
+  /-- A schema leaf (tag 0x53): the payload is the schema's canonical
+  bytes, handed over by the schema plane — opaque at this layer, refs
+  empty in v0. The payload-is-rendering law arrives with the schema
+  commission's Lean Ast codec; schemas referencing schemas as typed
+  edges is the named follow-up. -/
+  | schema (bytes : Payload) : Tree .schema
   /-- A blob leaf: absolute chunk index and declared length (tag 9). -/
   | leaf (index len : UInt32) (data : Tree .chunk) : Tree .tree
   /-- A blob interior node: two ordered subtrees (tag 9). -/
@@ -87,6 +93,7 @@ their own elaboration. -/
 def Tree.node : Tree t → Node
   | .value p => ⟨schemeVersion, Ty.value.wireTag, p.val, []⟩
   | .chunk p => ⟨schemeVersion, Ty.chunk.wireTag, p.val, []⟩
+  | .schema p => ⟨schemeVersion, Ty.schema.wireTag, p.val, []⟩
   | .leaf i l d =>
     ⟨schemeVersion, Ty.tree.wireTag, nat32 i.toNat ++ nat32 l.toNat,
       [⟨Ty.chunk.wireTag, H (encodeNode (d.node))⟩]⟩
@@ -128,6 +135,10 @@ theorem Tree.node_wf (tr : Tree t) : (tr.node H).WF := by
     simp only [Tree.node, List.length_nil]
     omega
   | chunk p =>
+    refine ⟨p.property, ?_⟩
+    simp only [Tree.node, List.length_nil]
+    omega
+  | schema p =>
     refine ⟨p.property, ?_⟩
     simp only [Tree.node, List.length_nil]
     omega
@@ -175,6 +186,7 @@ last — the admission order, the transfer order, the vector. -/
 def Tree.flatten : (tr : Tree t) → Word
   | tr@(.value _) => [Binding.mk (tr.address H) (tr.node H)]
   | tr@(.chunk _) => [Binding.mk (tr.address H) (tr.node H)]
+  | tr@(.schema _) => [Binding.mk (tr.address H) (tr.node H)]
   | tr@(.leaf _ _ d) =>
     d.flatten ++ [Binding.mk (tr.address H) (tr.node H)]
   | tr@(.parent l r) =>
@@ -192,6 +204,7 @@ def Tree.flatten : (tr : Tree t) → Word
 def Tree.size : Tree t → Nat
   | .value _ => 1
   | .chunk _ => 1
+  | .schema _ => 1
   | .leaf _ _ d => d.size + 1
   | .parent l r => l.size + r.size + 1
   | .manifest _ _ _ root => root.size + 1
@@ -240,6 +253,11 @@ theorem Tree.flatten_honest (tr : Tree t) : Honest H (tr.flatten H) := by
     subst hq
     exact ⟨rfl, Tree.node_wf H _⟩
   | chunk p =>
+    intro q hq
+    simp only [Tree.flatten, List.mem_singleton] at hq
+    subst hq
+    exact ⟨rfl, Tree.node_wf H _⟩
+  | schema p =>
     intro q hq
     simp only [Tree.flatten, List.mem_singleton] at hq
     subst hq
@@ -327,6 +345,7 @@ theorem Tree.flatten_wfFrom (hInj : Function.Injective H) (tr : Tree t)
   induction tr generalizing prior with
   | value p => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | chunk p => simp [Tree.flatten, Word.wfFrom, Tree.node]
+  | schema p => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | genesis => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | leaf i l d ih =>
     simp only [Tree.flatten]

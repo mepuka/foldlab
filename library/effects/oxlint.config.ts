@@ -5,9 +5,19 @@
  * tree predates the ruling and stays visible, never red.
  *
  * Named exceptions, each the file that IS the law it would trip:
- * - src/cas/Value.ts     — canonicalJson is the one lawful JSON site.
- * - src/cas/Store.ts     — the validated-ContentId throw is a deliberate defect
- *                          boundary (broken hex on a validated brand).
+ * - src/cas/Value.ts     — canonicalJson is the one lawful JSON site: its
+ *                          throws are the ratified defect boundary
+ *                          (test-asserted), the one unparsed `as` boundary
+ *                          and typeof scan are its recognizer, TextEncoder
+ *                          is its byte plane.
+ * - src/cas/CanonicalSchema.ts — `literal()`'s safe-integer TypeError
+ *                          mirrors canonicalJson's law in a pure
+ *                          constructor (test-asserted).
+ * - src/internal/merkleProofCodec.ts — pure-encoder precondition guards
+ *                          mirroring the Lean model; deleting them would
+ *                          emit garbage silently.
+ * - src/cas/Store.ts     — layerCryptoWebCrypto IS the platform adapter;
+ *                          the global it touches is the platform.
  * - test/**              — harness peers keep an independent node:http writer
  *                          BY DESIGN (peer independence); tests run effects.
  * - scratch/foldkit/demo.ts — an entry point; running effects is its job.
@@ -82,8 +92,48 @@ export default defineConfig({
   ignorePatterns: ["node_modules", "dist", "conformance"],
   overrides: [
     {
+      // The one lawful JSON site (RATIFIED 2026-08-28): canonicalJson's
+      // throws are its defect boundary and are test-asserted; the single
+      // `as Schema.Json` is the commented unparsed boundary; the typeof
+      // scan is the recognizer; TextEncoder is the byte plane.
       files: ["src/cas/Value.ts"],
-      rules: { "foldlab/no-json-codec": "off" },
+      rules: {
+        "foldlab/no-json-codec": "off",
+        "foldlab/no-throw": "off",
+        "effect/noThrowStatement": "off",
+        "effect/noNewError": "off",
+        "effect/noAs": "off",
+        "effect/noRuntimeTypeof": "off",
+        "effect/noUnknownParameters": "off",
+        "effect/noGlobals": "off",
+      },
+    },
+    {
+      // literal()'s safe-integer TypeError (RATIFIED 2026-08-28): the
+      // canonical-integer law enforced in a pure constructor, test-asserted.
+      files: ["src/cas/CanonicalSchema.ts"],
+      rules: {
+        "foldlab/no-throw": "off",
+        "effect/noThrowStatement": "off",
+        "effect/noNewError": "off",
+      },
+    },
+    {
+      // Pure-encoder precondition guards mirroring the Lean model
+      // (RATIFIED 2026-08-28): RangeErrors on invalid documents beat
+      // silently emitting garbage bytes.
+      files: ["src/internal/merkleProofCodec.ts"],
+      rules: {
+        "foldlab/no-throw": "off",
+        "effect/noThrowStatement": "off",
+        "effect/noNewError": "off",
+      },
+    },
+    {
+      // The platform adapter (RATIFIED 2026-08-28): layerCryptoWebCrypto
+      // exists to touch the platform's crypto global.
+      files: ["src/cas/Store.ts"],
+      rules: { "effect/noGlobals": "off" },
     },
     {
       // Frozen tree: internal throws feeding Effect.try are the deliberate

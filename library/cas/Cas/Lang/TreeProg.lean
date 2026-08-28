@@ -41,6 +41,7 @@ def _root_.Cas.Grammar.Tree.progK :
     Tree t → (Addr32 → Prog CasSig A) → Prog CasSig A
   | .value p, k => .vis (.put ⟨schemeVersion, Ty.value.wireTag, p.val, []⟩) k
   | .chunk p, k => .vis (.put ⟨schemeVersion, Ty.chunk.wireTag, p.val, []⟩) k
+  | .schema p, k => .vis (.put ⟨schemeVersion, Ty.schema.wireTag, p.val, []⟩) k
   | .leaf i l d, k =>
     d.progK fun ca =>
       .vis (.put ⟨schemeVersion, Ty.tree.wireTag,
@@ -154,6 +155,14 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
     intro k fuel w hw hhon
     obtain ⟨v, hsub, hstep, hstore, hwf', hhon'⟩ :=
       step_put_honest H hInj hw hhon (Tree.node_wf H (.chunk p))
+        (by intro r hr; simp [Tree.node] at hr) k
+    refine ⟨v, hsub, ?_, hstore, hwf', hhon'⟩
+    rw [Nat.add_comm]
+    exact run_step_running H hstep fuel
+  | schema p =>
+    intro k fuel w hw hhon
+    obtain ⟨v, hsub, hstep, hstore, hwf', hhon'⟩ :=
+      step_put_honest H hInj hw hhon (Tree.node_wf H (.schema p))
         (by intro r hr; simp [Tree.node] at hr) k
     refine ⟨v, hsub, ?_, hstore, hwf', hhon'⟩
     rw [Nat.add_comm]
