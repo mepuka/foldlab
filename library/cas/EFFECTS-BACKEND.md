@@ -336,6 +336,26 @@ model's own bytes.
 
 ## Named follow-ups
 
+- **The prose register** (operator-directed 2026-08-28): deterministic
+  plain-language annotations attached to constructs so language
+  prompts are produced from code and code from prompts, both
+  directions, mechanically — AE-8's prose projection and P4's derived
+  human rendering, feeding R13's printer model with (code, verbal)
+  pairs. Swarm draft at `.staging/verbal-register/REGISTER.md`
+  (pre-grade, for grilling); libfree DSL proposal in flight at
+  `.staging/libfree/dsl-proposal.md`.
+- **Fixture canonicalization** (operator-directed 2026-08-28): every
+  Effect fixture in the estate flows through the canonical
+  constructors/printer so bare constructors (ad-hoc object literals
+  standing in for described types) are MECHANICALLY eliminated — the
+  acquisition loop's normalize step applied to our own test corpus.
+  Scope and sweep to be ruled; candidate gate: a lint/purity pass over
+  test fixtures asserting construction through the canonical doors.
+- **ML/embeddings research backlog**
+  (`.staging/research-backlog/ml-embeddings-tooling.md`): evidence-
+  preparation tooling only; the direction law applies to models
+  exactly as to parsers.
+
 - The grilling pass that ratifies R1–R6 (R7 already ratified) and this
   document's promotion out of pre-grade.
 - GITrees (arXiv:2307.08514, pinned) as the study source when modular
