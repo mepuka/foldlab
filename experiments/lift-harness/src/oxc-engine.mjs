@@ -28,13 +28,15 @@
 // `test/T8-estree.test.ts` audits what the parser actually emits against the
 // pinned spec (.reference/clones/estree @ 875bf704) so a new deviant is
 // REPORTED rather than silently mis-recognized.
-// R11 - the manifest is the shared AUTHORITY: this leg imports the same
-// bytes `contract.ts` decodes. Engines share DATA, never code; that is the
-// whole reason the agreement gate proves anything. A JSON import attribute,
-// not `readFileSync`: this module is loaded by TWO foreign hosts (oxlint's
-// plugin runtime and vitest's node worker) and must not assume either has a
-// filesystem it may reach for.
-import MANIFEST from '../../../library/effects/src/cas/generated/lift/manifest.json' with { type: 'json' };
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+// R11 - the manifest is the shared AUTHORITY: this leg reads the same
+// bytes `contract.ts` types. Engines share DATA, never code; that is the
+// whole reason the agreement gate proves anything.
+const MANIFEST = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./manifest.json', import.meta.url)), 'utf8'),
+);
 
 /** Fill a pinned detail template. Implemented INDEPENDENTLY of the ck leg's
  * `detail` on purpose - R10 puts detail strings inside gate equality, so a
