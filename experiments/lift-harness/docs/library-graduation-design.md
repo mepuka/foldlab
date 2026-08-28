@@ -68,6 +68,25 @@ hand-authored TS-side. The inversion is adapt-to-existing-bytes:
 3. `contract.ts` becomes an emitted mirror; the hand-written one
    retires.
 
+AMENDED AT EXECUTION (2026-08-28): the estate already has THE
+manifest printer (`Cas.Json.render`, WGR-4 rule 1 — sorted keys,
+fixed layout); a bespoke printer reproducing the hand-written layout
+would mint a second layout truth. The freeze gate therefore became
+**value-parity under the canonical encoding** with layout moving to
+the house printer in the same act — strictly the more lawful reading,
+and still provably lossless. Executed same day:
+
+- Frozen hand-authored bytes: sha256
+  `386dda88057ec5ebf1cf6edf98b40a892cc1320783eb709e861b09d00ac3a516`.
+- Lean-emitted bytes (house layout): sha256
+  `ff7af389e66bc245bbb9bd14c39d7b9d8da2a5850392a3932ecb94c93d95f36c`.
+- Referee: the contract's own `canonJson` judged both value-identical
+  under CAS-003 canonical encoding.
+- Authority now: `Cas.Lift.manifestV0`
+  (`library/cas/Cas/Lift/Manifest.lean`), emitted by
+  `lake exe emitlift`, byte-gated in `check:cas`; the differential
+  suite (183 tests) green against the emitted manifest.
+
 ## 5. Lean tree — `library/cas/Cas/Lift/`
 
 ```
@@ -141,15 +160,43 @@ ratification flow, not by this record alone.
 
 ## 9. Migration order (each step has a binary observable)
 
-1. Freeze manifest bytes.
-2. `Cas/Lift/` data + `EmitLift` to byte-parity (gate green, zero
-   behavior change).
+1. Freeze manifest bytes. — DONE 2026-08-28 (digest in §4).
+2. `Cas/Lift/` data + `EmitLift` to value-parity under the house
+   printer (gate green, zero behavior change). — DONE 2026-08-28:
+   `Taxonomy.lean` + `Manifest.lean` + `emitlift` exe, wired into
+   `gen`/`check:cas`, all gates green.
 3. Generated contract/schema land in `library/effects`; imports flip.
 4. Engines, services, CLI move; experiment re-imports the library.
 5. Fixture grammar to Lean data; fixtures emitted; three-legged gate.
 6. `EffectTs.lean` reader.
 
-## 10. Mints owed to the owning CONTEXT.md (grill before claims)
+## 10. Semantic descriptions (added at operator order, 2026-08-28)
+
+Every element of the recognized Effect-TS surface carries a
+plain-language description AS MANIFEST DATA, so programs can be
+understood in semantic language and every projection draws one truth:
+
+- LANDED: `Cas.Lift.Element` (name, spelling, description) — ten
+  rows covering the captured surface (program frame, store binder,
+  binding step, put, node literal, kind version/tag, hex payload,
+  ref, return word) — plus a `description` on every rule. Projected
+  into `manifest.json` (additive; engines ignore prose) and
+  `manifest.md` ("The language, element by element").
+- SPECIFIED, NOT YET LANDED — schema annotations: the generated
+  Effect Schemas gain `.annotations({ description })` from the same
+  Lean descriptions. Finding recorded before implementation: the
+  CanonicalSchemaPin suite compares schemas' NATIVE REPRESENTATION
+  bytes against Lean-emitted fixtures, and Effect annotations enter
+  that representation — so descriptions become part of the pinned
+  schema identity, cross-checked on both sides. Right design, but it
+  is a `Described`-layer change (description slots in the schema
+  data, fixtures regenerate, emitter renders `.annotations`) and
+  lands as its own increment through the ratification flow.
+- NEXT INCREMENT (the payoff): `explain` — render a lift verdict as
+  plain language from the element table (harness helper + CLI verb),
+  so a lifted program reads as sentences, not JSON.
+
+## 11. Mints owed to the owning CONTEXT.md (grill before claims)
 
 effect-lift (lane), emit/read (public verbs), Effect-TS / `EffectTs`
 (target qualifier + spelling law), plus the testing spec's proposed
