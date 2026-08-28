@@ -67,6 +67,19 @@ it.effect("every registered code's payload bytes agree across runtimes", () =>
     }
   }))
 
+it.effect("the schema-node vector's payload IS payloadOf(vectorAst)", () =>
+  Effect.sync(() => {
+    const vector = JSON.parse(
+      readFileSync(new URL("../../cas/vectors/schema-vector-document.json", import.meta.url), "utf8"),
+    ) as { word: ReadonlyArray<{ node: { tag: number; payload: string } }> }
+    expect(vector.word.length).toBe(1)
+    const node = vector.word[0]!.node
+    expect(node.tag).toBe(0x53)
+    const payload = Buffer.from(node.payload, "hex")
+    const expected = Buffer.from(CanonicalSchema.payloadOf(ConformanceVector.vectorAst))
+    expect(payload.toString("utf8")).toBe(expected.toString("utf8"))
+  }))
+
 it.effect("every registered code survives the annotation round trip", () =>
   Effect.sync(() => {
     for (const [name, ast] of registry) {

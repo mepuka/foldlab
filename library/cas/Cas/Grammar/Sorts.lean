@@ -5,9 +5,10 @@ import Cas.Core.Node
 
 Each sort names one node form and carries its wire kind tag. Tags 8, 9,
 and 10 are the profile's blob kinds (PROFILE-CAS-HTTP-0 §12); the
-others are illustrative utility kinds pending registry passage. Leaf
-and parent share one sort (and one tag) because references type-check
-at tag granularity.
+others are illustrative utility kinds pending registry passage; 0x53 is the
+`.schema` sort (grammar-grill ruling 3) — canonical schemas as
+content. Leaf and parent share one sort (and one tag) because
+references type-check at tag granularity.
 
 `ofTag` is the partial inverse; `ofTag_wireTag` pins the round trip, so
 a sort is recoverable from any node the grammar elaborated.
@@ -27,6 +28,7 @@ inductive Ty where
   | file
   | entry
   | context
+  | schema
   deriving DecidableEq, Repr
 
 /-- The wire kind tag of each sort. 8/9/10 are the profile's blob
@@ -39,6 +41,7 @@ def Ty.wireTag : Ty → UInt8
   | .file => 11
   | .entry => 12
   | .context => 13
+  | .schema => 0x53
 
 /-- The partial inverse of `wireTag`. -/
 def Ty.ofTag : UInt8 → Option Ty
@@ -49,6 +52,7 @@ def Ty.ofTag : UInt8 → Option Ty
   | 11 => some .file
   | 12 => some .entry
   | 13 => some .context
+  | 0x53 => some .schema
   | _ => none
 
 theorem Ty.ofTag_wireTag (t : Ty) : Ty.ofTag t.wireTag = some t := by

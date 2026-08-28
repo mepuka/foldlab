@@ -36,6 +36,13 @@
       "file": "shared-chunk.json",
       "name": "shared-chunk",
       "root": "aa3af12c48920440ff25c0d7bd6863ca8b76ec7cb03b50c3603a75bf55a18924"
+    },
+    {
+      "bindings": 1,
+      "description": "the vector format's own canonical schema as a schema node (sort 0x53)",
+      "file": "schema-vector-document.json",
+      "name": "schema-vector-document",
+      "root": "d2ea192d76dafe3d90680abc6a99649d8f1356028d7f9d3f8248f9e0f4a7901d"
     }
   ]
 }

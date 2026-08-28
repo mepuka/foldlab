@@ -59,6 +59,23 @@ def vector {sort : Ty} (name : VectorName) (description : String)
   description := description
   word := ⟨tree.flatten sha256Addr, Tree.flatten_nonempty sha256Addr tree⟩
 
+/-- The vector format's own canonical schema, stored as a schema node
+(sort 0x53): the payload IS the code's schema-node payload
+(`SelfCodec`), no references — the store word that carries the
+format's identity. -/
+def vectorDocumentCode : Cas.Schema.Ast :=
+  Cas.Schema.Described.code (α := Cas.Vectors.Wire.VectorDocument)
+
+def schemaVectorCandidate : IO ConformanceVector := do
+  if small : (Cas.Grammar.utf8 vectorDocumentCode.payload).length < 4294967296 then
+    pure (vector
+      ⟨"schema-vector-document", by simp [validVectorName, validVectorNameTail]⟩
+      "the vector format's own canonical schema as a schema node (sort 0x53)"
+      (.schema vectorDocumentCode
+        (Cas.Schema.Described.wf (α := Cas.Vectors.Wire.VectorDocument)) small))
+  else
+    throw (IO.userError "schema vector: payload exceeds the node byte bound")
+
 /-- The candidate registry: every vector in one place. Registry
 checking performs admission once and rejects duplicate file names. -/
 def candidates : List ConformanceVector := [
@@ -86,8 +103,9 @@ def orThrow : Except VectorError α → IO α
   | .ok value => pure value
   | .error error => throw (IO.userError error.message)
 
-def checkedRegistry : IO VectorRegistry :=
-  orThrow (VectorRegistry.check candidates)
+def checkedRegistry : IO VectorRegistry := do
+  let schemaVector ← schemaVectorCandidate
+  orThrow (VectorRegistry.check (candidates ++ [schemaVector]))
 
 def emitOne (v : CheckedConformanceVector) : IO Unit := do
   IO.FS.writeFile (pathOf v) v.document
