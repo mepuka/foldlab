@@ -54,10 +54,46 @@ structure Row where
   signature : String
   documented : Bool
   axioms : List String := []
+  /-- Architecture areas the SIGNATURE touches — the second component
+  of each used constant's defining module (`Lang`, `Schema`,
+  `Grammar`, `Backend`, `Codec`, `Core`, `IR`, `Values`, `Vectors`). -/
+  touches : List String := []
+  /-- The ratified core carriers the signature mentions — the effect
+  representation index: a row carrying `Prog`/`Handler`/`Sig`/
+  `interpret` IS an effect-representation function. -/
+  carriers : List String := []
 
 def moduleOf (env : Environment) (n : Name) : Option Name := do
   let idx ← env.getModuleIdxFor? n
   return env.header.moduleNames[idx.toNat]!
+
+/-- The ratified core carriers (store-language skill vocabulary). -/
+def coreCarriers : List Name := [
+  `Cas.Lang.Prog, `Cas.Lang.Sig, `Cas.Lang.Handler, `Cas.Lang.interpret,
+  `Cas.Lang.Status, `Cas.Lang.Refusal,
+  `Cas.Schema.Ast, `Cas.Schema.El, `Cas.Schema.Described,
+  `Cas.Grammar.Tree, `Cas.Grammar.Ty,
+  `Cas.Word, `Cas.Node, `Cas.Binding, `Cas.Addr32]
+
+/-- The architecture area of a constant: the component after `Cas.`
+in its defining module. -/
+def areaOf (env : Environment) (c : Name) : Option String := do
+  let m ← moduleOf env c
+  match m with
+  | .str p last =>
+    if p == `Cas then some last
+    else match m.components with
+      | _ :: area :: _ => some area.toString
+      | _ => none
+  | _ => none
+
+def classify (env : Environment) (type : Expr) :
+    List String × List String :=
+  let used := type.getUsedConstants.toList.filter (·.getRoot == `Cas)
+  let areas := (used.filterMap (areaOf env)).eraseDups.mergeSort (· < ·)
+  let carriers := (used.filter coreCarriers.contains).eraseDups.map
+    (fun n => n.toString) |>.mergeSort (· < ·)
+  (areas, carriers)
 
 /-- Kind, with instances detected by the head of the signature's
 telescope being a class — reliable across imported environments. -/
@@ -95,8 +131,9 @@ def collect (env : Environment) : CoreM (Array (Name × Array Row)) := do
         let axs ← Lean.collectAxioms n
         pure (axs.toList.map Name.toString |>.mergeSort (· < ·))
       else pure []
+    let (touches, carriers) := classify env ci.type
     let row : Row := { name := n.toString, kind, signature := sig,
-                       documented, axioms }
+                       documented, axioms, touches, carriers }
     byModule := byModule.insert m ((byModule.getD m #[]).push row)
   let sorted := byModule.toArray.qsort (fun a b => a.1.toString < b.1.toString)
   return sorted.map fun (m, rows) =>
@@ -107,6 +144,10 @@ def rowJson (r : Row) : Cas.Json.Value :=
     [("name", .str r.name), ("kind", .str r.kind),
      ("signature", .str r.signature),
      ("documented", .bool r.documented)] ++
+    (if r.touches.isEmpty then []
+     else [("touches", .arr (r.touches.map Cas.Json.Value.str))]) ++
+    (if r.carriers.isEmpty then []
+     else [("carriers", .arr (r.carriers.map Cas.Json.Value.str))]) ++
     (if r.kind == "theorem" then
       [("axioms", .arr (r.axioms.map Cas.Json.Value.str))]
      else [])
@@ -126,6 +167,14 @@ def document (modules : Array (Name × Array Row)) : String :=
   let unclean := axiomNames.filter fun a =>
     !cleanAxioms.any (fun c => c.toString == a)
   let documented := allRows.filter (·.documented) |>.size
+  let carrierNames := (allRows.toList.flatMap (·.carriers)).eraseDups.mergeSort (· < ·)
+  let carrierCensus : List (String × Cas.Json.Value) :=
+    carrierNames.map fun c =>
+      (c, .nat (allRows.filter (·.carriers.contains c) |>.size))
+  let areaNames := (allRows.toList.flatMap (·.touches)).eraseDups.mergeSort (· < ·)
+  let areaCensus : List (String × Cas.Json.Value) :=
+    areaNames.map fun a =>
+      (a, .nat (allRows.filter (·.touches.contains a) |>.size))
   let moduleJson (m : Name × Array Row) : Cas.Json.Value :=
     .obj [
       ("module", .str m.1.toString),
@@ -139,6 +188,8 @@ def document (modules : Array (Name × Array Row)) : String :=
     ("totals", .obj totals),
     ("axiomCensus", .obj axiomCensus),
     ("beyondCleanAxioms", .arr (unclean.map Cas.Json.Value.str)),
+    ("areaCensus", .obj areaCensus),
+    ("carrierCensus", .obj carrierCensus),
     ("modules", .arr (modules.toList.map moduleJson))]) ++ "\n"
 
 def buildDocument : IO String := do
