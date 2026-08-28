@@ -31,8 +31,9 @@ guarantees everything under the tree is canonical admitted content.
 
 | Work | What it gives us | Status |
 |---|---|---|
-| Auvolat & Taïani, *Merkle Search Trees* (SRDS 2019) | The deterministic history-independent tree: layer by leading-zero count of the item hash; set determines shape. Properties argued on paper; no prover artifact surfaced | surveyed, pin owed |
-| Meyer, *Range-Based Set Reconciliation* (arXiv 2212.13567; SRDS 2023) | The dialogue with REAL paper proofs — inductive correctness (subranges partition the range; induction completes reconciliation) and complexity bounds. The proof skeleton to mirror | surveyed, pin owed |
+| Auvolat & Taïani, *Merkle Search Trees* (SRDS 2019) | The layered construction (layer = leading-zero count of the item hash, base B). READ IN FULL 2026-08-27: the paper contains NO theorems and NO proofs — unicity is one asserted paragraph, balance is "easy to see" probabilistic sketching, and the O(d·log_B n) comparison bound is stated bare. The central set-determines-tree theorem is unproved even on paper; determinism is credited "similarly to [20]" | read; pin owed |
+| Crosby & Wallach, *Super-Efficient Aggregating History-Independent Persistent Authenticated Dictionaries* (ESORICS 2009) — the MST paper's [20] | The prior deterministic binary treap-Merkle construction; the place the treap-shape's history-independence arguments actually live. With AFP Treaps (mechanized structure) and CMT 2025, this is the treap-route's proof lineage | surveyed, pin owed |
+| Meyer, *Range-Based Set Reconciliation* (arXiv 2212.13567; SRDS 2023) | READ IN FULL 2026-08-27 — the real formal core, transcribable almost mechanically: **Definition 7** (tree-friendly: f(S₀ ∪ S₁) = f(S₀) ⊕ f(S₁) when max S₀ ≺ min S₁ — exactly our range-homomorphism law); **Proposition 1** (the ascending monoid fold lift_f is tree-friendly — a fold-append lemma); **Proposition 2** (every tree-friendly g IS lift_f for f(u) = g{u}, by induction on |S|, with g(∅) = 0 forced). Protocol 1's three cases (equal fingerprints / recursion anchor mandatory at ≤1 item or empty-fp / recurse over a covering split with ≥2 nonempty parts); termination by the largest-subrange measure strictly decreasing; correctness by induction UNDER the no-collision assumption — our collision disjunct replaces it. Complexity: the run's fingerprints form a b-ary tree of height ≤ 2⌈log_b n_min⌉ − ⌊log_b t⌋, rounds ∈ O(log n), bits ∈ O(n△·log n) against the Ω(n△) lower bound (MTZ03); covering (not partitioning) already suffices for correctness | read; pin owed |
 | *RBSR via Range-Summarizable Order-Statistics Stores* (arXiv 2603.19820); *Tree algorithms for set reconciliation* (arXiv 2509.02373) | The 2025–26 follow-up line: range summaries + subtree cardinalities as the store interface — close to our backend-seam framing | surveyed, pin owed |
 | *Cartesian Merkle Tree* (arXiv 2504.10944, 2025) | Treap + heap + Merkle: a DETERMINISTIC authenticated set tree, O(log n) ops — the treap-shaped alternative to MST for the same set-determines-root goal. Paper only | surveyed, pin owed |
 | Prolly trees (Noms, Dolt); Negentropy (nostr); Iroh; Willow | Production constructions and wire protocols; differential-test referents for the dialogue, as LeanServer and the hostile peers serve the wire families today | engineering lit |
@@ -209,3 +210,30 @@ grill should choose the node shape with eyes open.
 Context mints owed when S2 lands: the search-tree term, the range
 fingerprint, the reconciliation dialogue — through the owning
 CONTEXT.md, with obligations and avoid-lists, at ratification.
+
+## 6. The demo (operator-directed): foldkit front end, real reactive state
+
+The visual demo is a real app, not an artifact. Front end = foldkit
+(foldkit.dev): the Elm architecture over Effect — one Model, Messages
+as facts, a pure `update : (Model, Message) → (Model, Commands)`, a
+pure `view`, Commands for one-shot effects, Subscriptions as scoped
+Streams. The mapping is exact and pleasingly honest to the theory:
+
+- **Model** = two replica set trees (persistent, digest-injected) plus
+  the dialogue's in-flight state.
+- **Messages** = `Inserted(replica, item)`, `SyncRequested`,
+  `DialogueStepped(message-part)` — the reconciliation protocol's own
+  range-fingerprint/range-item-set messages ARE app Messages, so the
+  demo literally plays Protocol 1 step by step, visibly.
+- **update** = the pure dialogue step (the same function the Lean
+  model states); **view** = the trees rendered with subtree-hash-keyed
+  coloring so shared structure is visibly shared, plus the round and
+  bytes-moved counters against the O(n△·log n) bound.
+
+Production referent for the tree side: domodwyer's Rust
+`merkle-search-tree` crate (upsert / root_hash / serialise_page_ranges
+/ diff over page ranges; fuzz + property testing) — both an API shape
+to learn from and a differential target later. API source for the
+front end: foldkit's llms-full.txt / per-page markdown. The demo's
+tree core lives with the demo under `experiments/` until the S2 grill
+promotes it into the package beside its Lean family.
