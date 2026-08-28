@@ -244,6 +244,25 @@ the lane needs either a grammar-pin upgrade re-admission or a ruled
 compiler-API-only carve-out for those modules, decided when ingestion
 lands, not silently.
 
+**R14 — Representation: four strata, and what equates to pure**
+(operator-ordered 2026-08-28; carrier `Cas/Lang/Representation.lean`,
+all theorems kernel-checked). Effectful computation has four literal
+Lean representations, each with its own equality: (1) FIRST-ORDER
+CONTENT — operations, nodes, words, schema codes, F3 tables —
+`DecidableEq`, hashable, addressable: the metaprogrammatic stratum,
+where canonical spelling makes structural equality coincide with byte
+equality; (2) `Prog` — the higher-order proof carrier, propositionally
+equal under `funext`, SAFE to treat as pure because it is a proved
+`LawfulMonad` (every normalizer rewrite licensed) and INITIAL
+(`eq_of_forall_interpret`: agreement under every lawful interpretation
+IS structural equality — no finer program equality exists); (3)
+HANDLER IMAGES — semantic values equated only by theorem (`SemEq`,
+`ObsEq` — the word observation, decided per-program by the run gate);
+(4) HOST IO — the admitted seams, no equational theory, reasoning
+stops at the trust statement. The stable effects API to reason over is
+strata 1–2 with the equations named here; stratum 3 supplies
+certificates; stratum 4 supplies nothing.
+
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six

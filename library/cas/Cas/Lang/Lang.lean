@@ -4,6 +4,7 @@ import Cas.Lang.Ops
 import Cas.Lang.Interp
 import Cas.Lang.Handler
 import Cas.Lang.Tower
+import Cas.Lang.Representation
 import Cas.Lang.TreeProg
 
 /-!
