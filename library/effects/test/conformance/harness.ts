@@ -21,7 +21,7 @@ import type {
  * from here, so a model bump never edits a suite. */
 const manifestIndex: { readonly manifests: ReadonlyArray<string>; readonly model: string } =
   JSON.parse(readFileSync(
-    new URL("../../conformance/manifest/INDEX.json", import.meta.url),
+    new URL("../../archive/lean-model-0.3/conformance/manifest/INDEX.json", import.meta.url),
     "utf8",
   ))
 
@@ -101,7 +101,7 @@ export const loadFamily = <
   const json = yield* Effect.tryPromise({
     try: async () => {
       const text = await readFile(
-        new URL(`../../conformance/manifest/${binding.family}.json`, import.meta.url),
+        new URL(`../../archive/lean-model-0.3/conformance/manifest/${binding.family}.json`, import.meta.url),
         "utf8",
       )
       return JSON.parse(text) as unknown

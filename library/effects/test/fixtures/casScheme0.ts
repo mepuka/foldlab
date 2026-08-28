@@ -18,7 +18,7 @@ import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
 export const casKatFixtureUrl = new URL("./cas-scheme-0-kat.json", import.meta.url)
 
 const codecManifestUrl = new URL(
-  "../../conformance/manifest/CAS-001.json",
+  "../../archive/lean-model-0.3/conformance/manifest/CAS-001.json",
   import.meta.url,
 )
 

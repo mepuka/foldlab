@@ -17,7 +17,7 @@ import { Effect, Schema } from "effect"
 import { readdir, readFile } from "node:fs/promises"
 import { ManifestModel, ManifestReadError, manifestIndexNames } from "./harness.ts"
 
-const manifestDir = new URL("../../conformance/manifest/", import.meta.url)
+const manifestDir = new URL("../../archive/lean-model-0.3/conformance/manifest/", import.meta.url)
 
 const RowSchema = Schema.Struct({
   case: Schema.String,
