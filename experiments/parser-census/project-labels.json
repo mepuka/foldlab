@@ -1,0 +1,85 @@
+{
+  "_provenance": "curated 2026-08-28; pins resolved via git ls-remote same day; the label vocabulary is closed — extend it here first, never ad hoc in an experiment",
+  "purpose": "Reusable label set of projects for parser-construct census experiments (operator order 2026-08-28). The unit of observation downstream is the TypeScript declaration; these labels are the sampling strata every experiment reuses, so per-construct statistics stay comparable across runs and instruments.",
+  "labelVocabulary": {
+    "clean-effect": "library-authored Effect source in the canonical register (src/ of the Effect monorepo packages)",
+    "wild-effect": "Effect-consuming code NOT held to the canonical register: monorepo tests, internals, app code (aliased imports, submodule imports, host interleavings are the norm here)",
+    "estate": "foldlab-authored TypeScript, including generated backends — the code our own gates already hold byte-identical",
+    "generated": "machine-emitted TypeScript (backend materializer output); recognition should be total here — any refusal is a finding",
+    "dts-only": "pure declaration syntax (.d.ts), no statement bodies — exercises the type-level grammar surface including variance annotations",
+    "non-effect-baseline": "TypeScript with no Effect dependency — the control stratum; spine rules must fire at ~zero here or the recognizer is hallucinating",
+    "declaration-heavy": "unusually high ratio of type-level declarations to executable statements",
+    "variance-annotations": "known to contain `in`/`out` type-parameter variance — the pinned grammar's held defect (D1 evidence stratum)",
+    "harness": "in-house experiment tooling; parsed as corpus AND used as instrument plumbing"
+  },
+  "projects": [
+    {
+      "id": "effect-monorepo",
+      "repo": "https://github.com/Effect-TS/effect",
+      "pin": "f183370ffb4d20da8879924a3d37d836567017fa",
+      "localPath": "/Users/pooks/Dev/effect-source/effect",
+      "license": "MIT",
+      "labels": ["clean-effect", "wild-effect", "variance-annotations", "declaration-heavy"],
+      "slices": {
+        "clean-effect": "packages/effect/src/**",
+        "wild-effect": "packages/effect/test/**, packages/*/src/internal/**",
+        "variance-annotations": "the Effect schema surface named in the twin receipt (Filter/FilterGroup) and dsl-proposal §6"
+      },
+      "note": "primary corpus; the DSL proposal's §4b wild samples are all cited from this checkout at this pin"
+    },
+    {
+      "id": "foldlab-effects",
+      "repo": "in-tree",
+      "pin": "tracked by the estate's own history",
+      "localPath": "library/effects",
+      "license": "estate",
+      "labels": ["estate", "clean-effect"],
+      "slices": {
+        "generated": "src/cas/generated/**, test/generated/**",
+        "estate": "src/**, test/** excluding generated"
+      },
+      "note": "generated slices carry the 'generated' label: recognition must be total there, refusals are findings"
+    },
+    {
+      "id": "typescript-compiler",
+      "repo": "https://github.com/microsoft/TypeScript",
+      "pin": "e26b8d24bee09bf66d59941912166c5aa7975d20",
+      "localPath": null,
+      "license": "Apache-2.0",
+      "labels": ["non-effect-baseline", "declaration-heavy"],
+      "slices": { "non-effect-baseline": "src/compiler/** (sampled)" },
+      "note": "control stratum: large, idiomatic, zero Effect; also the grammar's hardest natural workout"
+    },
+    {
+      "id": "definitely-typed",
+      "repo": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "pin": "c261a5485740c0a33a48f5ec17951c42674a78fc",
+      "localPath": null,
+      "license": "MIT",
+      "labels": ["dts-only", "non-effect-baseline", "variance-annotations"],
+      "slices": { "dts-only": "types/** (stratified random sample of packages; record the sampled package list per run)" },
+      "note": "declaration-only stratum; sample by package, never by file, and commit the sampled package list with the run"
+    },
+    {
+      "id": "effect-website",
+      "repo": "https://github.com/Effect-TS/website",
+      "pin": "054014cbfbf623289652fd6f342bee2d62976769",
+      "localPath": null,
+      "license": "MIT",
+      "labels": ["wild-effect"],
+      "slices": { "wild-effect": "content/** code snippets and app src/** — Effect as consumers actually write it" },
+      "note": "app-register Effect: the register the acquisition loop (R15) ultimately has to meet"
+    },
+    {
+      "id": "wink-composer",
+      "repo": "https://github.com/winkjs/composer",
+      "pin": "a371fd8ba33770f04af0decd0c704f210e82b6df",
+      "pinNote": "tag 0.5.1; main HEAD b338e0c9448cafe6cfcc40a656072a15df8c8a86 same day; npm publishes only 0.0.1 — install from the pinned git tag",
+      "localPath": null,
+      "license": "MIT",
+      "labels": ["harness", "non-effect-baseline"],
+      "slices": { "non-effect-baseline": "src/**" },
+      "note": "admitted 2026-08-28 (operator pin) as the experiment streaming harness; doubles as a plain-JS/TS control corpus"
+    }
+  ]
+}
