@@ -131,6 +131,21 @@
    "note": "app register: Effect v4 SaaS starter"
   },
   {
+   "id": "contentlayerdev-contentlayer",
+   "repo": "https://github.com/contentlayerdev/contentlayer",
+   "pin": "27bfc5a8b98234b0380ebd33c3de06c383d932f8",
+   "license": "MIT",
+   "labels": [
+    "wild-effect"
+   ],
+   "localPath": "corpus/contentlayerdev_contentlayer",
+   "tsFileCount": 314,
+   "tsByteCount": 702090,
+   "declCount": null,
+   "effectDependency": null,
+   "note": "OLDEST register: @effect-ts/core generation - binding regex extended to @effect-ts/* for it"
+  },
+  {
    "id": "dearlordylord-huly-mcp",
    "repo": "https://github.com/dearlordylord/huly-mcp",
    "pin": "597ed31f18bf705419a5bc1404250b3de16ccb08",
@@ -251,6 +266,28 @@
     ]
    },
    "note": "app register: web scraper"
+  },
+  {
+   "id": "effect-deprecated-otel",
+   "repo": "https://github.com/Effect-Deprecated/otel",
+   "pin": "d423ba36cdec23233e67e582d49f4c5f9b74b0f8",
+   "license": "MIT",
+   "labels": [
+    "wild-effect"
+   ],
+   "localPath": "corpus/effect-deprecated_otel",
+   "tsFileCount": 38,
+   "tsByteCount": 20861,
+   "declCount": null,
+   "effectDependency": {
+    "@effect/core": [
+     "^0.0.2"
+    ],
+    "@effect/otel": [
+     "*"
+    ]
+   },
+   "note": "OLD register: official deprecated-era library (2023)"
   },
   {
    "id": "effect-ts-language-service",
@@ -836,6 +873,34 @@
    "note": "pattern knowledge base: many small canonical consumer examples"
   },
   {
+   "id": "sandromaglione-menimal",
+   "repo": "https://github.com/SandroMaglione/menimal",
+   "pin": "60a717fad0533a4220e8059d253dfeb3bfbaa54c",
+   "license": "MIT",
+   "labels": [
+    "wild-effect"
+   ],
+   "localPath": "corpus/sandromaglione_menimal",
+   "tsFileCount": 15,
+   "tsByteCount": 23927,
+   "declCount": null,
+   "effectDependency": {
+    "@effect/platform": [
+     "^0.45.3"
+    ],
+    "@effect/platform-node": [
+     "^0.44.4"
+    ],
+    "@effect/schema": [
+     "^0.62.7"
+    ],
+    "effect": [
+     "^2.3.6"
+    ]
+   },
+   "note": "OLD register: small app (2024)"
+  },
+  {
    "id": "sukovanej-effect-http",
    "repo": "https://github.com/sukovanej/effect-http",
    "pin": "f251f6cf73d0b8c81130226f9f71e597c56dfd7b",
@@ -1034,6 +1099,37 @@
     ]
    },
    "note": "app register: agent loop tool (gh code-search hit)"
+  },
+  {
+   "id": "tylors-typed-fx",
+   "repo": "https://github.com/TylorS/typed-fx",
+   "pin": "023662e75259df2e67ff9b79421540113f051aec",
+   "license": "MIT",
+   "labels": [
+    "wild-effect"
+   ],
+   "localPath": "corpus/tylors_typed-fx",
+   "tsFileCount": 291,
+   "tsByteCount": 293449,
+   "declCount": null,
+   "effectDependency": {
+    "@effect/babel-plugin": [
+     "^0.2.0"
+    ],
+    "@effect/data": [
+     "^0.10.2"
+    ],
+    "@effect/io": [
+     "^0.17.0"
+    ],
+    "@effect/language-service": [
+     "^0.0.19"
+    ],
+    "@effect/test": [
+     "^0.1.0"
+    ]
+   },
+   "note": "OLD register: @effect/io era (2023) - operator ruling: old generations improve mixed-register discrimination"
   },
   {
    "id": "typeonce-dev-effect-machine",
