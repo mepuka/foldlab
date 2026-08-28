@@ -140,6 +140,60 @@ project — parity by digest, never by review. This target is cheaper
 than the TS one (no syntax fragment; tools are data) and lands right
 after slice 2's semantics gate.
 
+**R10 — Semantic stratification: one syntax, every semantics a
+handler, one observation** (operator-pressed 2026-08-28; carrier
+`Cas/Lang/Handler.lean`). The account of what the several interfaces
+MEAN, stated once: `Prog S` is syntax and means nothing; a semantics
+is a `Handler S M` — one meaning per operation in a target monad —
+and `interpret` is the induced monad morphism (`interpret_bind`
+proved once, for every handler). The strata:
+
+- **Meaning** lives in exactly one place: the reference handler —
+  Lean's admission judgment in `StateT Word (Except Refusal)`, total
+  because the carrier is finite. "The pure interface is better" is
+  correct in this precise sense: it is not a better interface, it IS
+  the semantics.
+- **Realizations** (the Effect adapter, direct TS callers, any future
+  host) are handlers into richer monads; fibers, interruption,
+  latency, and retries are the target monad's contribution, never the
+  language's. A realization is never a bearer of meaning: it is
+  CLAIMED against the reference by observational agreement, and the
+  observation is the WORD — decidable, byte-level, deliberately
+  quotienting everything the seam adds that the history does not
+  record.
+- **Transports** (CLI, daemon, HTTP) are handler composition: a
+  signature translation into a wire language plus a remote handler.
+  A Lean program calling the CLI calling a store is the SAME program
+  with the SAME meaning, interpreted through a composed stack whose
+  every seam is named — modeled differently on purpose, because
+  claims and trust attach at seams; meaning does not move.
+- **Seam effects get signatures.** Transport failure, cancellation,
+  backpressure, progress are operations of their own signature summed
+  in (`⊕ₛ`, `Handler.sum`), never smuggled through request/reply.
+- Replay and record are handlers too: replay answers from the
+  recorded word (the oracle-from-content direction), record is the
+  writer direction — the record/replay plane is two instances of one
+  notion, not separate machinery.
+- Finite syntax interprets into ANY monad; ITrees' `MonadIter`
+  obligation returns exactly when F3 adds loops. The
+  big-step/small-step agreement (`interpretRef` vs the fueled `run`)
+  is a named obligation of the F3 increment.
+
+**R11 — One described manifest owns the protocol; both language
+surfaces are generated from it** (operator-directed 2026-08-28).
+Canonical semantics: Lean owns the operation model and admission
+meaning (R10). Canonical interchange: a versioned, language-neutral
+manifest — commands, replies, errors, constraints, byte encoding —
+authored as canonical schema codes and a wire signature, from which
+`Protocol.lean` and `Protocol.ts` (and the shared protocol vectors)
+are generated or mechanically checked, never written twice. The
+production Effect implementation executes operations as an ADAPTER,
+never as the semantic oracle. The CLI is the first transport adapter;
+a daemon or HTTP transport implements the same interface without
+touching the program layer. Native TypeScript callers keep using
+`CasStore`/`Layer` directly — the operation language is the canonical
+CROSS-language pattern, not a toll on local calls.
+
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six
