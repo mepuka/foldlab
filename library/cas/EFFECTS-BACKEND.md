@@ -110,6 +110,36 @@ with the address of the term it projects, so parity is a digest check
 the authoritative home of a program, the language has been lost to an
 ordinary compiler.
 
+**R8 — The first five by hand; the rest of the surface ingested
+mechanically** (operator-directed 2026-08-28). The hand-written
+target-semantics rows are exactly the seed judged against the pinned
+sources (`Cas/Backend/Target.lean`: `Effect.Effect`, `Layer.Layer`,
+`Schema.Codec`, `Schema.Top`, `Option.Option`, plus the operation
+arrow — every render `rfl`-pinned to a verbatim source line). Every
+further row arrives GENERATED: the Stage-1 extract instruments (the
+TypeScript-compiler-API / lean4-tree-sitter pair, already admitted and
+cross-checked) walk the pinned Effect sources module by module
+([EFFECT-SURFACE](../../.reference/catalog/EFFECT-SURFACE.md) is the
+module census), emit an inventory, and a Stage-2-style generator emits
+Lean target rows under the byte-identity gate — no hand-transcribed
+API surface beyond the seed, and version drift is a red gate. The
+pipeline is packaged as a repo skill so ingestion is one invocation.
+L1 v1's admission list is the evidence-derived usage table of
+2026-08-28 (the constructs `library/effects/src` actually exercises).
+
+**R9 — MCP is a backend target, generated from the same signatures**
+(operator-directed 2026-08-28; AE-8 named `mcp` as a projection
+register from the start). An MCP tool IS an operation: name, params,
+result — `OperationSig`'s arrow with canonical schema codes projected
+to JSON Schema (the plane's sanctioned export projection) for the
+wire. The MCP server the lab's agents use is therefore a GENERATED
+host, subject to R7 exactly like the TS target: tools materialize
+signatures, programs stay store-resident, and the served surface is a
+projection of the same denotation the TS services and the prose docs
+project — parity by digest, never by review. This target is cheaper
+than the TS one (no syntax fragment; tools are data) and lands right
+after slice 2's semantics gate.
+
 ## Slices
 
 1. **The generated mirror** — regenerate the effects package's
@@ -121,6 +151,16 @@ ordinary compiler.
    both hosts, assert identical store words (R5's gate made real).
 3. **F3** — code points and step/cont sorts; programs become
    store-resident content and the R7 boundary becomes load-bearing.
+4. **Surface ingestion** (R8) — the extract→generate pipeline pointed
+   at the whole pinned Effect surface, skill-packaged.
+5. **The MCP host** (R9) — tools generated from signatures; the
+   lab's agents drive the store language through it.
+6. **A domain signature** (operator-directed) — one real domain type
+   through the whole pipe (cas_struct → schema node → generated
+   carrier → a program over a domain signature → program vector), so
+   the semantics exploration runs on something worth staring at. Once
+   the semantics gate holds, the exploration mandate is explicit:
+   go wild.
 
 ## Named follow-ups
 
