@@ -826,6 +826,33 @@
    ]
   },
   {
+   "id": "mpsuesser-effect-oxlint",
+   "repo": "https://github.com/mpsuesser/effect-oxlint",
+   "pin": "d8c892f4fedc072409dca290ac44733bf5dc3e87",
+   "license": "MIT",
+   "labels": [
+    "wild-effect",
+    "harness"
+   ],
+   "localPath": "corpus/mpsuesser_effect-oxlint",
+   "tsFileCount": 26,
+   "tsByteCount": 203362,
+   "declCount": null,
+   "effectDependency": {
+    "@effect/tsgo": [
+     "0.38.0"
+    ],
+    "@effect/vitest": [
+     "4.0.0-rc.112"
+    ],
+    "effect": [
+     "4.0.0-rc.112",
+     "^4.0.0-rc.112"
+    ]
+   },
+   "note": "extractor chassis (TOOLS.md admitted 2026-08-28) AND v4 dogfood corpus - Effect-authored lint framework"
+  },
+  {
    "id": "pauljphilp-effectpatterns",
    "repo": "https://github.com/PaulJPhilp/EffectPatterns",
    "pin": "f3a0da2299717cf31d31313c5661cebd2446d5a3",
