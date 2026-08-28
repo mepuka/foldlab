@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs"
 import { Effect, Option } from "effect"
 import { Cas } from "../src/index.ts"
 
-const { CanonicalSchema, ConformanceVector } = Cas
+const { CanonicalSchema, ConformanceVector, layerMemoryLive } = Cas
 
 const schemasDir = new URL("../../cas/schemas/", import.meta.url)
 
@@ -79,6 +79,23 @@ it.effect("the schema-node vector's payload IS payloadOf(vectorAst)", () =>
     const expected = Buffer.from(CanonicalSchema.payloadOf(ConformanceVector.vectorAst))
     expect(payload.toString("utf8")).toBe(expected.toString("utf8"))
   }))
+
+it.effect("every registered code is admitted at the Lean-computed address", () =>
+  Effect.gen(function* () {
+    const committed = JSON.parse(
+      readFileSync(new URL("addresses.json", schemasDir), "utf8"),
+    ) as { schemas: ReadonlyArray<{ name: string; address: string }> }
+    expect(committed.schemas.length).toBe(registry.length)
+    for (const [name, ast] of registry) {
+      const expected = committed.schemas.find((s) => s.name === name)
+      expect(`${name} pinned`).toBe(
+        expected === undefined ? `${name} missing from addresses.json` : `${name} pinned`,
+      )
+      if (expected === undefined) continue
+      const id = yield* CanonicalSchema.put(ast)
+      expect(`${name} ${id}`).toBe(`${name} ${expected.address}`)
+    }
+  }).pipe(Effect.provide(layerMemoryLive)))
 
 it.effect("every registered code survives the annotation round trip", () =>
   Effect.sync(() => {

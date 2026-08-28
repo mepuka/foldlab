@@ -1,0 +1,22 @@
+{
+  "digest": "sha256-scheme0",
+  "kindTag": 83,
+  "schemas": [
+    {
+      "address": "d2ea192d76dafe3d90680abc6a99649d8f1356028d7f9d3f8248f9e0f4a7901d",
+      "name": "vector-document"
+    },
+    {
+      "address": "a3a0c2d32f91d05f5643f0772e37c4b02c4d5175dd170f7a4715f3c9d4c0a746",
+      "name": "vector-index"
+    },
+    {
+      "address": "b870f32cfd3324e146357c51ded51a09b80310b2d4f008ef7d97971282407221",
+      "name": "pin-sample"
+    },
+    {
+      "address": "641b38779e025af7c0de241d59994c34e3275d20d3af5e4109b0bb31d70a2331",
+      "name": "literal-pin"
+    }
+  ]
+}

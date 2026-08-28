@@ -61,6 +61,35 @@ def pathOf (name : String) : System.FilePath := outDir / (name ++ ".json")
 
 def indexPath : System.FilePath := outDir / "index.json"
 
+def addressesPath : System.FilePath := outDir / "addresses.json"
+
+/-- The schema node a code stores as (kind tag 0x53, envelope payload,
+no references) — the same node `CanonicalSchema.nodeOf` builds on the
+TypeScript side. -/
+def schemaNodeOf (ast : Ast) : Cas.Node :=
+  ⟨Cas.Grammar.schemeVersion, Cas.Schema.schemaKindTag,
+    ast.payloadBytes.toList, []⟩
+
+/-- The code's content address under the production digest — the
+identity the store answers when this schema is admitted. -/
+def addressOf (ast : Ast) : String :=
+  Cas.hexS (Cas.sha256Addr (Cas.encodeNode (schemaNodeOf ast))).val
+
+/-- THE STORE ADDRESS FILE: every registered schema's content address,
+persisted and byte-gated — identity held at the address, not only the
+payload. The TypeScript pin suite admits each mirrored code through
+the real store and must be answered these exact addresses. -/
+def addressesDocument : String :=
+  let rows := registry.map fun (name, ast) =>
+    Cas.Json.Value.obj [
+      ("name", .str name),
+      ("address", .str (addressOf ast))]
+  Cas.Json.render (.obj [
+    ("digest", .str "sha256-scheme0"),
+    ("kindTag", .nat Cas.Schema.schemaKindTag.toNat),
+    ("schemas", .arr rows)
+  ]) ++ "\n"
+
 /-- The tracking manifest: one row per registered code. -/
 def indexDocument : String :=
   let rows := registry.map fun (name, ast) =>
@@ -80,7 +109,8 @@ def emit : IO Unit := do
     IO.FS.writeFile (pathOf name) ast.payload
     IO.println s!"wrote {name}.json ({ast.payload.toUTF8.size} bytes)"
   IO.FS.writeFile indexPath indexDocument
-  IO.println s!"wrote index.json ({registry.length} schemas)"
+  IO.FS.writeFile addressesPath addressesDocument
+  IO.println s!"wrote index.json + addresses.json ({registry.length} schemas)"
 
 def checkOne (name : String) (ast : Ast) : IO Unit := do
   let expected := ast.payload
@@ -96,7 +126,11 @@ def check : IO Unit := do
     catch _ => throw (IO.userError "index.json missing — run `lake exe schemas`")
   unless actual == indexDocument do
     throw (IO.userError "index.json differs from regeneration — run `lake exe schemas`")
-  IO.println s!"ok index.json ({registry.length} schemas)"
+  let actualAddrs ← try IO.FS.readFile addressesPath
+    catch _ => throw (IO.userError "addresses.json missing — run `lake exe schemas`")
+  unless actualAddrs == addressesDocument do
+    throw (IO.userError "addresses.json differs from regeneration — run `lake exe schemas`")
+  IO.println s!"ok index.json + addresses.json ({registry.length} schemas)"
 
 end SchemasMain
 
