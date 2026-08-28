@@ -214,6 +214,36 @@ obligation for the F3 wave: the refinement theorem that `casOverBytes`
 over a faithful byte-plane handler agrees with `referenceHandler`
 word for word — store correctness, in tower form.
 
+**R13 — The printer-model lane** (operator-directed 2026-08-28,
+named follow-up, un-grilled). The backend is, by construction, a
+synthetic-corpus factory with a machine verifier: the closed fragment
+bounds the vocabulary, the canonical style collapses spelling to one
+form per substance, and the emitters produce unlimited
+(denotation, rendering) pairs with byte-exact ground truth. That is
+precisely the setting where a small fine-tuned language model can
+serve as a FAST MATERIALIZER — printing Effect surfaces at high speed
+— under the estate's standing LLM law: empty trust contribution, the
+gates carry the trust. A model emission is admitted exactly like any
+other artifact: byte gate, typecheck, parse-back through the admitted
+extractor pair, and (for programs) the word-equality run gate. The
+model accelerates; it never authors identity. Corpus generation,
+training, and the verifier loop are their own slice, after ingestion
+(R8) supplies the full surface table.
+
+**Ingestion notes carried from the 2026-08-28 review** (PC-session
+review, verified findings): (a) the `Foreign.lean` /
+`RepresentedIn` type-expression strings (`effectSchemaType.render`)
+are rfl-proved against hand-written strings and confronted by nothing
+on the TypeScript side — the R8 extractor pair pointed at the real
+`.ts` declarations is exactly the missing check, with the compiler
+API as the resolving instrument; (b) the pinned tree-sitter grammar's
+`<in E>` variance defect strikes five of eight affected classes in
+Effect's SCHEMA machinery, so R8 ingestion over that surface will
+refuse on the twin instrument by design (`assertErrorsDisjoint`) —
+the lane needs either a grammar-pin upgrade re-admission or a ruled
+compiler-API-only carve-out for those modules, decided when ingestion
+lands, not silently.
+
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six
