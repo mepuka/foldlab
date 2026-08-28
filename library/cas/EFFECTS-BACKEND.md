@@ -1,9 +1,12 @@
 # EFFECTS-BACKEND — design basis for the store language and its TypeScript target
 
-Status: pre-grade until grilled (the MACHINE-ALGEBRA precedent). Ratified
-inputs: the grammar grill's six rulings (IMPLEMENTATION-PLAN §14) and the
-operator's boundary ruling of 2026-08-28 (R7 below). Everything else here
-is a design commitment awaiting its grilling pass. Paper citations are
+Status: RATIFIED by the operator 2026-08-28, in-session — the R1–R14
+dialogue of that day was the grilling pass (rulings pressed, corrected,
+and re-stated ruling by ruling; R7, R8, R9, R10, R11, R12, R13, R14
+each operator-directed or operator-ratified in the exchange). This
+document is law for the store language and its backend; drift from it
+is a defect. Pinned from the root [AGENTS.md](../../AGENTS.md)
+orientation and the effect-replay glossary. Paper citations are
 G0-resolved pins in [.reference/catalog/PAPERS.md](../../.reference/catalog/PAPERS.md)
 (digests recorded there); the reading record behind §R1–R5 is the
 interaction-trees reconnaissance sweep

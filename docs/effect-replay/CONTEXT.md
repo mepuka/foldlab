@@ -36,9 +36,13 @@ vocabulary; their code labels point into the stash. Amended 2026-08-28
 at the schema self-description landing (operator-directed, in-session):
 two entries minted — canonical schema, materializer. Amended 2026-08-28
 at the effects-backend design session (operator-directed, in-session;
-design basis [library/cas/EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md),
-pre-grade): two entries minted — TypeScript backend, program vector —
-and one rule ratified — programs-are-content. Kind:
+design basis [library/cas/EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md)):
+two entries minted — TypeScript backend, program vector — and one rule
+ratified — programs-are-content. Amended 2026-08-28 at the
+effects-backend RATIFICATION (operator: "make this official and pin
+it"; the R1–R14 dialogue is the grilling record): three entries
+minted — handler, the tower, representation strata — and one rule
+ratified — the-direction-law. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -716,7 +720,71 @@ enters as an ordinary refactor proposal at that time.
   presentation identity; vectors whose runs depend on unrecorded host
   state.
 
+### Handler
+- **Kind:** model. **Code label:** `library/cas/Cas/Lang/Handler.lean`.
+- **Form:** one meaning per operation in a target monad; `interpret`
+  is the induced monad morphism (`interpret_bind` proved once for
+  every handler); handlers compose across signature sums
+  (`Handler.sum`). The REFERENCE HANDLER — the admission judgment in
+  `StateT Word (Except Refusal)` — is the store language's meaning;
+  replay is the handler answering from a recorded word; the Effect
+  adapter and every transport are handlers or handler compositions.
+- **Obligations:** meaning lives only in the reference handler; a
+  realization is claimed against it by the word observation, never by
+  review; fuel belongs to the small-step presentation, never to the
+  API.
+- **Avoid:** reading any adapter as the semantics; comparing
+  realizations by anything but the word; handler-specific behavior
+  leaking into program identity.
+
+### The tower
+- **Kind:** model. **Code label:** `library/cas/Cas/Lang/Tower.lean`.
+- **Form:** a service is a handler, and a handler may itself be a
+  program over a lower signature; `Handler.through` composes and
+  `interpret_through` (proved) collapses the strata. `ByteSig` mirrors
+  the runtime's byte-plane seam; `casOverBytes` is the store service
+  implemented in the language — admission re-derived at the seam,
+  collision as byte disagreement, loads through the proved frame
+  parser.
+- **Obligations:** strata are free by theorem; trust exists only at
+  the admitted seams at the bottom; every seam's own effects
+  (transport failure, cancellation, backpressure) enter as operations
+  of their own summed signature.
+- **Avoid:** smuggling seam effects through request/reply commands;
+  treating Effect Layers as anything other than the runtime image of
+  `through`; a stratum claiming meaning.
+
+### Representation strata
+- **Kind:** model. **Code label:**
+  `library/cas/Cas/Lang/Representation.lean`.
+- **Form:** the four literal Lean representations of effectful
+  computation and their equalities: (1) first-order content —
+  decidable, hashable, addressable; the metaprogrammatic stratum; (2)
+  `Prog` — the proof carrier, a proved `LawfulMonad`, INITIAL
+  (`eq_of_forall_interpret`: agreement under every lawful
+  interpretation is structural equality); (3) handler images —
+  equated only by theorem (`SemEq`, `ObsEq`); (4) host IO — no
+  equational theory. The stable effects API is strata 1–2.
+- **Obligations:** metaprogramming reasons over stratum 1 only;
+  proofs induct at stratum 2 under the named equations; stratum-3
+  equalities are certificates; stratum 4 stops at trust statements.
+- **Avoid:** claiming `DecidableEq` on `Prog`; positing any program
+  equality finer than structural (initiality forbids it); equating
+  handler images by inspection.
+
 ## Rules (each kind: adr; ratified in the M0 grilling, 2026-08-26)
+
+### the-direction-law
+Ratified 2026-08-28 (operator, in-session, the effects-backend
+ratification). Three verbs, three directions, never crossed. HOOVER —
+parsing pinned sources with admitted instruments — is ingestion: it
+yields surface tables, cross-checks, and provenance, and never mints
+an identity. EXECUTE — running the Lean model — is the only act that
+mints fixtures, words, and payloads: model execution is strictly
+stronger evidence than parsing a description of the model. MATERIALIZE
+— generation — flows denotation → code only, byte-gated; a carrier is
+never the authority, and generation never runs code → denotation. A
+parse never mints a fixture.
 
 ### programs-are-content
 Ratified 2026-08-28 (operator, in-session, the effects-backend design

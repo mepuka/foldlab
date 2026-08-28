@@ -23,6 +23,7 @@ from reading everything.
 | [.reference/](.reference/) | Evidence only: source lock and receipts, catalog, study clones (gitignored), dumps | Resolving or citing sources |
 | `formal/` | Formal verification artifacts (claim-gated) | — |
 | [`library/`](library/machine/README.md) | Distributable libraries, Lean 4 or mixed-language (claim-gated; machine and effects live here) | Building machine-algebra or effect-replay slices |
+| [EFFECTS-BACKEND](library/cas/EFFECTS-BACKEND.md) | The store language, RATIFIED law: semantics, handlers, the tower, backend targets, representation strata (R1–R14) | Working on the language, the backend, generated surfaces, or reasoning about effects |
 | `experiments/` | Experimental artifacts | — |
 | `.staging/` | Pre-grade staged material (gitignored except README) | — |
 | [`annex/coq/`](annex/coq/README.md) | Coq/OCaml toolchain annex: prior-art technique only, never an estate artifact | Reading or running executable Coq prior art |
@@ -119,7 +120,13 @@ gates carry the trust.
   [MACHINE-ALGEBRA](library/machine/MACHINE-ALGEBRA.md) (pre-grade until
   grilled; ruling CV-4). The effects library's design basis is
   [library/effects/IMPLEMENTATION-PLAN.md](library/effects/IMPLEMENTATION-PLAN.md),
-  with vocabulary in [docs/effect-replay/CONTEXT.md](docs/effect-replay/CONTEXT.md)
+  with vocabulary in [docs/effect-replay/CONTEXT.md](docs/effect-replay/CONTEXT.md);
+  the store language's RATIFIED design basis is
+  [library/cas/EFFECTS-BACKEND.md](library/cas/EFFECTS-BACKEND.md) —
+  CAS is an effects language, meaning lives in the reference handler,
+  the stable API is the first-order and `Prog` strata (R14), and the
+  direction law (hoover = ingestion, execute = fixtures, materialize =
+  code) is never crossed
   (M0 contract ratified 2026-08-26; a deliberate fork of the machine's
   obligation shapes, fully independent of the Entity Store context).
 - **Licensing.** Apache-2.0 for code; CC BY 4.0 for documents.

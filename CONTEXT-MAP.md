@@ -10,7 +10,7 @@
   representation vocabulary; full Effect Schema source admission remains
   deferred.
 - [Entity Store](docs/entity-store/CONTEXT.md): owns the content-addressed store's vocabulary — admissibility, verdicts, canonical spelling, and the store's minted rules.
-- [Effect Replay](docs/effect-replay/CONTEXT.md): owns the CAS replay library's vocabulary — operation descriptions, histories, sessions, decision traces, the mismatch taxonomy, witnesses, and the replay contract's minted rules. Fully independent of the Entity Store context.
+- [Effect Replay](docs/effect-replay/CONTEXT.md): owns the CAS replay library's vocabulary — operation descriptions, histories, sessions, decision traces, the mismatch taxonomy, witnesses, and the replay contract's minted rules — AND the store language's vocabulary: canonical schema, materializer, handler, the tower, representation strata, the TypeScript backend, program vectors, and the direction law (design basis: [EFFECTS-BACKEND](library/cas/EFFECTS-BACKEND.md), ratified 2026-08-28). Fully independent of the Entity Store context.
 
 ## Relationships
 
