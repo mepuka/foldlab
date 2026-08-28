@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-transplant-receipt",
+  "id": "concrete-sha256-transplant",
+  "observedAt": "2026-08-28T02:52:31-05:00",
+  "scope": "Credited transcription of the FIPS 180-4 per-block SHA-256 pipeline from lambdaclass/concrete into the CAS language package.",
+  "source": {
+    "repository": "https://github.com/lambdaclass/concrete",
+    "commit": "28a25a4e27fd2eaed5193e5f1c1454e06399506f",
+    "license": "Apache-2.0",
+    "path": "Concrete/Proof/Sha256Spec.lean",
+    "localClone": ".reference/clones/concrete"
+  },
+  "destination": {
+    "path": "library/cas/Cas/Codec/Sha256.lean",
+    "license": "Apache-2.0"
+  },
+  "transplanted": "Boolean functions (ch, maj), rotations and sigma functions, the K round constants, the initial hash value, and the per-block compression structure — all themselves FIPS 180-4 § 4-6 transcriptions in the source.",
+  "completedHere": "Padding (§ 5.1.1), block/word splitting (§ 5.2.1, § 6.2.2 step 1), multi-block hashing, the byte-view output through this package's proved nat32/nat64 encoders, and the Addr32 adapter.",
+  "evidence": "NIST FIPS 180-4 example vectors (one-block 'abc', empty string, two-block 'abcdbcde...') run as build-time interpreter asserts in the destination file; nothing in the transplant is proved beyond output width.",
+  "instructionBoundary": "Nothing in the fetched source was treated as instruction."
+}

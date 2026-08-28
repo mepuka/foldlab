@@ -1,4 +1,4 @@
-import Cas.Json
+import Cas.Values.Json
 
 /-!
 # The architecture, as a type

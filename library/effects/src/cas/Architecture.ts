@@ -180,11 +180,11 @@ export const value: Description = Description.make({
 
 /** The seam capabilities mapped to the service keys that realize them
  * — asserted against the real tags by the architecture suite. */
-export const seamKeys: Record<Capability, string> = {
+export const seamKeys = {
   read: "foldlab/cas/ByteReader",
   roots: "foldlab/cas/RootStore",
   write: "foldlab/cas/ByteWriter",
-}
+} satisfies Record<Capability, string>
 
 /** The digest every law recomputes, as its own dependency: not a seam
  * (it stores nothing) and not a law (it decides nothing) — the scheme
@@ -201,11 +201,20 @@ export class Service extends Context.Service<Service, Description>()(
 export const layer: Layer.Layer<Service> = Layer.succeed(Service, value)
 
 const sorted = (items: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [...items].sort()
+  items.toSorted()
+
+/** The shape of the shared projection, named so the derivation keeps
+ * its type evidence. */
+export interface CapabilityMatrix {
+  readonly backends: Record<string, ReadonlyArray<string>>
+  readonly laws: Record<string, ReadonlyArray<string>>
+  readonly seams: ReadonlyArray<string>
+  readonly types: ReadonlyArray<string>
+}
 
 /** The load-bearing shared projection — one canonical-JSON object both
  * descriptions derive and pin. */
-export const capabilityMatrix = (description: Description): unknown => ({
+export const capabilityMatrix = (description: Description): CapabilityMatrix => ({
   backends: Object.fromEntries(description.backends.map((backend) =>
     [backend.name, sorted(backend.provides)])),
   laws: Object.fromEntries(description.laws.map((law) =>

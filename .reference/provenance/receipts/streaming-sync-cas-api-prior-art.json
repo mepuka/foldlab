@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "kind": "reference-research-resolution-receipt",
   "id": "streaming-sync-cas-api-prior-art",
-  "observedAt": "2026-08-27T09:18:47.2586284-05:00",
-  "scope": "Primary API and protocol sources used by the conception-mode survey of streaming object transfer, resumable upload, graph synchronization, operation progress, and Effect v4 carrier choices. Repository sources are fixed to commits or peeled release tags and selected Git blobs; the XET Internet-Draft is fixed to revision 05 and its archived bytes. This receipt admits research-source pins only, not an implementation, protocol conformance result, dependency, or Source Lock entry.",
+  "observedAt": "2026-08-27T09:55:43.4322133-05:00",
+  "scope": "Primary API, protocol, format, standards, and literature sources used by the conception-mode survey of streaming object transfer, resumable upload, graph synchronization and shared Merkle query planning, blob/table ingestion, publication, retention, formal refinement, conformance testing, and Effect v4 carrier choices. Repository sources are fixed to commits or peeled release tags and selected Git blobs; fixed publications carry RFC, standards-edition, DOI, proceedings, technical-report, or versioned-preprint identifiers. The XET Internet-Draft is fixed to revision 05 and its archived bytes. This receipt admits research-source pins only, not an implementation, protocol conformance result, dependency, or Source Lock entry.",
   "resolver": {
     "git": "2.55.0.windows.2",
     "powershell": "7.6.4"
@@ -260,6 +260,80 @@
           "gitBlob": "dc76e650e0151ceb502288d3e36d5eaa95180c8f"
         }
       ]
+    },
+    {
+      "id": "apache-arrow-columnar-format",
+      "repository": "https://github.com/apache/arrow",
+      "selector": "refs/tags/apache-arrow-25.0.1",
+      "tagObject": "8bf34803daea7c13f806bf29ee7b09d16773acb2",
+      "commit": "beccec0d0c451b7aa3e4530416ac431b3c035c69",
+      "formatVersion": "1.5",
+      "artifacts": [
+        {
+          "path": "docs/source/format/Columnar.rst",
+          "role": "columnar-schema-array-buffer-and-record-batch-format",
+          "gitBlob": "2e81bd0f9424704844cecce7652bc4577d3a963d",
+          "bytes": 74443
+        }
+      ]
+    },
+    {
+      "id": "apache-parquet-format",
+      "repository": "https://github.com/apache/parquet-format",
+      "selector": "refs/tags/apache-parquet-format-2.13.0",
+      "tagObject": "a9f9c3a52bd1d6309038f4d2d3a308978b55c377",
+      "commit": "c47e2a66e88943fc46fde1b028a9432f14fdf5c0",
+      "artifacts": [
+        {
+          "path": "README.md",
+          "role": "row-group-column-chunk-and-page-layout",
+          "gitBlob": "1ce553e86e286f821412a617868f2b405d53fd5f",
+          "bytes": 14959
+        }
+      ]
+    },
+    {
+      "id": "apache-iceberg",
+      "repository": "https://github.com/apache/iceberg",
+      "selector": "refs/tags/apache-iceberg-1.9.2",
+      "tagObject": "21c5127ef8d8b677c28a566f8951f2a1d14c754d",
+      "commit": "071d5606bc6199a0be9b3f274ec7fbf111d88821",
+      "artifacts": [
+        {
+          "path": "format/spec.md",
+          "role": "immutable-table-manifest-snapshot-and-atomic-commit",
+          "gitBlob": "7dec296200b722289d7ca8399e481fc1b4948386",
+          "bytes": 184975
+        }
+      ]
+    },
+    {
+      "id": "delta-protocol",
+      "repository": "https://github.com/delta-io/delta",
+      "selector": "refs/tags/v4.0.0",
+      "tagObject": "a2f4a7194b070a033401a0bbf7f409e679038733",
+      "commit": "6d055c5c8a2e16bbf4458268a1bc271c7afcc4d2",
+      "artifacts": [
+        {
+          "path": "PROTOCOL.md",
+          "role": "table-transaction-log-snapshot-and-optimistic-commit",
+          "gitBlob": "639f9caae0c8448ee6f4b201d5c028bfec4d9295",
+          "bytes": 166593
+        }
+      ]
+    },
+    {
+      "id": "bao-specification",
+      "repository": "https://github.com/oconnor663/bao",
+      "commit": "3466bb34287f10f746d29d899d92429b81cf4302",
+      "artifacts": [
+        {
+          "path": "docs/spec.md",
+          "role": "blake3-tree-encoding-and-verified-slice-prior-art",
+          "gitBlob": "e06a23895d63e72cee6be398095ef75fc72176eb",
+          "bytes": 18870
+        }
+      ]
     }
   ],
   "publicationPins": [
@@ -270,13 +344,214 @@
       "status": "individual-internet-draft",
       "sha256": "474d64988f0e28a561403807379e19cfe2c046a43ce39f210c9fdaf55b098a03",
       "bytes": 101863
+    },
+    {
+      "id": "rfc6920",
+      "url": "https://www.rfc-editor.org/rfc/rfc6920.html",
+      "edition": "RFC 6920 (2013-04)",
+      "doi": "10.17487/RFC6920",
+      "evidenceClass": "normative-standards-track"
+    },
+    {
+      "id": "nist-fips-180-4",
+      "url": "https://doi.org/10.6028/NIST.FIPS.180-4",
+      "edition": "FIPS 180-4, 2015 update",
+      "doi": "10.6028/NIST.FIPS.180-4",
+      "evidenceClass": "normative-federal-standard"
+    },
+    {
+      "id": "rfc8785",
+      "url": "https://www.rfc-editor.org/rfc/rfc8785.html",
+      "edition": "RFC 8785 (2020-06)",
+      "doi": "10.17487/RFC8785",
+      "evidenceClass": "informational-rfc-with-normative-adopter-rules"
+    },
+    {
+      "id": "rfc8949",
+      "url": "https://www.rfc-editor.org/rfc/rfc8949.html",
+      "edition": "STD 94 / RFC 8949 (2020-12)",
+      "doi": "10.17487/RFC8949",
+      "evidenceClass": "normative-internet-standard"
+    },
+    {
+      "id": "everparse-usenix-security-2019",
+      "url": "https://www.usenix.org/conference/usenixsecurity19/presentation/delignat-lavaud",
+      "edition": "28th USENIX Security Symposium, 2019, pp. 1465-1482",
+      "isbn": "978-1-939133-06-9",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "lbfs-sosp-2001",
+      "url": "https://doi.org/10.1145/502059.502052",
+      "edition": "SOSP 2001, pp. 174-187",
+      "doi": "10.1145/502059.502052",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "fastcdc-usenix-atc-2016",
+      "url": "https://www.usenix.org/conference/atc16/technical-sessions/presentation/xia",
+      "edition": "USENIX ATC 2016, pp. 101-114",
+      "isbn": "978-1-931971-30-0",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "merkle-crypto-1987",
+      "url": "https://doi.org/10.1007/3-540-48184-2_32",
+      "edition": "CRYPTO 1987, LNCS 293, pp. 369-378",
+      "doi": "10.1007/3-540-48184-2_32",
+      "evidenceClass": "peer-reviewed-foundational-literature"
+    },
+    {
+      "id": "rfc9162",
+      "url": "https://www.rfc-editor.org/rfc/rfc9162.html",
+      "edition": "RFC 9162 (2021-12)",
+      "doi": "10.17487/RFC9162",
+      "evidenceClass": "normative-standards-track"
+    },
+    {
+      "id": "rfc9110",
+      "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+      "edition": "STD 97 / RFC 9110 (2022-06)",
+      "doi": "10.17487/RFC9110",
+      "evidenceClass": "normative-internet-standard"
+    },
+    {
+      "id": "rfc9530",
+      "url": "https://www.rfc-editor.org/rfc/rfc9530.html",
+      "edition": "RFC 9530 (2024-02)",
+      "doi": "10.17487/RFC9530",
+      "evidenceClass": "normative-standards-track"
+    },
+    {
+      "id": "forkbase-pvldb-2018",
+      "url": "https://doi.org/10.14778/3231751.3231762",
+      "edition": "PVLDB 11(10), 2018, pp. 1137-1150",
+      "doi": "10.14778/3231751.3231762",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "linearizability-toplas-1990",
+      "url": "https://doi.org/10.1145/78969.78972",
+      "edition": "ACM TOPLAS 12(3), 1990, pp. 463-492",
+      "doi": "10.1145/78969.78972",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "leases-sosp-1989",
+      "url": "https://doi.org/10.1145/74850.74870",
+      "edition": "SOSP 1989, pp. 202-210",
+      "doi": "10.1145/74850.74870",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "on-the-fly-gc-cacm-1978",
+      "url": "https://doi.org/10.1145/359642.359655",
+      "edition": "Communications of the ACM 21(11), 1978, pp. 966-975",
+      "doi": "10.1145/359642.359655",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "ifscq-2020",
+      "url": "https://arxiv.org/abs/2012.07917v1",
+      "edition": "arXiv 2012.07917v1 (2020)",
+      "evidenceClass": "versioned-original-literature"
+    },
+    {
+      "id": "rsync-tr-cs-96-05",
+      "url": "https://openresearch-repository.anu.edu.au/items/15a1c428-0ad3-49d6-bb54-9238250cbbf0/full",
+      "edition": "ANU TR-CS-96-05 (1996-06)",
+      "repositoryItem": "15a1c428-0ad3-49d6-bb54-9238250cbbf0",
+      "evidenceClass": "original-technical-report"
+    },
+    {
+      "id": "cpisync-2003",
+      "url": "https://doi.org/10.1109/TIT.2003.815784",
+      "edition": "IEEE Transactions on Information Theory 49(9), 2003",
+      "doi": "10.1109/TIT.2003.815784",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "iblt-allerton-2011",
+      "url": "https://doi.org/10.1109/ALLERTON.2011.6120248",
+      "edition": "49th Allerton Conference (2011)",
+      "doi": "10.1109/ALLERTON.2011.6120248",
+      "evidenceClass": "peer-reviewed-literature"
+    },
+    {
+      "id": "abadi-lamport-refinement-1991",
+      "url": "https://doi.org/10.1016/0304-3975(91)90224-P",
+      "edition": "Theoretical Computer Science 82(2), 1991, pp. 253-284",
+      "doi": "10.1016/0304-3975(91)90224-P",
+      "evidenceClass": "peer-reviewed-formal-methods-literature"
+    },
+    {
+      "id": "lynch-vaandrager-simulations-1995",
+      "url": "https://doi.org/10.1006/inco.1995.1134",
+      "edition": "Information and Computation 121(2), 1995, pp. 214-233",
+      "doi": "10.1006/inco.1995.1134",
+      "evidenceClass": "peer-reviewed-formal-methods-literature"
+    },
+    {
+      "id": "quickcheck-icfp-2000",
+      "url": "https://doi.org/10.1145/351240.351266",
+      "edition": "ICFP 2000, pp. 268-279",
+      "doi": "10.1145/351240.351266",
+      "evidenceClass": "peer-reviewed-testing-literature"
+    },
+    {
+      "id": "testing-monadic-code-2002",
+      "url": "https://doi.org/10.1145/581690.581696",
+      "edition": "Haskell Workshop 2002, pp. 47-59",
+      "doi": "10.1145/581690.581696",
+      "evidenceClass": "peer-reviewed-testing-literature"
+    },
+    {
+      "id": "tretmans-ioco-2008",
+      "url": "https://doi.org/10.1007/978-3-540-78917-8_1",
+      "edition": "FORTEST 2008, pp. 1-38",
+      "doi": "10.1007/978-3-540-78917-8_1",
+      "evidenceClass": "peer-reviewed-testing-literature"
+    },
+    {
+      "id": "iso-iec-9646-2-1994",
+      "url": "https://www.iso.org/standard/17476.html",
+      "edition": "ISO/IEC 9646-2:1994, second edition",
+      "evidenceClass": "normative-international-standard"
+    },
+    {
+      "id": "demillo-lipton-sayward-1978",
+      "url": "https://doi.org/10.1109/C-M.1978.218136",
+      "edition": "IEEE Computer 11(4), 1978, pp. 34-41",
+      "doi": "10.1109/C-M.1978.218136",
+      "evidenceClass": "peer-reviewed-testing-literature"
+    },
+    {
+      "id": "generic-authenticated-data-structures-itp-2019",
+      "url": "https://doi.org/10.4230/LIPIcs.ITP.2019.10",
+      "edition": "ITP 2019, LIPIcs 141, article 10",
+      "doi": "10.4230/LIPIcs.ITP.2019.10",
+      "evidenceClass": "peer-reviewed-mechanized-literature"
+    },
+    {
+      "id": "proofs-of-ownership-ccs-2011",
+      "url": "https://doi.org/10.1145/2046707.2046765",
+      "edition": "ACM CCS 2011, pp. 491-500",
+      "doi": "10.1145/2046707.2046765",
+      "evidenceClass": "peer-reviewed-security-literature"
+    },
+    {
+      "id": "message-locked-encryption-eurocrypt-2013",
+      "url": "https://doi.org/10.1007/978-3-642-38348-9_18",
+      "edition": "EUROCRYPT 2013, LNCS 7881",
+      "doi": "10.1007/978-3-642-38348-9_18",
+      "evidenceClass": "peer-reviewed-security-literature"
     }
   ],
   "standing": {
     "status": "resolved-research-source-pins",
     "sourceLockPromotion": "pending",
     "claimGate": "G0",
-    "note": "The report supports conception and later grilling only. Progressive transfer, range authenticity, receipt meaning, graph closure, peer convergence, implementation refinement, and transport conformance remain pending exact judgments and evidence."
+    "note": "The report supports conception and later grilling only. Blob/table identity, chunk recipes, shared Merkle query semantics, progressive transfer, range authenticity, publication/receipt/durability meaning, graph closure, GC protection, peer convergence, implementation refinement, and transport conformance remain pending exact judgments and evidence."
   },
   "result": "resolved-research-source-pins"
 }

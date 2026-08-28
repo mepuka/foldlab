@@ -25,6 +25,7 @@ Full object and content identities are owned by the provenance [source lock](../
 | --- | --- | --- |
 | [NIST FIPS 202](https://doi.org/10.6028/NIST.FIPS.202) | DOI plus local SHA-256 `1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e` | Normative SHA-3 algorithm and parameter definitions for `formal/fips202`; does not establish transcription or implementation correctness |
 | [NIST SHA-3 byte-oriented test vectors](https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing) | Direct archive and selected-response digests in [`fips202.lock.json`](../provenance/fips202.lock.json) | T8/T9 literals and four selected executable guards; sampled evidence, not CAVP validation or exhaustive conformance |
+| [NIST FIPS 180-4](https://doi.org/10.6028/NIST.FIPS.180-4) | DOI | Normative SHA-256 algorithm and constants for `library/cas/Cas/Codec/Sha256.lean` (with the standard's example digests as build-time guards); does not establish transcription or implementation correctness |
 | [XKCP Keccak-f[1600] test vector](https://github.com/XKCP/XKCP/blob/eb5244d6b95fb1c434b211bac293093e18aa8fd1/tests/TestVectors/KeccakF-1600-IntermediateValues.txt) | Commit `eb5244d6b95fb1c434b211bac293093e18aa8fd1`, file blob and content digest in [`fips202.lock.json`](../provenance/fips202.lock.json) | T7's zero-state 25-lane witness only |
 | [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html) | RFC number | JSON text grammar, parser/generator requirements, and interoperability hazards including duplicate names, number range, Unicode, and security |
 | [ECMA-404](https://www.ecma-international.org/publications-and-standards/standards/ecma-404/) | 2nd edition | JSON syntax; related to but not a replacement for RFC 8259 interoperability guidance |
@@ -91,6 +92,15 @@ page explicitly says that an individual Internet-Draft has no IETF endorsement
 or formal standing in the standards process. The project-specific evaluation is
 recorded in
 [`library/effects/research/xet-prior-art.md`](../../library/effects/research/xet-prior-art.md).
+
+## Lean mechanization prior art
+
+| Source | Pin and role | Supports | Does not support |
+| --- | --- | --- | --- |
+| [lambdaclass/concrete](https://github.com/lambdaclass/concrete) | Study clone at `.reference/clones/concrete`, commit `28a25a4e27fd2eaed5193e5f1c1454e06399506f`, Apache-2.0; transplant receipt at [`concrete-sha256-transplant.json`](../provenance/receipts/concrete-sha256-transplant.json) | Repository orientation for a language compiled in Lean (stage directories, dependency-ordered root, examples as a separate library, ProofKit separation); the FIPS 180-4 per-block SHA-256 spec transcribed with credit into `Cas/Codec/Sha256.lean` | Correctness of the transcription (our KAT guards carry that), any claim about Concrete's own compiler, or adoption of its proof model |
+| [predictable-machines/lean4-json-schema](https://github.com/predictable-machines/lean4-json-schema) | HEAD observed 2026-08-28, v0.1.0, MIT; early-stage, APIs unstable | Pattern source for schema typeclasses with derived validation proofs (`deriving` handlers with soundness/completeness) — the model for the canonical-schema `Described`/deriving increment | JSON Schema standard coverage (explicitly incomplete), any dependency admission, or authority over our canonical schema (which is deliberately distinct from JSON Schema) |
+| [predictable-machines/lean4-tree-sitter](https://github.com/predictable-machines/lean4-tree-sitter) | HEAD observed 2026-08-28, v0.1.0, MIT; early-stage | Pattern source for typed grammar schemas, declaration extraction, and verified source mapping — the shape of the future codegen-verification harness; tree-sitter `node-types.json` as a schema-ingestion point | FFI adoption, any grammar's completeness, or parsing correctness claims |
+| [mechtaev/alaya](https://github.com/mechtaev/alaya) | Commit `e88b330aab585820371061ef40f06b11b3d7a6bb`, MIT (pinned in [`lean4-git-cas-meta-pl-sources.json`](../provenance/receipts/lean4-git-cas-meta-pl-sources.json)) | Comparison referent: an independent Lean 4 CAS with its own SHA-256 (`Alaya/Cas/Sha256.lean`) and store | Any correctness transfer in either direction |
 
 ## Conformance corpora
 

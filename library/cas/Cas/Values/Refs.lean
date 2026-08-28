@@ -1,6 +1,6 @@
-import Cas.Node
-import Cas.Store
-import Cas.Json
+import Cas.Core.Node
+import Cas.Core.Store
+import Cas.Values.Json
 
 /-!
 # Typed references: the marker grammar and the `Root` type

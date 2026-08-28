@@ -1,5 +1,20 @@
 name = "cas"
-defaultTargets = ["Cas"]
+defaultTargets = ["Cas", "CasExamples"]
 
 [[lean_lib]]
 name = "Cas"
+
+# Consumers of the language, not part of it (the Concrete split): the
+# library reflects the language only; examples stay in defaultTargets so
+# `lake build` still kernel-checks them.
+[[lean_lib]]
+name = "CasExamples"
+srcDir = "examples"
+
+# The vector emitter: `lake exe vectors` regenerates the committed
+# conformance fixtures under vectors/; `--check` is the byte-identity
+# gate.
+[[lean_exe]]
+name = "vectors"
+srcDir = "tools"
+root = "Vectors"

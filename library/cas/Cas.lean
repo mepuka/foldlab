@@ -1,39 +1,72 @@
-import Cas.Nat32
-import Cas.Bytes
-import Cas.Node
-import Cas.Codec
-import Cas.Store
-import Cas.Address
-import Cas.Separation
-import Cas.Admission
-import Cas.Json
-import Cas.Refs
+import Cas.Codec.Nat32
+import Cas.Codec.Bytes
+import Cas.Core.Node
+import Cas.Codec.NodeCodec
+import Cas.Codec.Separation
+import Cas.Codec.Sha256
+import Cas.Core.Store
+import Cas.Core.Address
+import Cas.Core.Canonical
+import Cas.Core.Admission
+import Cas.Values.Json
+import Cas.Values.Refs
+import Cas.Codec.Hex
+import Cas.Schema.Schema
+import Cas.IR.Word
+import Cas.Grammar.Grammar
+import Cas.Lang.Lang
+import Cas.Vectors.Vectors
 import Cas.Architecture
-import Cas.Lang
-import Cas.Examples
+
 /-!
-# Cas — the type model of the content-addressed store library
+# Cas — one language, three layers, over a content-addressed store
 
-The Lean model of `@foldlab/cas`, grown module by module against the
-TypeScript shape:
+The Lean home of `@foldlab/cas`: the type model of the store library
+and the language it interprets. Modules are laid out by direction of
+abstraction, lowest first, and imported above in that order.
 
-- `Nat32`, `Bytes` — wire scalars and framed byte primitives, each
-  codec law carrying both directions (forward and exactness).
-- `Node` — the carriers: full-width addresses, typed references, the
-  versioned node, byte-bound well-formedness.
-- `Codec` — one byte representation per admitted node.
-- `Store`, `Address`, `Admission` — the store as a value, the abstract
-  address function on its hash-hypothesis lattice, and the clause-named
-  admission judgment (sound and complete) whose closed stores can
-  dangle nothing and mis-kind nothing.
-- `Json`, `Refs` — the canonical value encoding, the typed-reference
-  marker grammar (CAS-005) with its executable law, and `Root α`: the
-  typed root whose dereference is total over closed stores.
-- `Lang` — the effects language over the store: programs as operation
-  trees, one-step interpretation with admission, fueled runs. The
-  original seed of this package, kept as the semantics playground.
+- **`Codec/` — layer 1, the byte grammar.** Wire scalars
+  (`Nat32`), framed primitives (`Bytes`), the canonical node codec
+  (`NodeCodec`: forward correctness, image exactness,
+  non-malleability), domain separation of the leading bytes
+  (`Separation`), and the executable FIPS 180-4 digest (`Sha256`).
+- **`Core/` — the store semantics.** The carriers (`Node`), the store
+  as a partial map with `Closed` well-formedness (`Store`), the
+  abstract address function on its hash-hypothesis lattice
+  (`Address`), the CAS typeclass — canonical content with derived
+  addressing and the lattice lifted generically (`Canonical`) — and
+  the sound-and-complete admission judgment with the characterized put
+  transition (`Admission`).
+- **`Values/` — the typed projection plane.** The canonical JSON
+  printers (`Json`) and the typed-reference marker grammar with
+  `Root α` (`Refs`).
+- **`IR/` — the store word.** The executable carrier: children-first
+  admission order, `wf`, and the bridge `toStore` with
+  `wf_toStore_closed` (ledger L1).
+- **`Grammar/` — layer 2, the data grammar.** Sorts with wire tags,
+  the indexed `Tree` family elaborating onto `Node` through the real
+  codec, the content address as a fold under abstract `H`, `flatten`
+  with its Level-1 admission law (L2–L4), and the term-level surface
+  syntax.
+- **`Lang/` — layer 3, the program grammar.** Effect signatures as
+  values composing by sum, `Prog` as the free monad of continuations,
+  the store language and the LLM extension (`infer`), one-step
+  interpretation that CALLS the admission judgment (L5–L7), and the
+  grammar term as a store program with `putTree_correct` (F1): the run
+  computes exactly the elaboration's address and store, deduplicating
+  shared subterms through `put`'s duplicate outcome (F2).
+- **`Vectors/` — the registered replay surface.** The conformance
+  vector as a first-class value (name, description, word) with its
+  canonical JSON projection; the `vectors` executable iterates one
+  registry, gates every word on `Word.wf` at emission, and writes the
+  committed fixtures plus the `index.json` tracking manifest.
+- **`Architecture`** — the library described in itself, pinned against
+  the TypeScript twin through one canonical matrix.
 
-The retired dual-lane conformance corpus (effects-model@0.3.0) lives at
-`library/effects/archive/`; this package models types first and grows
-with the library.
+Consumers live in the separate `CasExamples` library (`examples/`):
+the language used, never part of the language. F1 (`putTree_correct`)
+and F2 (word deduplication: `toStore_append_shadowed`,
+`Honest.no_alias`) are proved; the remaining named follow-up is
+F3 defunctionalized continuations (steps as store-admissible
+content).
 -/

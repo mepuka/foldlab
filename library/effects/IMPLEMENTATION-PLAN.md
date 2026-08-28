@@ -1260,3 +1260,160 @@ grilled in the ratification session; the session-boundary transport, mismatch
 taxonomy, session poisoning, tripwire policy, and construction-role rulings
 recorded above and in the context document came out of those cases. M1 may
 begin.
+
+## 13. Decisions ratified in the language wave (2026-08-28)
+
+The language grilling session resolved the shape of the Lean package and the
+schema plane. Every ruling below was operator-ratified in session; the landed
+state is in the tree and its gates.
+
+1. **One language, three layers.** The byte grammar (`Cas/Codec`, proved),
+   the data grammar (`Cas/Grammar`, sorted trees), and the program grammar
+   (`Cas/Lang`, signature-parameterized operation trees) are three layers of
+   ONE language; each layer's semantics is elaboration into the layer below,
+   and every law quantifies over the abstract address function `H`.
+2. **One package, staged directories.** `library/cas` is the language
+   package: stage directories `Codec/ Core/ Values/ IR/ Grammar/ Lang/` in
+   abstraction order, stage roots inside their directories, and a flat
+   dependency-ordered root import list — the layout studied from the
+   lambdaclass/concrete clone (`.reference/clones/concrete@28a25a4e2`,
+   Apache-2.0). Examples are a separate Lake library (`CasExamples`,
+   `srcDir = examples`) kept in `defaultTargets`: consumers of the language,
+   never part of it. The package outgrowing its `cas` name is a named,
+   deferred question.
+3. **The store word is the IR.** `Word = List (Addr32 × Node)` in
+   children-first admission order, first-binding resolution, `toStore` the
+   bridge onto the function store. The proved landing bar L1–L7 (all green):
+   `wf_toStore_closed`; `address_spec` (definitional); `flatten_wf` at
+   lattice Level 1 under named `hInj`; `node_wf` by bounded constructors;
+   `step_put_fresh`/`step_put_error` (the interpreter CALLS `Cas.put`, never
+   re-derives admission); `step_load_agrees`; `step`/`run_preserves_wf`.
+   Named follow-ups: F1 `putTree_correct`, F2 word dedup at Level 1,
+   F3 defunctionalized continuations (steps as store-admissible content).
+   **F1 and F2 PROVED (2026-08-28, later same wave).** F2:
+   `Word.toStore_append_shadowed` (Level 0 — a second binding at an
+   occupied address is inert through the bridge) +
+   `Grammar.Honest.no_alias` (Level 1 — an honest word never binds one
+   address to two nodes; `hInj` + codec non-malleability). F1:
+   `Cas/Lang/TreeProg.lean` — `Tree.progK`/`Tree.prog` write a grammar
+   term as a store program that learns every address from the
+   interpreter (never from `H`); `putTree_correct` proves running it
+   with node-count-plus-one fuel over any honest admissible word
+   completes at exactly `Tree.address`, grows the word by a SUBLIST of
+   `flatten` (shared subterms deduplicate through `put`'s duplicate
+   outcome — F2 in action), and reaches exactly `flatten`'s store
+   through the bridge; `putTree_correct_empty` is the from-nothing
+   corollary. One packaged step (`step_put_honest`) carries the
+   fresh-or-duplicate dichotomy; conflict is unreachable over honest
+   words at Level 1. F3 remains the open follow-up.
+4. **The LLM is a first-class signature.** Core `CasSig` is the store
+   algebra only (`put`/`load`/`fail`); the LLM extension is `LlmSig` with
+   `infer` (the old `ask` is dead); languages compose by signature sum and
+   interpret by monad morphism (`handleLlm`). An inference is an
+   acquisition; admission is the only gate by which it becomes load-bearing;
+   attestation is an executor's claim, never a proof.
+5. **SHA-256 is transcribed, not invented.** `Cas/Codec/Sha256.lean` carries
+   the FIPS 180-4 spec as `BitVec` mathematics — per-block pipeline
+   transcribed with credit from concrete's `Sha256Spec.lean`, padding and
+   multi-block completed here — gated by the NIST known-answer vectors as
+   build-time interpreter asserts (never kernel `decide`). The toy fnv1a
+   digest is dead everywhere; `sha256Addr` is the production vector digest,
+   collapsing the two-tier vector design to one tier.
+6. **The CAS typeclass.** `Canonical` (encode, closed decode, forward
+   correctness, image exactness) with the hash-hypothesis lattice proved
+   once generically; `AdmittedNode` instantiates it at zero proof cost;
+   grammar trees are addressable through elaboration (`toAdmitted`), not
+   `Canonical` themselves.
+7. **The schema hierarchy.** Our canonical schema is the ROOT — nothing
+   stands above it; its identity is the digest of its canonical bytes, so
+   schemas are store content (reserved kind tag `0x53`). Effect is the
+   primary runtime and Effect Schema is a CARRIER of the canonical schema,
+   never an authority; JSON Schema is an export projection only. The
+   SchemaAST census and the entity-store extract/generate pipeline are
+   re-aimed as the carrier-adequacy record (admission map per AST variant).
+   Standing law of the plane: no canonical construct's identity lives in a
+   function.
+8. **The canonical schema v0, both directions.** `src/cas/CanonicalSchema.ts`
+   (`Cas.CanonicalSchema`): the AST
+   (`Null/Boolean/Integer/String/Literal/Array/Struct/Ref`) is itself an
+   Effect Schema codec — the plane's specific encoding; the annotation API
+   (`foldlab/cas/canonical`) lets any Effect Schema declare the canonical
+   schema it carries, with bytes ALWAYS derived on read, never stored;
+   `fromAst` runs the generative direction — the AST compiles to its fully
+   typed runtime carrier (`TypeOf` type-level interpreter,
+   `Match.tagsExhaustive` compiler, tag-pinned reference codec
+   `refWithTag`), self-carrying by construction, with reference edges
+   admission-checked at the store. Deferred to the schema commission:
+   `union`, `mu`/`var`, references carrying their target schema's address,
+   automatic derivation from the 21-variant AST, and the Lean twin.
+9. **The two-minute rule** (operator-ordered lane law,
+   `library/cas/AGENTS.md`): a stalled proof stops after two minutes and
+   consults standard literature, prior art, and the skills — never grinds.
+   Bit-level machinery is imported and credited when a determination exists,
+   never re-derived.
+
+**The vector lane LANDED (2026-08-28, same wave).** The registered
+replay surface, patterned on lean4-tree-sitter's `GrammarSpec`
+registration (the registered thing is a first-class typed value; one
+registry; a tracking manifest):
+
+- `library/cas/Cas/Vectors/Vectors.lean` — `ConformanceVector`
+  (name, description, word) with its canonical JSON projection
+  (`Json.render` manifest form, so regeneration is byte-identical by
+  construction) and the `index.json` manifest builder.
+- `library/cas/tools/Vectors.lean` (`lake exe vectors`) — ONE registry
+  of four vectors seeded through the grammar under `sha256Addr`
+  (value-single, blob-two-leaves, file-readme, journal-two-entries;
+  22 bindings total); every word is gated on `Word.wf` at emission;
+  `--check` is the byte-identity gate. Fixtures committed under
+  `library/cas/vectors/`.
+- `src/cas/ConformanceVector.ts` (`Cas.ConformanceVector`) — the TS
+  twin: wire schemas hand-mirroring the Lean emitter (the drift
+  tripwire), `toNodeInput` projection; on the barrel.
+- `test/ConformanceVectors.test.ts` — the replay: every binding put
+  through `layerMemoryLive` (real WebCrypto SHA-256) answers the
+  Lean-computed address; roots read back byte-identical through the
+  verified load path; a root put out of order refuses with
+  `DanglingReference` (admission order is semantics); the index rows
+  match the fixtures. Follows the ratified V1–V8 harness rulings at
+  this scale (loading inside Effect, case id in the assertion, no
+  snapshots, decode failure is red).
+- One independent cross-check performed at landing: `value-single`'s
+  address recomputed by hand-assembling the preimage under .NET
+  SHA-256 — byte-identical to the Lean digest.
+- mise wiring: `check:cas` now runs `lake --wfail build` + `lake exe
+  vectors --check`; `gen:cas-vectors` regenerates; `gen` includes it.
+- **Described addendum (same day):** the vector format is itself a
+  described tree. Lean: `vectorAst`/`indexAst` are canonical schema
+  codes (strictly sorted, literal codes pin the digest-scheme and
+  format-version values), the document is `Schema.encode` of the
+  vector's `El` image (no hand-rolled projection survives), and
+  validation is DERIVED — `decode_json`/`validates_json`/`json_exact`
+  are instances of the universe's one-time forward and exactness
+  theorems at the vector code. The refactor reproduced every committed
+  fixture byte-for-byte (`--check` passed unregenerated). TS:
+  `ConformanceVector.vectorAst`/`indexAst` mirror the codes through
+  the CanonicalSchema constructors and the wire schemas carry them via
+  the annotation API (carrier/identity split). Asserting the schema
+  bytes agree across runtimes (the canonical-schema pin) is BLOCKED on
+  the schema commission's Lean Ast codec — first cross-pin when that
+  lands.
+
+**Queued (operator-raised 2026-08-28, marked for later, un-grilled):**
+a `cas` CLI surface — ask it about any directory and it answers whether
+a store lives there; it emits the canonical store representation (the
+described word document above) and can optionally initialize one of
+our stores in the directory (the `objects/`+`roots/` store-root layout
+the file backend and path reader already share). Operator's framing to
+preserve: the CLI IS another grammar/language — commands are
+operations of the store language, a session is a program, the
+canonical representation is the word. @effect/cli when built; grill
+before building.
+
+Owed: provenance
+receipts for the concrete transcription and catalog rows for
+predictable-machines lean4-json-schema and lean4-tree-sitter; CONTEXT
+entries for the terms minted this wave (store word, the language layers,
+the CAS typeclass, canonical schema) in their proper format — several may
+belong to a broader context than effect-replay, which is its own pending
+ruling.

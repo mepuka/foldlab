@@ -1,0 +1,34 @@
+{
+  "digest": "sha256-scheme0",
+  "schemaVersion": 1,
+  "vectors": [
+    {
+      "bindings": 1,
+      "description": "one opaque value node, no references",
+      "file": "value-single.json",
+      "name": "value-single",
+      "root": "19d41f1156c974ac72ef94d36d8254c07de96dfd00e0f115735aad3d1528f5ca"
+    },
+    {
+      "bindings": 6,
+      "description": "a two-leaf blob: chunk, leaf, parent, manifest",
+      "file": "blob-two-leaves.json",
+      "name": "blob-two-leaves",
+      "root": "a0acf436fccafac85affe7eb898c08f42b40184e9fdc54d0338b82d891f12339"
+    },
+    {
+      "bindings": 4,
+      "description": "a named file over a one-chunk blob manifest",
+      "file": "file-readme.json",
+      "name": "file-readme",
+      "root": "7b59a9e8853aa88aeaa237413bacfab3d4e6a30aff4e706258602372b2d7c5e6"
+    },
+    {
+      "bindings": 11,
+      "description": "a journal: genesis and two entries over saved files",
+      "file": "journal-two-entries.json",
+      "name": "journal-two-entries",
+      "root": "aed4a3c4ddc61cc5e6234006536b9c788a39bd9ff5b8736a25bd2ca045a52b40"
+    }
+  ]
+}

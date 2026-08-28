@@ -15,8 +15,12 @@
  * Both refuse — never escape — user data that collides with a
  * reserved key: an escape would invent a second spelling for the same
  * value and split its content identity.
+ *
+ * Both walks are typed over the closed `Schema.Json` union — the TS
+ * twin of the model's `Json.Value` — so the only unparsed boundary is
+ * where the caller parses wire text into that union.
  */
-import { Data, Option, Result, Schema } from "effect"
+import { Data, Option, Predicate, Result, Schema } from "effect"
 import { Byte, ContentId, type CasReference } from "../cas/Node.ts"
 
 export const RefMarkerKey = "$ref"
@@ -64,24 +68,28 @@ export const compareCodepoints = (left: string, right: string): number => {
   return a.length - b.length
 }
 
-const isPlainObject = (value: object): boolean => {
+const isScalar = (
+  value: Schema.Json,
+): value is null | number | boolean | string =>
+  value === null || Predicate.isNumber(value) || Predicate.isBoolean(value)
+    || Predicate.isString(value)
+
+/** A JSON object with a plain prototype. The prototype check is
+ * defense in depth for values cast into the union at a boundary. */
+const isWalkableObject = (
+  value: Schema.JsonArray | Schema.JsonObject,
+): value is Schema.JsonObject => {
+  if (Array.isArray(value)) return false
   const prototype = Object.getPrototypeOf(value)
   return prototype === Object.prototype || prototype === null
 }
 
-const isWalkableObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value)
-    && isPlainObject(value)
-
 /** Keys in canonical traversal order. */
-const canonicalKeys = (value: Record<string, unknown>): ReadonlyArray<string> =>
+const canonicalKeys = (value: Schema.JsonObject): ReadonlyArray<string> =>
   Object.keys(value).sort(compareCodepoints)
 
-const markerIndex = (value: Record<string, unknown>): unknown =>
-  value[RefMarkerKey]
-
 const exactSingleKey = (
-  value: Record<string, unknown>,
+  value: Schema.JsonObject,
   key: string,
 ): boolean => {
   const keys = Object.keys(value)
@@ -89,7 +97,7 @@ const exactSingleKey = (
 }
 
 export interface MarkerizedValue {
-  readonly payload: unknown
+  readonly payload: Schema.Json
   readonly refs: ReadonlyArray<CasReference>
 }
 
@@ -97,15 +105,16 @@ export interface MarkerizedValue {
  * canonical order, references accumulate in that order, and a reserved
  * key in plain data refuses the whole encode. */
 export const markerize = (
-  value: unknown,
+  value: Schema.Json,
 ): Result.Result<MarkerizedValue, MarkerViolation> => {
   const refs: Array<CasReference> = []
 
   const walk = (
-    current: unknown,
-  ): Result.Result<unknown, MarkerViolation> => {
+    current: Schema.Json,
+  ): Result.Result<Schema.Json, MarkerViolation> => {
+    if (isScalar(current)) return Result.succeed(current)
     if (Array.isArray(current)) {
-      const items: Array<unknown> = []
+      const items: Array<Schema.Json> = []
       for (const item of current) {
         const walked = walk(item)
         if (Result.isFailure(walked)) return walked
@@ -129,7 +138,7 @@ export const markerize = (
           reason: "a $link sentinel must carry exactly {id, tag}",
         }))
       }
-      const marker = { [RefMarkerKey]: refs.length }
+      const marker: Schema.JsonObject = { [RefMarkerKey]: refs.length }
       refs.push({ expectedTag: body.value.tag, id: body.value.id })
       return Result.succeed(marker)
     }
@@ -139,11 +148,11 @@ export const markerize = (
       )
     }
 
-    const rebuilt: Record<string, unknown> = {}
+    const rebuilt: Record<string, Schema.Json> = {}
     // Canonical-order recursion assigns indexes; insertion order of the
     // rebuilt object is cosmetic — the canonical encoding sorts keys.
     for (const key of canonicalKeys(current)) {
-      const walked = walk(current[key])
+      const walked = walk(current[key] as Schema.Json)
       if (Result.isFailure(walked)) return walked
       rebuilt[key] = walked.success
     }
@@ -153,24 +162,21 @@ export const markerize = (
   return Result.map(walk(value), (payload) => ({ payload, refs }))
 }
 
-const isForcedIndex = (value: unknown, expected: number): boolean =>
-  typeof value === "number" && Number.isSafeInteger(value)
-    && value === expected
-
 /** The exact inverse walk: the k-th marker in canonical order must
  * carry index k and resolves to the k-th reference as a sentinel; the
  * counts must agree; reserved keys outside their exact shapes refuse. */
 export const resolveMarkers = (
-  payload: unknown,
+  payload: Schema.Json,
   refs: ReadonlyArray<CasReference>,
-): Result.Result<unknown, MarkerViolation> => {
+): Result.Result<Schema.Json, MarkerViolation> => {
   let next = 0
 
   const walk = (
-    current: unknown,
-  ): Result.Result<unknown, MarkerViolation> => {
+    current: Schema.Json,
+  ): Result.Result<Schema.Json, MarkerViolation> => {
+    if (isScalar(current)) return Result.succeed(current)
     if (Array.isArray(current)) {
-      const items: Array<unknown> = []
+      const items: Array<Schema.Json> = []
       for (const item of current) {
         const walked = walk(item)
         if (Result.isFailure(walked)) return walked
@@ -186,14 +192,14 @@ export const resolveMarkers = (
           MarkerViolation.ReservedKeyCollision({ key: RefMarkerKey }),
         )
       }
-      const index = markerIndex(current)
-      if (typeof index !== "number" || !Number.isSafeInteger(index)
+      const index = current[RefMarkerKey] as Schema.Json
+      if (!Predicate.isNumber(index) || !Number.isSafeInteger(index)
         || index < 0) {
         return Result.fail(MarkerViolation.MalformedMarker({
           reason: "a $ref marker must carry a non-negative integer index",
         }))
       }
-      if (!isForcedIndex(index, next)) {
+      if (index !== next) {
         return Result.fail(MarkerViolation.IndexOutOfOrder({
           actual: index,
           expected: next,
@@ -217,9 +223,9 @@ export const resolveMarkers = (
       )
     }
 
-    const rebuilt: Record<string, unknown> = {}
+    const rebuilt: Record<string, Schema.Json> = {}
     for (const key of canonicalKeys(current)) {
-      const walked = walk(current[key])
+      const walked = walk(current[key] as Schema.Json)
       if (Result.isFailure(walked)) return walked
       rebuilt[key] = walked.success
     }

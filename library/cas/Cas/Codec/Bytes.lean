@@ -1,4 +1,4 @@
-import Cas.Nat32
+import Cas.Codec.Nat32
 /-!
 # Byte-codec primitives
 

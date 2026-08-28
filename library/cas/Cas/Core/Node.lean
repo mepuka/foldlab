@@ -1,4 +1,4 @@
-import Cas.Bytes
+import Cas.Codec.Bytes
 
 /-!
 # The CAS node carrier

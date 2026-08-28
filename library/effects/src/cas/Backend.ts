@@ -116,7 +116,7 @@ export const makeMemoryBackend = (): MemoryBackend => {
           : Option.some(resident.slice())
       }),
       presence: (ids) => Effect.sync(() =>
-        ids.map((id) => nodes.has(id) ? "present" as const : "missing" as const)),
+        ids.map((id): PresenceStatus => nodes.has(id) ? "present" : "missing")),
     },
     writer: {
       putBytes: (id, bytes) => Effect.sync(() => {

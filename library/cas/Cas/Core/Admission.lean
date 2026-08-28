@@ -1,5 +1,5 @@
-import Cas.Store
-import Cas.Address
+import Cas.Core.Store
+import Cas.Core.Address
 
 /-!
 # Store admission

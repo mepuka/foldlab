@@ -5,7 +5,7 @@
  * exact inverse round trip.
  */
 import { expect, it } from "@effect/vitest"
-import { Effect, Result } from "effect"
+import { Effect, Result, type Schema } from "effect"
 import { ContentId, type CasReference } from "../src/cas/Node.ts"
 import {
   markerize,
@@ -23,19 +23,19 @@ const linkB = { $link: { id: idB, tag: 7 } }
 const refA: CasReference = { expectedTag: 5, id: idA }
 const refB: CasReference = { expectedTag: 7, id: idB }
 
-const lowered = (value: unknown) => Result.getOrThrowWith(
+const lowered = (value: Schema.Json) => Result.getOrThrowWith(
   markerize(value),
   (violation) => new Error(violationReason(violation)),
 )
 
-const refused = (value: unknown): MarkerViolation => {
+const refused = (value: Schema.Json): MarkerViolation => {
   const result = markerize(value)
   if (Result.isSuccess(result)) throw new Error("expected a refusal")
   return result.failure
 }
 
 const resolveRefused = (
-  payload: unknown,
+  payload: Schema.Json,
   refs: ReadonlyArray<CasReference>,
 ): MarkerViolation => {
   const result = resolveMarkers(payload, refs)
@@ -101,7 +101,7 @@ it.effect("reserved keys in plain data refuse the encode — never escape", () =
 
 it.effect("resolve is the exact inverse on every lowering", () =>
   Effect.sync(() => {
-    const fixtures: ReadonlyArray<unknown> = [
+    const fixtures: ReadonlyArray<Schema.Json> = [
       { b: linkA, a: linkB },
       { author: linkA, title: "hi" },
       [linkA, linkA],

@@ -10,6 +10,8 @@ export const WitnessKindTag = 0x57
 export const ChunkDataTag = 8
 export const BlobNodeTag = 9
 export const BlobManifestTag = 10
+/** Canonical-schema nodes: the schema plane's own kind. */
+export const SchemaKindTag = 0x53
 
 export const ReservedKindTags: ReadonlySet<number> = new Set([
   HistoryKindTag,
@@ -17,4 +19,5 @@ export const ReservedKindTags: ReadonlySet<number> = new Set([
   ChunkDataTag,
   BlobNodeTag,
   BlobManifestTag,
+  SchemaKindTag,
 ])

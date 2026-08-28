@@ -1,4 +1,4 @@
-import Cas.Codec
+import Cas.Codec.NodeCodec
 
 /-!
 # The address function

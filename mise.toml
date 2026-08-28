@@ -6,6 +6,7 @@ node = "22.23.2"
 description = "Regenerate every derived file from declared sources"
 run = [
   "mise run gen:vectors",
+  "mise run gen:cas-vectors",
   "mise run gen:ledger",
 ]
 
@@ -41,10 +42,18 @@ description = "Build the machine library under --wfail"
 dir = "{{config_root}}/library/machine"
 run = "lake --wfail build"
 
-[tasks."check:cas"]
-description = "Build the CAS type model under --wfail"
+[tasks."gen:cas-vectors"]
+description = "Regenerate the CAS conformance vectors from the Lean registry"
 dir = "{{config_root}}/library/cas"
-run = "lake --wfail build"
+run = "lake exe vectors"
+
+[tasks."check:cas"]
+description = "Build the CAS type model under --wfail and run the vector byte-identity gate"
+dir = "{{config_root}}/library/cas"
+run = [
+  "lake --wfail build",
+  "lake exe vectors --check",
+]
 
 [tasks."check:effects:archive"]
 description = "Build the RETIRED effects-model@0.3.0 corpus and run its frozen gates (manual; not in CI)"

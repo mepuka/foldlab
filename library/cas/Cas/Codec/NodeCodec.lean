@@ -1,5 +1,5 @@
-import Cas.Node
-import Cas.Nat32
+import Cas.Core.Node
+import Cas.Codec.Nat32
 
 /-!
 # The canonical node codec

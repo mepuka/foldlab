@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "lean4-git-cas-meta-pl-sources",
+  "observedAt": "2026-08-28T01:52:22-05:00",
+  "scope": "Bounded primary-source survey of Lean 4 Git representations, content-addressed storage, metaprogramming, and programming-language-design examples.",
+  "searchBoundary": [
+    "GitHub repository/code searches: git language:Lean, GitRepo, GitObject, git cat-file, git rev-parse, Git object",
+    "Direct inspection of pinned source trees and named modules recorded below",
+    "Source-tree searches for Git object constructors/parsers, CAS theorem declarations, and executable tests"
+  ],
+  "repositories": [
+    {
+      "id": "git",
+      "repository": "https://github.com/git/git",
+      "selector": "v2.55.0",
+      "commit": "e9019fcafe0040228b8631c30f97ae1adb61bcdc",
+      "rootTree": "31aca3670a1b02adda456bcd92c851dd3e7543cb",
+      "license": "GPL-2.0-only",
+      "paths": ["object-file.c", "Documentation/gitrepository-layout.adoc", "Documentation/gitformat-index.adoc", "Documentation/gitformat-pack.adoc", "Documentation/technical/shallow.adoc", "Documentation/technical/partial-clone.adoc"]
+    },
+    {
+      "id": "lean4",
+      "repository": "https://github.com/leanprover/lean4",
+      "selector": "v4.33.1",
+      "commit": "819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+      "rootTree": "4399190c8231db0b73a116b1415e06a2591c0d57",
+      "license": "Apache-2.0",
+      "paths": ["src/lake/Lake/Util/Git.lean", "doc/examples/ICERM2022/meta.lean", "doc/examples/tc.lean", "doc/examples/interp.lean", "src/Lean/Meta/Basic.lean", "src/Lean/Elab/Macro.lean", "src/Lean/Elab/Quotation.lean", "src/Lean/Elab/Tactic/Basic.lean", "src/Lean/Elab/Deriving/Basic.lean", "src/Lean/Elab/Deriving/Util.lean", "src/Lean/Elab/Deriving/FromToJson.lean"]
+    },
+    {
+      "id": "alaya",
+      "repository": "https://github.com/mechtaev/alaya",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "e88b330aab585820371061ef40f06b11b3d7a6bb",
+      "rootTree": "a7d39ff5c72aefcbbe9618bf7de3e25fba62b52c",
+      "license": "MIT",
+      "toolchain": "leanprover/lean4:v4.31.0",
+      "paths": ["Alaya/Cas/Core.lean", "Alaya/Cas/Sha256.lean", "Alaya/Cas/Store.lean", "Alaya/Cas/Workspace.lean", "Test/Cas.lean", "Test/Sha256.lean"]
+    },
+    {
+      "id": "ix",
+      "repository": "https://github.com/argumentcomputer/ix",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "929796e7355a20960568d8eb2847290f3a6ae083",
+      "rootTree": "aadf8a797f97ad9cffdfc96328f0b210b53fb8c3",
+      "license": "Apache-2.0 OR MIT",
+      "toolchain": "leanprover/lean4:v4.33.1",
+      "paths": ["Ix/Address.lean", "Ix/CanonM.lean", "Ix/Ixon.lean", "Ix/Environment.lean", "Ix/Store.lean", "Ix/Tc/Verify/Audit/Basic.lean", "Ix/Tc/Verify/Audit/Completed.lean"]
+    },
+    {
+      "id": "radiya-lean",
+      "repository": "https://github.com/argumentcomputer/Radiya.lean",
+      "selector": "HEAD observed 2026-08-28; repository archived",
+      "commit": "46898dd3172070bc7b9880b95300ea11703e2b72",
+      "rootTree": "8e5b941e0e62c839403cc77d88f1a5563602b4ce",
+      "license": "MIT",
+      "toolchain": "leanprover/lean4:nightly-2022-05-10",
+      "paths": ["src/Radiya/Content/Cid.lean", "src/Radiya/Content/Expr.lean", "src/Radiya/Content/Env.lean", "src/Radiya/Content/ToIpld.lean"]
+    },
+    {
+      "id": "btc-verified",
+      "repository": "https://github.com/ProofOfKeags/btc-verified",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "6edb4527204b320d7e4499158c5cf9e2d93e6bdd",
+      "rootTree": "80804f487d474753823fbdd8ed73b625ffb03286",
+      "license": "Apache-2.0",
+      "toolchain": "leanprover/lean4:v4.30.0-rc2",
+      "paths": ["BtcVerified/Crypto/Merkle.lean", "BtcVerified/Impl/BitcoinCore/Merkle.lean"]
+    },
+    {
+      "id": "lean-reference-manual",
+      "repository": "https://github.com/leanprover/reference-manual",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "e6157b93205004412a9caa7edcc40c2abe9955b7",
+      "license": "Apache-2.0",
+      "paths": ["Manual/NotationsMacros/Elab.lean", "Manual/NotationsMacros/Delab.lean", "Manual/Tactics/Custom.lean"]
+    },
+    {
+      "id": "lean4-metaprogramming-book",
+      "repository": "https://github.com/leanprover-community/lean4-metaprogramming-book",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "59e56eff3948ba2b4ae153a433beea1fd9130ec8",
+      "license": "Apache-2.0",
+      "paths": ["lean/main/03_expressions.lean", "lean/main/08_dsls.lean", "lean/main/09_tactics.lean"]
+    },
+    {
+      "id": "sampcert",
+      "repository": "https://github.com/leanprover/SampCert",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "e85bd645ac21fd2a533bc77ce53d8962fece851a",
+      "license": "Apache-2.0",
+      "toolchain": "leanprover/lean4:v4.33.1",
+      "paths": ["SampCert/Extractor/Extension.lean", "SampCert/Extractor/IR.lean", "SampCert/Extractor/Translate.lean", "SampCert/Extractor/Extraction.lean"]
+    },
+    {
+      "id": "lean4lean",
+      "repository": "https://github.com/digama0/lean4lean",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "3adf6da696960c671096243420be6ea0f04b686e",
+      "license": "Apache-2.0",
+      "paths": ["Lean4Lean/TypeChecker.lean", "Lean4Lean/Theory/Typing/Basic.lean", "Lean4Lean/Verify/TypeChecker"]
+    },
+    {
+      "id": "concrete",
+      "repository": "https://github.com/lambdaclass/concrete",
+      "selector": "local study clone HEAD observed 2026-08-28",
+      "commit": "28a25a4e27fd2eaed5193e5f1c1454e06399506f",
+      "license": "Apache-2.0",
+      "toolchain": "leanprover/lean4:v4.28.0",
+      "paths": ["Concrete/Frontend/Parser.lean", "Concrete/Elab/Core.lean", "Concrete/Elab/Elab.lean", "Concrete/IR/Lower.lean", "Concrete/IR/SSA.lean", "Concrete/Semantics/TypeJudgment.lean", "Concrete/Proof/ObligationCore.lean", "Concrete/Proof/ProofSoundness.lean"]
+    }
+  ],
+  "negativeFinding": "Within the recorded search boundary, no public Lean 4 source surfaced that reifies all Git blob/tree/commit/tag object grammars and validates Git object IDs. This is not a universal non-existence claim.",
+  "unverifiedIdentities": "None of the source claims in the note depends on an unverified content/object blob identity; repository commits are the resolution pins. Per-file blob hashes were not recorded for every path."
+}

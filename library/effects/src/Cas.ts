@@ -113,6 +113,15 @@ export * as Graph from "./cas/Graph.ts"
 // twin description through one shared canonical matrix.
 export * as Architecture from "./cas/Architecture.ts"
 
+// The schema plane's root: canonical schemas as content — identity by
+// digest of canonical bytes — carried by Effect Schema through the
+// annotation API. No schema stands above it.
+export * as CanonicalSchema from "./cas/CanonicalSchema.ts"
+
+// The registered replay surface: the Lean-emitted conformance vector
+// as a first-class type, wire schemas hand-mirroring the emitter.
+export * as ConformanceVector from "./cas/ConformanceVector.ts"
+
 // Typed value projection, with typed references (CAS-005).
 export { ProjectionCodecFailure, ref, value } from "./cas/Value.ts"
 export type {

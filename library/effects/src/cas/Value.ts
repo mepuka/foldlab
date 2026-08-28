@@ -28,7 +28,6 @@ import {
   ContentId,
   UnknownKind,
   type CasError,
-  type CasReference,
   type ContentId as ContentIdType,
 } from "./Node.ts"
 import { CasLoader, CasSchemeVersion, CasStore } from "./Store.ts"
@@ -89,6 +88,9 @@ export interface CasValue<A> {
 
 const utf8Encoder = new TextEncoder()
 const utf8Decoder = new TextDecoder("utf-8", { fatal: true })
+
+const isJsonObject = (value: Schema.Json): value is Schema.JsonObject =>
+  Predicate.isObject(value) && !Array.isArray(value)
 
 const projectionFailure = (
   direction: "encode" | "decode",
@@ -179,31 +181,35 @@ const payloadFor = (
     catch: (issue) => projectionFailure("encode", String(issue)),
   })
 
-const decodedEnvelope = (
+/** Decode and re-verify one canonical `{revision, value}` envelope —
+ * shared with the schema plane; not part of the front door. */
+export const decodedEnvelope = (
   payload: Uint8Array,
   revision: number,
   id: ContentIdType,
-): Effect.Effect<unknown, ProjectionCodecFailure> =>
+): Effect.Effect<Schema.Json, ProjectionCodecFailure> =>
   Effect.try({
     try: () => {
       const text = utf8Decoder.decode(payload)
-      const parsed: unknown = JSON.parse(text)
+      // The one unparsed boundary: JSON.parse's output is exactly the
+      // closed JSON union, canonicality re-checked on the next line.
+      const parsed = JSON.parse(text) as Schema.Json
       const canonical = utf8Encoder.encode(canonicalJson(parsed))
       if (!bytesEqual(canonical, payload)) {
         throw new TypeError("Projection payload is not canonical JSON")
       }
       if (
-        !Predicate.isObject(parsed)
+        !isJsonObject(parsed)
         || Object.keys(parsed).length !== 2
         || !("revision" in parsed)
         || !("value" in parsed)
       ) {
         throw new TypeError("Projection payload must be the exact revision/value envelope")
       }
-      if (parsed.revision !== revision) {
+      if (parsed["revision"] !== revision) {
         throw new TypeError(`Projection revision does not match ${revision}`)
       }
-      return parsed.value
+      return parsed["value"]
     },
     catch: (issue) => projectionFailure("decode", String(issue), id),
   })
@@ -215,13 +221,12 @@ const sentinelSchema = Schema.Struct({
   [RefSentinelKey]: Schema.Struct({ id: ContentId, tag: Byte }),
 })
 
-/** A typed-reference field: `Root<B>` in the decoded value, a
- * positional marker plus a reference-array entry on the wire. The
- * target projection arrives as a thunk so self- and mutual reference
- * elaborate; its kind tag is stamped into the reference at encode and
- * demanded of it at decode. */
-export const ref = <B>(
-  target: () => CasValue<B>,
+/** The one reference-codec law: sentinel on the wire, `Root` in the
+ * value, the expected kind tag stamped at encode and demanded at
+ * decode. The tag arrives as a thunk so both entry points below share
+ * it. */
+const refCodec = <B>(
+  expectedTag: () => Byte,
 ): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
   sentinelSchema.pipe(Schema.decodeTo(
     Schema.declare<Root<B>>(
@@ -229,7 +234,7 @@ export const ref = <B>(
     ),
     {
       decode: SchemaGetter.transformOrFail((sentinel, options) => {
-        const expected = target().kindTag
+        const expected = expectedTag()
         return sentinel[RefSentinelKey].tag === expected
           ? Effect.succeed(makeRoot<B>(sentinel[RefSentinelKey].id))
           : Effect.fail(new SchemaIssue.InvalidValue(
@@ -239,10 +244,30 @@ export const ref = <B>(
             ))
       }),
       encode: SchemaGetter.transform((root: Root<B>) => ({
-        [RefSentinelKey]: { id: ContentId.make(root), tag: target().kindTag },
+        [RefSentinelKey]: { id: ContentId.make(root), tag: expectedTag() },
       })),
     },
   ))
+
+/** A typed-reference field: `Root<B>` in the decoded value, a
+ * positional marker plus a reference-array entry on the wire. The
+ * target projection arrives as a thunk so self- and mutual reference
+ * elaborate; its kind tag is stamped into the reference at encode and
+ * demanded of it at decode. */
+export const ref = <B>(
+  target: () => CasValue<B>,
+): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
+  refCodec<B>(() => target().kindTag)
+
+/** A typed-reference field pinned to a kind tag directly — the form a
+ * canonical schema's `Ref` compiles to, where the tag is data and no
+ * target projection exists yet. The decoded root's value type stays
+ * `unknown` until references carry their target schema's address (a
+ * schema-commission item). */
+export const refWithTag = (
+  tag: Byte,
+): Schema.Codec<Root<unknown>, typeof sentinelSchema.Encoded> =>
+  refCodec<unknown>(() => tag)
 
 /** Construct a typed value projection over the in-memory CAS service. */
 export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
@@ -273,7 +298,7 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
       }
       const payload = yield* payloadFor(
         revision,
-        cast(markerized.success.payload),
+        markerized.success.payload,
       )
       const id = yield* store.put(CasNodeInput.make({
         kind: { version: CasSchemeVersion, tag: kindTag },
@@ -302,7 +327,7 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
           root,
         )
       }
-      return yield* Schema.decodeUnknownEffect(options.schema)(resolved.success).pipe(
+      return yield* Schema.decodeEffect(options.schema)(resolved.success).pipe(
         Effect.mapError((issue) => projectionFailure("decode", String(issue), root)),
       )
     },
