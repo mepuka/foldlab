@@ -105,6 +105,11 @@ export type {
 // untrusted-host audit.
 export * as Graph from "./cas/Graph.ts"
 
+// The library described in itself: the architecture as a value, its
+// Schema, a service, and a layer — pinned against the Lean model's
+// twin description through one shared canonical matrix.
+export * as Architecture from "./cas/Architecture.ts"
+
 // Typed value projection, with typed references (CAS-005).
 export { ProjectionCodecFailure, ref, value } from "./cas/Value.ts"
 export type {

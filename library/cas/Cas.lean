@@ -8,6 +8,7 @@ import Cas.Separation
 import Cas.Admission
 import Cas.Json
 import Cas.Refs
+import Cas.Architecture
 import Cas.Lang
 import Cas.Examples
 /-!

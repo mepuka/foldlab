@@ -24,6 +24,7 @@ it.effect("the barrel is exactly the two plane doors", () =>
     expect("ref" in Cas).toBe(true)
     expect("layerPathReader" in Cas).toBe(true)
     expect("Graph" in Cas).toBe(true)
+    expect("Architecture" in Cas).toBe(true)
     expect("Core" in Server).toBe(true)
     expect("httpApp" in Server).toBe(true)
   }))
