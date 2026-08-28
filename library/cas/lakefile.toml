@@ -50,3 +50,12 @@ root = "EmitPrograms"
 name = "mcpspec"
 srcDir = "tools"
 root = "EmitMcp"
+
+# The surface ledger: lake exe surface extracts every public Cas
+# declaration and signature from the compiled environment into
+# surface/cas-surface.json; --check is the byte-identity gate.
+[[lean_exe]]
+name = "surface"
+srcDir = "tools"
+root = "Surface"
+supportInterpreter = true

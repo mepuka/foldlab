@@ -1,0 +1,165 @@
+import Lean
+import Cas.Values.Json
+
+/-!
+# The report lane — `lake exe surface`
+
+Per-declaration reports for the whole `Cas` library, extracted from
+the COMPILED environment — the pattern source is Concrete's proof
+report (`lambdaclass/concrete`, `Concrete/Report/Report.lean`,
+observed 2026-08-28): per-definition entries with canonical labels,
+an evidence dimension, and summary totals, so the surface is held as
+a ledger, not a feeling.
+
+Each declaration carries its name, kind, pretty-printed signature,
+and doc coverage; each THEOREM additionally carries its axiom report
+(`collectAxioms`), and the document heads with the library-wide axiom
+census — the estate's axiom-hygiene obligation, automated. `--check`
+is the byte-identity gate in `check:cas`: any change to the type
+surface, any new axiom dependency, any lost docstring is a visible
+diff, never a drift.
+
+Compiler-generated boilerplate (recursors, `casesOn`, injectivity
+lemmas, match/proof auxiliaries) is excluded; field projections stay —
+they are real API. Signatures print at a fixed width by the pinned
+toolchain's pretty printer; a toolchain bump that reprints them is a
+re-gen event the gate makes loud.
+-/
+
+open Lean
+
+def outPath : System.FilePath := "surface" / "cas-surface.json"
+
+/-- The three axioms the estate considers clean; anything else in a
+report is a finding. -/
+def cleanAxioms : List Name := [`propext, `Classical.choice, `Quot.sound]
+
+def generatedSuffixes : List String := [
+  "casesOn", "ctorIdx", "rec", "recOn", "brecOn", "binductionOn",
+  "below", "ibelow", "noConfusion", "noConfusionType", "toCtorIdx",
+  "ofNat", "injEq", "inj", "sizeOf_spec", "eq_def", "eq_1", "eq_2",
+  "eq_3", "eq_4", "elim"]
+
+def isGenerated (n : Name) : Bool :=
+  match n with
+  | .str _ last =>
+    generatedSuffixes.contains last ||
+    last.startsWith "match_" || last.startsWith "proof_" ||
+    last.startsWith "eq_def"
+  | _ => true
+
+structure Row where
+  name : String
+  kind : String
+  signature : String
+  documented : Bool
+  axioms : List String := []
+
+def moduleOf (env : Environment) (n : Name) : Option Name := do
+  let idx ← env.getModuleIdxFor? n
+  return env.header.moduleNames[idx.toNat]!
+
+/-- Kind, with instances detected by the head of the signature's
+telescope being a class — reliable across imported environments. -/
+def kindOf (env : Environment) (n : Name) (ci : ConstantInfo) :
+    MetaM (Option String) := do
+  match ci with
+  | .thmInfo _ => return some "theorem"
+  | .axiomInfo _ => return some "axiom"
+  | .opaqueInfo _ => return some "opaque"
+  | .inductInfo _ =>
+    if isStructure env n then
+      return some (if Lean.isClass env n then "class" else "structure")
+    else return some "inductive"
+  | .defnInfo _ =>
+    if Lean.isClass env n then return some "class"
+    let isInst ← Meta.forallTelescopeReducing ci.type fun _ body => do
+      let f := body.getAppFn
+      return f.isConst && Lean.isClass env f.constName!
+    return some (if isInst then "instance" else "def")
+  | _ => return none
+
+def collect (env : Environment) : CoreM (Array (Name × Array Row)) := do
+  let mut byModule : Std.HashMap Name (Array Row) := {}
+  for (n, ci) in env.constants.toList do
+    if n.isInternalDetail || n.isAnonymous || isGenerated n then continue
+    unless n.getRoot == `Cas do continue
+    let some m := moduleOf env n | continue
+    unless m.getRoot == `Cas do continue
+    let some kind ← Meta.MetaM.run' (kindOf env n ci) | continue
+    let sig ← Meta.MetaM.run' do
+      return (← Meta.ppExpr ci.type).pretty (width := 10000)
+    let documented := (← findDocString? env n).isSome
+    let axioms ←
+      if kind == "theorem" then do
+        let axs ← Lean.collectAxioms n
+        pure (axs.toList.map Name.toString |>.mergeSort (· < ·))
+      else pure []
+    let row : Row := { name := n.toString, kind, signature := sig,
+                       documented, axioms }
+    byModule := byModule.insert m ((byModule.getD m #[]).push row)
+  let sorted := byModule.toArray.qsort (fun a b => a.1.toString < b.1.toString)
+  return sorted.map fun (m, rows) =>
+    (m, rows.qsort (fun a b => a.name < b.name))
+
+def rowJson (r : Row) : Cas.Json.Value :=
+  .obj <|
+    [("name", .str r.name), ("kind", .str r.kind),
+     ("signature", .str r.signature),
+     ("documented", .bool r.documented)] ++
+    (if r.kind == "theorem" then
+      [("axioms", .arr (r.axioms.map Cas.Json.Value.str))]
+     else [])
+
+def document (modules : Array (Name × Array Row)) : String :=
+  let kinds := ["axiom", "class", "def", "inductive", "instance",
+                "opaque", "structure", "theorem"]
+  let allRows := (modules.map Prod.snd).flatten
+  let totals : List (String × Cas.Json.Value) :=
+    kinds.filterMap fun k =>
+      let c := allRows.filter (·.kind == k) |>.size
+      if c == 0 then none else some (k, .nat c)
+  let axiomNames := (allRows.toList.flatMap (·.axioms)).eraseDups.mergeSort (· < ·)
+  let axiomCensus : List (String × Cas.Json.Value) :=
+    axiomNames.map fun a =>
+      (a, .nat (allRows.filter (·.axioms.contains a) |>.size))
+  let unclean := axiomNames.filter fun a =>
+    !cleanAxioms.any (fun c => c.toString == a)
+  let documented := allRows.filter (·.documented) |>.size
+  let moduleJson (m : Name × Array Row) : Cas.Json.Value :=
+    .obj [
+      ("module", .str m.1.toString),
+      ("declarations", .nat m.2.size),
+      ("documented", .nat (m.2.filter (·.documented) |>.size)),
+      ("surface", .arr (m.2.toList.map rowJson))]
+  Cas.Json.render (.obj [
+    ("library", .str "Cas"),
+    ("declarations", .nat allRows.size),
+    ("documented", .nat documented),
+    ("totals", .obj totals),
+    ("axiomCensus", .obj axiomCensus),
+    ("beyondCleanAxioms", .arr (unclean.map Cas.Json.Value.str)),
+    ("modules", .arr (modules.toList.map moduleJson))]) ++ "\n"
+
+def buildDocument : IO String := do
+  initSearchPath (← findSysroot)
+  let env ← importModules #[{module := `Cas}] {} (loadExts := true)
+  let ctx : Core.Context := { fileName := "<surface>", fileMap := default }
+  let (modules, _) ← (collect env).toIO ctx { env }
+  return document modules
+
+unsafe def main (args : List String) : IO Unit := do
+  enableInitializersExecution
+  let doc ← buildDocument
+  match args with
+  | [] =>
+    IO.FS.createDirAll "surface"
+    IO.FS.writeFile outPath doc
+    IO.println s!"wrote {outPath} ({doc.toUTF8.size} bytes)"
+  | ["--check"] =>
+    let actual ← try IO.FS.readFile outPath
+      catch _ => throw (IO.userError s!"{outPath} missing — run `lake exe surface`")
+    unless actual == doc do
+      throw (IO.userError s!"{outPath} differs from regeneration — run `lake exe surface`")
+    IO.println s!"ok {outPath}"
+  | _ => throw (IO.userError "usage: lake exe surface [--check]")
