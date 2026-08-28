@@ -1,40 +1,40 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 161,
-    "Core": 184,
-    "Grammar": 47,
-    "IR": 65,
-    "Lang": 83,
-    "Schema": 158,
+    "Codec": 184,
+    "Core": 209,
+    "Grammar": 46,
+    "IR": 78,
+    "Lang": 129,
+    "Schema": 157,
     "Values": 138,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 59,
-    "Quot.sound": 131,
-    "propext": 168
+    "Classical.choice": 43,
+    "Quot.sound": 128,
+    "propext": 173
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 86,
-    "Cas.Binding": 33,
-    "Cas.Grammar.Tree": 27,
+    "Cas.Addr32": 108,
+    "Cas.Binding": 35,
+    "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 35,
     "Cas.Lang.Handler": 15,
-    "Cas.Lang.Prog": 51,
-    "Cas.Lang.Refusal": 5,
-    "Cas.Lang.Sig": 39,
-    "Cas.Lang.Status": 17,
+    "Cas.Lang.Prog": 62,
+    "Cas.Lang.Refusal": 7,
+    "Cas.Lang.Sig": 41,
+    "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
-    "Cas.Node": 58,
-    "Cas.Schema.Ast": 76,
+    "Cas.Node": 64,
+    "Cas.Schema.Ast": 75,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 21,
-    "Cas.Word": 44
+    "Cas.Word": 56
   },
-  "declarations": 724,
-  "documented": 263,
+  "declarations": 778,
+  "documented": 308,
   "library": "Cas",
   "modules": [
     {
@@ -1845,7 +1845,7 @@
       ]
     },
     {
-      "declarations": 35,
+      "declarations": 34,
       "documented": 20,
       "module": "Cas.Grammar.Tree",
       "surface": [
@@ -1948,7 +1948,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": true,
           "kind": "theorem",
@@ -1957,7 +1957,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": [],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": false,
           "kind": "theorem",
@@ -1966,7 +1966,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": [],
           "carriers": ["Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": false,
           "kind": "theorem",
@@ -2007,7 +2007,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": false,
           "kind": "theorem",
@@ -2016,7 +2016,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -2025,7 +2025,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": true,
           "kind": "theorem",
@@ -2034,7 +2034,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -2043,7 +2043,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": false,
           "kind": "theorem",
@@ -2060,7 +2060,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": [],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": true,
           "kind": "theorem",
@@ -2069,7 +2069,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": true,
           "kind": "theorem",
@@ -2078,16 +2078,7 @@
           "touches": ["Codec", "Core", "Grammar"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
-          "carriers": ["Cas.Grammar.Tree", "Cas.Schema.Ast"],
-          "documented": false,
-          "kind": "theorem",
-          "name": "Cas.Grammar.Tree.schema.congr_simp",
-          "signature": "∀ (code code_1 : Cas.Schema.Ast) (e_code : code = code_1) (wf : code.WF) (small : List.length (Cas.Grammar.utf8 code.payload) < 4294967296), Cas.Grammar.Tree.schema code wf small = Cas.Grammar.Tree.schema code_1 ⋯ ⋯",
-          "touches": ["Grammar", "Schema"]
-        },
-        {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -2121,7 +2112,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -2426,6 +2417,313 @@
           "name": "Cas.instDecidableEqBinding.decEq",
           "signature": "(x x_1 : Cas.Binding) → Decidable (x = x_1)",
           "touches": ["IR"]
+        }
+      ]
+    },
+    {
+      "declarations": 40,
+      "documented": 32,
+      "module": "Cas.Lang.Defun",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lang.PIn",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PIn.WF",
+          "signature": "Cas.Lang.PIn → Prop",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.PIn.ctorElim",
+          "signature": "{motive : Cas.Lang.PIn → Sort u} → (ctorIdx : Nat) → (t : Cas.Lang.PIn) → ctorIdx = t.ctorIdx → Cas.Lang.PIn.ctorElimType ctorIdx → motive t",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.PIn.ctorElimType",
+          "signature": "{motive : Cas.Lang.PIn → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PIn.resolve",
+          "signature": "List Cas.Addr32 → Cas.Lang.PIn → Option Cas.Addr32",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lang.PLine",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PLine.WF",
+          "signature": "Cas.Lang.PLine → Prop",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.PLine.ctorElim",
+          "signature": "{motive : Cas.Lang.PLine → Sort u} → (ctorIdx : Nat) → (t : Cas.Lang.PLine) → ctorIdx = t.ctorIdx → Cas.Lang.PLine.ctorElimType ctorIdx → motive t",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.PLine.ctorElimType",
+          "signature": "{motive : Cas.Lang.PLine → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PProg",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.contWireTag",
+          "signature": "UInt8"
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.decodeLine",
+          "signature": "Cas.Node → Option Cas.Lang.PLine",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.embed",
+          "signature": "Cas.Lang.PProg → Cas.Lang.Prog Cas.Lang.CasSig Cas.Addr32",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.embedFrom",
+          "signature": "List Cas.Addr32 → Cas.Lang.PProg → Cas.Lang.Prog Cas.Lang.CasSig Cas.Addr32",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.encodeLine",
+          "signature": "Cas.Lang.PLine → Cas.Node",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.encodeLineBody",
+          "signature": "Cas.Lang.PLine → Cas.Bytes",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.encodePIn",
+          "signature": "Cas.Lang.PIn → Cas.Bytes",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.encodePRef",
+          "signature": "UInt8 × Cas.Lang.PIn → Cas.Bytes",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.encodeProg",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.PProg → Cas.Word",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.encodeProg_wf",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (Cas.Lang.encodeProg H p).wf = true",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instDecidableEqPIn",
+          "signature": "DecidableEq Cas.Lang.PIn",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instDecidableEqPIn.decEq",
+          "signature": "(x x_1 : Cas.Lang.PIn) → Decidable (x = x_1)",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instDecidableEqPLine",
+          "signature": "DecidableEq Cas.Lang.PLine",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instDecidableEqPLine.decEq",
+          "signature": "(x x_1 : Cas.Lang.PLine) → Decidable (x = x_1)",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.lineAddr",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.PLine → Cas.Addr32",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.putWord",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Node → Cas.Word → Except Cas.Lang.Refusal (Cas.Addr32 × Cas.Word)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.readLine",
+          "signature": "Cas.Bytes → Option Cas.Lang.PLine",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readN_encode_of",
+          "signature": "∀ {α : Type} {p : Cas.Bytes → Option (α × Cas.Bytes)} {e : α → Cas.Bytes} {P : α → Prop}, (∀ (a : α), P a → ∀ (rest : Cas.Bytes), p (e a ++ rest) = some (a, rest)) → ∀ (xs : List α), (∀ (a : α), a ∈ xs → P a) → ∀ (rest : Cas.Bytes), Cas.readN p xs.length ((List.map e xs).flatten ++ rest) = some (xs, rest)",
+          "touches": ["Codec"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.readPIn",
+          "signature": "Cas.Bytes → Option (Cas.Lang.PIn × Cas.Bytes)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.readPRef",
+          "signature": "Cas.Bytes → Option ((UInt8 × Cas.Lang.PIn) × Cas.Bytes)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.resolveRefs",
+          "signature": "List Cas.Addr32 → List (UInt8 × Cas.Lang.PIn) → Option (List Cas.Ref)",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.runP",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.PProg → Cas.Word → Cas.Lang.Status Cas.Lang.CasSig Cas.Addr32 × Cas.Word",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.runPFrom",
+          "signature": "(Cas.Bytes → Cas.Addr32) → List Cas.Addr32 → Cas.Lang.PProg → Cas.Word → Cas.Lang.Status Cas.Lang.CasSig Cas.Addr32 × Cas.Word",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runPFrom_embedFrom",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), Cas.Lang.run H (List.length p + 1) (Cas.Lang.embedFrom env p) w = Cas.Lang.runPFrom H env p w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runP_embed_agree",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), Cas.Lang.run H (List.length p + 1) (Cas.Lang.embed p) w = Cas.Lang.runP H p w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runP_preserves_wf",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg) {w : Cas.Word}, w.wf = true → (Cas.Lang.runP H p w).snd.wf = true",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.stepWireTag",
+          "signature": "UInt8"
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.step_put_putWord",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (n : Cas.Node) (k : Cas.Addr32 → Cas.Lang.Prog Cas.Lang.CasSig A) (w : Cas.Word),\u000a  Cas.Lang.step H (Cas.Lang.Prog.vis (Cas.Lang.CasE.put n) k) w =\u000a    match Cas.Lang.putWord H n w with\u000a    | Except.ok (a, w') => (Cas.Lang.Status.running (k a), w')\u000a    | Except.error r => (Cas.Lang.Status.refused r, w)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.tableNode",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.PProg → Cas.Node",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.wfFrom_of_refs_nil",
+          "signature": "∀ (w prior : Cas.Word), (∀ (b : Cas.Binding), b ∈ w → b.node.refs = []) → prior.wfFrom w = true",
+          "touches": ["Core", "IR"]
         }
       ]
     },
@@ -2981,6 +3279,129 @@
       ]
     },
     {
+      "declarations": 15,
+      "documented": 13,
+      "module": "Cas.Lang.Roots",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lang.RootE",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.RootE.Ans",
+          "signature": "Cas.Lang.RootE → Type",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RootE.ctorElim",
+          "signature": "{motive : Cas.Lang.RootE → Sort u} → (ctorIdx : Nat) → (t : Cas.Lang.RootE) → ctorIdx = t.ctorIdx → Cas.Lang.RootE.ctorElimType ctorIdx → motive t",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RootE.ctorElimType",
+          "signature": "{motive : Cas.Lang.RootE → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Lang.Sig"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.RootSig",
+          "signature": "Cas.Lang.Sig",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.RootedState",
+          "signature": "Type"
+        },
+        {
+          "carriers": ["Cas.Lang.Sig"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.StoreSig",
+          "signature": "Cas.Lang.Sig",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Lang.Prog"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.liftRootedCas",
+          "signature": "{A : Type u_1} → Cas.Lang.Prog Cas.Lang.CasSig A → Cas.Lang.Prog Cas.Lang.StoreSig A",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.listRoots",
+          "signature": "Cas.Lang.Prog Cas.Lang.StoreSig (List Cas.Addr32)",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.publish",
+          "signature": "Cas.Addr32 → Cas.Lang.Prog Cas.Lang.StoreSig Unit",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.publish_mem",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} {a : Cas.Addr32} {k : Unit → Cas.Lang.Prog Cas.Lang.StoreSig A} {w : Cas.Word} {roots : List Cas.Addr32} {rest : Cas.Lang.Prog Cas.Lang.StoreSig A} {s' : Cas.Lang.RootedState}, Cas.Lang.stepRooted H (Cas.Lang.Prog.vis (Sum.inr (Cas.Lang.RootE.publish a)) k) (w, roots) = (Cas.Lang.Status.running rest, s') → ∃ n, { address := a, node := n } ∈ w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.runRooted",
+          "signature": "(Cas.Bytes → Cas.Addr32) → {A : Type} → Nat → Cas.Lang.Prog Cas.Lang.StoreSig A → Cas.Lang.RootedState → Cas.Lang.Status Cas.Lang.StoreSig A × Cas.Lang.RootedState",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.stepRooted",
+          "signature": "(Cas.Bytes → Cas.Addr32) → {A : Type} → Cas.Lang.Prog Cas.Lang.StoreSig A → Cas.Lang.RootedState → Cas.Lang.Status Cas.Lang.StoreSig A × Cas.Lang.RootedState",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.stepRooted_cas_agrees",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (e : Cas.Lang.CasE) (k : e.Ans → Cas.Lang.Prog Cas.Lang.StoreSig A) (w : Cas.Word) (roots : List Cas.Addr32), (Cas.Lang.stepRooted H (Cas.Lang.Prog.vis (Sum.inl e) k) (w, roots)).snd = ((Cas.Lang.step H (Cas.Lang.Prog.vis e Cas.Lang.Prog.pure) w).snd, roots)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.stepRooted_preserves_wf",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.StoreSig A) {w : Cas.Word} (roots : List Cas.Addr32), w.wf = true → (Cas.Lang.stepRooted H p (w, roots)).snd.fst.wf = true",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        }
+      ]
+    },
+    {
       "declarations": 5,
       "documented": 3,
       "module": "Cas.Lang.Sig",
@@ -3160,7 +3581,7 @@
           "touches": ["Core", "Grammar", "Lang"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -3169,7 +3590,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR", "Lang"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Lang.Status", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -3178,7 +3599,7 @@
           "touches": ["Codec", "Core", "Grammar", "IR", "Lang"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Grammar.Tree", "Cas.Grammar.Ty", "Cas.Lang.Status", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -5807,10 +6228,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 421,
-    "inductive": 20,
-    "instance": 32,
+    "def": 459,
+    "inductive": 23,
+    "instance": 36,
     "structure": 29,
-    "theorem": 219
+    "theorem": 228
   }
 }

@@ -50,8 +50,7 @@ def schemaRow : IO Row := do
   if small : (Cas.Grammar.utf8 vectorDocumentCode.payload).length < 4294967296 then
     return ("schemaVectorDocument", "schema-vector-document",
       "The vector format's own canonical schema as a schema node.",
-      ⟨_, .schema vectorDocumentCode
-        (Cas.Schema.Described.wf (α := Cas.Vectors.Wire.VectorDocument)) small⟩)
+      ⟨_, .schema ⟨Cas.Grammar.utf8 vectorDocumentCode.payload, small⟩⟩)
   else
     throw (IO.userError "schema program: payload exceeds the node byte bound")
 

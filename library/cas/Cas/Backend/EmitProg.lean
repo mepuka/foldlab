@@ -70,8 +70,7 @@ partial def lowerTree : Tree t → StateM (Array Stmt × Nat) String
     let pa ← lowerTree prev
     putNode Ty.entry.wireTag note.val
       [(ia, Ty.file.wireTag), (pa, Ty.entry.wireTag)]
-  | .schema code _ _ =>
-    putNode Ty.schema.wireTag (Grammar.utf8 code.payload) []
+  | .schema p => putNode Ty.schema.wireTag p.val []
   | .git obj => putNode Ty.git.wireTag obj.val []
 
 /-- One tree as one exported program declaration: every put in

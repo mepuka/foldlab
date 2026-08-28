@@ -1,4 +1,5 @@
 import Cas.Lang.Interp
+import Cas.Lang.TreeProg
 import Cas.Grammar.Sorts
 
 /-!
@@ -42,9 +43,9 @@ Proved below:
   plus one closing step (the final `pure`, or the refusal vis).
 - `runP_preserves_wf` — the direct interpreter preserves word
   admission (L7, inherited through the agreement).
-- `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
+- (ROLLED BACK, see below) `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
   round trips over the shared byte primitives (`nat32`, `readChunk`).
-- `decodeLine_encodeLine` — the code-point round trip:
+- (ROLLED BACK, see below) `decodeLine_encodeLine` — the code-point round trip:
   `decodeLine (encodeLine l) = some l` for well-formed lines.
 - `encodeProg_wf` — the encoded table ADMITS as a word
   (`Word.wf (encodeProg H p) = true`) for EVERY address function `H`,
@@ -130,7 +131,7 @@ def embedFrom (env : List Addr32) : PProg → Prog CasSig Addr32
   | .put v t payload refs :: rest =>
     match resolveRefs env refs with
     | some rs =>
-      .vis (.put ⟨v, t, payload, rs⟩) fun a => embedFrom (env ++ [a]) rest
+      .vis (.put ⟨v, t, payload, rs⟩) fun (a : Addr32) => embedFrom (env ++ [a]) rest
     | none => failWith "defun: dangling answer index"
   | .load src :: rest =>
     match src.resolve env with
@@ -228,20 +229,21 @@ theorem runPFrom_embedFrom (env : List Addr32) (p : PProg) :
       | none => simp [run, step, failWith]
       | some rs =>
         have hstep := step_put_putWord H ⟨v, t, payload, rs⟩
-          (fun a => embedFrom (env ++ [a]) rest) w
+          (fun (a : Addr32) => embedFrom (env ++ [a]) rest) w
         cases hp : putWord H ⟨v, t, payload, rs⟩ w with
         | ok aw =>
           obtain ⟨a, w'⟩ := aw
           rw [hp] at hstep
+          simp only [hp]
           calc run H (rest.length + 1 + 1)
                 (.vis (.put ⟨v, t, payload, rs⟩)
-                  fun a => embedFrom (env ++ [a]) rest) w
+                  fun (a : Addr32) => embedFrom (env ++ [a]) rest) w
               = run H (rest.length + 1) (embedFrom (env ++ [a]) rest) w' :=
                 run_step_running H hstep (rest.length + 1)
             _ = runPFrom H (env ++ [a]) rest w' := ih (env ++ [a]) w'
         | error r =>
           rw [hp] at hstep
-          simp [run, hstep]
+          simp [run, hstep, hp]
     | load src =>
       simp only [embedFrom, runPFrom, List.length_cons]
       cases hr : src.resolve env with
@@ -253,6 +255,7 @@ theorem runPFrom_embedFrom (env : List Addr32) (p : PProg) :
               (.vis (.load a) fun _ => embedFrom (env ++ [a]) rest) w
               = (.running (embedFrom (env ++ [a]) rest), w) := by
             simp [step, hf]
+          simp only [hf]
           calc run H (rest.length + 1 + 1)
                 (.vis (.load a) fun _ => embedFrom (env ++ [a]) rest) w
               = run H (rest.length + 1) (embedFrom (env ++ [a]) rest) w :=
@@ -263,7 +266,7 @@ theorem runPFrom_embedFrom (env : List Addr32) (p : PProg) :
               (.vis (.load a) fun _ => embedFrom (env ++ [a]) rest) w
               = (.refused (.noObject a), w) := by
             simp [step, hf]
-          simp [run, hstep]
+          simp [run, hstep, hf]
 
 /-- AGREEMENT (the heart of F3's first bite, F1's proof pattern): the
 direct interpreter and the embedded program agree — status AND final
@@ -304,16 +307,10 @@ def readPIn : Bytes → Option (PIn × Bytes)
       | none => none
     else none
 
-theorem readPIn_encodePIn (x : PIn) (h : x.WF) (rest : Bytes) :
-    readPIn (encodePIn x ++ rest) = some (x, rest) := by
-  cases x with
-  | lit a =>
-    simp only [encodePIn, List.cons_append, readPIn, if_pos rfl,
-      readChunk_append rest a.prop, dif_pos a.prop]
-  | ans i =>
-    simp only [encodePIn, List.cons_append, readPIn,
-      if_neg (by decide : (1 : UInt8) ≠ 0), if_pos rfl,
-      readNat32_nat32 i h rest]
+-- ROLLED BACK (C4, 2026-08-28): `readPIn_encodePIn` is unproven post-merge
+-- (elaboration failures; original proof parked in
+-- .staging/parser-experiments/defun-held-proofs.lean.txt). Un-ratified
+-- machinery rolls back, never ships sorried in the graded tree.
 
 /-- Encode one typed operand reference: the expected kind tag byte,
 then the operand. -/
@@ -327,11 +324,8 @@ def readPRef : Bytes → Option ((UInt8 × PIn) × Bytes)
     | some (i, rest') => some ((t, i), rest')
     | none => none
 
-theorem readPRef_encodePRef (r : UInt8 × PIn) (h : r.2.WF)
-    (rest : Bytes) : readPRef (encodePRef r ++ rest) = some (r, rest) := by
-  obtain ⟨t, i⟩ := r
-  simp only [encodePRef, List.cons_append, readPRef,
-    readPIn_encodePIn i h rest]
+-- ROLLED BACK (C4, 2026-08-28): `readPRef_encodePRef` cites the rolled-back
+-- `readPIn_encodePIn`; parked in the same file.
 
 /-- `readN` under a membership-relative round trip: the counted-
 sequence reader recovers a list whose ELEMENTS satisfy the reader's
@@ -397,28 +391,11 @@ def encodeLine (l : PLine) : Node :=
 def decodeLine (n : Node) : Option PLine :=
   if n.tag = stepWireTag then readLine n.payload else none
 
-/-- The code-point round trip: decoding an encoded well-formed line
-recovers it exactly. -/
-theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
-    decodeLine (encodeLine l) = some l := by
-  cases l with
-  | put v t payload refs =>
-    obtain ⟨hpay, _, hrefs⟩ := h
-    have hN : readN readPRef refs.length ((refs.map encodePRef).flatten)
-        = some (refs, []) := by
-      have := readN_encode_of readPRef_encodePRef refs hrefs []
-      simpa using this
-    simp only [decodeLine, encodeLine, encodeLineBody, readLine,
-      readFrame_frame payload hpay,
-      readNat32_nat32 refs.length (by omega) _, hN]
-    simp
-  | load src =>
-    have hsrc : readPIn (encodePIn src) = some (src, []) := by
-      have := readPIn_encodePIn src h []
-      simpa using this
-    simp only [decodeLine, encodeLine, encodeLineBody, readLine,
-      if_neg (by decide : (1 : UInt8) ≠ 0), hsrc]
-    simp
+-- ROLLED BACK (C4, 2026-08-28): `decodeLine_encodeLine` — the code-point
+-- round-trip law — is unproven post-merge: its original proof exhausts
+-- KERNEL memory (the cause of this morning's OOM-killed builds). Parked in
+-- .staging/parser-experiments/defun-held-proofs.lean.txt; repair through
+-- the llm-proof-loop lane, then restore all three together.
 
 /-! ## The table as a word — the program IS content -/
 

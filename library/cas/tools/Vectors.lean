@@ -42,8 +42,7 @@ def schemaVectorCandidate : IO ConformanceVector := do
     pure (vector
       ⟨"schema-vector-document", by simp [validVectorName, validVectorNameTail]⟩
       "the vector format's own canonical schema as a schema node (sort 0x53)"
-      (.schema vectorDocumentCode
-        (Cas.Schema.Described.wf (α := Cas.Vectors.Wire.VectorDocument)) small))
+      (.schema ⟨Cas.Grammar.utf8 vectorDocumentCode.payload, small⟩))
   else
     throw (IO.userError "schema vector: payload exceeds the node byte bound")
 
