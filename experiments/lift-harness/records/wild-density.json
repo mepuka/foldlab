@@ -1,0 +1,223 @@
+{
+ "perRepo": {
+  "alchemy-run_alchemy": {
+   "files": 11623,
+   "effectFiles": 10323,
+   "spans": 32454,
+   "tokens": 4810080,
+   "y": 164519
+  },
+  "anomalyco_opencode": {
+   "files": 2647,
+   "effectFiles": 1060,
+   "spans": 5749,
+   "tokens": 1244216,
+   "y": 37012
+  },
+  "brandhaug_b2b-saas-starter": {
+   "files": 209,
+   "effectFiles": 126,
+   "spans": 678,
+   "tokens": 79284,
+   "y": 2230
+  },
+  "contentlayerdev_contentlayer": {
+   "files": 187,
+   "effectFiles": 14,
+   "spans": 110,
+   "tokens": 7308,
+   "y": 4
+  },
+  "dearlordylord_huly-mcp": {
+   "files": 861,
+   "effectFiles": 667,
+   "spans": 5860,
+   "tokens": 1007615,
+   "y": 16294
+  },
+  "dhravya_webpull": {
+   "files": 11,
+   "effectFiles": 3,
+   "spans": 10,
+   "tokens": 3832,
+   "y": 46
+  },
+  "effect-deprecated_otel": {
+   "files": 32,
+   "effectFiles": 1,
+   "spans": 2,
+   "tokens": 186,
+   "y": 0
+  },
+  "effect-ts_language-service": {
+   "files": 801,
+   "effectFiles": 698,
+   "spans": 2712,
+   "tokens": 199091,
+   "y": 3223
+  },
+  "effect-ts_vscode-extension": {
+   "files": 32,
+   "effectFiles": 24,
+   "spans": 161,
+   "tokens": 22296,
+   "y": 436
+  },
+  "effect-ts__website": {
+   "files": 166,
+   "effectFiles": 108,
+   "spans": 486,
+   "tokens": 58968,
+   "y": 808
+  },
+  "embedded-insurance_effect-use": {
+   "files": 34,
+   "effectFiles": 22,
+   "spans": 177,
+   "tokens": 11905,
+   "y": 0
+  },
+  "ethanniser_effectis": {
+   "files": 20,
+   "effectFiles": 17,
+   "spans": 184,
+   "tokens": 26526,
+   "y": 718
+  },
+  "floydspace_effect-aws": {
+   "files": 548,
+   "effectFiles": 302,
+   "spans": 1246,
+   "tokens": 344742,
+   "y": 869
+  },
+  "gvasilei_autoreviewer": {
+   "files": 15,
+   "effectFiles": 12,
+   "spans": 43,
+   "tokens": 5024,
+   "y": 66
+  },
+  "jobflow-io_effect-playwright": {
+   "files": 41,
+   "effectFiles": 33,
+   "spans": 131,
+   "tokens": 37925,
+   "y": 1294
+  },
+  "joelhooks_pdf-brain": {
+   "files": 59,
+   "effectFiles": 34,
+   "spans": 150,
+   "tokens": 52084,
+   "y": 1012
+  },
+  "keanemind_jjk": {
+   "files": 84,
+   "effectFiles": 23,
+   "spans": 140,
+   "tokens": 23182,
+   "y": 410
+  },
+  "kitlangton_ghui": {
+   "files": 250,
+   "effectFiles": 71,
+   "spans": 364,
+   "tokens": 55124,
+   "y": 576
+  },
+  "kitlangton_motel": {
+   "files": 76,
+   "effectFiles": 35,
+   "spans": 188,
+   "tokens": 55172,
+   "y": 196
+  },
+  "kitlangton_tailcode": {
+   "files": 13,
+   "effectFiles": 9,
+   "spans": 44,
+   "tokens": 3500,
+   "y": 82
+  },
+  "latitude-dev_latitude-llm": {
+   "files": 3510,
+   "effectFiles": 1406,
+   "spans": 4684,
+   "tokens": 1034644,
+   "y": 14938
+  },
+  "mateokruk_effect-slack": {
+   "files": 69,
+   "effectFiles": 60,
+   "spans": 178,
+   "tokens": 37228,
+   "y": 238
+  },
+  "mcrovero_effect-nextjs": {
+   "files": 40,
+   "effectFiles": 35,
+   "spans": 131,
+   "tokens": 12130,
+   "y": 208
+  },
+  "pauljphilp_effectpatterns": {
+   "files": 604,
+   "effectFiles": 297,
+   "spans": 1201,
+   "tokens": 221531,
+   "y": 6338
+  },
+  "sandromaglione_menimal": {
+   "files": 15,
+   "effectFiles": 14,
+   "spans": 61,
+   "tokens": 4044,
+   "y": 124
+  },
+  "sukovanej_effect-http": {
+   "files": 114,
+   "effectFiles": 101,
+   "spans": 705,
+   "tokens": 65426,
+   "y": 474
+  },
+  "tim-smart_dfx": {
+   "files": 49,
+   "effectFiles": 39,
+   "spans": 261,
+   "tokens": 43554,
+   "y": 206
+  },
+  "tim-smart_lalph": {
+   "files": 1154,
+   "effectFiles": 814,
+   "spans": 9525,
+   "tokens": 1995175,
+   "y": 20845
+  },
+  "tylors_typed-fx": {
+   "files": 291,
+   "effectFiles": 234,
+   "spans": 583,
+   "tokens": 52707,
+   "y": 124
+  },
+  "typeonce-dev_effect-machine": {
+   "files": 209,
+   "effectFiles": 165,
+   "spans": 1071,
+   "tokens": 385982,
+   "y": 4486
+  }
+ },
+ "labelHist": {
+  "X": 7440188,
+  "O": 726697,
+  "H": 2090283,
+  "B": 241004,
+  "Y": 277776,
+  "A": 609399,
+  "T": 515134
+ }
+}

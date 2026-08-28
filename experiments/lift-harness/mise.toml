@@ -1,0 +1,15 @@
+# Harness tasks — directory-scoped like the fixture-gen lane; the root
+# mise.toml (which CI runs) is untouched. On promotion these graduate
+# as `check:harness` / `census:harness`.
+
+[tasks.check]
+description = "Strict typecheck + the multi-parser agreement gate (ck vs oxc on the 265 by-construction fixtures)"
+run = ["bun x tsc --noEmit", "bun src/cli.ts gate"]
+
+[tasks.census]
+description = "Wild linearizability census over the corpus manifest's wild-effect projects"
+run = "bun src/cli.ts census"
+
+[tasks.lift]
+description = "Lift a file with the ck engine (canonical-JSON verdicts to stdout): mise run lift -- <file>"
+run = "bun src/cli.ts lift"

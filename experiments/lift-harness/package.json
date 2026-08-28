@@ -1,0 +1,15 @@
+{
+  "name": "effect-lift-harness",
+  "private": true,
+  "description": "v0 store-language recognition harness: contract + sieve + two gated engines (ck, oxc). Pre-grade (.staging).",
+  "dependencies": {
+    "typescript": "5.9.2",
+    "effect": "4.0.0-rc.112",
+    "effect-oxlint": "0.3.4",
+    "oxlint": "1.80.0",
+    "wink-naive-bayes-text-classifier": "2.2.1"
+  },
+  "devDependencies": {
+    "bun-types": "^1.4.0"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "jsPlugins": ["./src/plugin.mjs"],
+  "rules": { "dslv0/lift": "warn" }
+}

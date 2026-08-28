@@ -1,0 +1,23 @@
+{
+ "candidates": 6908,
+ "lifted": 0,
+ "codeHist": {
+  "E-RETURN-SHAPE": 43,
+  "E-STMT-SHAPE": 349,
+  "E-PARAM-SHAPE": 2321,
+  "E-SPINE-ESCAPE": 2085,
+  "E-YIELD-POSITION": 1280,
+  "E-OP-RECEIVER": 269,
+  "E-BIND-SHAPE": 353,
+  "E-OP-UNKNOWN": 96,
+  "E-BRANCH": 65,
+  "E-LOOP": 10,
+  "E-FAIL-NOT-DOCUMENTED": 32,
+  "E-HANDLER": 5
+ },
+ "spectrumHist": {
+  "classification": 3110,
+  "monadic": 3445,
+  "applicative-gap": 353
+ }
+}

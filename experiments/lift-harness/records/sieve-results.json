@@ -1,0 +1,57 @@
+{
+ "n": 4,
+ "train": {
+  "pos": 30758,
+  "neg": 40000
+ },
+ "holdout": {
+  "effectRecall": 0.1877,
+  "baselineErr": 0
+ },
+ "fixtureEval": {
+  "CONST-DECL": {
+   "fireRate": 0,
+   "lines": 12,
+   "want": "SILENT",
+   "declHit": 0
+  },
+  "NEG-COMMENT-DECOY": {
+   "fireRate": 0,
+   "lines": 18,
+   "want": "SILENT",
+   "declHit": 0
+  },
+  "NEG-HOST": {
+   "fireRate": 0,
+   "lines": 78,
+   "want": "SILENT",
+   "declHit": 0
+  },
+  "NEG-NEAR-MISS": {
+   "fireRate": 0.4167,
+   "lines": 72,
+   "want": "SILENT",
+   "declHit": 0.625
+  },
+  "PROG-DECL": {
+   "fireRate": 0.1304,
+   "lines": 69,
+   "want": "fire",
+   "declHit": 1
+  },
+  "TAGGED-ERROR-CANONICAL": {
+   "fireRate": 0.4528,
+   "lines": 106,
+   "want": "fire",
+   "declHit": 1
+  },
+  "TAGGED-ERROR-SKEWED": {
+   "fireRate": 0.4571,
+   "lines": 210,
+   "want": "fire",
+   "declHit": 1
+  }
+ },
+ "noiseFireRate": 0.0801,
+ "baselineHoldoutFireRate": 0
+}
