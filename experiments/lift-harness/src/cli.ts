@@ -7,13 +7,15 @@
 //   bun src/cli.ts sieve <file>         anchor-gated line scores
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { SPECTRUM, canonJson } from "./contract";
 import { liftSource } from "./lift";
 import { runGate } from "./gate";
 import { effectBindings, grams, translitFile } from "./sieve";
 
-const ROOT = new URL("../../..", import.meta.url).pathname; // repo root, host-portable
-const HERE = new URL(".", import.meta.url).pathname;
+// fileURLToPath, not `.pathname` (Windows yields "/C:/…"; node:fs rejects it).
+const ROOT = fileURLToPath(new URL("../../..", import.meta.url)); // repo root, host-portable
+const HERE = fileURLToPath(new URL(".", import.meta.url));
 const [cmd, ...args] = process.argv.slice(2);
 
 function* walkTs(d: string): Generator<string> {
