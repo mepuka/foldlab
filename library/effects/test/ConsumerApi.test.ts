@@ -13,9 +13,7 @@ const Note = Cas.value({
   schema: Schema.Struct({ text: Schema.String }),
 })
 
-const layer = Cas.layerMemory().pipe(
-  Layer.provideMerge(Cas.layerCryptoWebCrypto),
-)
+const layer = Cas.layerMemoryLive
 
 it.effect("the barrel is exactly the two plane doors", () =>
   Effect.sync(() => {
@@ -60,6 +58,6 @@ it.effect("the same backend value serves: core over the seams the store stands o
   }).pipe(Effect.provide(
     Server.Core.layer({ maxBatchKeys: 8, maxNodeBytes: 1024 }).pipe(
       Layer.provideMerge(Cas.layerMemoryBackend),
-      Layer.provideMerge(Cas.layerCryptoWebCrypto),
+      Layer.provideMerge(Cas.layerAddressSha256Live),
     ),
   )))

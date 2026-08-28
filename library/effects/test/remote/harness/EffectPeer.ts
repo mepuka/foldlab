@@ -11,7 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { Socket } from "node:net"
 import { ByteWriter, layerMemoryBackend } from "../../../src/cas/Backend.ts"
 import { ContentId } from "../../../src/cas/Node.ts"
-import { layerCryptoWebCrypto } from "../../../src/cas/Store.ts"
+import { layerAddressSha256Live } from "../../../src/cas/Store.ts"
 import { CasServerCore } from "../../../src/server/Core.ts"
 import { makeCasHttpApp } from "../../../src/server/HttpApp.ts"
 import type { CasServerPolicy } from "../../../src/server/Protocol.ts"
@@ -69,7 +69,7 @@ export const makeEffectPeer = (options: EffectPeerOptions = {}): ConformancePeer
       CasServerCore.layer(policy).pipe(
         Layer.provideMerge(Layer.mergeAll(
           layerMemoryBackend,
-          layerCryptoWebCrypto,
+          layerAddressSha256Live,
         )),
       ),
     )

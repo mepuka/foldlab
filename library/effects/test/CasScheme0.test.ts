@@ -12,7 +12,12 @@ import { Crypto, Effect, Encoding, Layer, Schema } from "effect"
 import { readFile } from "node:fs/promises"
 import { Cas } from "../src/index.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
-import { CasStore, encodeCasNode, layerMemory } from "../src/cas/Store.ts"
+import {
+  AddressScheme,
+  CasStore,
+  encodeCasNode,
+  layerMemory,
+} from "../src/cas/Store.ts"
 import {
   buildCasKatFixture,
   casKatFixtureUrl,
@@ -22,7 +27,10 @@ import {
 
 /** The in-memory store over the production digest path, with the digest itself
  * visible so a test can address bytes directly. */
-const production = layerMemory().pipe(Layer.provideMerge(productionCrypto))
+const production = layerMemory.pipe(
+  Layer.provideMerge(AddressScheme.layerSha256),
+  Layer.provideMerge(productionCrypto),
+)
 
 /** Published in FIPS 180-2; the fixture is anchored on these rather than on
  * whatever this implementation happens to produce. */

@@ -8,7 +8,7 @@ import { Effect, FileSystem, Layer, Option } from "effect"
 import { ByteReader, objectRelativePath } from "../src/cas/Backend.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
 import { PathReadError, layerPathReader, type ReadPath } from "../src/cas/PathReader.ts"
-import { CasStore, layerCryptoWebCrypto, layerFile } from "../src/cas/Store.ts"
+import { CasStore, layerAddressSha256Live, layerFile } from "../src/cas/Store.ts"
 import { makeMemoryFs } from "./MemoryFsHarness.ts"
 
 const storeRoot = "published"
@@ -29,7 +29,7 @@ it.effect("reads the layout the file backend writes — publish is a directory",
     const writeLayer = layerFile(storeRoot).pipe(
       Layer.provide(Layer.mergeAll(
         Layer.succeed(FileSystem.FileSystem, memory.fs),
-        layerCryptoWebCrypto,
+        layerAddressSha256Live,
       )),
     )
     // The "host": whatever ended up in the store root, served by path —

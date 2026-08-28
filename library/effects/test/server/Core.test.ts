@@ -8,7 +8,7 @@ import { Effect, Layer, Redacted } from "effect"
 import { createHash } from "node:crypto"
 import { layerMemoryBackend } from "../../src/cas/Backend.ts"
 import { CasNodeInput, ContentId } from "../../src/cas/Node.ts"
-import { encodeCasNode, layerCryptoWebCrypto } from "../../src/cas/Store.ts"
+import { encodeCasNode, layerAddressSha256Live } from "../../src/cas/Store.ts"
 import { encodeKeyListDocument } from "../../src/internal/remoteControl.ts"
 import { CasServerCore } from "../../src/server/Core.ts"
 import {
@@ -142,7 +142,7 @@ it.effect("the wire law decides the precedence table purely", () =>
 const coreLayer = CasServerCore.layer(openPolicy).pipe(
   Layer.provideMerge(Layer.mergeAll(
     layerMemoryBackend,
-    layerCryptoWebCrypto,
+    layerAddressSha256Live,
   )),
 )
 

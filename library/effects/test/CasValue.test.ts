@@ -9,7 +9,7 @@ import {
 } from "../src/cas/Node.ts"
 import {
   CasStore,
-  layerMemory,
+  layerMemoryWith,
 } from "../src/cas/Store.ts"
 import {
   ProjectionCodecFailure,
@@ -53,7 +53,7 @@ it.effect("PRJ-001 rejects a root whose resident node has the wrong kind", () =>
     const root = yield* first.put(input)
     const error = yield* Effect.flip(second.get(root))
     expect(error).toEqual(new UnknownKind({ version: 0, tag: 0x31 }))
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-002 round-trips nested values and deduplicates identical projections", () => {
@@ -84,7 +84,7 @@ it.effect("PRJ-002 round-trips nested values and deduplicates identical projecti
     expect(new TextDecoder().decode(node.payload)).toBe(
       "{\"revision\":7,\"value\":{\"items\":[{\"key\":\"coffee\",\"value\":5},{\"key\":\"tea\",\"value\":9}],\"label\":\"nested\",\"nested\":{\"count\":17,\"enabled\":false}}}",
     )
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-002 custom-codec round trip returns the same root", () => {
@@ -105,7 +105,7 @@ it.effect("PRJ-002 custom-codec round trip returns the same root", () => {
 
     expect(restored).toEqual(input)
     expect(second).toBe(first)
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-003 reports schema decode failure as a typed projection error", () => {
@@ -127,7 +127,7 @@ it.effect("PRJ-003 reports schema decode failure as a typed projection error", (
       direction: "decode",
       id,
     })
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-003 passes a dangling projected root through as ContentNotFound", () => {
@@ -137,7 +137,7 @@ it.effect("PRJ-003 passes a dangling projected root through as ContentNotFound",
   return Effect.gen(function* () {
     const error = yield* Effect.flip(projection.get(absent))
     expect(error).toEqual(new ContentNotFound({ id: absent }))
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-003 reports non-finite encoded numbers without folding into StoreFailure", () => {
@@ -155,7 +155,7 @@ it.effect("PRJ-003 reports non-finite encoded numbers without folding into Store
       _tag: "ProjectionCodecFailure",
       direction: "encode",
     })
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })
 
 it.effect("PRJ-003 rejects noncanonical payload bytes without renormalizing", () => {
@@ -173,5 +173,5 @@ it.effect("PRJ-003 rejects noncanonical payload bytes without renormalizing", ()
       direction: "decode",
       id,
     })
-  }).pipe(Effect.provide(layerMemory(deterministicAddress())))
+  }).pipe(Effect.provide(layerMemoryWith(deterministicAddress())))
 })

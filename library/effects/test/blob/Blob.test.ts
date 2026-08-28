@@ -22,7 +22,9 @@ import {
 } from "../../src/cas/Remote.ts"
 import {
   CasStore,
+  AddressScheme,
   layerMemory,
+  layerMemoryWith,
   type CasAddress,
   type CasStoreShape,
 } from "../../src/cas/Store.ts"
@@ -82,7 +84,9 @@ class BlobLane extends Context.Service<BlobLane, BlobLaneShape>()(
   "foldlab/effect-replay/test/BlobLane",
 ) {}
 
-const localBacking = layerMemory().pipe(Layer.provide(TestCrypto))
+const localBacking = layerMemory.pipe(
+  Layer.provideMerge(AddressScheme.layerSha256.pipe(Layer.provide(TestCrypto))),
+)
 const localBlobLayer = Layer.merge(
   CasBlob.layer.pipe(Layer.provideMerge(localBacking)),
   Layer.succeed(BlobLane, { name: "local" }),
@@ -183,7 +187,7 @@ it.effect("MRK-014 consumes every ratified blob-graph row structurally", () =>
   CasStore.use((store) => assertFamilyRows(
     mrk014Binding,
     (row) => runBlobGraphRow(store, row).pipe(Effect.orDie),
-  )).pipe(Effect.provide(layerMemory(toyCasAddress))))
+  )).pipe(Effect.provide(layerMemoryWith(toyCasAddress))))
 
 const registerBlobSuite = (
   test: Vitest.MethodsNonLive<CasBlob.Service | CasStore>,

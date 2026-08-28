@@ -64,9 +64,16 @@ export class ProjectionCodecFailure
 
 export type ProjectionError = CasError | ProjectionCodecFailure
 
+/** A projection revision: a non-negative safe integer, validated by
+ * schema at construction. */
+export const Revision = Schema.Int.check(
+  Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
+)
+export type Revision = typeof Revision.Type
+
 export interface ValueOptions<A> {
   readonly kindTag: Byte
-  readonly revision: number
+  readonly revision: Revision
   readonly schema: Schema.Codec<A, Schema.Json, never, never>
 }
 
@@ -240,14 +247,12 @@ export const ref = <B>(
 /** Construct a typed value projection over the in-memory CAS service. */
 export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
   const kindTag = Byte.make(options.kindTag)
+  const revision = Revision.make(options.revision)
   // The whole library-owned registry is refused, not just the replay
   // tags — a projection aliasing a blob tag would give one kind plane
   // two public interpretations.
   if (ReservedKindTags.has(kindTag)) {
     throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)
-  }
-  if (!Number.isSafeInteger(options.revision) || options.revision < 0) {
-    throw new TypeError("Projection revision must be a non-negative safe integer")
   }
 
   const put: CasValue<A>["put"] = Effect.fn("CasValue.put")(
@@ -267,7 +272,7 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
         )
       }
       const payload = yield* payloadFor(
-        options.revision,
+        revision,
         cast(markerized.success.payload),
       )
       const id = yield* store.put(CasNodeInput.make({
@@ -286,7 +291,7 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
       if (node.kind.tag !== kindTag) {
         return yield* new UnknownKind(node.kind)
       }
-      const encoded = yield* decodedEnvelope(node.payload, options.revision, root)
+      const encoded = yield* decodedEnvelope(node.payload, revision, root)
       // The exact inverse walk: forced marker indexes verified against
       // the node's reference array, markers restored to sentinels.
       const resolved = resolveMarkers(encoded, node.refs)

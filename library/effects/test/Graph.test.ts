@@ -9,7 +9,12 @@ import { objectRelativePath } from "../src/cas/Backend.ts"
 import { closure, verify } from "../src/cas/Graph.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
 import { PathReadError, layerPathReader, type ReadPath } from "../src/cas/PathReader.ts"
-import { CasStore, layerCryptoWebCrypto, layerFile, layerMemory } from "../src/cas/Store.ts"
+import {
+  CasStore,
+  layerAddressSha256Live,
+  layerFile,
+  layerMemoryLive,
+} from "../src/cas/Store.ts"
 import { makeMemoryFs, type MemoryFs } from "./MemoryFsHarness.ts"
 
 const node = (
@@ -49,7 +54,7 @@ it.effect("closure is children-first, deduplicated, root last", () =>
 
     // verify walks the same closure, fully re-verified.
     expect(yield* verify(graph.root)).toEqual(ordered)
-  }).pipe(Effect.provide(layerMemory().pipe(Layer.provideMerge(layerCryptoWebCrypto)))))
+  }).pipe(Effect.provide(layerMemoryLive)))
 
 const storeRoot = "published"
 
@@ -76,14 +81,14 @@ it.effect("verify audits an untrusted host: hidden and corrupted nodes refuse ty
     const writeLayer = layerFile(storeRoot).pipe(
       Layer.provide(Layer.mergeAll(
         Layer.succeed(FileSystem.FileSystem, memory.fs),
-        layerCryptoWebCrypto,
+        layerAddressSha256Live,
       )),
     )
     const graph = yield* seedDiamond.pipe(Effect.provide(writeLayer))
 
     // The faithful host verifies whole.
     const audited = yield* verify(graph.root).pipe(
-      Effect.provide([layerPathReader(hostOver(memory)), layerCryptoWebCrypto]),
+      Effect.provide([layerPathReader(hostOver(memory)), layerAddressSha256Live]),
     )
     expect(audited.length).toBe(4)
 
@@ -92,7 +97,7 @@ it.effect("verify audits an untrusted host: hidden and corrupted nodes refuse ty
     const hiding = yield* verify(graph.root).pipe(
       Effect.provide([
         layerPathReader(hostOver(memory, objectRelativePath(graph.child))),
-        layerCryptoWebCrypto,
+        layerAddressSha256Live,
       ]),
       Effect.flip,
     )
@@ -107,7 +112,7 @@ it.effect("verify audits an untrusted host: hidden and corrupted nodes refuse ty
     corrupted[6] = corrupted[6] === 0 ? 1 : 0
     yield* memory.poke(path, corrupted)
     const refused = yield* verify(graph.root).pipe(
-      Effect.provide([layerPathReader(hostOver(memory)), layerCryptoWebCrypto]),
+      Effect.provide([layerPathReader(hostOver(memory)), layerAddressSha256Live]),
       Effect.flip,
     )
     expect(refused._tag).toBe("CasError/AddressMismatch")

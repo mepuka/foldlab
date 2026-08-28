@@ -10,7 +10,7 @@ import { ByteReader, RootStore } from "../src/cas/Backend.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
 import {
   CasStore,
-  layerCryptoWebCrypto,
+  layerAddressSha256Live,
   layerFile,
 } from "../src/cas/Store.ts"
 import { makeMemoryFs, type MemoryFs } from "./MemoryFsHarness.ts"
@@ -20,7 +20,7 @@ const storeRoot = "store"
 const layerHarness = (memory: MemoryFs) => layerFile(storeRoot).pipe(
   Layer.provide(Layer.mergeAll(
     Layer.succeed(FileSystem.FileSystem, memory.fs),
-    layerCryptoWebCrypto,
+    layerAddressSha256Live,
   )),
 )
 

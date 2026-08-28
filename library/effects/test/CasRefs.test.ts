@@ -10,9 +10,9 @@ import { ContentId } from "../src/cas/Node.ts"
 import { PathReadError, layerPathReader } from "../src/cas/PathReader.ts"
 import {
   CasStore,
-  layerCryptoWebCrypto,
+  layerAddressSha256Live,
   layerFile,
-  layerMemory,
+  layerMemoryLive,
   layerReadStore,
 } from "../src/cas/Store.ts"
 import { ref, value, type Root } from "../src/cas/Value.ts"
@@ -42,7 +42,7 @@ const Post: ReturnType<typeof value<Post>> = value({
   }),
 })
 
-const layer = layerMemory().pipe(Layer.provideMerge(layerCryptoWebCrypto))
+const layer = layerMemoryLive
 
 it.effect("builds and reads a typed DAG leaf-up, decoding refs lazily", () =>
   Effect.gen(function* () {
@@ -118,7 +118,7 @@ it.effect("typed reads work over a read-only host: no writer anywhere", () =>
     const writeLayer = layerFile("published").pipe(
       Layer.provide(Layer.mergeAll(
         Layer.succeed(FileSystem.FileSystem, memory.fs),
-        layerCryptoWebCrypto,
+        layerAddressSha256Live,
       )),
     )
     const { author, post } = yield* Effect.gen(function* () {
@@ -149,9 +149,9 @@ it.effect("typed reads work over a read-only host: no writer anywhere", () =>
       expect(decoded.title).toBe("hosted")
       expect((yield* Author.get(decoded.author)).name).toBe("kokok")
       expect(decoded.author).toBe(author)
-    }).pipe(Effect.provide(layerReadStore().pipe(
+    }).pipe(Effect.provide(layerReadStore.pipe(
       Layer.provideMerge(host),
-      Layer.provide(layerCryptoWebCrypto),
+      Layer.provide(layerAddressSha256Live),
     )))
   }))
 

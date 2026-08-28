@@ -169,6 +169,12 @@ export const value: Description = Description.make({
       name: "payload",
       ts: "canonicalJson (src/cas/Value.ts)",
     },
+    {
+      form: "the digest the laws recompute — quantified over, never fixed",
+      lean: "H : Bytes → Addr (Cas/Address.lean)",
+      name: "addressScheme",
+      ts: "AddressScheme service (src/cas/Store.ts)",
+    },
   ],
 })
 
@@ -179,6 +185,11 @@ export const seamKeys: Record<Capability, string> = {
   roots: "foldlab/cas/RootStore",
   write: "foldlab/cas/ByteWriter",
 }
+
+/** The digest every law recomputes, as its own dependency: not a seam
+ * (it stores nothing) and not a law (it decides nothing) — the scheme
+ * the composition chooses, which is why the model quantifies over it. */
+export const addressSchemeKey = "foldlab/cas/AddressScheme"
 
 /** The description as a dependency: ask the context what the library
  * is. */
@@ -207,4 +218,4 @@ export const capabilityMatrix = (description: Description): unknown => ({
  * `library/cas/Cas/Architecture.lean`. Changing the shape means
  * changing this string in BOTH homes — that is the point. */
 export const capabilityMatrixPin =
-  `{"backends":{"file":["read","roots","write"],"memory":["read","roots","write"],"pathReader":["read"]},"laws":{"blob":["read","write"],"graphClosure":["read"],"graphVerify":["read"],"loader":["read"],"serverCore":["read","roots","write"],"store":["read","write"],"valueGet":["read"],"valuePut":["read","write"]},"seams":["read","roots","write"],"types":["address","marker","node","payload","ref","root","store"]}`
+  `{"backends":{"file":["read","roots","write"],"memory":["read","roots","write"],"pathReader":["read"]},"laws":{"blob":["read","write"],"graphClosure":["read"],"graphVerify":["read"],"loader":["read"],"serverCore":["read","roots","write"],"store":["read","write"],"valueGet":["read"],"valuePut":["read","write"]},"seams":["read","roots","write"],"types":["address","addressScheme","marker","node","payload","ref","root","store"]}`

@@ -166,7 +166,7 @@ export const makeCasLoaderOver = (
   address: CasAddress,
   reader: ByteReaderShape,
 ): CasLoaderShape => ({
-  load: Effect.fn("CasStore.load")(function* (id: ContentId) {
+  load: Effect.fn("CasLoader.load")(function* (id: ContentId) {
     const resident = yield* reader.loadBytes(id).pipe(
       Effect.mapError(backendFailure),
     )
@@ -248,15 +248,38 @@ export const makeCasStoreOver = (
   return CasStore.of({ put, ...makeCasLoaderOver(address, reader) })
 }
 
-/** Construct the store law over the seams in context. */
-export const makeCasStore = (
-  address: CasAddress,
-): Effect.Effect<CasStoreShape, never, ByteReader | ByteWriter> =>
-  Effect.gen(function* () {
-    const reader = yield* ByteReader
-    const writer = yield* ByteWriter
-    return makeCasStoreOver(address, reader, writer)
-  })
+/** The address scheme as a service: the digest the laws recompute is a
+ * dependency of the composition, never an argument threaded by hand.
+ * The model quantifies over the address function, and so does the
+ * context — a test or a vector binding provides its own scheme with
+ * `AddressScheme.layerOf`. */
+export class AddressScheme extends Context.Service<AddressScheme, CasAddress>()(
+  "foldlab/cas/AddressScheme",
+) {
+  /** An explicit scheme as a layer — deterministic tests and vector
+   * bindings. */
+  static readonly layerOf = (address: CasAddress): Layer.Layer<AddressScheme> =>
+    Layer.succeed(AddressScheme, address)
+
+  /** Scheme-0 SHA-256 through the runtime's `Crypto` service. */
+  static readonly layerSha256: Layer.Layer<
+    AddressScheme,
+    never,
+    Crypto.Crypto
+  > = Layer.effect(AddressScheme, makeSha256Address)
+}
+
+/** Construct the store law over the seams and scheme in context. */
+export const makeCasStore: Effect.Effect<
+  CasStoreShape,
+  never,
+  ByteReader | ByteWriter | AddressScheme
+> = Effect.gen(function* () {
+  const address = yield* AddressScheme
+  const reader = yield* ByteReader
+  const writer = yield* ByteWriter
+  return makeCasStoreOver(address, reader, writer)
+})
 
 /** Construct an isolated in-memory store: the law over one fresh memory
  * backend, for callers that need a store value rather than a Layer. */
@@ -287,107 +310,62 @@ export const makeMemoryCasStore = (
     return makeCasStoreOver(address, backend.reader, backend.writer)
   })
 
-/** The store-law Layer over whichever backend the composition supplies,
- * the load-only law provided beside it. Without an explicit address,
- * SHA-256 through the runtime's `Crypto`. */
-export function layerStore(): Layer.Layer<
+/** The store-law Layer over whichever backend and address scheme the
+ * composition supplies, the load-only law provided beside it. */
+export const layerStore: Layer.Layer<
   CasStore | CasLoader,
   never,
-  ByteReader | ByteWriter | Crypto.Crypto
->
-export function layerStore(
-  address: CasAddress,
-): Layer.Layer<CasStore | CasLoader, never, ByteReader | ByteWriter>
-export function layerStore(
-  address?: CasAddress,
-): Layer.Layer<CasStore | CasLoader, never, ByteReader | ByteWriter | Crypto.Crypto> {
-  return Layer.effectContext(
-    (address === undefined
-      ? makeSha256Address.pipe(Effect.flatMap(makeCasStore))
-      : makeCasStore(address)).pipe(
-        Effect.map((store) => Context.make(CasStore, store).pipe(
-          Context.add(CasLoader, { load: store.load }),
-        )),
-      ),
-  )
-}
+  ByteReader | ByteWriter | AddressScheme
+> = Layer.effectContext(
+  makeCasStore.pipe(
+    Effect.map((store) => Context.make(CasStore, store).pipe(
+      Context.add(CasLoader, { load: store.load }),
+    )),
+  ),
+)
 
 /** The load-only law over the read seam alone — what a read-only
  * composition (a path-reader host) provides so typed reads work with
- * no writer anywhere. Without an explicit address, SHA-256 through the
- * runtime's `Crypto`. */
-export function layerReadStore(): Layer.Layer<
+ * no writer anywhere. */
+export const layerReadStore: Layer.Layer<
   CasLoader,
   never,
-  ByteReader | Crypto.Crypto
->
-export function layerReadStore(
-  address: CasAddress,
-): Layer.Layer<CasLoader, never, ByteReader>
-export function layerReadStore(
-  address?: CasAddress,
-): Layer.Layer<CasLoader, never, ByteReader | Crypto.Crypto> {
-  const loader = Effect.gen(function* () {
+  ByteReader | AddressScheme
+> = Layer.effect(
+  CasLoader,
+  Effect.gen(function* () {
+    const address = yield* AddressScheme
     const reader = yield* ByteReader
-    const resolved = address === undefined ? yield* makeSha256Address : address
-    return makeCasLoaderOver(resolved, reader)
-  })
-  return Layer.effect(CasLoader, loader)
-}
+    return makeCasLoaderOver(address, reader)
+  }),
+)
 
 /** One isolated in-memory CAS: the store law over a fresh memory
  * backend, with the seams exposed for further composition — the same
- * backend value can stand under a server. Without an override, the
- * layer requires the runtime's native `Crypto` service for SHA-256. */
-export function layerMemory(): Layer.Layer<
+ * backend value can stand under a server. The address scheme stays a
+ * visible requirement; `AddressScheme.layerSha256` is the production
+ * one. */
+export const layerMemory: Layer.Layer<
   CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
-  Crypto.Crypto
->
-export function layerMemory(
-  address: CasAddress,
-): Layer.Layer<CasStore | CasLoader | ByteReader | ByteWriter | RootStore>
-export function layerMemory(
-  address?: CasAddress,
-): Layer.Layer<
-  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
-  never,
-  Crypto.Crypto
-> {
-  return (address === undefined ? layerStore() : layerStore(address)).pipe(
-    Layer.provideMerge(layerMemoryBackend),
-  )
-}
+  AddressScheme
+> = layerStore.pipe(Layer.provideMerge(layerMemoryBackend))
+
+/** One isolated in-memory CAS under an explicit address scheme — the
+ * deterministic-digest form tests and vector bindings compose. */
+export const layerMemoryWith = (address: CasAddress): Layer.Layer<
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore | AddressScheme
+> => layerMemory.pipe(Layer.provideMerge(AddressScheme.layerOf(address)))
 
 /** One file-backed CAS: the store law over a store root, seams exposed
  * for further composition — the same backend value can stand under a
- * server. The `FileSystem` realization stays a visible layer
- * requirement; without an address override, so does `Crypto`. */
-export function layerFile(storeRoot: string): Layer.Layer<
+ * server. The `FileSystem` realization and the address scheme stay
+ * visible layer requirements. */
+export const layerFile = (storeRoot: string): Layer.Layer<
   CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
-  FileSystem.FileSystem | Crypto.Crypto
->
-export function layerFile(
-  storeRoot: string,
-  address: CasAddress,
-): Layer.Layer<
-  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
-  never,
-  FileSystem.FileSystem
->
-export function layerFile(
-  storeRoot: string,
-  address?: CasAddress,
-): Layer.Layer<
-  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
-  never,
-  FileSystem.FileSystem | Crypto.Crypto
-> {
-  return (address === undefined ? layerStore() : layerStore(address)).pipe(
-    Layer.provideMerge(layerFileBackend(storeRoot)),
-  )
-}
+  FileSystem.FileSystem | AddressScheme
+> => layerStore.pipe(Layer.provideMerge(layerFileBackend(storeRoot)))
 
 /** The WebCrypto-backed `Crypto` layer: SHA-256 through the platform's
  * `crypto.subtle`, which every target runtime provides. The package ships
@@ -415,8 +393,13 @@ export const layerCryptoWebCrypto: Layer.Layer<Crypto.Crypto> = Layer.succeed(
   }),
 )
 
+/** The production address scheme, zero configuration: scheme-0 SHA-256
+ * through WebCrypto. */
+export const layerAddressSha256Live: Layer.Layer<AddressScheme> =
+  AddressScheme.layerSha256.pipe(Layer.provide(layerCryptoWebCrypto))
+
 /** The zero-configuration local runtime: one isolated in-memory store over
- * scheme-0 SHA-256 through WebCrypto, seams exposed. */
+ * scheme-0 SHA-256 through WebCrypto, seams and scheme exposed. */
 export const layerMemoryLive: Layer.Layer<
-  CasStore | CasLoader | ByteReader | ByteWriter | RootStore
-> = layerMemory().pipe(Layer.provide(layerCryptoWebCrypto))
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore | AddressScheme
+> = layerMemory.pipe(Layer.provideMerge(layerAddressSha256Live))

@@ -10,6 +10,7 @@ import { expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import type { FileSystem } from "effect"
 import {
+  addressSchemeKey,
   capabilityMatrix,
   capabilityMatrixPin,
   layer,
@@ -26,6 +27,7 @@ import {
 import { layerFileBackend } from "../src/cas/FileBackend.ts"
 import { layerPathReader } from "../src/cas/PathReader.ts"
 import {
+  AddressScheme,
   CasLoader,
   CasStore,
   layerReadStore,
@@ -68,19 +70,18 @@ const pathReaderIsReadOnly: Equals<
   ByteReader
 > = true
 
-// The declared law capabilities ARE the real requirement channels.
+// The declared law capabilities ARE the real requirement channels; the
+// address scheme rides every law as the digest dependency.
 const storeNeedsReadWrite: Equals<
-  ContextOf<ReturnType<typeof makeCasStore>>,
-  ByteReader | ByteWriter
+  ContextOf<typeof makeCasStore>,
+  ByteReader | ByteWriter | AddressScheme
 > = true
-// ReturnType resolves the explicit-address overload: the reader alone —
-// Crypto rides only the zero-config form.
 const readStoreNeedsReadOnly: Equals<
-  RequiredOf<ReturnType<typeof layerReadStore>>,
-  ByteReader
+  RequiredOf<typeof layerReadStore>,
+  ByteReader | AddressScheme
 > = true
 const readStoreProvidesLoader: Equals<
-  ProvidedOf<ReturnType<typeof layerReadStore>>,
+  ProvidedOf<typeof layerReadStore>,
   CasLoader
 > = true
 const valueGetNeedsLoaderOnly: Equals<
@@ -112,13 +113,14 @@ it.effect("the capability matrix renders to the pin the Lean model guards", () =
     expect(canonicalJson(capabilityMatrix(value))).toBe(capabilityMatrixPin)
   }))
 
-it.effect("the seam keys are the real service keys", () =>
+it.effect("the seam keys and the scheme key are the real service keys", () =>
   Effect.sync(() => {
     expect(seamKeys).toEqual({
       read: ByteReader.key,
       roots: RootStore.key,
       write: ByteWriter.key,
     })
+    expect(addressSchemeKey).toBe(AddressScheme.key)
   }))
 
 it.effect("the description arrives as a service through its layer", () =>

@@ -77,15 +77,18 @@ export type { ReadPath } from "./cas/PathReader.ts"
 // codec, and the composed conveniences (memory and file stores with
 // their seams exposed).
 export {
+  AddressScheme,
   CasLoader as Loader,
   CasSchemeVersion as SchemeVersion,
   CasStore as Store,
   decodeCasNode as decodeNode,
   encodeCasNode as encodeNode,
+  layerAddressSha256Live,
   layerCryptoWebCrypto,
   layerFile,
   layerMemory,
   layerMemoryLive,
+  layerMemoryWith,
   layerReadStore,
   layerStore,
   makeCasLoaderOver as makeLoaderOver,

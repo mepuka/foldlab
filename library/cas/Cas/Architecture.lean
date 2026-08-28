@@ -82,7 +82,9 @@ def foldlabCas : Architecture where
     ⟨"marker", "{\"$ref\": k} — the k-th reference, in canonical byte order",
       "marker grammar (Cas/Refs.lean)", "refMarkers walks (src/internal/refMarkers.ts)"⟩,
     ⟨"payload", "canonical JSON envelope {revision, value}",
-      "Json.Value + renderCompact (Cas/Json.lean)", "canonicalJson (src/cas/Value.ts)"⟩ ]
+      "Json.Value + renderCompact (Cas/Json.lean)", "canonicalJson (src/cas/Value.ts)"⟩,
+    ⟨"addressScheme", "the digest the laws recompute — quantified over, never fixed",
+      "H : Bytes → Addr (Cas/Address.lean)", "AddressScheme service (src/cas/Store.ts)"⟩ ]
   seams := [.read, .write, .roots]
   laws := [
     ⟨"store", "cas", [.read, .write],
@@ -149,8 +151,13 @@ def capabilityMatrix (a : Architecture) : Value :=
 `test/Architecture.test.ts`. Changing the shape means changing this
 string in BOTH homes — that is the point. -/
 def capabilityMatrixPin : String :=
-  "{\"backends\":{\"file\":[\"read\",\"roots\",\"write\"],\"memory\":[\"read\",\"roots\",\"write\"],\"pathReader\":[\"read\"]},\"laws\":{\"blob\":[\"read\",\"write\"],\"graphClosure\":[\"read\"],\"graphVerify\":[\"read\"],\"loader\":[\"read\"],\"serverCore\":[\"read\",\"roots\",\"write\"],\"store\":[\"read\",\"write\"],\"valueGet\":[\"read\"],\"valuePut\":[\"read\",\"write\"]},\"seams\":[\"read\",\"roots\",\"write\"],\"types\":[\"address\",\"marker\",\"node\",\"payload\",\"ref\",\"root\",\"store\"]}"
+  "{\"backends\":{\"file\":[\"read\",\"roots\",\"write\"],\"memory\":[\"read\",\"roots\",\"write\"],\"pathReader\":[\"read\"]},\"laws\":{\"blob\":[\"read\",\"write\"],\"graphClosure\":[\"read\"],\"graphVerify\":[\"read\"],\"loader\":[\"read\"],\"serverCore\":[\"read\",\"roots\",\"write\"],\"store\":[\"read\",\"write\"],\"valueGet\":[\"read\"],\"valuePut\":[\"read\",\"write\"]},\"seams\":[\"read\",\"roots\",\"write\"],\"types\":[\"address\",\"addressScheme\",\"marker\",\"node\",\"payload\",\"ref\",\"root\",\"store\"]}"
 
 #guard Json.renderCompact (capabilityMatrix foldlabCas) = capabilityMatrixPin
+
+/-- Print the pin — regenerate both homes from one command when the
+shape changes: `lake env lean --run` this module's `pin` executable
+lane, or read it off a failing guard. -/
+def pin : IO Unit := IO.println (Json.renderCompact (capabilityMatrix foldlabCas))
 
 end Cas

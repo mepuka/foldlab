@@ -11,8 +11,7 @@
  * pointing it at an untrusted host answers exactly whether that host
  * faithfully serves the graph.
  */
-import { Crypto, Effect } from "effect"
-import { Option } from "effect"
+import { Effect, Option } from "effect"
 import {
   ByteReader,
   type BackendFailure,
@@ -28,7 +27,7 @@ import {
 } from "./Node.ts"
 import { decodeCasNode } from "../internal/casCodec.ts"
 import {
-  makeSha256Address,
+  AddressScheme,
   verifyNodeBytes,
   type CasAddress,
 } from "./Store.ts"
@@ -122,16 +121,16 @@ export const verifyWith = (
   "CasGraph.verify",
 )
 
-/** Re-verify every node reachable from `root` under scheme-0 SHA-256:
- * recomputed address, canonical decode, known kind. Succeeds with the
- * children-first closure exactly when the backend faithfully serves
- * the whole graph. */
+/** Re-verify every node reachable from `root` under the composition's
+ * address scheme: recomputed address, canonical decode, known kind.
+ * Succeeds with the children-first closure exactly when the backend
+ * faithfully serves the whole graph. */
 export const verify = (
   root: ContentId,
 ): Effect.Effect<
   ReadonlyArray<ContentId>,
   CasError,
-  ByteReader | Crypto.Crypto
-> => makeSha256Address.pipe(
+  ByteReader | AddressScheme
+> => AddressScheme.pipe(
   Effect.flatMap((address) => verifyWith(address)(root)),
 )

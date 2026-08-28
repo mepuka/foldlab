@@ -11,7 +11,6 @@
  * on — and a new wire plane is new request constructors matched here.
  */
 import { Context, Effect, Layer, Option } from "effect"
-import type { Crypto } from "effect"
 import {
   ByteReader,
   ByteWriter,
@@ -22,7 +21,7 @@ import {
   type RootStoreShape,
 } from "../cas/Backend.ts"
 import type { ContentId } from "../cas/Node.ts"
-import { makeSha256Address, type CasAddress } from "../cas/Store.ts"
+import { AddressScheme, type CasAddress } from "../cas/Store.ts"
 import {
   canonicalNode,
   judgeAdmission,
@@ -42,18 +41,18 @@ export class CasServerCore extends Context.Service<CasServerCore, {
     request: CasRequest,
   ) => Effect.Effect<CasOutcome>
 }>()("foldlab/cas/CasServerCore") {
-  /** Build the core over whichever backend layers sit beneath it,
-   * addressing through scheme-0 SHA-256. */
+  /** Build the core over whichever backend layers and address scheme
+   * sit beneath it — the same context an embedded store stands on. */
   static readonly layer = (
     policy: CasServerPolicy,
   ): Layer.Layer<
     CasServerCore,
     never,
-    ByteReader | ByteWriter | RootStore | Crypto.Crypto
+    ByteReader | ByteWriter | RootStore | AddressScheme
   > =>
     Layer.effect(
       CasServerCore,
-      makeSha256Address.pipe(
+      AddressScheme.pipe(
         Effect.flatMap((address) => makeCasServerCore(policy, address)),
       ),
     )

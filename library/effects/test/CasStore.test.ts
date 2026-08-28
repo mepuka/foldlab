@@ -11,7 +11,7 @@ import {
   CasStore,
   decodeCasNode,
   encodeCasNode,
-  layerMemory,
+  layerMemoryWith,
   type CasAddress,
 } from "../src/cas/Store.ts"
 import { assertFamilyRows, ManifestModel } from "./conformance/harness.ts"
@@ -222,7 +222,7 @@ it.effect("CAS-002 consumes every ratified REJECTION-CLAUSE row structurally", (
           onFailure: normalizeAdmissionError,
           onSuccess: () => ({ admitted: true as const }),
         }))
-      }).pipe(Effect.provide(layerMemory(mappedAddress(addresses))))
+      }).pipe(Effect.provide(layerMemoryWith(mappedAddress(addresses))))
 
       return actual
     })))
@@ -259,7 +259,7 @@ it.effect("the in-memory adapter re-verifies load and names caller-requested mis
       }),
     )
     expect(missing?._tag).toBe("CasError/ContentNotFound")
-  }).pipe(Effect.provide(layerMemory(changingAddress)))
+  }).pipe(Effect.provide(layerMemoryWith(changingAddress)))
 })
 
 it.effect("the M2 in-memory adapter loads an immutable admitted node", () => {
@@ -283,5 +283,5 @@ it.effect("the M2 in-memory adapter loads an immutable admitted node", () => {
 
     const second = yield* store.load(id)
     expect(Array.from(second.payload)).toEqual([7, 8, 9])
-  }).pipe(Effect.provide(layerMemory(stableAddress)))
+  }).pipe(Effect.provide(layerMemoryWith(stableAddress)))
 })
