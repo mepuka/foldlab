@@ -1,0 +1,90 @@
+/**
+ * GENERATED — do not edit. Straight-line Effect programs lowered
+ * from the registered grammar terms (`Cas/Vectors/Registry.lean`)
+ * by `lake exe emitprograms`; regeneration is byte-identity-gated
+ * (`--check`, wired into `check:cas`). Each program re-performs its
+ * term's puts against a live store — addresses computed by the
+ * host's own digest — and the VectorPrograms suite asserts the
+ * answers equal the Lean-computed word, binding for binding: the
+ * cross-host run gate.
+ */
+import { Effect } from "effect"
+import type { CasStoreShape } from "../../src/cas/Store.ts"
+
+const hex = (s: string): Uint8Array =>
+  Uint8Array.from({ length: s.length / 2 }, (_, i) =>
+    Number.parseInt(s.slice(i * 2, i * 2 + 2), 16))
+
+/** One opaque value node — the smallest program. */
+export const valueSingle = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex("68656c6c6f2c20636173"), refs: [] })
+    return [a0]
+  })
+
+/** A two-leaf blob: chunks, leaves, parent, manifest. */
+export const blobTwoLeaves = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("30313233343536373839616263646566"), refs: [] })
+    const a1 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000000000010"), refs: [{ id: a0, expectedTag: 8 }] })
+    const a2 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("6768696a6b6c6d6e6f70717273747576"), refs: [] })
+    const a3 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000100000010"), refs: [{ id: a2, expectedTag: 8 }] })
+    const a4 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex(""), refs: [{ id: a1, expectedTag: 9 }, { id: a3, expectedTag: 9 }] })
+    const a5 = yield* store.put({ kind: { version: 0, tag: 10 }, payload: hex("00000001000000000000002000000002"), refs: [{ id: a4, expectedTag: 9 }] })
+    return [a0, a1, a2, a3, a4, a5]
+  })
+
+/** A named file over a one-chunk blob. */
+export const fileReadme = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("23207468652073746f726520776f7264"), refs: [] })
+    const a1 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000000000010"), refs: [{ id: a0, expectedTag: 8 }] })
+    const a2 = yield* store.put({ kind: { version: 0, tag: 10 }, payload: hex("00000001000000000000001000000001"), refs: [{ id: a1, expectedTag: 9 }] })
+    const a3 = yield* store.put({ kind: { version: 0, tag: 11 }, payload: hex("00000009726561646d652e6d640000000a746578742f706c61696e"), refs: [{ id: a2, expectedTag: 10 }] })
+    return [a0, a1, a2, a3]
+  })
+
+/** A journal: genesis and two entries over saved files. */
+export const journalTwoEntries = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("6368696c6472656e2066697273742c2061646d697373696f6e206f72646572"), refs: [] })
+    const a1 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("000000000000001f"), refs: [{ id: a0, expectedTag: 8 }] })
+    const a2 = yield* store.put({ kind: { version: 0, tag: 10 }, payload: hex("00000001000000000000001f00000001"), refs: [{ id: a1, expectedTag: 9 }] })
+    const a3 = yield* store.put({ kind: { version: 0, tag: 11 }, payload: hex("000000096e6f7465732e7478740000000a746578742f706c61696e"), refs: [{ id: a2, expectedTag: 10 }] })
+    const a4 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("23207468652073746f726520776f7264"), refs: [] })
+    const a5 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000000000010"), refs: [{ id: a4, expectedTag: 8 }] })
+    const a6 = yield* store.put({ kind: { version: 0, tag: 10 }, payload: hex("00000001000000000000001000000001"), refs: [{ id: a5, expectedTag: 9 }] })
+    const a7 = yield* store.put({ kind: { version: 0, tag: 11 }, payload: hex("00000009726561646d652e6d640000000a746578742f706c61696e"), refs: [{ id: a6, expectedTag: 10 }] })
+    const a8 = yield* store.put({ kind: { version: 0, tag: 12 }, payload: hex(""), refs: [] })
+    const a9 = yield* store.put({ kind: { version: 0, tag: 12 }, payload: hex(""), refs: [{ id: a7, expectedTag: 11 }, { id: a8, expectedTag: 12 }] })
+    const a10 = yield* store.put({ kind: { version: 0, tag: 12 }, payload: hex(""), refs: [{ id: a3, expectedTag: 11 }, { id: a9, expectedTag: 12 }] })
+    return [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10]
+  })
+
+/** Two leaves over one shared chunk — the duplicate put replays as a dedup. */
+export const sharedChunk = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("6f6e65206368756e6b2c207477696365"), refs: [] })
+    const a1 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000000000010"), refs: [{ id: a0, expectedTag: 8 }] })
+    const a2 = yield* store.put({ kind: { version: 0, tag: 8 }, payload: hex("6f6e65206368756e6b2c207477696365"), refs: [] })
+    const a3 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex("0000000100000010"), refs: [{ id: a2, expectedTag: 8 }] })
+    const a4 = yield* store.put({ kind: { version: 0, tag: 9 }, payload: hex(""), refs: [{ id: a1, expectedTag: 9 }, { id: a3, expectedTag: 9 }] })
+    return [a0, a1, a2, a3, a4]
+  })
+
+/** The lean4-tree-sitter pin commit as a git node — a provenance pin as store content. */
+export const gitPinCommit = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 71 }, payload: hex("636f6d6d69742031313837007472656520363966626637316338653230326333383034376333633864383561373137353862623832613162620a706172656e7420316335396566643033666464383236383562323563616163346261383331333964336264623963390a706172656e7420303962373938393164386266616632376463343035383761356663303732373736663766663235340a617574686f72204461766964204d617a6172726f203c64617669646d617a6172726f393840676d61696c2e636f6d3e2031373834323030393935202b303230300a636f6d6d697474657220476974487562203c6e6f7265706c79406769746875622e636f6d3e2031373834323030393935202b303230300a677067736967202d2d2d2d2d424547494e20504750205349474e41545552452d2d2d2d2d0a200a2077734663424141424341415142514a71574c386a4352433161513775753555686c414141793749514147572b515871686553534c714978472b674a56713472610a20595756595a4969475232394c36485378316b32376d31374d39387058333345572b5176325842574d54416f776f58394670564b63614c44415573486c335172300a2037512f33673533455743367031492b6765344550705952534d2f2f764b69685556702f74344f376977764c36657746537443596d416f654745384168753659350a206c32456c4e4a59516b5158596d526c6c645762774f516e6779316f4246675a35424b2f524b61574d3334724d58383830447372453454366e7a54564e723756580a203877476b52436e6975665636523573766366363432333134726f567a782b532f504e4a32557344426343743837534159464770754c46556e42544646736c38550a206e4e686e4b6b316b4b375441752b6b436a3341616c75366f5466596335486666664f77416e382b44754b543069777377445933507a535a6e38374969734453680a20497465533362376b6b4644673355565253624442597474614e696e46676e53664e4f66543969594e764e484b7a38577839703552437a4b584547543376482b4f0a2062417466684f594e36352b75314a36486d7557383755616d5244506a4f535a31573046614a4f4d4f38367a577a4a4b2b4352434f54732b624e634f54724f665a0a20697762506b686433362f56576a49647473374444394b624462646c5178736764576b676c5872744f726b6c6761396942372b4b55336b4a5a775576782f49666e0a2052385a552f676e77646f2f6e626135523169506543652f674775486d4e32516571746d4a5a45327347784538314b6943626253697755433145523962754958750a205962423745636f6a5a735a68537a524a39567055724f724165574c354738676a4f6e6c3551516159315569315050376e5559494145396c414a353050374545420a2047774e4168437563506d78535350637a4f424c420a203d7a6c72750a202d2d2d2d2d454e4420504750205349474e41545552452d2d2d2d2d0a200a0a4d657267652070756c6c20726571756573742023382066726f6d207072656469637461626c652d6d616368696e65732f444d2f6c65616e2d342e33322d757067726164650a0a63686f72653a207570677261646520746f204c65616e20342e33322e30"), refs: [] })
+    return [a0]
+  })
+
+/** The vector format's own canonical schema as a schema node. */
+export const schemaVectorDocument = (store: CasStoreShape) =>
+  Effect.gen(function* () {
+    const a0 = yield* store.put({ kind: { version: 0, tag: 83 }, payload: hex("7b227265766973696f6e223a302c2276616c7565223a7b225f746167223a22537472756374222c226669656c6473223a7b226465736372697074696f6e223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472696e67227d7d2c22646967657374223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a224c69746572616c222c2276616c7565223a227368613235362d736368656d6530227d7d2c226e616d65223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472696e67227d7d2c22736368656d6156657273696f6e223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a224c69746572616c222c2276616c7565223a317d7d2c22776f7264223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a224172726179222c226974656d223a7b225f746167223a22537472756374222c226669656c6473223a7b2261646472657373223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472696e67227d7d2c226e6f6465223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472756374222c226669656c6473223a7b227061796c6f6164223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472696e67227d7d2c2272656673223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a224172726179222c226974656d223a7b225f746167223a22537472756374222c226669656c6473223a7b226578706563746564546167223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22496e7465676572227d7d2c226964223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22537472696e67227d7d7d7d7d7d2c22746167223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22496e7465676572227d7d2c2276657273696f6e223a7b226f7074696f6e616c223a66616c73652c22736368656d61223a7b225f746167223a22496e7465676572227d7d7d7d7d7d7d7d7d7d7d7d"), refs: [] })
+    return [a0]
+  })
+
+/** Every generated program beside its vector fixture's name. */
+export const programs = [{ name: "value-single", run: valueSingle }, { name: "blob-two-leaves", run: blobTwoLeaves }, { name: "file-readme", run: fileReadme }, { name: "journal-two-entries", run: journalTwoEntries }, { name: "shared-chunk", run: sharedChunk }, { name: "git-pin-commit", run: gitPinCommit }, { name: "schema-vector-document", run: schemaVectorDocument }]

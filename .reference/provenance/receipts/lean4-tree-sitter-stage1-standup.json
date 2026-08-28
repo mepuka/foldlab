@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "lean4-tree-sitter-stage1-standup",
+  "observedAt": "2026-08-28T05:40:00-05:00",
+  "scope": "Stand-up of lean4-tree-sitter as the second Stage-1 extractor instrument (TOOLS.md pending-admission row): pinned clones, vendored C seam, per-host build digests, and the node-types.json schema-ingestion pin for the materializer lane.",
+  "searchBoundary": [
+    "git ls-remote / git clone of the three repositories recorded below",
+    "sha256 digests computed locally over the vendored C-seam sources and host-built artifacts",
+    "no other sources consulted for this receipt"
+  ],
+  "repositories": [
+    {
+      "id": "lean4-tree-sitter",
+      "repository": "https://github.com/predictable-machines/lean4-tree-sitter",
+      "selector": "HEAD observed 2026-08-28",
+      "commit": "3a57f55e1401484251cfe80e26583d9ed94c82c8",
+      "rootTree": "69fbf71c8e202c38047c3c8d85a71758bb82a1bb",
+      "license": "MIT",
+      "packageVersion": "0.2.4",
+      "toolchain": "leanprover/lean4:v4.32.0",
+      "paths": [
+        "lakefile.lean",
+        "ffi/language_definitions.json",
+        "ffi/vendor_grammars.sh",
+        "ffi/shim.c",
+        "TreeSitter/FFI",
+        "TreeSitter/Extract/Extract.lean",
+        "TreeSitter/Grammars/TypeScript.lean"
+      ]
+    },
+    {
+      "id": "tree-sitter-core",
+      "repository": "https://github.com/tree-sitter/tree-sitter",
+      "selector": "v0.24.7 (the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors)",
+      "commit": "5e8760bf462ce7b19b3d2396d5b7860f3906a297",
+      "license": "MIT",
+      "paths": ["lib/src", "lib/include"]
+    },
+    {
+      "id": "tree-sitter-typescript",
+      "repository": "https://github.com/tree-sitter/tree-sitter-typescript",
+      "selector": "75b3874edb2dc714fb1fd77a32013d0f8699989f (the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors)",
+      "commit": "75b3874edb2dc714fb1fd77a32013d0f8699989f",
+      "rootTree": "c458e52d122028abd51475c8614dbc6e185631b4",
+      "license": "MIT",
+      "paths": ["typescript/src/parser.c", "typescript/src/scanner.c", "typescript/src/node-types.json", "common"]
+    }
+  ],
+  "cSeam": {
+    "statement": "The trusted C FFI boundary of the Stage-1 twin: the vendored tree-sitter runtime and typescript grammar compiled into one static archive linked into the Lean executable. Digests below are the seam's identity; source digests are host-independent, build digests are per-host observations.",
+    "sourceDigests": {
+      "ffi/tree-sitter/lib/src/lib.c": "sha256:73e83dc2052f10f251c1519cb316fc3d13a079fe0c5e2e99a0f98dbf73a532e0",
+      "ffi/parsers/typescript/src/parser.c": "sha256:74fe453edd70f4eae9af0a1050cbd7943d8971d59165b6aaebbaa0a0b716d1aa",
+      "ffi/parsers/typescript/src/scanner.c": "sha256:9125013b42cb888379d9be909f1d73dfb75a37626c2cdbf4122718a2b431a6d3",
+      "ffi/shim.c": "sha256:cd21b3505af40263a7facd9bec41902c0dd5646e4702498b8e55e6df40027a6c"
+    },
+    "hostBuilds": [
+      {
+        "host": "macOS 26.2 (25C56) arm64, Apple clang 21.0.0 (clang-2100.0.123.102), Lean leanprover/lean4:v4.32.0 via elan",
+        "libtree-sitter-lean.a": "sha256:7d17dc4e57e9a9ee22ecb3f791edfd1ad995b19ebd45980ebbe52e38224b7f41",
+        "extract_twin": "sha256:07c4e50e21a06d1f33178e7888b0a6a3b409d4fb64fa55f3d2440c9550de389b"
+      }
+    ]
+  },
+  "schemaIngestionPin": {
+    "statement": "The typed-grammar schema for the materializer lane: tree-sitter-typescript's machine-readable node-type inventory at the vendored revision.",
+    "path": "typescript/src/node-types.json",
+    "bytes": 108583,
+    "sha256": "c790a733fc756b54d4e54dceeb7d2d51e40d8b57136e70277753a75804cce3e3"
+  },
+  "knownDefects": [
+    "The pinned tree-sitter-typescript grammar cannot parse the `<in E>` variance annotation on type parameters: parsing the pinned SchemaAST.ts yields exactly two 1-byte ERROR nodes at the `Filter` and `FilterGroup` class declarations (neither extends Base; neither is read by the Stage-1 walk). The twin refuses to emit if any ERROR/MISSING node intersects a byte range it consumed."
+  ],
+  "trustStatement": "Resolution and digest observation only. Nothing here asserts parsing correctness, grammar completeness, or semantic claims; the cross-instrument byte-identity gate carries the Stage-1 evidence, and the C seam identified above is the entire trusted boundary of the twin instrument."
+}

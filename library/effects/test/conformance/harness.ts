@@ -7,8 +7,9 @@
  */
 import { expect } from "@effect/vitest"
 import { Context, Effect, Equal, Layer, Schema } from "effect"
-import { readFileSync } from "node:fs"
-import { readFile } from "node:fs/promises"
+import { layerNodeFs } from "../fixtures/diskFs.ts"
+import { readFixtureString } from "../fixtures/read.ts"
+import { ManifestModel } from "./suiteIndex.ts"
 import type {
   MInput,
   MachineState,
@@ -16,17 +17,9 @@ import type {
   StepOut,
 } from "../../src/internal/remoteMachine.ts"
 
-/** The committed manifest index: the authority for the expected model
- * version and the consumable manifest set. Suites derive the model pin
- * from here, so a model bump never edits a suite. */
-const manifestIndex: { readonly manifests: ReadonlyArray<string>; readonly model: string } =
-  JSON.parse(readFileSync(
-    new URL("../../archive/lean-model-0.3/conformance/manifest/INDEX.json", import.meta.url),
-    "utf8",
-  ))
-
-export const ManifestModel: string = manifestIndex.model
-export const manifestIndexNames: ReadonlyArray<string> = manifestIndex.manifests
+/** The committed manifest index lives in the one suite-structure seam
+ * (`./suiteIndex.ts`); re-exported so consumers keep one import. */
+export { ManifestModel, manifestIndexNames } from "./suiteIndex.ts"
 
 /** A manifest that could not be read or decoded — tagged so harness
  * failures stay distinct in the error channel. */
@@ -98,16 +91,13 @@ export const loadFamily = <
   LoadedFamily<RowSchema["Type"]>,
   ManifestReadError | Schema.SchemaError
 > => Effect.gen(function* () {
-  const json = yield* Effect.tryPromise({
-    try: async () => {
-      const text = await readFile(
-        new URL(`../../archive/lean-model-0.3/conformance/manifest/${binding.family}.json`, import.meta.url),
-        "utf8",
-      )
-      return JSON.parse(text) as unknown
-    },
-    catch: (cause) => new ManifestReadError({ cause }),
-  })
+  const json = yield* readFixtureString(
+    `archive/lean-model-0.3/conformance/manifest/${binding.family}.json`,
+  ).pipe(
+    Effect.map((text) => JSON.parse(text) as unknown),
+    Effect.mapError((cause) => new ManifestReadError({ cause })),
+    Effect.provide(layerNodeFs),
+  )
   const decoded = yield* Schema.decodeUnknownEffect(manifestSchema(binding))(json, {
     onExcessProperty: "error",
   })

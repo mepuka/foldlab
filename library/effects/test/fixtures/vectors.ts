@@ -7,24 +7,24 @@
  * suite that replays the vectors loads them through this one door so
  * the wire schemas (the drift tripwire) are exercised identically.
  */
-import { readFileSync } from "node:fs"
 import { Effect, Schema } from "effect"
 import { Cas } from "../../src/index.ts"
+import { layerNodeFs } from "./diskFs.ts"
+import { readFixtureString } from "./read.ts"
 
 const { ConformanceVector } = Cas
 
-const vectorsDir = new URL("../../../cas/vectors/", import.meta.url)
-
-export const readJson = (file: string): unknown =>
-  JSON.parse(readFileSync(new URL(file, vectorsDir), "utf8"))
+const readJson = (file: string) =>
+  readFixtureString(`../cas/vectors/${file}`).pipe(
+    Effect.map((text) => JSON.parse(text) as unknown),
+  )
 
 export const loadVectors = Effect.gen(function* () {
   const index = yield* Schema.decodeUnknownEffect(ConformanceVector.VectorIndex)(
-    readJson("index.json"),
+    yield* readJson("index.json"),
   )
   const vectors = yield* Effect.forEach(index.vectors, (entry) =>
-    Schema.decodeUnknownEffect(ConformanceVector.ConformanceVector)(
-      readJson(entry.file),
-    ))
+    readJson(entry.file).pipe(Effect.flatMap((json) =>
+      Schema.decodeUnknownEffect(ConformanceVector.ConformanceVector)(json))))
   return { index, vectors }
-})
+}).pipe(Effect.provide(layerNodeFs))

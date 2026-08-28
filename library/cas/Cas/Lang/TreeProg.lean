@@ -59,6 +59,11 @@ def _root_.Cas.Grammar.Tree.progK :
     c.progK fun ca =>
       .vis (.put ⟨schemeVersion, Ty.file.wireTag,
         frame name.val ++ frame mt.val, [⟨Ty.manifest.wireTag, ca⟩]⟩) k
+  | .schema code _ _, k =>
+    .vis (.put ⟨schemeVersion, Ty.schema.wireTag,
+      Grammar.utf8 code.payload, []⟩) k
+  | .git obj, k =>
+    .vis (.put ⟨schemeVersion, Ty.git.wireTag, obj.val, []⟩) k
   | .genesis, k => .vis (.put ⟨schemeVersion, Ty.entry.wireTag, [], []⟩) k
   | .entry note item prev, k =>
     item.progK fun ia => prev.progK fun pa =>
@@ -171,6 +176,22 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
     intro k fuel w hw hhon
     obtain ⟨v, hsub, hstep, hstore, hwf', hhon'⟩ :=
       step_put_honest H hInj hw hhon (Tree.node_wf H .genesis)
+        (by intro r hr; simp [Tree.node] at hr) k
+    refine ⟨v, hsub, ?_, hstore, hwf', hhon'⟩
+    rw [Nat.add_comm]
+    exact run_step_running H hstep fuel
+  | schema code wf small =>
+    intro k fuel w hw hhon
+    obtain ⟨v, hsub, hstep, hstore, hwf', hhon'⟩ :=
+      step_put_honest H hInj hw hhon (Tree.node_wf H (.schema code wf small))
+        (by intro r hr; simp [Tree.node] at hr) k
+    refine ⟨v, hsub, ?_, hstore, hwf', hhon'⟩
+    rw [Nat.add_comm]
+    exact run_step_running H hstep fuel
+  | git obj =>
+    intro k fuel w hw hhon
+    obtain ⟨v, hsub, hstep, hstore, hwf', hhon'⟩ :=
+      step_put_honest H hInj hw hhon (Tree.node_wf H (.git obj))
         (by intro r hr; simp [Tree.node] at hr) k
     refine ⟨v, hsub, ?_, hstore, hwf', hhon'⟩
     rw [Nat.add_comm]

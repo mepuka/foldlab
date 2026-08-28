@@ -18,3 +18,44 @@ srcDir = "examples"
 name = "vectors"
 srcDir = "tools"
 root = "Vectors"
+
+# The schema emitter: `lake exe schemas` regenerates the committed
+# canonical-schema payload fixtures under schemas/ (the cross-runtime
+# pin surface); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "schemas"
+srcDir = "tools"
+root = "Schemas"
+
+# The wire-mirror emitter: `lake exe emitwire <path>` regenerates the
+# effects package's generated canonical-schema mirrors; `--check` is
+# the byte-identity gate.
+[[lean_exe]]
+name = "emitwire"
+srcDir = "tools"
+root = "EmitWire"
+
+# The program emitter: `lake exe emitprograms <path>` regenerates the
+# straight-line Effect programs of the registered grammar terms;
+# `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitprograms"
+srcDir = "tools"
+root = "EmitPrograms"
+
+# The MCP manifest emitter: lake exe mcpspec regenerates the versioned
+# CAS tool manifest (the R11 interchange document); --check is the
+# byte-identity gate.
+[[lean_exe]]
+name = "mcpspec"
+srcDir = "tools"
+root = "EmitMcp"
+
+# The surface ledger: lake exe surface extracts every public Cas
+# declaration and signature from the compiled environment into
+# surface/cas-surface.json; --check is the byte-identity gate.
+[[lean_exe]]
+name = "surface"
+srcDir = "tools"
+root = "Surface"
+supportInterpreter = true

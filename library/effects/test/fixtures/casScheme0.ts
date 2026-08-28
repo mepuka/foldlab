@@ -10,17 +10,19 @@
  * drifts from the shipped SHA-256 path fails the gate.
  */
 import { Crypto, Effect, Encoding, Schema } from "effect"
-import { readFile } from "node:fs/promises"
+import { layerNodeFs } from "./diskFs.ts"
+import { readFixtureString } from "./read.ts"
 import { Byte, CasNodeInput, ContentId, type StoreFailure } from "../../src/cas/Node.ts"
 import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
 
-/** The committed fixture: written by the generator, read by the suite. */
+/** The committed fixture: written by the generator, read by the suite.
+ * URL form for the generator script; package-root-relative path for
+ * service reads. */
 export const casKatFixtureUrl = new URL("./cas-scheme-0-kat.json", import.meta.url)
+export const casKatFixturePath = "test/fixtures/cas-scheme-0-kat.json"
 
-const codecManifestUrl = new URL(
-  "../../archive/lean-model-0.3/conformance/manifest/CAS-001.json",
-  import.meta.url,
-)
+const codecManifestPath =
+  "archive/lean-model-0.3/conformance/manifest/CAS-001.json"
 
 /**
  * The production digest path now ships in the package as
@@ -98,7 +100,10 @@ const casNodeFromManifest = (node: ManifestNode): Effect.Effect<CasNodeInput> =>
 /** Canonical encodings of the ratified codec rows that carry a node. */
 const nodePreImages: Effect.Effect<ReadonlyArray<readonly [string, Uint8Array]>> =
   Effect.gen(function* () {
-    const text = yield* Effect.promise(() => readFile(codecManifestUrl, "utf8"))
+    const text = yield* readFixtureString(codecManifestPath).pipe(
+      Effect.orDie,
+      Effect.provide(layerNodeFs),
+    )
     const manifest = yield* Schema.decodeUnknownEffect(CodecManifest)(
       JSON.parse(text) as unknown,
     ).pipe(Effect.orDie)

@@ -41,6 +41,9 @@ inductive TypeExpr where
   | numberLiteral (value : Int)
   | never
   | unknown
+  /-- `(name: T, …) => R` — admitted for operation signatures (the
+  consumer-gated fragment rule). -/
+  | func (params : List (String × TypeExpr)) (result : TypeExpr)
 
 namespace TypeExpr
 
@@ -59,10 +62,17 @@ def render : TypeExpr → String
   | .numberLiteral value => toString value
   | .never => "never"
   | .unknown => "unknown"
+  | .func params result =>
+    "(" ++ String.intercalate ", " (renderParams params) ++ ") => " ++
+      render result
 
 def renderAll : List TypeExpr → List String
   | [] => []
   | expression :: rest => render expression :: renderAll rest
+
+def renderParams : List (String × TypeExpr) → List String
+  | [] => []
+  | (name, ty) :: rest => (name ++ ": " ++ render ty) :: renderParams rest
 
 end
 

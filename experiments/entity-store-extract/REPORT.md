@@ -56,7 +56,8 @@ fixtures, decide-wall discipline, the T-2 dumper seam).
 1. **Instrument substitution.** The brief names lean4-tree-sitter as the syntax
    instrument; this stage ran the TypeScript compiler API instead (pinned, syntax-only,
    admission row drafted). No tree-sitter parse was performed; the two-instrument
-   agreement check in §1 is proposed, not executed.
+   agreement check in §1 is proposed, not executed. **CLOSED 2026-08-28 — see the
+   addendum below: the twin is stood up and the cross-instrument gate is green.**
 2. **`kindBy: "name-table"` facts are only as good as the tables.** `Getter` was never
    read upstream (census gap 2) — its closure-bearing status is inferred from use
    sites. If `Getter` carries identity fields, the table overstates nothing (marking a
@@ -86,3 +87,37 @@ fixtures, decide-wall discipline, the T-2 dumper seam).
 | Closure-bearing / derived-cache marks | declared name tables (echoed in `extractor.nameTables`) | name-table |
 | Representation union + runtime array | typescript@5.9.2 syntax parse of pinned SchemaRepresentation.ts | git blob SHA-1 verified pre-parse |
 | toRepresentation behavioral facts cited in SPECS/ACC | census (G0-pinned reading) + this session's live probes against the npm build | census receipts; probes are build-evidence only |
+
+## Addendum — 2026-08-28: the second instrument is stood up, the gate is green
+
+The §1 ruling landed: lean4-tree-sitter is ADMITTED (TOOLS.md row applied,
+2026-08-28) and the §6 gap-1 two-instrument agreement check is now executed,
+not proposed. The twin lives in [`twin/`](twin/): a Lean walk
+(`extract-lean/ExtractTwin.lean`, toolchain v4.32.0) over the vendored
+tree-sitter C seam (core v0.24.7 + tree-sitter-typescript `75b3874e`),
+pinned and digest-checked by `twin/bootstrap.sh` against the stand-up
+receipt (`.reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json`).
+
+The gate (`mise run check:extract-twin`) is the §1 note's check made exact,
+with one honest deviation from its "byte-identical inventories" phrasing:
+the twin re-derives `inventory.json` from the same pinned bytes
+**byte-identically except `extractor.instrument` and
+`extractor.instrumentVersion`**, which each instrument fills with its own
+declared identity — a twin copying those two fields would impersonate the
+other instrument. The harness additionally asserts: git-blob pins verified
+through a branded `GitBlobSha1` Effect Schema (operator ruling 2026-08-28:
+the git-blob identity is a Schema, never a bare string), the reference
+extractor byte-identical to the committed inventory, twin determinism
+across independent runs, and both inventories decoding through a typed
+`Inventory` schema with the declared instrument identities and pins.
+
+Known defect, held: the pinned grammar cannot parse the `<in E>` variance
+annotation — exactly two 1-byte ERROR nodes at `Filter`/`FilterGroup`
+(neither extends `Base`; neither is read by the walk). The twin refuses to
+emit if any ERROR/MISSING node intersects a byte range it consumed, so
+grammar drift that touches the walk is loud, never silent.
+
+Instruments-per-fact update: every fact family in the table above is now
+double-derived (typescript@5.9.2 and lean4-tree-sitter @ `3a57f55e` agree
+byte-for-byte on the inventory body); provenance is unchanged — git blob
+SHA-1 verified pre-parse, name-table facts still name-table.

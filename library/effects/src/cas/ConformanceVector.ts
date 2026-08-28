@@ -24,6 +24,7 @@
 import { Schema } from "effect"
 import * as CanonicalSchema from "./CanonicalSchema.ts"
 import { Byte, CasNodeInput, ContentId } from "./Node.ts"
+import { indexAst, vectorAst } from "./generated/ConformanceVectorAst.ts"
 
 /** The vector wire schema version this consumer understands. */
 export const SchemaVersion = 1
@@ -31,49 +32,12 @@ export const SchemaVersion = 1
 /** The digest scheme the fixtures declare: scheme-0 SHA-256. */
 export const DigestScheme = "sha256-scheme0"
 
-/** The vector format as canonical schema — the content-addressed
- * identity of the file format itself, mirroring the Lean codes in
- * `Cas/Vectors/Vectors.lean` field for field. The Effect Schemas
- * below carry these ASTs through the annotation API: the runtime
- * codec is the carrier, the canonical AST is the identity. */
-export const refAst = CanonicalSchema.struct({
-  expectedTag: CanonicalSchema.field(CanonicalSchema.integerAst),
-  id: CanonicalSchema.field(CanonicalSchema.stringAst),
-})
-
-export const nodeAst = CanonicalSchema.struct({
-  payload: CanonicalSchema.field(CanonicalSchema.stringAst),
-  refs: CanonicalSchema.field(CanonicalSchema.array(refAst)),
-  tag: CanonicalSchema.field(CanonicalSchema.integerAst),
-  version: CanonicalSchema.field(CanonicalSchema.integerAst),
-})
-
-export const bindingAst = CanonicalSchema.struct({
-  address: CanonicalSchema.field(CanonicalSchema.stringAst),
-  node: CanonicalSchema.field(nodeAst),
-})
-
-export const vectorAst = CanonicalSchema.struct({
-  description: CanonicalSchema.field(CanonicalSchema.stringAst),
-  digest: CanonicalSchema.field(CanonicalSchema.literal(DigestScheme)),
-  name: CanonicalSchema.field(CanonicalSchema.stringAst),
-  schemaVersion: CanonicalSchema.field(CanonicalSchema.literal(SchemaVersion)),
-  word: CanonicalSchema.field(CanonicalSchema.array(bindingAst)),
-})
-
-export const indexEntryAst = CanonicalSchema.struct({
-  bindings: CanonicalSchema.field(CanonicalSchema.integerAst),
-  description: CanonicalSchema.field(CanonicalSchema.stringAst),
-  file: CanonicalSchema.field(CanonicalSchema.stringAst),
-  name: CanonicalSchema.field(CanonicalSchema.stringAst),
-  root: CanonicalSchema.field(CanonicalSchema.stringAst),
-})
-
-export const indexAst = CanonicalSchema.struct({
-  digest: CanonicalSchema.field(CanonicalSchema.literal(DigestScheme)),
-  schemaVersion: CanonicalSchema.field(CanonicalSchema.literal(SchemaVersion)),
-  vectors: CanonicalSchema.field(CanonicalSchema.array(indexEntryAst)),
-})
+/** The vector format as canonical schema — GENERATED mirrors of the
+ * Lean codes (`lake exe emitwire`, byte-identity-gated): the
+ * content-addressed identity of the file format itself. The Effect
+ * Schemas below carry these ASTs through the annotation API: the
+ * runtime codec is the carrier, the canonical AST is the identity. */
+export * from "./generated/ConformanceVectorAst.ts"
 
 /** One typed reference: the expected kind tag and the hex address. */
 export const VectorRef = Schema.Struct({

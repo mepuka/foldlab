@@ -32,7 +32,17 @@ semantics, the DSL, and metaprogramming; the live Lean model moves to
 — byte-plane seam, path reader, store-root layout, typed-reference
 marker law, store loader, server plane — and the typed root gains its
 edge form and model carrier. Replay-plane entries remain minted
-vocabulary; their code labels point into the stash. Kind:
+vocabulary; their code labels point into the stash. Amended 2026-08-28
+at the schema self-description landing (operator-directed, in-session):
+two entries minted — canonical schema, materializer. Amended 2026-08-28
+at the effects-backend design session (operator-directed, in-session;
+design basis [library/cas/EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md)):
+two entries minted — TypeScript backend, program vector — and one rule
+ratified — programs-are-content. Amended 2026-08-28 at the
+effects-backend RATIFICATION (operator: "make this official and pin
+it"; the R1–R14 dialogue is the grilling record): three entries
+minted — handler, the tower, representation strata — and one rule
+ratified — the-direction-law. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -620,7 +630,171 @@ enters as an ordinary refactor proposal at that time.
 
 ---
 
+### Canonical schema
+- **Kind:** schema. **Code label:** `src/cas/CanonicalSchema.ts` (runtime)
+  and `library/cas/Cas/Schema/` (model: `Ast`, `El`, codec, `Described`,
+  `SelfCodec`).
+- **Form:** the plane's universe of codes: a first-class data value
+  (`Null/Boolean/Integer/String/Literal/Array/Struct/Ref`) whose
+  denotation is a type (`El`), whose generic codec carries the proved
+  forward, exactness, and injectivity laws, and which is itself content:
+  a code projects to a tagged JSON value, wraps in the revisioned
+  schema-node envelope (kind tag `0x53`), and its canonical payload
+  bytes are its identity — byte-pinned across runtimes
+  (`lake exe schemas --check`, `CanonicalSchemaPin.test.ts`).
+- **Obligations:** no canonical construct's identity lives in a
+  function (the plane's standing law); struct fields strictly sorted
+  (`WF`) — the only admissible spelling is the canonical one, and the
+  encode image is proved canonically spelled (`encode_canonical`,
+  `renderCompact_encode`); the self-projection is a proved round trip
+  (`ofJson_toJson`), so one code per payload value; bytes are ALWAYS
+  derived on read, never stored as authority.
+- **Avoid:** Effect Schema (or any runtime carrier) read as the
+  authority — carriers carry, the code is the identity; JSON Schema as
+  anything but an export projection; extending the universe by
+  convention (optional-as-struct, union-as-tag-string) instead of by a
+  new ratified constructor.
+
+### Materializer
+- **Kind:** codec. **Code label:** `src/cas/CanonicalSchema.ts`
+  (`fromAst` — the generative direction) and
+  `library/cas/Cas/Schema/Described/`, `Deriving/`, `Notation.lean`
+  (`Described`, `deriving Described`, `cas_struct`).
+- **Form:** the generative direction of a described code: from a
+  canonical schema, produce the fully typed runtime carrier it denotes
+  (TS: `fromAst` compiles a code to its Effect Schema with the code
+  attached by annotation; Lean: a `Described` instance pairs a native
+  structure with its code and the two-sided equivalence, and the
+  `cas_struct` notation mints structure, instance, and raw-schema
+  surface from one declaration).
+- **Obligations:** a materialized carrier always carries its source
+  code (annotation on the TS side, the `Described.code` field on the
+  Lean side) so identity is recoverable from the carrier; the
+  carrier–code correspondence is two-sided with inverse laws
+  (`ofEl_toEl`/`toEl_ofEl`), never a one-way projection; materializing
+  never mints identity — the code is prior, and equal codes
+  materialize interchangeable carriers.
+- **Avoid:** hand-written carriers for described trees (the
+  three-trees discipline: every described tree type arrives as `El` of
+  a code); a materialized carrier drifting from its code without the
+  byte pin going red; reading "materializer" as a persistence or view
+  concept borrowed from event-sourcing systems — here it is strictly
+  schema-to-carrier.
+
+### TypeScript backend
+- **Kind:** module. **Code label:** `library/cas/Cas/Backend/` (Lean,
+  seeded by `Cas/Schema/Foreign.lean`) with generated surfaces landing
+  in `library/effects`.
+- **Form:** the store language's first compilation target: four layers —
+  denotation (the language), target semantics (the pinned Effect surface
+  as typed data), a closed TypeScript syntax fragment grown only with a
+  real consumer, and rendering under the Substance/Denotation/Style
+  split with `Style` as digested content. Design basis:
+  [EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md).
+- **Obligations:** the backend generates hosts — interpreters, services,
+  layers, typed surfaces — never the authoritative home of a program
+  (rule: programs-are-content); generated output is deterministic,
+  byte-identity-gated, provenance-stamped, and parse-back-checked by an
+  independent admitted instrument; the target-semantics layer is pinned
+  to the exact Effect version and drift is a red gate, not a silent
+  regeneration.
+- **Avoid:** string-template codegen; full-TypeScript AST ambition;
+  external formatters on output; semantic choices inside the generator;
+  self-comparison as verification.
+
+### Program vector
+- **Kind:** schema. **Code label:** owed with backend slice 2 (the
+  conformance-vector registry is the pattern source).
+- **Form:** a conformance vector whose content is a run: one store
+  program, executed by the Lean interpreter and by a generated target
+  host, each writing its word — the vector pins the program's
+  presentation and the Lean-computed word, and the gate asserts the
+  target host's word is identical, binding for binding.
+- **Obligations:** word equality is the whole claim — byte-decidable
+  because nondeterminism enters only as recorded content; a program
+  vector never asserts semantic equivalence of programs (that is a
+  certificate, never an identity); the replayed word passes the same
+  admission gates as any word.
+- **Avoid:** reading a green program vector as a theorem about the
+  target runtime; comparing programs by anything other than
+  presentation identity; vectors whose runs depend on unrecorded host
+  state.
+
+### Handler
+- **Kind:** model. **Code label:** `library/cas/Cas/Lang/Handler.lean`.
+- **Form:** one meaning per operation in a target monad; `interpret`
+  is the induced monad morphism (`interpret_bind` proved once for
+  every handler); handlers compose across signature sums
+  (`Handler.sum`). The REFERENCE HANDLER — the admission judgment in
+  `StateT Word (Except Refusal)` — is the store language's meaning;
+  replay is the handler answering from a recorded word; the Effect
+  adapter and every transport are handlers or handler compositions.
+- **Obligations:** meaning lives only in the reference handler; a
+  realization is claimed against it by the word observation, never by
+  review; fuel belongs to the small-step presentation, never to the
+  API.
+- **Avoid:** reading any adapter as the semantics; comparing
+  realizations by anything but the word; handler-specific behavior
+  leaking into program identity.
+
+### The tower
+- **Kind:** model. **Code label:** `library/cas/Cas/Lang/Tower.lean`.
+- **Form:** a service is a handler, and a handler may itself be a
+  program over a lower signature; `Handler.through` composes and
+  `interpret_through` (proved) collapses the strata. `ByteSig` mirrors
+  the runtime's byte-plane seam; `casOverBytes` is the store service
+  implemented in the language — admission re-derived at the seam,
+  collision as byte disagreement, loads through the proved frame
+  parser.
+- **Obligations:** strata are free by theorem; trust exists only at
+  the admitted seams at the bottom; every seam's own effects
+  (transport failure, cancellation, backpressure) enter as operations
+  of their own summed signature.
+- **Avoid:** smuggling seam effects through request/reply commands;
+  treating Effect Layers as anything other than the runtime image of
+  `through`; a stratum claiming meaning.
+
+### Representation strata
+- **Kind:** model. **Code label:**
+  `library/cas/Cas/Lang/Representation.lean`.
+- **Form:** the four literal Lean representations of effectful
+  computation and their equalities: (1) first-order content —
+  decidable, hashable, addressable; the metaprogrammatic stratum; (2)
+  `Prog` — the proof carrier, a proved `LawfulMonad`, INITIAL
+  (`eq_of_forall_interpret`: agreement under every lawful
+  interpretation is structural equality); (3) handler images —
+  equated only by theorem (`SemEq`, `ObsEq`); (4) host IO — no
+  equational theory. The stable effects API is strata 1–2.
+- **Obligations:** metaprogramming reasons over stratum 1 only;
+  proofs induct at stratum 2 under the named equations; stratum-3
+  equalities are certificates; stratum 4 stops at trust statements.
+- **Avoid:** claiming `DecidableEq` on `Prog`; positing any program
+  equality finer than structural (initiality forbids it); equating
+  handler images by inspection.
+
 ## Rules (each kind: adr; ratified in the M0 grilling, 2026-08-26)
+
+### the-direction-law
+Ratified 2026-08-28 (operator, in-session, the effects-backend
+ratification). Three verbs, three directions, never crossed. HOOVER —
+parsing pinned sources with admitted instruments — is ingestion: it
+yields surface tables, cross-checks, and provenance, and never mints
+an identity. EXECUTE — running the Lean model — is the only act that
+mints fixtures, words, and payloads: model execution is strictly
+stronger evidence than parsing a description of the model. MATERIALIZE
+— generation — flows denotation → code only, byte-gated; a carrier is
+never the authority, and generation never runs code → denotation. A
+parse never mints a fixture.
+
+### programs-are-content
+Ratified 2026-08-28 (operator, in-session, the effects-backend design
+session). Programs are content; hosts are code. A program lives in the
+store and is loaded by address; generated target code materializes
+interpreters, services, and surfaces around it. A generated static
+projection of a program carries the address of the term it projects,
+and parity between them is a digest check — the served-equals-derived
+wall. Generated code that becomes a program's authoritative home is a
+defect of the backend, not a style choice.
 
 ### history-is-an-underapproximation
 Every recorded entry corresponds to a live action that occurred, in the

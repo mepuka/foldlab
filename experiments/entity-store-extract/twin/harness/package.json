@@ -1,0 +1,11 @@
+{
+  "name": "e2-extract-cross-instrument-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "bun run harness.ts"
+  },
+  "dependencies": {
+    "effect": "4.0.0-rc.111"
+  }
+}

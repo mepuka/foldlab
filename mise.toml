@@ -7,6 +7,11 @@ description = "Regenerate every derived file from declared sources"
 run = [
   "mise run gen:vectors",
   "mise run gen:cas-vectors",
+  "mise run gen:cas-schemas",
+  "mise run gen:backend-wire",
+  "mise run gen:backend-programs",
+  "mise run gen:backend-mcp",
+  "mise run gen:cas-surface",
   "mise run gen:ledger",
 ]
 
@@ -47,12 +52,42 @@ description = "Regenerate the CAS conformance vectors from the Lean registry"
 dir = "{{config_root}}/library/cas"
 run = "lake exe vectors"
 
+[tasks."gen:cas-schemas"]
+description = "Regenerate the canonical-schema payload fixtures from the Lean self-codec registry"
+dir = "{{config_root}}/library/cas"
+run = "lake exe schemas"
+
+[tasks."gen:backend-wire"]
+description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorAst.ts"
+
+[tasks."gen:backend-programs"]
+description = "Regenerate the straight-line Effect programs of the registered grammar terms"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitprograms ../effects/test/generated/VectorPrograms.ts"
+
+[tasks."gen:backend-mcp"]
+description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
+dir = "{{config_root}}/library/cas"
+run = "lake exe mcpspec"
+
+[tasks."gen:cas-surface"]
+description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
+dir = "{{config_root}}/library/cas"
+run = "lake exe surface"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector byte-identity gate"
+description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, program, MCP-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
+  "lake exe schemas --check",
+  "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorAst.ts",
+  "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
+  "lake exe mcpspec --check",
+  "lake exe surface --check",
 ]
 
 [tasks."check:effects:archive"]
@@ -97,6 +132,7 @@ dir = "{{config_root}}/library/effects"
 run = [
   "bun scripts/check-src-purity.ts",
   "bun install --frozen-lockfile",
+  "bun run lint",
   "bun run typecheck",
   "bun run test",
   "bun run build",
@@ -123,4 +159,13 @@ run = [
   "mise run check:effects:ts",
   "mise run check:effects:research",
   "mise run check:ledger",
+]
+
+[tasks."check:extract-twin"]
+description = "Stage 1 cross-instrument gate: TS-compiler-API extractor vs lean4-tree-sitter twin (bootstraps the pinned C seam; network + elan on first run; not in the default check chain)"
+dir = "{{config_root}}/experiments/entity-store-extract/twin"
+run = [
+  "bash bootstrap.sh",
+  "bash -c 'cd extract-lean && lake build'",
+  "bash -c 'cd harness && bun install --frozen-lockfile && bun run check'",
 ]

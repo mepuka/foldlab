@@ -152,3 +152,121 @@ end
 def document (v : Value) : String := render v ++ "\n"
 
 end Cas.Json
+
+namespace Cas.Json
+
+/-! ## Canonical spelling — sorted keys, and the sort-free rendering
+
+`renderCompact` sorts object fields at render time, so it cannot
+distinguish two spellings of one object. `Value.Canonical` names the
+values on which no reordering happens — every object's keys already in
+strict codepoint order — and `renderCompact_eq_renderPlain` is the
+rendering theorem: on canonical values the canonical rendering IS the
+purely structural fold. The schema codec's encoders emit canonical
+values by construction (`Cas.Schema.encode_canonical`), which binds
+the byte identity to the structural encoding with no hidden sort. -/
+
+mutual
+
+/-- Every object node's keys strictly sorted, recursively. Strict
+order subsumes duplicate-freedom. -/
+def Value.Canonical : Value → Prop
+  | .arr xs => CanonicalItems xs
+  | .obj fields =>
+    List.Pairwise (fun a b => a.1 < b.1) fields ∧ CanonicalFields fields
+  | _ => True
+
+def CanonicalItems : List Value → Prop
+  | [] => True
+  | x :: xs => x.Canonical ∧ CanonicalItems xs
+
+def CanonicalFields : List (String × Value) → Prop
+  | [] => True
+  | (_, v) :: fields => v.Canonical ∧ CanonicalFields fields
+
+end
+
+/-- Strict key order gives the (non-strict, Bool-valued) order the
+canonical renderer sorts by. -/
+private theorem le_of_key_lt {a b : String} (h : a < b) : a ≤ b :=
+  Std.le_of_not_ge fun hge => hge h
+
+mutual
+
+/-- The sort-free structural rendering: identical layout to
+`renderCompact`, object fields taken in given order. -/
+def renderPlain : Value → String
+  | .null => "null"
+  | .bool b => if b then "true" else "false"
+  | .nat n => toString n
+  | .int i => toString i
+  | .str s => "\"" ++ escapeCompact s ++ "\""
+  | .arr xs => "[" ++ String.intercalate "," (renderPlainItems xs) ++ "]"
+  | .obj fields =>
+    "{" ++ String.intercalate "," (renderPlainFields fields) ++ "}"
+
+def renderPlainItems : List Value → List String
+  | [] => []
+  | x :: rest => renderPlain x :: renderPlainItems rest
+
+def renderPlainFields : List (String × Value) → List String
+  | [] => []
+  | (k, v) :: rest =>
+    ("\"" ++ escapeCompact k ++ "\":" ++ renderPlain v) :: renderPlainFields rest
+
+end
+
+private theorem renderPlainFields_eq_map (fs : List (String × Value)) :
+    renderPlainFields fs =
+      fs.map (fun f => "\"" ++ escapeCompact f.1 ++ "\":" ++ renderPlain f.2) := by
+  induction fs with
+  | nil => rfl
+  | cons f rest ih => cases f; simp [renderPlainFields, ih]
+
+mutual
+
+/-- THE rendering theorem: on canonical values, `renderCompact`
+performs no reordering — the canonical bytes are the structural fold
+of the value as spelled. -/
+theorem renderCompact_eq_renderPlain :
+    ∀ (v : Value), v.Canonical → renderCompact v = renderPlain v
+  | .null, _ => rfl
+  | .bool _, _ => rfl
+  | .nat _, _ => rfl
+  | .int _, _ => rfl
+  | .str _, _ => rfl
+  | .arr xs, h => by
+    simp only [renderCompact, renderPlain]
+    rw [renderCompactItems_eq_renderPlainItems xs h]
+  | .obj fields, h => by
+    obtain ⟨hsorted, hfields⟩ := h
+    simp only [renderCompact, renderPlain]
+    rw [renderCompactFields_eq_map fields hfields]
+    rw [List.mergeSort_of_pairwise (by
+      refine (List.pairwise_map).mpr ?_
+      exact hsorted.imp fun hab => by
+        simpa using le_of_key_lt hab)]
+    rw [renderPlainFields_eq_map, List.map_map]
+    rfl
+
+theorem renderCompactItems_eq_renderPlainItems :
+    ∀ (xs : List Value), CanonicalItems xs →
+      renderCompactItems xs = renderPlainItems xs
+  | [], _ => rfl
+  | x :: rest, h => by
+    simp only [renderCompactItems, renderPlainItems]
+    rw [renderCompact_eq_renderPlain x h.1,
+      renderCompactItems_eq_renderPlainItems rest h.2]
+
+theorem renderCompactFields_eq_map :
+    ∀ (fs : List (String × Value)), CanonicalFields fs →
+      renderCompactFields fs = fs.map (fun f => (f.1, renderPlain f.2))
+  | [], _ => rfl
+  | (k, v) :: rest, h => by
+    simp only [renderCompactFields, List.map_cons]
+    rw [renderCompact_eq_renderPlain v h.1,
+      renderCompactFields_eq_map rest h.2]
+
+end
+
+end Cas.Json

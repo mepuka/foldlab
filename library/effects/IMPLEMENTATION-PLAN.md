@@ -1395,9 +1395,27 @@ registry; a tracking manifest):
   `ConformanceVector.vectorAst`/`indexAst` mirror the codes through
   the CanonicalSchema constructors and the wire schemas carry them via
   the annotation API (carrier/identity split). Asserting the schema
-  bytes agree across runtimes (the canonical-schema pin) is BLOCKED on
-  the schema commission's Lean Ast codec — first cross-pin when that
-  lands.
+  bytes agree across runtimes (the canonical-schema pin) was BLOCKED
+  on the schema commission's Lean Ast codec — **UNBLOCKED and LANDED
+  2026-08-28**: `Cas.Schema.SelfCodec` (the codes' JSON projection,
+  envelope, and canonical payload), the `cas_struct` authoring
+  notation (`Cas.Schema.Notation`: one declaration → structure +
+  `Described` instance + raw-schema surface), the `lake exe schemas`
+  registry with committed byte fixtures under `library/cas/schemas/`,
+  and `test/CanonicalSchemaPin.test.ts` asserting
+  `CanonicalSchema.payloadOf` answers the Lean-emitted bytes for every
+  registered code (the vector document/index codes among them — the
+  hand-mirror tripwire is now byte-armed). Same day, the byte-level
+  rendering theorem LANDED kernel-checked
+  (`Cas/Schema/Codec/Laws/Render.lean`, `Values/Json.lean`,
+  `SelfCodec.lean`): `encode_canonical` + `renderCompact_encode`
+  prove the encode image is canonically spelled and the canonical
+  rendering performs no reordering on it; `payload_renderPlain` binds
+  schema payloads the same way; `ofJson_toJson`/`toJson_inj` give the
+  self-codec a proved round trip (one code per payload value).
+  Remaining open direction, named precisely: injectivity of the
+  canonical rendering itself (bytes determine the canonical value —
+  a verified-parser development).
 
 **THE FIRST CAS (2026-08-28, delegated wave 1, coordinator-verified):**
 the library now demonstrably creates a real, durable, on-disk store.

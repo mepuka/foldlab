@@ -1,0 +1,25 @@
+{
+  "revision": 0,
+  "schemas": [
+    {
+      "byteLength": 892,
+      "file": "vector-document.json",
+      "name": "vector-document"
+    },
+    {
+      "byteLength": 573,
+      "file": "vector-index.json",
+      "name": "vector-index"
+    },
+    {
+      "byteLength": 453,
+      "file": "pin-sample.json",
+      "name": "pin-sample"
+    },
+    {
+      "byteLength": 308,
+      "file": "literal-pin.json",
+      "name": "literal-pin"
+    }
+  ]
+}

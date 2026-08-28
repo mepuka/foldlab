@@ -36,6 +36,20 @@
       "file": "shared-chunk.json",
       "name": "shared-chunk",
       "root": "aa3af12c48920440ff25c0d7bd6863ca8b76ec7cb03b50c3603a75bf55a18924"
+    },
+    {
+      "bindings": 1,
+      "description": "the lean4-tree-sitter pin commit as a git node (sort 0x47): the payload is the loose-object preimage, so sha1(payload) IS the git id 3a57f55e…",
+      "file": "git-pin-commit.json",
+      "name": "git-pin-commit",
+      "root": "60e53ecf79215af74d0fbc9e0e43e297e295b210083607cd1fc69c58a2ce16be"
+    },
+    {
+      "bindings": 1,
+      "description": "the vector format's own canonical schema as a schema node (sort 0x53)",
+      "file": "schema-vector-document.json",
+      "name": "schema-vector-document",
+      "root": "d2ea192d76dafe3d90680abc6a99649d8f1356028d7f9d3f8248f9e0f4a7901d"
     }
   ]
 }

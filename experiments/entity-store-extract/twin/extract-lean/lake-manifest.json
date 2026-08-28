@@ -1,0 +1,13 @@
+{"version": "1.2.0",
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"type": "path",
+   "scope": "",
+   "name": "«tree-sitter»",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "../../../../.staging/treesitter/clones/lean4-tree-sitter",
+   "configFile": "lakefile.lean"}],
+ "name": "«extract-twin»",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}
