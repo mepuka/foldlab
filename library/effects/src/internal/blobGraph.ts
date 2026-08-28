@@ -74,11 +74,11 @@ const leafPayload = (index: number, chunkLength: number): Uint8Array => {
  * Chunk order and boundaries are semantic input here; the public blob writer's
  * fixed-size chunker is a separate stage.
  */
-export const materializeBlobGraph = (
-  store: CasStoreShape,
-  chunks: ReadonlyArray<Uint8Array>,
-): Effect.Effect<BlobGraphResult, CasError | BlobGraphError> =>
-  Effect.gen(function* () {
+export const materializeBlobGraph = Effect.fn("BlobGraph.materialize")(
+  function* (
+    store: CasStoreShape,
+    chunks: ReadonlyArray<Uint8Array>,
+  ): Effect.fn.Return<BlobGraphResult, CasError | BlobGraphError> {
     if (chunks.length === 0) {
       return yield* new BlobGraphError({ reason: "recipe 1 requires at least one chunk" })
     }
@@ -105,19 +105,20 @@ export const materializeBlobGraph = (
     const buildTree = (
       base: number,
       count: number,
-    ): Effect.Effect<ContentId, CasError> => Effect.gen(function* () {
+    ): Effect.Effect<ContentId, CasError> => Effect.suspend(() => {
       if (count === 1) {
         const leaf = leaves[base]
-        if (leaf === undefined) return yield* Effect.die("missing admitted blob leaf")
-        return leaf
+        return leaf === undefined
+          ? Effect.die("missing admitted blob leaf")
+          : Effect.succeed(leaf)
       }
       const split = pow2Below(count)
-      const left = yield* buildTree(base, split)
-      const right = yield* buildTree(base + split, count - split)
-      return yield* store.put(node(BlobNodeTag, new Uint8Array(0), [
-        { id: left, expectedTag: BlobNodeTag },
-        { id: right, expectedTag: BlobNodeTag },
-      ]))
+      return Effect.flatMap(buildTree(base, split), (left) =>
+        Effect.flatMap(buildTree(base + split, count - split), (right) =>
+          store.put(node(BlobNodeTag, new Uint8Array(0), [
+            { id: left, expectedTag: BlobNodeTag },
+            { id: right, expectedTag: BlobNodeTag },
+          ]))))
     })
 
     const treeRoot = yield* buildTree(0, leaves.length)
@@ -132,4 +133,5 @@ export const materializeBlobGraph = (
       [{ id: treeRoot, expectedTag: BlobNodeTag }],
     ))
     return { blobRef, treeRoot, totalBytes, leafCount: leaves.length }
-  })
+  },
+)

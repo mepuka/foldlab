@@ -99,6 +99,25 @@ move, not copy. Minted now: the wave-3 terms and rules below.
 - **Avoid:** hand-written entries; unpinned consumption; partial adoption of a version
   (a station passes its slice of ONE bundle version, not a blend).
 
+### Store word
+- **Kind:** schema (ordered operational carrier).
+- **Form:** a list of named address-to-node bindings in admission order,
+  earliest first. The order is replay semantics, not presentation order.
+- **Obligations:** resolution is first-binding; a well-formed word resolves
+  every reference among strictly earlier bindings at its declared kind.
+- **Avoid:** string, log text, unordered map, anonymous pair list.
+
+### Checked conformance vector
+- **Kind:** schema (versioned replay input).
+- **Form:** a valid platform-neutral vector name, description, and non-empty
+  Store word that passed the executable word-admission scan. Its final
+  binding supplies the total root.
+- **Obligations:** enter output only through the checked constructor; registry
+  names are unique; its wire records carry the derived schema and the typed
+  foreign-language representation. A concrete digest check contributes no
+  kernel proof of digest injectivity.
+- **Avoid:** JSON fixture, golden file, unchecked vector, proof of SHA-256.
+
 ### Station
 - **Kind:** taxonomy (cutover units and their gates). **Ruling:** CV-1.
 - **Form:** one unit of the cutover (codecs, digest, canon/admission, store engine,

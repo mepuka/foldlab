@@ -49,12 +49,10 @@ export const makeCasHttpApp = (
   never,
   CasServerCore
 > => Effect.map(CasServerCore, (core) =>
-  Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const facts = yield* gatherFacts(request)
-    return yield* WireDecision.$match(decide(policy, facts), {
-      Accepted: ({ principal, request: operation }) =>
-        core.serve(principal, operation).pipe(Effect.map(renderOutcome)),
-      Refused: ({ refusal }) => Effect.succeed(renderRefusal(refusal)),
-    })
-  }))
+  Effect.flatMap(HttpServerRequest.HttpServerRequest, (request) =>
+    Effect.flatMap(gatherFacts(request), (facts) =>
+      WireDecision.$match(decide(policy, facts), {
+        Accepted: ({ principal, request: operation }) =>
+          core.serve(principal, operation).pipe(Effect.map(renderOutcome)),
+        Refused: ({ refusal }) => Effect.succeed(renderRefusal(refusal)),
+      }))))

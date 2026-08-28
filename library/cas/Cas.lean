@@ -40,9 +40,9 @@ abstraction, lowest first, and imported above in that order.
 - **`Values/` — the typed projection plane.** The canonical JSON
   printers (`Json`) and the typed-reference marker grammar with
   `Root α` (`Refs`).
-- **`IR/` — the store word.** The executable carrier: children-first
-  admission order, `wf`, and the bridge `toStore` with
-  `wf_toStore_closed` (ledger L1).
+- **`IR/` — the store word.** Named `Binding`s in children-first
+  admission order, non-empty and proof-bearing admitted wrappers,
+  `wf`, and the bridge `toStore` with `wf_toStore_closed` (ledger L1).
 - **`Grammar/` — layer 2, the data grammar.** Sorts with wire tags,
   the indexed `Tree` family elaborating onto `Node` through the real
   codec, the content address as a fold under abstract `H`, `flatten`
@@ -55,11 +55,11 @@ abstraction, lowest first, and imported above in that order.
   grammar term as a store program with `putTree_correct` (F1): the run
   computes exactly the elaboration's address and store, deduplicating
   shared subterms through `put`'s duplicate outcome (F2).
-- **`Vectors/` — the registered replay surface.** The conformance
-  vector as a first-class value (name, description, word) with its
-  canonical JSON projection; the `vectors` executable iterates one
-  registry, gates every word on `Word.wf` at emission, and writes the
-  committed fixtures plus the `index.json` tracking manifest.
+- **`Vectors/` — the registered replay surface.** Checked names,
+  non-empty words, runtime-admitted vectors, unique-name registries,
+  and named wire records. `Cas.Vectors.Schema` derives their canonical
+  schema and TypeScript/Effect Schema correspondence; the `vectors`
+  executable serializes only the checked registry.
 - **`Architecture`** — the library described in itself, pinned against
   the TypeScript twin through one canonical matrix.
 

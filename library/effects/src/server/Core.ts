@@ -16,9 +16,6 @@ import {
   ByteWriter,
   RootStore,
   type BackendFailure,
-  type ByteReaderShape,
-  type ByteWriterShape,
-  type RootStoreShape,
 } from "../cas/Backend.ts"
 import type { ContentId } from "../cas/Node.ts"
 import { AddressScheme, type CasAddress } from "../cas/Store.ts"
@@ -69,11 +66,9 @@ export const makeCasServerCore = (
   CasServerCore["Service"],
   never,
   ByteReader | ByteWriter | RootStore
-> => Effect.gen(function* () {
-  const reader: ByteReaderShape = yield* ByteReader
-  const writer: ByteWriterShape = yield* ByteWriter
-  const roots: RootStoreShape = yield* RootStore
-
+> => Effect.map(
+  Effect.all([ByteReader, ByteWriter, RootStore]),
+  ([reader, writer, roots]) => {
   const admissionFacts = Effect.fn("CasServerCore.admissionFacts")(function* (
     id: ContentId,
     refs: ReadonlyArray<{ readonly id: ContentId }>,
@@ -192,4 +187,5 @@ export const makeCasServerCore = (
     )
 
   return CasServerCore.of({ serve })
-})
+  },
+)

@@ -9,14 +9,12 @@
  */
 import { Context, Effect, Layer, Option, Schema, Stream } from "effect"
 import {
-  CasNodeInput,
   ContentId,
   type CasError,
 } from "./Node.ts"
 import { CasStore, type CasStoreShape } from "./Store.ts"
 import { pow2Below } from "../internal/merkleTree.ts"
 import {
-  BlobGraphError,
   BlobManifestTag as BlobManifestTagValue,
   BlobNodeTag as BlobNodeTagValue,
   ChunkDataTag as ChunkDataTagValue,
@@ -236,7 +234,7 @@ export namespace CasBlob {
   ): Effect.Effect<readonly [ContentId, ContentId], CasError | BlobError> =>
     store.load(id).pipe(Effect.flatMap((parent) => {
       if (parent.kind.tag !== BlobNodeTag
-        || parent.payload.length !== 0
+        || parent.payload.length > 0
         || parent.refs.length !== 2
         || parent.refs[0]?.expectedTag !== BlobNodeTag
         || parent.refs[1]?.expectedTag !== BlobNodeTag) {
@@ -282,7 +280,7 @@ export namespace CasBlob {
 
     const chunkId = leaf.refs[0].id
     const chunk = yield* store.load(chunkId)
-    if (chunk.kind.tag !== ChunkDataTag || chunk.refs.length !== 0) {
+    if (chunk.kind.tag !== ChunkDataTag || chunk.refs.length > 0) {
       return yield* format("chunk data must be a reference-free tag-8 node", chunkId)
     }
     if (chunk.payload.length !== declaredLength) {
@@ -442,12 +440,12 @@ export namespace CasBlob {
 
     const put = <E, R>(
       source: Stream.Stream<Uint8Array, E, R>,
-    ): Effect.Effect<BlobRef, E | CasError | BlobError, R> => Effect.gen(function* () {
+    ): Effect.Effect<BlobRef, E | CasError | BlobError, R> => Effect.suspend(() => {
       const chunks: Array<Uint8Array> = []
       let pending = new Uint8Array(ChunkSize)
       let pendingLength = 0
 
-      yield* Stream.runForEach(source, (part) => Effect.sync(() => {
+      return Stream.runForEach(source, (part) => Effect.sync(() => {
         let offset = 0
         while (offset < part.length) {
           const take = Math.min(ChunkSize - pendingLength, part.length - offset)
@@ -460,17 +458,19 @@ export namespace CasBlob {
             pendingLength = 0
           }
         }
-      }))
-
-      if (pendingLength > 0 || chunks.length === 0) {
-        chunks.push(pending.slice(0, pendingLength))
-      }
-      const graph = yield* materializeBlobGraph(store, chunks).pipe(
-        Effect.mapError((error) => error._tag === "BlobGraphError"
-          ? format(error.reason)
-          : error),
+      })).pipe(
+        Effect.flatMap(() => {
+          if (pendingLength > 0 || chunks.length === 0) {
+            chunks.push(pending.slice(0, pendingLength))
+          }
+          return materializeBlobGraph(store, chunks).pipe(
+            Effect.mapError((error) => error._tag === "BlobGraphError"
+              ? format(error.reason)
+              : error),
+          )
+        }),
+        Effect.map((graph) => BlobRef.make(graph.blobRef)),
       )
-      return BlobRef.make(graph.blobRef)
     })
 
     return Service.of({ put, get, stream, slice, readRange, inspect })

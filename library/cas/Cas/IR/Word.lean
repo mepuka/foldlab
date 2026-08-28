@@ -24,15 +24,38 @@ dangles, nothing mis-kinds, through the word as through the store.
 
 namespace Cas
 
+/-- One address-to-node binding. Naming the fields prevents the address
+and node from becoming anonymous tuple positions at every boundary. -/
+structure Binding where
+  address : Addr32
+  node : Node
+  deriving DecidableEq
+
 /-- The store word: bindings in admission order, earliest first. -/
-abbrev Word := List (Addr32 × Node)
+abbrev Word := List Binding
+
+/-- A word with at least one binding. This is the carrier for values
+whose semantics require a final/root binding. -/
+structure NonemptyWord where
+  word : Word
+  nonempty : word ≠ []
+
+namespace NonemptyWord
+
+/-- The final binding, total because the word is non-empty. -/
+def root (w : NonemptyWord) : Binding :=
+  w.word.getLast w.nonempty
+
+def length (w : NonemptyWord) : Nat := w.word.length
+
+end NonemptyWord
 
 namespace Word
 
 /-- First-binding resolution. -/
 def find : Word → Addr32 → Option Node
   | [], _ => none
-  | (a, n) :: rest, b => if b = a then some n else find rest b
+  | ⟨a, n⟩ :: rest, b => if b = a then some n else find rest b
 
 @[simp] theorem find_nil (a : Addr32) : find [] a = none := rfl
 
@@ -60,7 +83,7 @@ theorem find_append_of_none {w : Word} {a : Addr32} (v : Word)
 
 /-- A found binding is a member. -/
 theorem find_mem {w : Word} {a : Addr32} {n : Node}
-    (h : find w a = some n) : (a, n) ∈ w := by
+    (h : find w a = some n) : Binding.mk a n ∈ w := by
   induction w with
   | nil => simp at h
   | cons e rest ih =>
@@ -74,7 +97,7 @@ theorem find_mem {w : Word} {a : Addr32} {n : Node}
 
 /-- A member's address always resolves to something. -/
 theorem find_isSome_of_mem {w : Word} {a : Addr32} {n : Node}
-    (h : (a, n) ∈ w) : (find w a).isSome := by
+    (h : Binding.mk a n ∈ w) : (find w a).isSome := by
   induction w with
   | nil => simp at h
   | cons e rest ih =>
@@ -82,7 +105,7 @@ theorem find_isSome_of_mem {w : Word} {a : Addr32} {n : Node}
     by_cases hab : a = b
     · simp [find, hab]
     · rcases List.mem_cons.mp h with heq | hmem
-      · exact absurd (congrArg Prod.fst heq) hab
+      · exact absurd (congrArg Binding.address heq) hab
       · simpa [find, hab] using ih hmem
 
 /-- A reference resolves in a word when its first binding carries the
@@ -117,8 +140,9 @@ theorem resolvesIn_mono {w : Word} (v : Word) {r : Ref}
 /-- The admission scan, with the already-admitted prefix explicit. -/
 def wfFrom (prior : Word) : Word → Bool
   | [] => true
-  | (a, n) :: rest =>
-    n.refs.all (resolvesIn prior) && wfFrom (prior ++ [(a, n)]) rest
+  | ⟨a, n⟩ :: rest =>
+    n.refs.all (resolvesIn prior) &&
+      wfFrom (prior ++ [Binding.mk a n]) rest
 
 /-- Admission over a word: every binding's references resolve among
 strictly earlier bindings, at their declared kinds — closure, kind
@@ -152,7 +176,8 @@ theorem wfFrom_resolves {prior rest : Word}
     obtain ⟨b, m⟩ := e
     simp only [wfFrom, Bool.and_eq_true] at h
     obtain ⟨hrefs, hrest⟩ := h
-    have hassoc : prior ++ (b, m) :: rest = (prior ++ [(b, m)]) ++ rest := by
+    have hassoc : prior ++ Binding.mk b m :: rest =
+        (prior ++ [Binding.mk b m]) ++ rest := by
       simp
     rw [hassoc]
     refine ih ?_ hrest
@@ -192,11 +217,27 @@ theorem wf_toStore_closed {w : Word} (h : wf w = true) :
   rcases resolvesIn_iff.mp main' with ⟨m, hm, ht⟩
   exact ⟨m, hm, ht⟩
 
+/-- A proof-bearing admitted word for formal paths. Concrete digest
+fixtures use the checked runtime boundary instead, because no digest
+injectivity premise is assumed for SHA-256. -/
+structure Admitted where
+  word : NonemptyWord
+  wf : Word.wf word.word = true
+
+namespace Admitted
+
+def toStore (w : Admitted) : Store := Word.toStore w.word.word
+
+theorem closed (w : Admitted) : Store.Closed w.toStore :=
+  Word.wf_toStore_closed w.wf
+
+end Admitted
+
 /-- Admitting one binding whose references resolve preserves `wf` —
 the word face of `put_fresh_closed`. -/
 theorem wf_snoc {w : Word} {a : Addr32} {n : Node}
     (hw : wf w = true) (hrefs : ∀ r ∈ n.refs, resolvesIn w r = true) :
-    wf (w ++ [(a, n)]) = true := by
+    wf (w ++ [Binding.mk a n]) = true := by
   unfold wf at hw ⊢
   rw [wfFrom_append, List.nil_append]
   simp only [Bool.and_eq_true]
@@ -210,9 +251,9 @@ second binding inert, which is the word face of `put`'s duplicate
 being a no-op. -/
 theorem toStore_append_shadowed {w : Word} {a : Addr32}
     (h : (find w a).isSome) (m : Node) :
-    toStore (w ++ [(a, m)]) = toStore w := by
+    toStore (w ++ [Binding.mk a m]) = toStore w := by
   funext b
-  show find (w ++ [(a, m)]) b = find w b
+  show find (w ++ [Binding.mk a m]) b = find w b
   cases hf : find w b with
   | some n => rw [find_append_of_some _ hf]
   | none =>
@@ -241,7 +282,7 @@ theorem toStore_append_congr {w w' : Word}
 /-- Appending at a fresh address is `Store.set` through the bridge. -/
 theorem toStore_snoc {w : Word} {a : Addr32} (n : Node)
     (h : find w a = none) :
-    toStore (w ++ [(a, n)]) = (toStore w).set a n := by
+    toStore (w ++ [Binding.mk a n]) = (toStore w).set a n := by
   funext b
   by_cases hb : b = a
   · subst hb

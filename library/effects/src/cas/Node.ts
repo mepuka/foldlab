@@ -9,6 +9,7 @@
  * shape only.
  */
 import { Schema } from "effect"
+import type { Predicate } from "effect"
 import { CasRemoteError, type CasRemoteError as CasRemoteErrorType } from "./Remote.ts"
 
 /** One byte in the version/tag plane. */
@@ -21,7 +22,7 @@ export type Byte = typeof Byte.Type
  * live on the Lean side under the hash-hypothesis lattice; this is the
  * transport representation. */
 export const ContentId = Schema.String.check(
-  Schema.isPattern(/^[0-9a-f]{64}$/),
+  Schema.isPattern(/^[0-9a-f]{64}$/u),
 ).pipe(Schema.brand("ContentId"))
 export type ContentId = typeof ContentId.Type
 
@@ -132,7 +133,7 @@ export const CasErrorTag = {
   ContentNotFound: "CasError/ContentNotFound",
   StoreFailure: "CasError/StoreFailure",
   RemoteFailure: "CasError/RemoteFailure",
-} as const
+} satisfies { readonly [K in keyof CasErrorMembers]: `CasError/${K}` }
 
 const casErrorClasses = [
   AddressMismatch,
@@ -143,12 +144,13 @@ const casErrorClasses = [
   ContentNotFound,
   StoreFailure,
   RemoteFailure,
-] as const
+]
 
 /** Whether a value is a member of the CAS error union — an instance
  * check against the declared classes, never a tag-prefix heuristic. */
-export const isCasError = (value: unknown): value is CasError =>
-  casErrorClasses.some((member) => value instanceof member)
+export const isCasError: Predicate.Refinement<unknown, CasError> = (
+  value,
+): value is CasError => casErrorClasses.some((member) => value instanceof member)
 
 /** Fold over the CAS error union by member name. Either every member is
  * handled — the compiler enforces totality — or `onOther` catches the
@@ -161,14 +163,38 @@ export function matchCasError<A>(cases:
   & { readonly onOther: (error: CasError) => A }
 ): (error: CasError) => A
 export function matchCasError<A>(cases:
-  & { readonly [K in keyof CasErrorMembers]?: (error: CasErrorMembers[K]) => A }
-  & { readonly onOther?: (error: CasError) => A }
+  | { readonly [K in keyof CasErrorMembers]: (error: CasErrorMembers[K]) => A }
+  | (
+    & { readonly [K in keyof CasErrorMembers]?: (error: CasErrorMembers[K]) => A }
+    & { readonly onOther: (error: CasError) => A }
+  )
 ): (error: CasError) => A {
-  return (error) => {
-    const name = error._tag.slice("CasError/".length) as keyof CasErrorMembers
-    const handler = cases[name] as ((error: CasError) => A) | undefined
-    if (handler !== undefined) return handler(error)
-    if (cases.onOther !== undefined) return cases.onOther(error)
-    throw new TypeError(`Unhandled CAS error ${error._tag}`)
+  // The overloads make the fold total: either every member handler is
+  // present, or `onOther` is — so no unhandled branch exists to model.
+  // Instance checks against the declared classes narrow the union member
+  // by member; the final branch is the last remaining member.
+  if ("onOther" in cases) {
+    const handle = <M extends CasError>(
+      handler: ((error: M) => A) | undefined,
+      member: M,
+    ): A => handler === undefined ? cases.onOther(member) : handler(member)
+    return (error) =>
+      error instanceof AddressMismatch ? handle(cases.AddressMismatch, error)
+      : error instanceof NonCanonicalBytes ? handle(cases.NonCanonicalBytes, error)
+      : error instanceof UnknownKind ? handle(cases.UnknownKind, error)
+      : error instanceof DanglingReference ? handle(cases.DanglingReference, error)
+      : error instanceof WrongKindReference ? handle(cases.WrongKindReference, error)
+      : error instanceof ContentNotFound ? handle(cases.ContentNotFound, error)
+      : error instanceof StoreFailure ? handle(cases.StoreFailure, error)
+      : handle(cases.RemoteFailure, error)
   }
+  return (error) =>
+    error instanceof AddressMismatch ? cases.AddressMismatch(error)
+    : error instanceof NonCanonicalBytes ? cases.NonCanonicalBytes(error)
+    : error instanceof UnknownKind ? cases.UnknownKind(error)
+    : error instanceof DanglingReference ? cases.DanglingReference(error)
+    : error instanceof WrongKindReference ? cases.WrongKindReference(error)
+    : error instanceof ContentNotFound ? cases.ContentNotFound(error)
+    : error instanceof StoreFailure ? cases.StoreFailure(error)
+    : cases.RemoteFailure(error)
 }

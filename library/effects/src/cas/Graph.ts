@@ -89,7 +89,8 @@ const walkWith = (
       stack.pop()
       ordered.push(frame.id)
     }
-    return ordered as ReadonlyArray<ContentId>
+    const walked: ReadonlyArray<ContentId> = ordered
+    return walked
   })
 
 /** Every id reachable from `root` through references, children-first

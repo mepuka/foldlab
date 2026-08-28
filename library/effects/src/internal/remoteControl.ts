@@ -6,6 +6,7 @@ import {
   type CasPresence,
   type RemoteCapabilities as RemoteCapabilitiesType,
 } from "../cas/Remote.ts"
+import { decodeValidatedHex } from "./bytes.ts"
 
 const Byte = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xff }))
 const CapabilityDocumentBytes = Schema.Array(Byte).check(Schema.isLengthBetween(8, 8))
@@ -88,11 +89,9 @@ export const encodeKeyListDocument = (
   writeUint32(bytes, 0, keys.length)
   let offset = 4
   for (const key of keys) {
-    const decoded = Encoding.decodeHex(key)
-    if (decoded._tag === "Failure" || decoded.success.length !== 32) {
-      throw new Error("validated ContentId failed key-list encoding")
-    }
-    bytes.set(decoded.success, offset)
+    // The branded ContentId is validated 64-char lowercase hex, so the
+    // total decoder has no failure branch to model.
+    bytes.set(decodeValidatedHex(key), offset)
     offset += 32
   }
   return bytes

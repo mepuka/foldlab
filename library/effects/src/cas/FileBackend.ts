@@ -30,7 +30,6 @@ import {
   ByteWriter,
   objectRelativePath,
   RootStore,
-  rootRelativePath,
   type ByteReaderShape,
   type ByteWriterShape,
   type PresenceStatus,
@@ -57,11 +56,7 @@ const failure = (error: PlatformError.PlatformError): BackendFailure =>
 export const makeFileBackend = (
   fs: FileSystem.FileSystem,
   storeRoot: string,
-): {
-  readonly reader: ByteReaderShape
-  readonly writer: ByteWriterShape
-  readonly roots: RootStoreShape
-} => {
+) => {
   const root = StoreRoot.make(storeRoot)
   const objectPath = (id: ContentId): string =>
     `${root}/${objectRelativePath(id)}`
@@ -82,9 +77,9 @@ export const makeFileBackend = (
 
   const presenceOf = (id: ContentId): Effect.Effect<PresenceStatus> =>
     fs.exists(objectPath(id)).pipe(
-      Effect.map((resident) => resident ? "present" as const : "missing" as const),
+      Effect.map((resident): PresenceStatus => resident ? "present" : "missing"),
       Effect.catchTag("PlatformError", () =>
-        Effect.succeed("failed" as const)),
+        Effect.succeed<PresenceStatus>("failed")),
     )
 
   const presence: ByteReaderShape["presence"] = Effect.fn(
@@ -93,38 +88,44 @@ export const makeFileBackend = (
     return yield* Effect.forEach(ids, presenceOf)
   })
 
+  const writeFresh = (id: ContentId, target: string, bytes: Uint8Array) => {
+    const directory = fanoutDir(id)
+    return fs.makeDirectory(directory, { recursive: true }).pipe(
+      Effect.andThen(fs.makeTempFile({ directory, prefix: "put-" })),
+      Effect.flatMap((temp) =>
+        fs.writeFile(temp, bytes.slice()).pipe(
+          Effect.andThen(fs.rename(temp, target).pipe(
+            // A lost rename race is a win: the same address carries the
+            // same canonical bytes, so whatever resides is this write.
+            Effect.catchTag("PlatformError", (error) =>
+              fs.exists(target).pipe(
+                Effect.orElseSucceed(() => false),
+                Effect.flatMap((resident) => resident
+                  ? fs.remove(temp, { force: true }).pipe(Effect.ignore)
+                  : Effect.fail(error)),
+              )),
+          )),
+        )),
+    )
+  }
+
   const putBytes: ByteWriterShape["putBytes"] = Effect.fn(
     "FileBackend.putBytes",
   )(function* (id, bytes) {
     const target = objectPath(id)
-    const attempt = Effect.gen(function* () {
-      if (yield* fs.exists(target)) return
-      const directory = fanoutDir(id)
-      yield* fs.makeDirectory(directory, { recursive: true })
-      const temp = yield* fs.makeTempFile({ directory, prefix: "put-" })
-      yield* fs.writeFile(temp, bytes.slice())
-      yield* fs.rename(temp, target).pipe(
-        // A lost rename race is a win: the same address carries the
-        // same canonical bytes, so whatever resides is this write.
-        Effect.catchTag("PlatformError", (error) =>
-          fs.exists(target).pipe(
-            Effect.orElseSucceed(() => false),
-            Effect.flatMap((resident) => resident
-              ? fs.remove(temp, { force: true }).pipe(Effect.ignore)
-              : Effect.fail(error)),
-          )),
-      )
-    })
-    return yield* attempt.pipe(
+    return yield* fs.exists(target).pipe(
+      Effect.flatMap((resident) => resident
+        ? Effect.void
+        : writeFresh(id, target, bytes)),
       Effect.catchTag("PlatformError", (error) => Effect.fail(failure(error))),
     )
   })
 
   const publish: RootStoreShape["publish"] = Effect.fn(
     "FileBackend.publish",
-  )(function* (root) {
+  )(function* (rootId) {
     return yield* fs.makeDirectory(rootsDir, { recursive: true }).pipe(
-      Effect.andThen(fs.writeFile(`${rootsDir}/${root}`, new Uint8Array(0))),
+      Effect.andThen(fs.writeFile(`${rootsDir}/${rootId}`, new Uint8Array(0))),
       Effect.catchTag("PlatformError", (error) => Effect.fail(failure(error))),
     )
   })
@@ -134,7 +135,7 @@ export const makeFileBackend = (
       .filter((entry) => rootHex.test(entry))
       .map((entry) => ContentId.make(entry))),
     Effect.catchTag("PlatformError", (error) => isNotFound(error)
-      ? Effect.succeed([] as ReadonlyArray<ContentId>)
+      ? Effect.succeed<ReadonlyArray<ContentId>>([])
       : Effect.fail(failure(error))),
   )
 
@@ -155,8 +156,7 @@ export const layerFileBackend = (
   never,
   FileSystem.FileSystem
 > =>
-  Layer.effectContext(Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
+  Layer.effectContext(Effect.map(FileSystem.FileSystem, (fs) => {
     const backend = makeFileBackend(fs, storeRoot)
     return Context.make(ByteReader, backend.reader).pipe(
       Context.add(ByteWriter, backend.writer),

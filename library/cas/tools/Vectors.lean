@@ -1,4 +1,5 @@
 import Cas
+import Cas.Vectors.Schema
 
 /-!
 # The vector emitter — `lake exe vectors`
@@ -44,60 +45,75 @@ def journalTwo : Tree .entry := journal% [
   save% "notes.txt" := "children first, admission order"
 ]
 
-/-- The registry: every conformance vector, in one place. Register a
-vector here and the emitter, the gate, and the index track it. -/
-def registry : List ConformanceVector := [
-  ⟨"value-single", "one opaque value node, no references",
-    helloValue.flatten sha256Addr⟩,
-  ⟨"blob-two-leaves", "a two-leaf blob: chunk, leaf, parent, manifest",
-    blobTwoLeaves.flatten sha256Addr⟩,
-  ⟨"file-readme", "a named file over a one-chunk blob manifest",
-    fileReadme.flatten sha256Addr⟩,
-  ⟨"journal-two-entries", "a journal: genesis and two entries over saved files",
-    journalTwo.flatten sha256Addr⟩
+/-- Two leaves over ONE shared chunk: `flatten` carries the chunk's
+binding twice, so the word itself exhibits deduplication — the replay
+must treat the second occurrence as a duplicate, not a conflict. -/
+def sharedChunk : Tree .chunk := .chunk (Payload.utf8 "one chunk, twice")
+def blobSharedChunk : Tree .tree :=
+  .parent (.leaf 0 16 sharedChunk) (.leaf 1 16 sharedChunk)
+
+/-- Lift one grammar term into a non-empty vector candidate. -/
+def vector {sort : Ty} (name : VectorName) (description : String)
+    (tree : Tree sort) : ConformanceVector where
+  name := name
+  description := description
+  word := ⟨tree.flatten sha256Addr, Tree.flatten_nonempty sha256Addr tree⟩
+
+/-- The candidate registry: every vector in one place. Registry
+checking performs admission once and rejects duplicate file names. -/
+def candidates : List ConformanceVector := [
+  vector ⟨"value-single", by simp [validVectorName, validVectorNameTail]⟩
+    "one opaque value node, no references" helloValue,
+  vector ⟨"blob-two-leaves", by simp [validVectorName, validVectorNameTail]⟩
+    "a two-leaf blob: chunk, leaf, parent, manifest" blobTwoLeaves,
+  vector ⟨"file-readme", by simp [validVectorName, validVectorNameTail]⟩
+    "a named file over a one-chunk blob manifest" fileReadme,
+  vector ⟨"journal-two-entries", by simp [validVectorName, validVectorNameTail]⟩
+    "a journal: genesis and two entries over saved files" journalTwo,
+  vector ⟨"shared-chunk", by simp [validVectorName, validVectorNameTail]⟩
+    "a blob whose two leaves share one chunk — the word carries a duplicate binding that replays as a dedup"
+    blobSharedChunk
 ]
 
 /-! ## Emission -/
 
 def outDir : System.FilePath := "vectors"
 
-def pathOf (v : ConformanceVector) : System.FilePath :=
+def pathOf (v : CheckedConformanceVector) : System.FilePath :=
   outDir / v.fileName
 
-/-- The admission gate: a registered word that does not admit — or
-binds nothing — is a defect in the registry, and the run fails before
-writing. Non-emptiness keeps every index row's root real. -/
-def gate (v : ConformanceVector) : IO Unit := do
-  unless v.word.length > 0 do
-    throw (IO.userError s!"vector {v.name}: empty word — nothing to replay")
-  unless Word.wf v.word do
-    throw (IO.userError s!"vector {v.name}: word does not admit (Word.wf = false)")
+def orThrow : Except VectorError α → IO α
+  | .ok value => pure value
+  | .error error => throw (IO.userError error.message)
 
-def emitOne (v : ConformanceVector) : IO Unit := do
-  gate v
+def checkedRegistry : IO VectorRegistry :=
+  orThrow (VectorRegistry.check candidates)
+
+def emitOne (v : CheckedConformanceVector) : IO Unit := do
   IO.FS.writeFile (pathOf v) v.document
-  IO.println s!"wrote {v.fileName} ({v.word.length} bindings)"
+  IO.println s!"wrote {v.fileName} ({v.bindingCount} bindings)"
 
-def checkOne (v : ConformanceVector) : IO Unit := do
-  gate v
+def checkOne (v : CheckedConformanceVector) : IO Unit := do
   let expected := v.document
   let actual ← try IO.FS.readFile (pathOf v)
     catch _ => throw (IO.userError s!"vector {v.name}: fixture missing — run `lake exe vectors`")
   unless actual == expected do
     throw (IO.userError s!"vector {v.name}: fixture differs from regeneration — run `lake exe vectors`")
-  IO.println s!"ok {v.fileName} ({v.word.length} bindings)"
+  IO.println s!"ok {v.fileName} ({v.bindingCount} bindings)"
 
 def indexPath : System.FilePath := outDir / "index.json"
 
 def emit : IO Unit := do
+  let registry ← checkedRegistry
   IO.FS.createDirAll outDir
-  for v in registry do emitOne v
-  IO.FS.writeFile indexPath (indexDocument registry)
+  for v in registry.vectors do emitOne v
+  IO.FS.writeFile indexPath (← orThrow (indexDocument registry))
   IO.println s!"wrote index.json ({registry.length} vectors)"
 
 def check : IO Unit := do
-  for v in registry do checkOne v
-  let expected := indexDocument registry
+  let registry ← checkedRegistry
+  for v in registry.vectors do checkOne v
+  let expected ← orThrow (indexDocument registry)
   let actual ← try IO.FS.readFile indexPath
     catch _ => throw (IO.userError "index.json missing — run `lake exe vectors`")
   unless actual == expected do

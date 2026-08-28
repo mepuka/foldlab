@@ -53,10 +53,10 @@ export const makePathReader = (readPath: ReadPath): ByteReaderShape => {
 
   const presenceOf = (id: ContentId): Effect.Effect<PresenceStatus> =>
     readPath(objectRelativePath(id)).pipe(
-      Effect.map((resident) =>
-        Option.isSome(resident) ? "present" as const : "missing" as const),
+      Effect.map((resident): PresenceStatus =>
+        Option.isSome(resident) ? "present" : "missing"),
       Effect.catchTag("CasPathReadError", () =>
-        Effect.succeed("failed" as const)),
+        Effect.succeed<PresenceStatus>("failed")),
     )
 
   const presence: ByteReaderShape["presence"] = Effect.fn(

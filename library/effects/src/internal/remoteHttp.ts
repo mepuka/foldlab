@@ -351,8 +351,8 @@ const commandRequest = (
 export const makeRemoteHttp = (
   config: CasRemoteConfig,
 ): Effect.Effect<RemoteCasTransport> =>
-  Effect.gen(function* () {
-    const client = HttpClient.withScope(yield* HttpClient.HttpClient)
+  Effect.map(HttpClient.HttpClient, (baseClient) => {
+    const client = HttpClient.withScope(baseClient)
 
     const transport: RemoteCasTransport = {
       issue: (_opId, _attemptId, issue) => {
@@ -370,3 +370,4 @@ export const makeRemoteHttp = (
     }
     return transport
   }).pipe(Effect.provide(FetchHttpClient.layer))
+

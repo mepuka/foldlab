@@ -61,8 +61,8 @@ export const compareCodepoints = (left: string, right: string): number => {
   const b = Array.from(right)
   const shorter = Math.min(a.length, b.length)
   for (let index = 0; index < shorter; index += 1) {
-    const delta = (a[index] as string).codePointAt(0)!
-      - (b[index] as string).codePointAt(0)!
+    const delta = (a[index]?.codePointAt(0) ?? 0)
+      - (b[index]?.codePointAt(0) ?? 0)
     if (delta !== 0) return delta
   }
   return a.length - b.length
@@ -86,7 +86,7 @@ const isWalkableObject = (
 
 /** Keys in canonical traversal order. */
 const canonicalKeys = (value: Schema.JsonObject): ReadonlyArray<string> =>
-  Object.keys(value).sort(compareCodepoints)
+  Object.keys(value).toSorted(compareCodepoints)
 
 const exactSingleKey = (
   value: Schema.JsonObject,
@@ -152,7 +152,7 @@ export const markerize = (
     // Canonical-order recursion assigns indexes; insertion order of the
     // rebuilt object is cosmetic — the canonical encoding sorts keys.
     for (const key of canonicalKeys(current)) {
-      const walked = walk(current[key] as Schema.Json)
+      const walked = walk(current[key] ?? null)
       if (Result.isFailure(walked)) return walked
       rebuilt[key] = walked.success
     }
@@ -192,7 +192,7 @@ export const resolveMarkers = (
           MarkerViolation.ReservedKeyCollision({ key: RefMarkerKey }),
         )
       }
-      const index = current[RefMarkerKey] as Schema.Json
+      const index = current[RefMarkerKey]
       if (!Predicate.isNumber(index) || !Number.isSafeInteger(index)
         || index < 0) {
         return Result.fail(MarkerViolation.MalformedMarker({
@@ -225,7 +225,7 @@ export const resolveMarkers = (
 
     const rebuilt: Record<string, Schema.Json> = {}
     for (const key of canonicalKeys(current)) {
-      const walked = walk(current[key] as Schema.Json)
+      const walked = walk(current[key] ?? null)
       if (Result.isFailure(walked)) return walked
       rebuilt[key] = walked.success
     }

@@ -107,7 +107,7 @@ export const encodeOpening = (doc: OpeningDoc): Bytes => {
     ...encodeNat32(doc.total),
     ...encodeNat32(doc.leaf.length),
     ...doc.leaf,
-    ...doc.siblings.flatMap((sibling) => sibling),
+    ...doc.siblings.flat(),
   ]
 }
 

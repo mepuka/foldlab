@@ -85,10 +85,11 @@ theorem step_put_honest {A} (hInj : Function.Injective H)
     {n : Node} (hn : n.WF)
     (hrefs : RefsOk (Word.toStore w) n.refs)
     (k : Addr32 → Prog CasSig A) :
-    ∃ v, v.Sublist [(H (encodeNode n), n)]
+    ∃ v, v.Sublist [Binding.mk (H (encodeNode n)) n]
       ∧ step H (.vis (.put n) k) w
           = (.running (k (H (encodeNode n))), w ++ v)
-      ∧ Word.toStore (w ++ v) = Word.toStore (w ++ [(H (encodeNode n), n)])
+      ∧ Word.toStore (w ++ v) =
+          Word.toStore (w ++ [Binding.mk (H (encodeNode n)) n])
       ∧ Word.wf (w ++ v) = true ∧ Honest H (w ++ v) := by
   have hchk : checkRefs (Word.toStore w) n.refs = .ok () :=
     checkRefs_ok_iff.mpr hrefs
@@ -103,7 +104,8 @@ theorem step_put_honest {A} (hInj : Function.Injective H)
         = .ok (.fresh (H (encodeNode n))
             ((Word.toStore w).set (H (encodeNode n)) n)) := by
       simp only [_root_.Cas.put, hchk, haddr, hσ]
-    refine ⟨[(H (encodeNode n), n)], List.Sublist.refl _, ?_, rfl, ?_, ?_⟩
+    refine ⟨[Binding.mk (H (encodeNode n)) n],
+      List.Sublist.refl _, ?_, rfl, ?_, ?_⟩
     · simp only [step, dif_pos hn, hput]
     · exact Word.wf_snoc hw hresolves
     · refine Honest.append H hhon ?_
@@ -173,7 +175,8 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
         (1 + fuel) w hw hhon
     have hhonflat : Honest H (w ++ d.flatten H) :=
       Honest.append H hhon (Tree.flatten_honest H d)
-    have hmem : (d.address H, d.node H) ∈ w ++ d.flatten H :=
+    have hmem : Binding.mk (d.address H) (d.node H) ∈
+        w ++ d.flatten H :=
       List.mem_append_right _ (Tree.self_mem_flatten H d)
     obtain ⟨mm, hmm, htag⟩ :=
       Word.resolvesIn_iff.mp (resolves_child H hInj hhonflat d hmem)
@@ -214,7 +217,8 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
         (1 + fuel) w hw hhon
     have hhonflat : Honest H (w ++ root.flatten H) :=
       Honest.append H hhon (Tree.flatten_honest H root)
-    have hmem : (root.address H, root.node H) ∈ w ++ root.flatten H :=
+    have hmem : Binding.mk (root.address H) (root.node H) ∈
+        w ++ root.flatten H :=
       List.mem_append_right _ (Tree.self_mem_flatten H root)
     obtain ⟨mm, hmm, htag⟩ :=
       Word.resolvesIn_iff.mp (resolves_child H hInj hhonflat root hmem)
@@ -260,7 +264,8 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
         (1 + fuel) w hw hhon
     have hhonflat : Honest H (w ++ c.flatten H) :=
       Honest.append H hhon (Tree.flatten_honest H c)
-    have hmem : (c.address H, c.node H) ∈ w ++ c.flatten H :=
+    have hmem : Binding.mk (c.address H) (c.node H) ∈
+        w ++ c.flatten H :=
       List.mem_append_right _ (Tree.self_mem_flatten H c)
     obtain ⟨mm, hmm, htag⟩ :=
       Word.resolvesIn_iff.mp (resolves_child H hInj hhonflat c hmem)
@@ -313,10 +318,12 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
     have hhonflat : Honest H (w ++ (l.flatten H ++ r.flatten H)) :=
       Honest.append H hhon
         (Honest.append H (Tree.flatten_honest H l) (Tree.flatten_honest H r))
-    have hmeml : (l.address H, l.node H) ∈ w ++ (l.flatten H ++ r.flatten H) :=
+    have hmeml : Binding.mk (l.address H) (l.node H) ∈
+        w ++ (l.flatten H ++ r.flatten H) :=
       List.mem_append_right _
         (List.mem_append_left _ (Tree.self_mem_flatten H l))
-    have hmemr : (r.address H, r.node H) ∈ w ++ (l.flatten H ++ r.flatten H) :=
+    have hmemr : Binding.mk (r.address H) (r.node H) ∈
+        w ++ (l.flatten H ++ r.flatten H) :=
       List.mem_append_right _
         (List.mem_append_right _ (Tree.self_mem_flatten H r))
     obtain ⟨ml, hml, htagl⟩ :=
@@ -382,11 +389,11 @@ theorem _root_.Cas.Grammar.Tree.progK_run {A}
       Honest.append H hhon
         (Honest.append H (Tree.flatten_honest H item)
           (Tree.flatten_honest H prev))
-    have hmemi : (item.address H, item.node H)
+    have hmemi : Binding.mk (item.address H) (item.node H)
         ∈ w ++ (item.flatten H ++ prev.flatten H) :=
       List.mem_append_right _
         (List.mem_append_left _ (Tree.self_mem_flatten H item))
-    have hmemp : (prev.address H, prev.node H)
+    have hmemp : Binding.mk (prev.address H) (prev.node H)
         ∈ w ++ (item.flatten H ++ prev.flatten H) :=
       List.mem_append_right _
         (List.mem_append_right _ (Tree.self_mem_flatten H prev))

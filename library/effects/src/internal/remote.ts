@@ -180,13 +180,31 @@ const isRetryableUploadFailure = (
   error: CasError | CasRemoteError,
 ): error is RemoteProtocolError | RemoteUnavailableError => hasRetryableFailureTag(error)
 
+/** Construct the once-per-adapter capabilities cache: infinite TTL, the
+ * cached probe invalidated on interrupt and on retryable unavailability.
+ * Cache state is created here exactly once, at adapter construction. */
+const makeCapabilitiesCache = <A>(
+  probe: Effect.Effect<A, CasRemoteError>,
+) =>
+  Effect.cachedInvalidateWithTTL(
+    probe,
+    Duration.infinity,
+  ).pipe(Effect.map(([cached, invalidate]) => cached.pipe(
+    Effect.onInterrupt(() => invalidate),
+    Effect.tapError((error) => error._tag === "CasRemoteError/Unavailable"
+        && error.code !== "unauthenticated"
+        && error.code !== "denied"
+      ? invalidate
+      : Effect.void),
+  )))
+
 /** Construct one shared adapter build. */
-export const makeRemoteAdapter = (
+export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
   config: CasRemoteConfig,
   transport: RemoteCasTransport,
   address: CasAddress,
   options: RemoteAdapterOptions = {},
-): Effect.Effect<RemoteAdapter, CasRemoteError> => Effect.gen(function* () {
+): Effect.fn.Return<RemoteAdapter, CasRemoteError> {
   const localStore = options.localStore ?? (yield* makeMemoryCasStore(address))
   const decisionCapacity = config.decisionTranscriptCapacity
     ?? DefaultDecisionTranscriptCapacity
@@ -362,11 +380,11 @@ export const makeRemoteAdapter = (
     maxBytes: number,
   ) => machineStep({ _tag: "FromWire", id: opId, event }, undefined, maxBytes)
 
-  const consumeExchange = (
+  const consumeExchange = Effect.fn("RemoteAdapter.consumeExchange")(function* (
     opId: number,
     attemptId: number,
     issue: RemoteIssue,
-  ): Effect.Effect<Exchange, CasRemoteError> => Effect.gen(function* () {
+  ): Effect.fn.Return<Exchange, CasRemoteError> {
     const receivedRef = yield* Ref.make(0)
     const command = issue.command
     const preparedSentBytes = issue._tag === "Publish"
@@ -376,7 +394,7 @@ export const makeRemoteAdapter = (
       : command._tag === "FindMissing"
       ? encodeKeyListDocument(command.keys).length
       : 0
-    return yield* Effect.scoped(Effect.gen(function* () {
+    const exchangeLoop = Effect.fn("RemoteAdapter.consumeExchange.loop")(function* () {
     const scope = yield* Effect.scope
     const pull = yield* Channel.toPullScoped(
       transport.issue(opId, attemptId, issue),
@@ -585,25 +603,26 @@ export const makeRemoteAdapter = (
           break
       }
     }
-  })).pipe(
-    Effect.timeout(config.operationDeadlineMs),
-    Effect.catchTag("TimeoutError", () => Effect.gen(function* () {
-      const receivedBytes = yield* Ref.get(receivedRef)
-      yield* clearInFlight(
-        opId,
-        { _tag: "Silence" },
-        command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
-      )
-      return yield* remoteUnavailable(
-        opId,
-        "timeout",
-        "possiblyProcessed",
-        receivedBytes,
-        preparedSentBytes,
-        attemptId,
-      )
-    })),
-  )
+  })
+    return yield* Effect.scoped(exchangeLoop()).pipe(
+      Effect.timeout(config.operationDeadlineMs),
+      Effect.catchTag("TimeoutError", () => Ref.get(receivedRef).pipe(
+        Effect.flatMap((receivedBytes) => clearInFlight(
+          opId,
+          { _tag: "Silence" },
+          command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
+        ).pipe(
+          Effect.andThen(remoteUnavailable(
+            opId,
+            "timeout",
+            "possiblyProcessed",
+            receivedBytes,
+            preparedSentBytes,
+            attemptId,
+          )),
+        )),
+      )),
+    )
   })
 
   const failureFromExchange = (
@@ -821,17 +840,7 @@ export const makeRemoteAdapter = (
   })
 
   const capabilities = config.authorityMode === "remote-authoritative"
-    ? yield* Effect.cachedInvalidateWithTTL(
-      probeCapabilities(),
-      Duration.infinity,
-    ).pipe(Effect.map(([cached, invalidate]) => cached.pipe(
-      Effect.onInterrupt(() => invalidate),
-      Effect.tapError((error) => error._tag === "CasRemoteError/Unavailable"
-          && error.code !== "unauthenticated"
-          && error.code !== "denied"
-        ? invalidate
-        : Effect.void),
-    )))
+    ? yield* makeCapabilitiesCache(probeCapabilities())
     : allocateOpId.pipe(Effect.flatMap((opId) => Effect.fail(remotePolicy(
       opId,
       config.authorityMode === "offline" ? "offline" : "authorityMode",
@@ -842,10 +851,13 @@ export const makeRemoteAdapter = (
     yield* capabilities
   }
 
-  const validateUploadNode = (
-    input: CasNodeInput,
-  ): Effect.Effect<{ readonly node: CasNodeInput; readonly bytes: Uint8Array; readonly id: ContentId }, CasError> =>
-    Effect.gen(function* () {
+  const validateUploadNode = Effect.fn("RemoteAdapter.validateUploadNode")(
+    function* (
+      input: CasNodeInput,
+    ): Effect.fn.Return<
+      { readonly node: CasNodeInput; readonly bytes: Uint8Array; readonly id: ContentId },
+      CasError
+    > {
       const node = yield* CasNodeInput.makeEffect(input).pipe(
         Effect.mapError((issue) => new StoreFailure({
           reason: `Invalid CAS node input: ${String(issue)}`,
@@ -871,7 +883,8 @@ export const makeRemoteAdapter = (
       const bytes = encodeCasNode(node)
       const id = yield* address.digest(bytes.slice())
       return { node, bytes, id }
-    })
+    },
+  )
 
   const driveUpload = Effect.fn("CasTransfer.Remote.driveUpload")(function* (
     opId: number,
@@ -1037,19 +1050,19 @@ export const makeRemoteAdapter = (
   const withOp = <A, E>(
     maxBytes: number,
     body: (opId: number) => Effect.Effect<A, E>,
-  ): Effect.Effect<A, E> => Effect.gen(function* () {
-    const opId = yield* allocateOpId
-    return yield* body(opId).pipe(Effect.onInterrupt(() => clearInFlight(
+  ): Effect.Effect<A, E> => Effect.flatMap(allocateOpId, (opId) =>
+    body(opId).pipe(Effect.onInterrupt(() => clearInFlight(
       opId,
       { _tag: "Interrupted" },
       maxBytes,
-    )))
-  })
+    ))))
 
   const missing = Effect.fn("CasTransfer.Remote.missing")(function* (
     keys: ReadonlyArray<ContentId>,
   ): Effect.fn.Return<CasPresence, CasRemoteError> {
-    return yield* withOp(config.maxDecodedBytes, (opId) => Effect.gen(function* () {
+    return yield* withOp(config.maxDecodedBytes, Effect.fn(
+      "CasTransfer.Remote.missing.op",
+    )(function* (opId: number) {
       if (config.authorityMode !== "remote-authoritative") {
         return yield* remotePolicy(
           opId,
@@ -1117,7 +1130,9 @@ export const makeRemoteAdapter = (
     root: ContentId,
     closure: ReadonlyArray<ContentId>,
   ): Effect.fn.Return<void, CasRemoteError> {
-    return yield* withOp(config.maxEncodedBytes, (opId) => Effect.gen(function* () {
+    return yield* withOp(config.maxEncodedBytes, Effect.fn(
+      "CasTransfer.Remote.publish.op",
+    )(function* (opId: number) {
       if (config.authorityMode !== "remote-authoritative") {
         return yield* remotePolicy(
           opId,
@@ -1174,18 +1189,20 @@ export const makeRemoteAdapter = (
     readonly largestEncodedBytes: number
   }
 
-  const collectLocalGraphIds = (
+  const collectLocalGraphIds = Effect.fn(
+    "RemoteAdapter.collectLocalGraphIds",
+  )(function* (
     root: ContentId,
-  ): Effect.Effect<LocalGraphPreflight, CasError> => Effect.gen(function* () {
+  ): Effect.fn.Return<LocalGraphPreflight, CasError> {
     const seen = new Set<ContentId>()
     const ids: Array<ContentId> = []
     let largestEncodedBytes = 0
 
-    const visit = (
+    const visit = Effect.fn("RemoteAdapter.collectLocalGraphIds.visit")(function* (
       id: ContentId,
       isRoot: boolean,
       resident?: CasNodeInput,
-    ): Effect.Effect<void, CasError> => Effect.gen(function* () {
+    ): Effect.fn.Return<void, CasError> {
       if (seen.has(id)) return
       const current = resident ?? (yield* localStore.load(id).pipe(
           Effect.mapError((error): CasError => !isRoot && error._tag === "CasError/ContentNotFound"
@@ -1480,12 +1497,12 @@ export const layerRemote = (
   CasStore | CasTransfer,
   CasRemoteError,
   Crypto.Crypto
-> => Layer.effectContext(Effect.gen(function* () {
-  const transport = yield* makeRemoteHttp(config)
-  const address = yield* makeSha256Address
-  const adapter = yield* makeRemoteAdapter(config, transport, address)
-  return Context.empty().pipe(
-    Context.add(CasStore, adapter.store),
-    Context.add(CasTransfer, adapter.transfer),
-  )
-}))
+> => Layer.effectContext(
+  Effect.flatMap(makeRemoteHttp(config), (transport) =>
+    Effect.flatMap(makeSha256Address, (address) =>
+      Effect.map(makeRemoteAdapter(config, transport, address), (adapter) =>
+        Context.empty().pipe(
+          Context.add(CasStore, adapter.store),
+          Context.add(CasTransfer, adapter.transfer),
+        )))),
+)

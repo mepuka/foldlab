@@ -66,7 +66,8 @@ def step : Prog CasSig A → Word → Status CasSig A × Word
     if h : n.WF then
       match _root_.Cas.put H (Word.toStore w) ⟨n, h⟩ with
       | .error e => (.refused (.ofAdmission e), w)
-      | .ok (.fresh a _) => (.running (k a), w ++ [(a, n)])
+      | .ok (.fresh a _) =>
+        (.running (k a), w ++ [Binding.mk a n])
       | .ok (.duplicate a) => (.running (k a), w)
       | .ok (.conflict a _) => (.refused (.collision a), w)
     else (.refused .notWellFormed, w)
@@ -90,8 +91,9 @@ the judgment's successor store — the commuting square. -/
 theorem step_put_fresh {A} {n : Node} (h : n.WF)
     (k : Addr32 → Prog CasSig A) {w : Word} {a : Addr32} {σ' : Store}
     (hput : _root_.Cas.put H (Word.toStore w) ⟨n, h⟩ = .ok (.fresh a σ')) :
-    step H (.vis (.put n) k) w = (.running (k a), w ++ [(a, n)])
-      ∧ Word.toStore (w ++ [(a, n)]) = σ' := by
+    step H (.vis (.put n) k) w =
+        (.running (k a), w ++ [Binding.mk a n])
+      ∧ Word.toStore (w ++ [Binding.mk a n]) = σ' := by
   obtain ⟨_, hfresh, _, hσ'⟩ := put_fresh_spec hput
   refine ⟨?_, ?_⟩
   · simp only [step, dif_pos h, hput]

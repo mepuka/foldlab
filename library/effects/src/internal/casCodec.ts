@@ -6,6 +6,7 @@
  */
 import { Encoding, Option } from "effect"
 import { CasNodeInput, ContentId } from "../cas/Node.ts"
+import { decodeValidatedHex } from "./bytes.ts"
 
 /** The only scheme version currently admitted by the runtime adapter. */
 export const CasSchemeVersion = 0
@@ -37,13 +38,10 @@ export const encodeCasNode = (node: CasNodeInput): Uint8Array => {
   offset += 4
 
   for (const ref of node.refs) {
-    const address = ContentId.make(ref.id)
-    const addressBytes = Encoding.decodeHex(address)
-    if (addressBytes._tag === "Failure") {
-      throw new Error("validated ContentId failed hex decoding")
-    }
+    // The branded ContentId is validated 64-char lowercase hex, so the
+    // total decoder has no failure branch to model.
     bytes[offset] = ref.expectedTag
-    bytes.set(addressBytes.success, offset + 1)
+    bytes.set(decodeValidatedHex(ContentId.make(ref.id)), offset + 1)
     offset += 33
   }
 

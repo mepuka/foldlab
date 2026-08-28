@@ -29,6 +29,13 @@
       "file": "journal-two-entries.json",
       "name": "journal-two-entries",
       "root": "aed4a3c4ddc61cc5e6234006536b9c788a39bd9ff5b8736a25bd2ca045a52b40"
+    },
+    {
+      "bindings": 5,
+      "description": "a blob whose two leaves share one chunk — the word carries a duplicate binding that replays as a dedup",
+      "file": "shared-chunk.json",
+      "name": "shared-chunk",
+      "root": "aa3af12c48920440ff25c0d7bd6863ca8b76ec7cb03b50c3603a75bf55a18924"
     }
   ]
 }

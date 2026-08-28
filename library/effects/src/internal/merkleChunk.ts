@@ -25,7 +25,7 @@ export class Recipe {
 
   /** Accept exactly the chunk lists produced by this recipe. */
   unchunk(chunks: ReadonlyArray<Bytes>): Option.Option<Bytes> {
-    const bytes = chunks.flatMap((chunk) => chunk)
+    const bytes = chunks.flat()
     return chunksEqual(this.chunk(bytes), chunks)
       ? Option.some(bytes)
       : Option.none()

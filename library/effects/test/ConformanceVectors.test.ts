@@ -16,28 +16,12 @@
  * Lean-executed vectors only — never snapshots.
  */
 import { expect, it } from "@effect/vitest"
-import { Effect, Encoding, Option, Schema } from "effect"
-import { readFileSync } from "node:fs"
+import { Effect, Encoding, Option } from "effect"
 import { Cas } from "../src/index.ts"
+import { loadVectors } from "./fixtures/vectors.ts"
 
 const { CanonicalSchema, ConformanceVector, Store, layerMemoryLive } = Cas
 const { toNodeInput } = ConformanceVector
-
-const vectorsDir = new URL("../../cas/vectors/", import.meta.url)
-
-const readJson = (file: string): unknown =>
-  JSON.parse(readFileSync(new URL(file, vectorsDir), "utf8"))
-
-const loadVectors = Effect.gen(function* () {
-  const index = yield* Schema.decodeUnknownEffect(ConformanceVector.VectorIndex)(
-    readJson("index.json"),
-  )
-  const vectors = yield* Effect.forEach(index.vectors, (entry) =>
-    Schema.decodeUnknownEffect(ConformanceVector.ConformanceVector)(
-      readJson(entry.file),
-    ))
-  return { index, vectors }
-})
 
 it.effect("every vector replays: same admission order, same addresses", () =>
   Effect.gen(function* () {

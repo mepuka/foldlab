@@ -5,7 +5,10 @@
 - [Lab Core](docs/lab-core/CONTEXT.md): owns lab-wide vocabulary — artifacts, grades, evidence.
 - [Source Provenance](docs/provenance/CONTEXT.md): identifies and resolves the exact external artifacts allowed to inform a claim.
 - [Effect Language Semantics](docs/effect-typescript-semantics/CONTEXT.md): names semantic layers, observations, bridges, and claim strength for selected Effect behavior.
-- [Schema JSON Codec](docs/schema-json/CONTEXT.md): names the source topology and modeling terms available to a future domain decision.
+- [Schema JSON Codec](docs/schema-json/CONTEXT.md): owns the schema universe,
+  described native carriers, JSON codec, and typed foreign-language
+  representation vocabulary; full Effect Schema source admission remains
+  deferred.
 - [Entity Store](docs/entity-store/CONTEXT.md): owns the content-addressed store's vocabulary — admissibility, verdicts, canonical spelling, and the store's minted rules.
 - [Effect Replay](docs/effect-replay/CONTEXT.md): owns the CAS replay library's vocabulary — operation descriptions, histories, sessions, decision traces, the mismatch taxonomy, witnesses, and the replay contract's minted rules. Fully independent of the Entity Store context.
 

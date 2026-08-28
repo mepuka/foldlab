@@ -1399,6 +1399,77 @@ registry; a tracking manifest):
   the schema commission's Lean Ast codec — first cross-pin when that
   lands.
 
+**THE FIRST CAS (2026-08-28, delegated wave 1, coordinator-verified):**
+the library now demonstrably creates a real, durable, on-disk store.
+`test/FileCas.test.ts`: a file-backed store in a temp directory —
+replay of every Lean vector at the Lean-computed addresses; every
+`objects/<2hex>/<62hex>` file byte-identical to the canonical
+encoding; a completely FRESH composition over the same directory
+serves every root through the verified load path; second replay
+answers identical ids and moves no bytes; `roots/<id>` publication and
+listing. The `FileSystem` realization over `node:fs/promises` is test
+scaffolding (effect v4 core ships only `makeNoop`;
+`@effect/platform-node` is NOT a dependency — adding a production Node
+realization is an operator dependency decision, surfaced and pending).
+Vector loader factored to `test/fixtures/vectors.ts`. Lean side:
+`examples/CasExamples/PutTree.lean` runs F1/F2 through the interpreter
+at build time (distinct 6→6; shared 5→4 deduped; replay inert binding
+for binding), and the fifth vector `shared-chunk` commits a word with
+a genuine duplicate binding — the executable witness that `Word.wf`
+accepts duplicates and replays dedup them. Gates re-run by the
+coordinator personally: 273 TS tests, typecheck 0, lint 0,
+`check:cas` green (49 jobs, 5 vectors).
+
+**Wave 2 finding (2026-08-28): `Cas.Transfer` is not locally
+composable.** The service's only shipped constructor is
+`layerRemote(remoteConfig)` over a pinned HTTP transport, so two local
+stores cannot meet through the Transfer surface without an HTTP peer.
+`test/DiskSurfaces.test.ts` performs the push law by hand (closure
+enumeration + children-first puts, identity asserted down to disk
+bytes). A local `CasTransfer` realization over a second
+`ByteReader`/`ByteWriter` pair would close the gap — queued as a
+lib-finishing candidate, operator's call.
+
+## 14. The grammar grill (2026-08-28, six rulings, operator-ratified)
+
+What belongs in the language grammar, walked branch by branch:
+
+1. **Charter.** The grammar is the full metalanguage: content,
+   computation, AND schema. Everything the store can hold is a
+   production of the grammar.
+2. **Sorts.** All seven sorts ratified into core — value(1), chunk(8),
+   tree(9), manifest(10), file(11), entry(12), context(13); registry
+   rows owed. A consumer-extension mechanism (profiles, the
+   GrammarSpec registration pattern) is a named follow-up, not
+   retrofitted.
+3. **The schema sort.** `.schema` (0x53) minted NOW with an
+   opaque-payload discipline: payload = canonical schema bytes from
+   the schema plane, refs empty in v0; the payload-IS-rendering law
+   arrives with the schema commission's Lean Ast codec. Named
+   follow-up: schemas referencing schemas as typed edges (the $defs
+   graph as real CAS references — where recursion naturally lives
+   content-addressed).
+4. **Computation (F3 shape).** Defunctionalized code points, the
+   Reynolds move: a program compiles to a finite table of first-order
+   nodes (operation + typed refs to captured environment + next code
+   point), new step/cont sorts; running is an interpreter walking
+   content; the correctness theorem is F1's pattern extended. No
+   binder metatheory; the word stays the run's history.
+5. **Operations.** CasSig frozen at put/load/fail. Roots enter as
+   RootSig (publish/listRoots) by signature sum, mirroring the TS
+   RootStore seam. Presence stays derived. CLI verbs, graph walks,
+   transfers: programs, never operations. Extension policy:
+   consumer-gated admission — a signature enters only with a real
+   consumer through the grill; ClockSig/RandomSig/network refused
+   until then (nondeterminism enters only as recorded content, which
+   `infer` demonstrates).
+6. **Concrete syntax.** The described canonical JSON document (the
+   vector format: byte-canonical rendering, proved generic codec,
+   derived validation) IS the language's concrete syntax — a sentence
+   is a canonical document, a word a sequence of them. Lean macros and
+   the future CLI are input surfaces elaborating to it; no new text
+   format is ever minted.
+
 **Queued (operator-raised 2026-08-28, marked for later, un-grilled):**
 a `cas` CLI surface — ask it about any directory and it answers whether
 a store lives there; it emits the canonical store representation (the

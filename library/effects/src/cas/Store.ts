@@ -115,12 +115,12 @@ const backendFailure = (failure: BackendFailure): StoreFailure =>
 /** The read-verification law, shared by `load` and the graph walks:
  * canonical decode, byte-identical re-encoding, known kind, recomputed
  * address. Never renormalizes; a failing byte plane surfaces typed. */
-export const verifyNodeBytes = (
-  address: CasAddress,
-  id: ContentId,
-  bytes: Uint8Array,
-): Effect.Effect<CasNodeInput, CasError> =>
-  Effect.gen(function* () {
+export const verifyNodeBytes = Effect.fn("CasStore.verifyNodeBytes")(
+  function* (
+    address: CasAddress,
+    id: ContentId,
+    bytes: Uint8Array,
+  ): Effect.fn.Return<CasNodeInput, CasError> {
     const canonicalBytes = bytes.slice()
     const decodedNode = decodeCasNode(canonicalBytes)
     if (Option.isNone(decodedNode)
@@ -136,7 +136,8 @@ export const verifyNodeBytes = (
     }
 
     return cloneNode(decoded)
-  })
+  },
+)
 
 /** Resolve SHA-256 through Effect's platform-independent Crypto service. The
  * host runtime supplies the native implementation; this module never reaches
@@ -274,12 +275,10 @@ export const makeCasStore: Effect.Effect<
   CasStoreShape,
   never,
   ByteReader | ByteWriter | AddressScheme
-> = Effect.gen(function* () {
-  const address = yield* AddressScheme
-  const reader = yield* ByteReader
-  const writer = yield* ByteWriter
-  return makeCasStoreOver(address, reader, writer)
-})
+> = Effect.map(
+  Effect.all([AddressScheme, ByteReader, ByteWriter]),
+  ([address, reader, writer]) => makeCasStoreOver(address, reader, writer),
+)
 
 /** Construct an isolated in-memory store: the law over one fresh memory
  * backend, for callers that need a store value rather than a Layer. */
@@ -298,7 +297,7 @@ export const makeMemoryCasStore = (
               : Option.some(resident.slice())
           }),
           presence: (ids: ReadonlyArray<ContentId>) => Effect.sync(() =>
-            ids.map((id) => nodes.has(id) ? "present" as const : "missing" as const)),
+            ids.map((id): "present" | "missing" => nodes.has(id) ? "present" : "missing")),
         },
         writer: {
           putBytes: (id: ContentId, bytes: Uint8Array) => Effect.sync(() => {
@@ -333,11 +332,10 @@ export const layerReadStore: Layer.Layer<
   ByteReader | AddressScheme
 > = Layer.effect(
   CasLoader,
-  Effect.gen(function* () {
-    const address = yield* AddressScheme
-    const reader = yield* ByteReader
-    return makeCasLoaderOver(address, reader)
-  }),
+  Effect.map(
+    Effect.all([AddressScheme, ByteReader]),
+    ([address, reader]) => makeCasLoaderOver(address, reader),
+  ),
 )
 
 /** One isolated in-memory CAS: the store law over a fresh memory

@@ -175,8 +175,8 @@ const authorized = (
 const refused = (refusal: WireRefusal): WireDecision =>
   WireDecision.Refused({ refusal })
 
-const casPath = /^\/cas\/([0-9a-f]{64})$/
-const rootsPath = /^\/roots\/([0-9a-f]{64})$/
+const casPath = /^\/cas\/([0-9a-f]{64})$/u
+const rootsPath = /^\/roots\/([0-9a-f]{64})$/u
 
 /** The wire law: one total pure function from gathered facts to a
  * refusal or an authenticated, authorized, fully decoded operation.

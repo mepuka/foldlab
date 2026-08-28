@@ -140,8 +140,7 @@ export const canonicalJson = (
       return JSON.stringify(value)
     case "object": {
       if (ancestors.has(value)) throw new TypeError("Canonical JSON cannot encode cycles")
-      const nextAncestors = new Set(ancestors)
-      nextAncestors.add(value)
+      const nextAncestors = new Set([...ancestors, value])
       if (Array.isArray(value)) {
         if (
           Object.getOwnPropertySymbols(value).length > 0
@@ -163,7 +162,7 @@ export const canonicalJson = (
         throw new TypeError("Canonical JSON objects cannot have symbol keys")
       }
       const fields = Object.entries(value)
-        .sort(([left], [right]) => compareCodepoints(left, right))
+        .toSorted(([left], [right]) => compareCodepoints(left, right))
         .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item, nextAncestors)}`)
       return `{${fields.join(",")}}`
     }
