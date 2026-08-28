@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A content-addressed store as a data structure — memory, file, or any static host below one seam; servable over cas-http/0; Effect-native record/replay built on it",
+  "description": "A content-addressed store as a data structure — memory, file, or any static host below one seam; servable over cas-http/0",
   "license": "Apache-2.0",
   "types": "./dist/index.d.ts",
   "exports": {

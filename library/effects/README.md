@@ -57,11 +57,10 @@ bun add @foldlab/cas@0.1.0 effect@4.0.0-rc.111
 ```
 
 ```ts
-import { Cas, Replay, Server } from "@foldlab/cas"
+import { Cas, Server } from "@foldlab/cas"
 ```
 
-`Cas`, `Server`, and `Replay` are the only root exports — one namespace
-per plane.
+`Cas` and `Server` are the only root exports — one namespace per plane.
 
 ## The data structure
 
@@ -157,16 +156,20 @@ profile with verified transfer, budgets, and explicit trust policy.
   (`Cas.remoteConfig`) with the policy machinery under `Cas.Remote.*`.
 - `Server` — `Core` (the semantic core over the seams), `httpApp` (the
   four-step HTTP shell), and the wire law as data.
-- `Replay` — Effect-native record/replay over the store: the session
-  runtime, pure reducer, operation description, the replayable service
-  kit, and `Replay.service` eager hydration from value projections.
+
+The record/replay plane (session runtime, pure reducer, replayable
+service kit) is stashed at `archive/replay-plane/` while the library
+focuses on CAS semantics, the DSL, and metaprogramming; its
+history-node kind tags stay reserved. The retired dual-lane Lean
+corpus lives at `archive/lean-model-0.3/`; the live Lean type model of
+this library is the Lake package at `library/cas`.
 
 ## Gates
 
 `bun run typecheck` (the Effect-aware native compiler), `bun run lint`
 (oxlint with the effect ruleset and the house laws), `bun run test`
-(unit, law, and conformance suites — the Lean model's generated vectors
-replayed against the implementation), and the Lean lane's own build and
-mutation battery. TypeScript observations and Lean model claims remain
-separate surfaces; every "verified" in this README means "covered by
-the named gate", nothing more.
+(unit, law, and conformance suites — the retired model's frozen vectors
+still replayed against the implementation), and `mise run check:cas`
+(the live Lean type model). TypeScript observations and Lean model
+claims remain separate surfaces; every "verified" in this README means
+"covered by the named gate", nothing more.

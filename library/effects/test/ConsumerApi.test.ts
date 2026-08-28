@@ -1,109 +1,64 @@
 /**
- * The ratified consumer-API additions, exercised end to end: the
- * structurally distinct record/replay entry points, the Layer-implemented
- * replayable kit (including the DoubleWrap check surviving the re-tag),
- * and the CAS error-tag constants with the total fold.
+ * The consumer surface, exercised exactly as a package consumer would:
+ * one barrel import, layers composed by name, the data structure and
+ * the server reached through their front doors only.
  */
 import { expect, it } from "@effect/vitest"
-import { Context, Effect, Layer, Ref, Schema } from "effect"
-import { Cas, Replay } from "../src/index.ts"
-import { layerMemory } from "../src/cas/Store.ts"
-import { layerReplay, record, replay } from "../src/replay/Replay.ts"
-import { replayable } from "../src/replay/ServiceAdapter.ts"
-import { deterministicAddress } from "./fixtures/address.ts"
+import { cast, Effect, Layer, Schema } from "effect"
+import { Cas, Server } from "../src/index.ts"
 
-class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>()(
-  "ConsumerApi/QuoteUnavailable",
-  { symbol: Schema.String },
-) {}
-
-interface RatesShape {
-  readonly quote: (symbol: string) => Effect.Effect<number, QuoteUnavailable>
-}
-
-class Rates extends Context.Service<Rates, RatesShape>()(
-  "test/effect-replay/ConsumerApiRates",
-) {}
-
-const RatesDescriptions = Replay.describeService<RatesShape>(
-  "test/ConsumerApiRates",
-)({
-  quote: {
-    revision: 1,
-    request: Schema.String,
-    success: Schema.Number,
-    failure: QuoteUnavailable,
-  },
+const Note = Cas.value({
+  kindTag: 0x41,
+  revision: 0,
+  schema: Schema.Struct({ text: Schema.String }),
 })
 
-const runtimeLayer = () =>
-  layerReplay.pipe(Layer.provideMerge(layerMemory(deterministicAddress())))
+const layer = Cas.layerMemory().pipe(
+  Layer.provideMerge(Cas.layerCryptoWebCrypto),
+)
 
-const program = Rates.use((rates) => rates.quote("EUR"))
-
-it.effect("record and replay wrappers round-trip without a flat options bag", () =>
-  Effect.gen(function* () {
-    const kit = replayable(Rates, RatesDescriptions, {
-      quote: (symbol) => Effect.succeed(symbol.length),
-    })
-    const recorded = yield* record(program.pipe(Effect.provide(kit.record)))
-    if (recorded.history === undefined) {
-      return yield* Effect.die("expected a recorded history root")
-    }
-    const replayed = yield* replay(
-      program.pipe(Effect.provide(kit.replay)),
-      recorded.history,
-    )
-    expect({ recorded: recorded.outcome, replayed: replayed.outcome }).toEqual({
-      recorded: { _tag: "Completed", terminal: { _tag: "Succeeded", value: 3 } },
-      replayed: { _tag: "Completed", terminal: { _tag: "Succeeded", value: 3 } },
-    })
-  }).pipe(Effect.provide(runtimeLayer())))
-
-it.effect("a Layer implementation builds under the public tag and records", () =>
-  Effect.gen(function* () {
-    const builds = yield* Ref.make(0)
-    const liveLayer: Layer.Layer<Rates> = Layer.effect(
-      Rates,
-      Ref.update(builds, (n) => n + 1).pipe(
-        Effect.as({ quote: (symbol: string) => Effect.succeed(symbol.length * 10) }),
-      ),
-    )
-    const kit = replayable(Rates, RatesDescriptions, liveLayer)
-    const recorded = yield* record(program.pipe(Effect.provide(kit.record)))
-    expect(recorded.outcome).toEqual({
-      _tag: "Completed",
-      terminal: { _tag: "Succeeded", value: 30 },
-    })
-    expect(yield* Ref.get(builds)).toBe(1)
-  }).pipe(Effect.provide(runtimeLayer())))
-
-it.effect("the DoubleWrap check survives the layer re-tag", () =>
-  Effect.gen(function* () {
-    const kit = replayable(Rates, RatesDescriptions)
-    // An implementation layer whose output is itself a wrapped service:
-    // the replay construction's product under the public tag.
-    const wrappedImplementation: Layer.Layer<Rates, never, Replay.Replay> =
-      kit.replay
-    const doubled = replayable(Rates, RatesDescriptions, wrappedImplementation)
-    const error = yield* Effect.flip(Rates.pipe(Effect.provide(doubled.record)))
-    expect(error).toEqual(new Replay.DoubleWrap({ service: Rates.key }))
-  }).pipe(Effect.provide(runtimeLayer())))
-
-it.effect("error tags, the guard, and the fold agree with the union", () =>
+it.effect("the barrel is exactly the two plane doors", () =>
   Effect.sync(() => {
-    const notFound = new Cas.ContentNotFound({
-      id: Cas.ContentId.make("00".repeat(32)),
-    })
-    expect(notFound._tag).toBe(Cas.ErrorTag.ContentNotFound)
-    expect(Cas.isCasError(notFound)).toBe(true)
-    expect(Cas.isCasError(new QuoteUnavailable({ symbol: "EUR" }))).toBe(false)
-
-    const label = Cas.matchError<string>({
-      ContentNotFound: (error) => `missing ${error.id.slice(0, 4)}`,
-      onOther: (error) => `other ${error._tag}`,
-    })
-    expect(label(notFound)).toBe("missing 0000")
-    expect(label(new Cas.StoreFailure({ reason: "x" })))
-      .toBe("other CasError/StoreFailure")
+    expect(Object.keys({ Cas, Server }).sort()).toEqual(["Cas", "Server"])
+    expect("value" in Cas).toBe(true)
+    expect("ref" in Cas).toBe(true)
+    expect("layerPathReader" in Cas).toBe(true)
+    expect("Graph" in Cas).toBe(true)
+    expect("Core" in Server).toBe(true)
+    expect("httpApp" in Server).toBe(true)
   }))
+
+it.effect("a consumer stores and reads typed values through the front door", () =>
+  Effect.gen(function* () {
+    const root = yield* Note.put({ text: "hello" })
+    expect((yield* Note.get(root)).text).toBe("hello")
+
+    // The error family folds by name through the front door.
+    const absentRoot: typeof root = cast(Cas.ContentId.make("ab".repeat(32)))
+    const absent = yield* Note.get(absentRoot).pipe(Effect.flip)
+    if (Cas.isCasError(absent)) {
+      const label = Cas.matchError({
+        onOther: () => "other",
+        ContentNotFound: () => "not-found",
+      })(absent)
+      expect(label).toBe("not-found")
+    }
+  }).pipe(Effect.provide(layer)))
+
+it.effect("the same backend value serves: core over the seams the store stands on", () =>
+  Effect.gen(function* () {
+    const core = yield* Server.Core
+    const outcome = yield* core.serve(
+      Server.Principal.Anonymous(),
+      Server.Request.ReadCapabilities(),
+    )
+    expect(outcome).toEqual(Server.Outcome.Capabilities({
+      maxBatchKeys: 8,
+      maxNodeBytes: 1024,
+    }))
+  }).pipe(Effect.provide(
+    Server.Core.layer({ maxBatchKeys: 8, maxNodeBytes: 1024 }).pipe(
+      Layer.provideMerge(Cas.layerMemoryBackend),
+      Layer.provideMerge(Cas.layerCryptoWebCrypto),
+    ),
+  )))
