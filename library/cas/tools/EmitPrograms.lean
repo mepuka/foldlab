@@ -1,4 +1,3 @@
-import Cas
 import Cas.Vectors.Registry
 import Cas.Backend.EmitProg
 

@@ -26,7 +26,7 @@
  * are canon-identical on the by-construction fixture corpus.
  */
 import { Schema } from "effect";
-import manifestJson from "./manifest.json" with { type: "json" };
+import manifestJson from "../../../library/effects/src/cas/generated/lift/manifest.json" with { type: "json" };
 
 /** The v0 refusal taxonomy (recognition proposal §8, codes verbatim).
  * A schema, so the code list exists at runtime — T1's totality and

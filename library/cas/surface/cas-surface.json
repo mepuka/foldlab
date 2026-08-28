@@ -6,14 +6,15 @@
     "Grammar": 46,
     "IR": 78,
     "Lang": 129,
+    "Lift": 37,
     "Schema": 161,
-    "Values": 142,
+    "Values": 165,
     "Vectors": 65
   },
   "axiomCensus": {
     "Classical.choice": 43,
     "Quot.sound": 128,
-    "propext": 173
+    "propext": 174
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -33,8 +34,8 @@
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 783,
-  "documented": 313,
+  "declarations": 856,
+  "documented": 332,
   "library": "Cas",
   "modules": [
     {
@@ -3628,6 +3629,330 @@
       ]
     },
     {
+      "declarations": 30,
+      "documented": 8,
+      "module": "Cas.Lift.Manifest",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lift.Element",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Element.description",
+          "signature": "Cas.Lift.Element → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Element.name",
+          "signature": "Cas.Lift.Element → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Element.spelling",
+          "signature": "Cas.Lift.Element → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lift.Manifest",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.candidateDepthMax",
+          "signature": "Cas.Lift.Manifest → Nat",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.details",
+          "signature": "Cas.Lift.Manifest → List (String × String)",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.elements",
+          "signature": "Cas.Lift.Manifest → List Cas.Lift.Element",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.language",
+          "signature": "Cas.Lift.Manifest → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.manifestVersion",
+          "signature": "Cas.Lift.Manifest → Nat",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.natBits",
+          "signature": "Cas.Lift.Manifest → Nat",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.natLiteralPattern",
+          "signature": "Cas.Lift.Manifest → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.payloadHexPattern",
+          "signature": "Cas.Lift.Manifest → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.pins",
+          "signature": "Cas.Lift.Manifest → List (String × String)",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.rules",
+          "signature": "Cas.Lift.Manifest → List Cas.Lift.Rule",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.toMarkdown",
+          "signature": "Cas.Lift.Manifest → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.toValue",
+          "signature": "Cas.Lift.Manifest → Cas.Json.Value",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Manifest.unreachableV0",
+          "signature": "Cas.Lift.Manifest → List Cas.Lift.Unreachable",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lift.Rule",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Rule.description",
+          "signature": "Cas.Lift.Rule → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Rule.enabled",
+          "signature": "Cas.Lift.Rule → Bool",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Rule.name",
+          "signature": "Cas.Lift.Rule → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Rule.register",
+          "signature": "Cas.Lift.Rule → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Rule.scope",
+          "signature": "Cas.Lift.Rule → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lift.Unreachable",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Unreachable.code",
+          "signature": "Cas.Lift.Unreachable → Cas.Lift.RefusalCode",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Unreachable.revival",
+          "signature": "Cas.Lift.Unreachable → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.document",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.manifestV0",
+          "signature": "Cas.Lift.Manifest",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.markdown",
+          "signature": "String"
+        }
+      ]
+    },
+    {
+      "declarations": 15,
+      "documented": 5,
+      "module": "Cas.Lift.Taxonomy",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lift.RefusalCode",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.RefusalCode.all",
+          "signature": "List Cas.Lift.RefusalCode",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.RefusalCode.all_complete",
+          "signature": "∀ (c : Cas.Lift.RefusalCode), c ∈ Cas.Lift.RefusalCode.all",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.RefusalCode.ctorElim",
+          "signature": "{motive : Cas.Lift.RefusalCode → Sort u} → (ctorIdx : Nat) → (t : Cas.Lift.RefusalCode) → ctorIdx = t.ctorIdx → Cas.Lift.RefusalCode.ctorElimType ctorIdx → motive t",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.RefusalCode.ctorElimType",
+          "signature": "{motive : Cas.Lift.RefusalCode → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.RefusalCode.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Lift.RefusalCode), Cas.Lift.RefusalCode.ofNat x.ctorIdx = x",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.RefusalCode.wire",
+          "signature": "Cas.Lift.RefusalCode → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lift.SpectrumClass",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.SpectrumClass.ctorElim",
+          "signature": "{motive : Cas.Lift.SpectrumClass → Sort u} → (ctorIdx : Nat) → (t : Cas.Lift.SpectrumClass) → ctorIdx = t.ctorIdx → Cas.Lift.SpectrumClass.ctorElimType ctorIdx → motive t",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.SpectrumClass.ctorElimType",
+          "signature": "{motive : Cas.Lift.SpectrumClass → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.SpectrumClass.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Lift.SpectrumClass), Cas.Lift.SpectrumClass.ofNat x.ctorIdx = x",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.SpectrumClass.wire",
+          "signature": "Cas.Lift.SpectrumClass → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instDecidableEqRefusalCode",
+          "signature": "DecidableEq Cas.Lift.RefusalCode",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instDecidableEqSpectrumClass",
+          "signature": "DecidableEq Cas.Lift.SpectrumClass",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.spectrum",
+          "signature": "Cas.Lift.RefusalCode → Cas.Lift.SpectrumClass",
+          "touches": ["Lift"]
+        }
+      ]
+    },
+    {
       "declarations": 27,
       "documented": 6,
       "module": "Cas.Schema.Ast",
@@ -5335,6 +5660,203 @@
       ]
     },
     {
+      "declarations": 28,
+      "documented": 6,
+      "module": "Cas.Values.Markdown",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Values.Markdown.Block",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Block.ctorElim",
+          "signature": "{motive : Cas.Values.Markdown.Block → Sort u} → (ctorIdx : Nat) → (t : Cas.Values.Markdown.Block) → ctorIdx = t.ctorIdx → Cas.Values.Markdown.Block.ctorElimType ctorIdx → motive t",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Block.ctorElimType",
+          "signature": "{motive : Cas.Values.Markdown.Block → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Values.Markdown.Cell",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Cell.content",
+          "signature": "Cas.Values.Markdown.Cell → List Cas.Values.Markdown.Inline",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Values.Markdown.Inline",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Inline.ctorElim",
+          "signature": "{motive : Cas.Values.Markdown.Inline → Sort u} → (ctorIdx : Nat) → (t : Cas.Values.Markdown.Inline) → ctorIdx = t.ctorIdx → Cas.Values.Markdown.Inline.ctorElimType ctorIdx → motive t",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Inline.ctorElimType",
+          "signature": "{motive : Cas.Values.Markdown.Inline → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Values.Markdown.Table",
+          "signature": "Nat → Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Table.headers",
+          "signature": "{n : Nat} → Cas.Values.Markdown.Table n → Vector String n",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.Table.rows",
+          "signature": "{n : Nat} → Cas.Values.Markdown.Table n → List (Vector Cas.Values.Markdown.Cell n)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.escape",
+          "signature": "String → String"
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Values.Markdown.instInhabitedCell",
+          "signature": "Inhabited Cas.Values.Markdown.Cell",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.instInhabitedCell.default",
+          "signature": "Cas.Values.Markdown.Cell",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Values.Markdown.instInhabitedInline",
+          "signature": "Inhabited Cas.Values.Markdown.Inline",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.instInhabitedInline.default",
+          "signature": "Cas.Values.Markdown.Inline",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Values.Markdown.instReprCell",
+          "signature": "Repr Cas.Values.Markdown.Cell",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.instReprCell.repr",
+          "signature": "Cas.Values.Markdown.Cell → Nat → Std.Format",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Values.Markdown.instReprInline",
+          "signature": "Repr Cas.Values.Markdown.Inline",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.instReprInline.repr",
+          "signature": "Cas.Values.Markdown.Inline → Nat → Std.Format",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.render",
+          "signature": "List Cas.Values.Markdown.Block → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderBlock",
+          "signature": "Cas.Values.Markdown.Block → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderCell",
+          "signature": "Cas.Values.Markdown.Cell → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderHeaderRow",
+          "signature": "{n : Nat} → Vector String n → String"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderInline",
+          "signature": "Cas.Values.Markdown.Inline → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderInlines",
+          "signature": "List Cas.Values.Markdown.Inline → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderRow",
+          "signature": "{n : Nat} → Vector Cas.Values.Markdown.Cell n → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Values.Markdown.renderTable",
+          "signature": "{n : Nat} → Cas.Values.Markdown.Table n → String",
+          "touches": ["Values"]
+        }
+      ]
+    },
+    {
       "declarations": 47,
       "documented": 14,
       "module": "Cas.Values.Refs",
@@ -6266,10 +6788,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 464,
-    "inductive": 23,
-    "instance": 36,
-    "structure": 29,
-    "theorem": 228
+    "def": 518,
+    "inductive": 27,
+    "instance": 42,
+    "structure": 35,
+    "theorem": 231
   }
 }

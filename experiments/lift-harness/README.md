@@ -13,9 +13,12 @@ parser-spined, oxc hot path, sieve demoted to triage, trust only through
 the agreement gate.
 
 ```
-src/manifest.json the AUTHORITY (R11): rule enables, candidateDepthMax,
-                  natBits, the literal domains, pinned detail strings,
-                  UNREACHABLE_V0. BOTH engines read these bytes — they
+(manifest)        the AUTHORITY (R11) now lives in Lean —
+                  `Cas.Lift.manifestV0` (library/cas/Cas/Lift/) — and is
+                  emitted by `lake exe emitlift` to
+                  library/effects/src/cas/generated/lift/manifest.json
+                  (+ manifest.md, the human projection), byte-gated in
+                  check:cas. BOTH engines import those bytes — they
                   share DATA, never code, or the gate proves nothing.
 src/contract.ts   the PORTABLE layer: verdict types, refusal taxonomy +
                   spectrum, the manifest typed, the literal-domain

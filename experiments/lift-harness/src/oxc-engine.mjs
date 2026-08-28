@@ -34,7 +34,7 @@
 // not `readFileSync`: this module is loaded by TWO foreign hosts (oxlint's
 // plugin runtime and vitest's node worker) and must not assume either has a
 // filesystem it may reach for.
-import MANIFEST from './manifest.json' with { type: 'json' };
+import MANIFEST from '../../../library/effects/src/cas/generated/lift/manifest.json' with { type: 'json' };
 
 /** Fill a pinned detail template. Implemented INDEPENDENTLY of the ck leg's
  * `detail` on purpose - R10 puts detail strings inside gate equality, so a
