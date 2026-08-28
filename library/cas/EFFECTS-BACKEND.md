@@ -194,6 +194,26 @@ touching the program layer. Native TypeScript callers keep using
 `CasStore`/`Layer` directly — the operation language is the canonical
 CROSS-language pattern, not a toll on local calls.
 
+**R12 — The tower: a service is a handler, and a handler can be a
+program** (operator-stated 2026-08-28; carrier `Cas/Lang/Tower.lean`).
+The stratification is reflexive: `CasStore` is not only the target of
+programs — it is itself IMPLEMENTED as a program over the byte-plane
+signature (`ByteSig`, mirroring the TypeScript
+`ByteReader`/`ByteWriter` seam), and `casOverBytes` speaks that
+implementation in the language: admission clauses re-derived at the
+seam, canonical encoding as the identity's pre-image, collisions as
+byte disagreement, loads through the proved frame parser.
+`Handler.through` + `interpret_through` (proved) collapse the tower:
+implementing a service as a program over a lower signature and then
+handling that signature is itself just a handler — strata are free,
+and interpretation composes all the way down to the admitted seams
+(digest, filesystem, network), which are the only places the tower
+touches trust. With F3, each stratum's implementation becomes store
+content: the store described — and implemented — in the store. Named
+obligation for the F3 wave: the refinement theorem that `casOverBytes`
+over a faithful byte-plane handler agrees with `referenceHandler`
+word for word — store correctness, in tower form.
+
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six
