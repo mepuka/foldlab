@@ -2,13 +2,10 @@ import Cas.Lang.Sig
 import Cas.Lang.Prog
 import Cas.Lang.Ops
 import Cas.Lang.Interp
-<<<<<<< HEAD
-import Cas.Lang.Roots
-=======
 import Cas.Lang.Handler
 import Cas.Lang.Tower
 import Cas.Lang.Representation
->>>>>>> 3010bf7eeabd4e0882657a418b6025ee7ba83a25
+import Cas.Lang.Roots
 import Cas.Lang.TreeProg
 import Cas.Lang.Defun
 
