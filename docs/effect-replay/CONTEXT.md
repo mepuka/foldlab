@@ -34,7 +34,11 @@ marker law, store loader, server plane — and the typed root gains its
 edge form and model carrier. Replay-plane entries remain minted
 vocabulary; their code labels point into the stash. Amended 2026-08-28
 at the schema self-description landing (operator-directed, in-session):
-two entries minted — canonical schema, materializer. Kind:
+two entries minted — canonical schema, materializer. Amended 2026-08-28
+at the effects-backend design session (operator-directed, in-session;
+design basis [library/cas/EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md),
+pre-grade): two entries minted — TypeScript backend, program vector —
+and one rule ratified — programs-are-content. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -673,7 +677,56 @@ enters as an ordinary refactor proposal at that time.
   concept borrowed from event-sourcing systems — here it is strictly
   schema-to-carrier.
 
+### TypeScript backend
+- **Kind:** module. **Code label:** `library/cas/Cas/Backend/` (Lean,
+  seeded by `Cas/Schema/Foreign.lean`) with generated surfaces landing
+  in `library/effects`.
+- **Form:** the store language's first compilation target: four layers —
+  denotation (the language), target semantics (the pinned Effect surface
+  as typed data), a closed TypeScript syntax fragment grown only with a
+  real consumer, and rendering under the Substance/Denotation/Style
+  split with `Style` as digested content. Design basis:
+  [EFFECTS-BACKEND.md](../../library/cas/EFFECTS-BACKEND.md).
+- **Obligations:** the backend generates hosts — interpreters, services,
+  layers, typed surfaces — never the authoritative home of a program
+  (rule: programs-are-content); generated output is deterministic,
+  byte-identity-gated, provenance-stamped, and parse-back-checked by an
+  independent admitted instrument; the target-semantics layer is pinned
+  to the exact Effect version and drift is a red gate, not a silent
+  regeneration.
+- **Avoid:** string-template codegen; full-TypeScript AST ambition;
+  external formatters on output; semantic choices inside the generator;
+  self-comparison as verification.
+
+### Program vector
+- **Kind:** schema. **Code label:** owed with backend slice 2 (the
+  conformance-vector registry is the pattern source).
+- **Form:** a conformance vector whose content is a run: one store
+  program, executed by the Lean interpreter and by a generated target
+  host, each writing its word — the vector pins the program's
+  presentation and the Lean-computed word, and the gate asserts the
+  target host's word is identical, binding for binding.
+- **Obligations:** word equality is the whole claim — byte-decidable
+  because nondeterminism enters only as recorded content; a program
+  vector never asserts semantic equivalence of programs (that is a
+  certificate, never an identity); the replayed word passes the same
+  admission gates as any word.
+- **Avoid:** reading a green program vector as a theorem about the
+  target runtime; comparing programs by anything other than
+  presentation identity; vectors whose runs depend on unrecorded host
+  state.
+
 ## Rules (each kind: adr; ratified in the M0 grilling, 2026-08-26)
+
+### programs-are-content
+Ratified 2026-08-28 (operator, in-session, the effects-backend design
+session). Programs are content; hosts are code. A program lives in the
+store and is loaded by address; generated target code materializes
+interpreters, services, and surfaces around it. A generated static
+projection of a program carries the address of the term it projects,
+and parity between them is a digest check — the served-equals-derived
+wall. Generated code that becomes a program's authoritative home is a
+defect of the backend, not a style choice.
 
 ### history-is-an-underapproximation
 Every recorded entry corresponds to a live action that occurred, in the
