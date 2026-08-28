@@ -1,0 +1,12 @@
+name = "extract-twin"
+defaultTargets = ["extract_twin"]
+
+# The study/build clone is gitignored estate-wide; `../bootstrap.sh` clones it
+# at the pinned revision and digest-checks the vendored C seam before any build.
+[[require]]
+name = "tree-sitter"
+path = "../../../../.staging/treesitter/clones/lean4-tree-sitter"
+
+[[lean_exe]]
+name = "extract_twin"
+root = "ExtractTwin"

@@ -124,3 +124,12 @@ run = [
   "mise run check:effects:research",
   "mise run check:ledger",
 ]
+
+[tasks."check:extract-twin"]
+description = "Stage 1 cross-instrument gate: TS-compiler-API extractor vs lean4-tree-sitter twin (bootstraps the pinned C seam; network + elan on first run; not in the default check chain)"
+dir = "{{config_root}}/experiments/entity-store-extract/twin"
+run = [
+  "bash bootstrap.sh",
+  "bash -c 'cd extract-lean && lake build'",
+  "bash -c 'cd harness && bun install --frozen-lockfile && bun run check'",
+]

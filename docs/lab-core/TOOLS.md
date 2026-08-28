@@ -28,11 +28,9 @@ project's approved-tools rule). Start light; grow as work gets defined.
 
 | LeanServer (`AfonsoBitoque/LeanServer`, revision-pinned per the transport-standards receipt; formally adopted 2026-08-27, clone materialized and blob-verified per the [adoption record](../../library/effects/research/leanserver-adoption.md)) | First-class differential conformance PEER for remote-transport suites and the adopted substrate for real server semantics: an independent executable Lean networking stack run beside the effects adapter, differences adjudicated against the pinned standards and the Lean model ([remote-transport survey](../../library/effects/research/remote-transport-standards-and-lean-models.md)) | A peer under test, never a standards oracle: its audited gaps (gRPC trailers, HTTP/2 completion, exact message consumption, WebSocket masking/fragmentation) are named detection targets, and agreement with it proves nothing alone. Its own theorem claims carry no estate grade. Conformance suites bind to an abstract peer interface — LeanServer is one binding — so suites stay isolated from any single peer. Runs under its own pinned toolchain as an external tool, never as an in-tree Lake dependency. |
 
-Pending admission (not yet used in gated work): lean4-tree-sitter
-(`predictable-machines/lean4-tree-sitter`, to be revision-pinned; C seam: the
-tree-sitter runtime plus the `tree-sitter-typescript` grammar shared library, each
-version-and-digest-pinned per host — admitted for the same Stage 1 walk when stood up;
-running it beside the TypeScript compiler API and asserting byte-identical inventories
-makes the two extractors each other's check), liteparse (`npm:@llamaindex/liteparse`;
-PDF/local text extraction — evidence preparation only, and the extractor
-behind the [paper corpus](../../.reference/catalog/PAPERS.md)).
+| lean4-tree-sitter (`predictable-machines/lean4-tree-sitter` @ `3a57f55e`, v0.2.4, Lean v4.32.0; C seam: vendored tree-sitter core v0.24.7 + `tree-sitter-typescript` grammar `75b3874e` compiled into one static archive — source and per-host build digests in the [stand-up receipt](../../.reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json); admitted 2026-08-28) | Second Stage 1 extractor instrument: syntax-only tree-sitter walk over the pinned Effect sources ([experiments/entity-store-extract/twin](../../experiments/entity-store-extract/twin/)), run beside the TypeScript compiler API so the two extractors are each other's check | Trusted only that the vendored grammar's parse of the pinned bytes yields the CSTs the walk reads; the C FFI boundary named in the receipt is the entire trusted seam. Known defect held: the grammar cannot parse `<in E>` variance annotations (two ERROR nodes at Filter/FilterGroup, outside the walk), and the twin refuses to emit if any ERROR/MISSING node intersects a byte range it consumed. Output enters gated work solely through the cross-instrument gate (`mise run check:extract-twin`): inventories byte-identical except `extractor.instrument`/`instrumentVersion`, which each instrument fills with its own declared identity — a twin copying them would impersonate the other instrument. Contributes shape facts only; no semantic claims. Version drift of the pin or the C seam is a re-admission event. |
+
+Pending admission (not yet used in gated work): liteparse
+(`npm:@llamaindex/liteparse`; PDF/local text extraction — evidence
+preparation only, and the extractor behind the
+[paper corpus](../../.reference/catalog/PAPERS.md)).
