@@ -1405,10 +1405,17 @@ registry; a tracking manifest):
   and `test/CanonicalSchemaPin.test.ts` asserting
   `CanonicalSchema.payloadOf` answers the Lean-emitted bytes for every
   registered code (the vector document/index codes among them — the
-  hand-mirror tripwire is now byte-armed). Open obligation, stated:
-  the byte-level rendering theorem binding `encode` to
-  `Json.renderCompact` remains pending; the pin is executable
-  evidence, not a theorem.
+  hand-mirror tripwire is now byte-armed). Same day, the byte-level
+  rendering theorem LANDED kernel-checked
+  (`Cas/Schema/Codec/Laws/Render.lean`, `Values/Json.lean`,
+  `SelfCodec.lean`): `encode_canonical` + `renderCompact_encode`
+  prove the encode image is canonically spelled and the canonical
+  rendering performs no reordering on it; `payload_renderPlain` binds
+  schema payloads the same way; `ofJson_toJson`/`toJson_inj` give the
+  self-codec a proved round trip (one code per payload value).
+  Remaining open direction, named precisely: injectivity of the
+  canonical rendering itself (bytes determine the canonical value —
+  a verified-parser development).
 
 **THE FIRST CAS (2026-08-28, delegated wave 1, coordinator-verified):**
 the library now demonstrably creates a real, durable, on-disk store.

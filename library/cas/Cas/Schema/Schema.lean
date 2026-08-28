@@ -27,12 +27,19 @@ Named increments, in order:
 - **Deriving extension** — the opt-in `Cas.Schema.Deriving` module
   generates `Described` instances for non-recursive structures while
   leaving compiler metaprogramming outside this runtime facade.
-- **Self-description** — LANDED in part (2026-08-28): `SelfCodec`
-  carries the codes' JSON projection, the schema-node envelope, and
-  the canonical payload, cross-pinned byte-for-byte against the
-  TypeScript `CanonicalSchema.payloadOf` (`lake exe schemas --check`
-  + `test/CanonicalSchemaPin.test.ts`). Still open: the byte-level
-  rendering theorem (sorted canonical fields) binding `encode` to
-  `Json.renderCompact` and the store's envelope — the projection is
-  executable-checked only until that theorem lands.
+- **Self-description** — LANDED (2026-08-28): `SelfCodec` carries the
+  codes' JSON projection, the schema-node envelope, and the canonical
+  payload, cross-pinned byte-for-byte against the TypeScript
+  `CanonicalSchema.payloadOf` (`lake exe schemas --check` +
+  `test/CanonicalSchemaPin.test.ts`). The byte-level rendering
+  theorem is PROVED: `encode_canonical`/`renderCompact_encode`
+  (`Codec/Laws/Render.lean`) show the encode image is canonically
+  spelled and the canonical rendering performs no reordering on it,
+  `toJson_canonical`/`payload_renderPlain` bind the schema payload the
+  same way, and `ofJson_toJson`/`toJson_inj` make the projection a
+  proved round trip — one code per payload value. The one direction
+  still open, named precisely: injectivity of the canonical rendering
+  itself (bytes determine the canonical value — the verified-parser
+  argument); until it lands, byte-equality of payloads is evidence
+  through the value plane, not a standalone theorem.
 -/

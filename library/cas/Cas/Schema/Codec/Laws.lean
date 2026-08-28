@@ -1,4 +1,5 @@
 import Cas.Schema.Codec.Laws.Mutual
+import Cas.Schema.Codec.Laws.Render
 
 /-!
 # Consequences of the schema codec laws

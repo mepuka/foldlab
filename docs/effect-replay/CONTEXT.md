@@ -32,7 +32,9 @@ semantics, the DSL, and metaprogramming; the live Lean model moves to
 — byte-plane seam, path reader, store-root layout, typed-reference
 marker law, store loader, server plane — and the typed root gains its
 edge form and model carrier. Replay-plane entries remain minted
-vocabulary; their code labels point into the stash. Kind:
+vocabulary; their code labels point into the stash. Amended 2026-08-28
+at the schema self-description landing (operator-directed, in-session):
+two entries minted — canonical schema, materializer. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -619,6 +621,57 @@ enters as an ordinary refactor proposal at that time.
   over ordinary TypeScript programs.
 
 ---
+
+### Canonical schema
+- **Kind:** schema. **Code label:** `src/cas/CanonicalSchema.ts` (runtime)
+  and `library/cas/Cas/Schema/` (model: `Ast`, `El`, codec, `Described`,
+  `SelfCodec`).
+- **Form:** the plane's universe of codes: a first-class data value
+  (`Null/Boolean/Integer/String/Literal/Array/Struct/Ref`) whose
+  denotation is a type (`El`), whose generic codec carries the proved
+  forward, exactness, and injectivity laws, and which is itself content:
+  a code projects to a tagged JSON value, wraps in the revisioned
+  schema-node envelope (kind tag `0x53`), and its canonical payload
+  bytes are its identity — byte-pinned across runtimes
+  (`lake exe schemas --check`, `CanonicalSchemaPin.test.ts`).
+- **Obligations:** no canonical construct's identity lives in a
+  function (the plane's standing law); struct fields strictly sorted
+  (`WF`) — the only admissible spelling is the canonical one, and the
+  encode image is proved canonically spelled (`encode_canonical`,
+  `renderCompact_encode`); the self-projection is a proved round trip
+  (`ofJson_toJson`), so one code per payload value; bytes are ALWAYS
+  derived on read, never stored as authority.
+- **Avoid:** Effect Schema (or any runtime carrier) read as the
+  authority — carriers carry, the code is the identity; JSON Schema as
+  anything but an export projection; extending the universe by
+  convention (optional-as-struct, union-as-tag-string) instead of by a
+  new ratified constructor.
+
+### Materializer
+- **Kind:** codec. **Code label:** `src/cas/CanonicalSchema.ts`
+  (`fromAst` — the generative direction) and
+  `library/cas/Cas/Schema/Described/`, `Deriving/`, `Notation.lean`
+  (`Described`, `deriving Described`, `cas_struct`).
+- **Form:** the generative direction of a described code: from a
+  canonical schema, produce the fully typed runtime carrier it denotes
+  (TS: `fromAst` compiles a code to its Effect Schema with the code
+  attached by annotation; Lean: a `Described` instance pairs a native
+  structure with its code and the two-sided equivalence, and the
+  `cas_struct` notation mints structure, instance, and raw-schema
+  surface from one declaration).
+- **Obligations:** a materialized carrier always carries its source
+  code (annotation on the TS side, the `Described.code` field on the
+  Lean side) so identity is recoverable from the carrier; the
+  carrier–code correspondence is two-sided with inverse laws
+  (`ofEl_toEl`/`toEl_ofEl`), never a one-way projection; materializing
+  never mints identity — the code is prior, and equal codes
+  materialize interchangeable carriers.
+- **Avoid:** hand-written carriers for described trees (the
+  three-trees discipline: every described tree type arrives as `El` of
+  a code); a materialized carrier drifting from its code without the
+  byte pin going red; reading "materializer" as a persistence or view
+  concept borrowed from event-sourcing systems — here it is strictly
+  schema-to-carrier.
 
 ## Rules (each kind: adr; ratified in the M0 grilling, 2026-08-26)
 
