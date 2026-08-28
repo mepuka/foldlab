@@ -18,8 +18,10 @@ import {
   BlobManifestTag as BlobManifestTagValue,
   BlobNodeTag as BlobNodeTagValue,
   ChunkDataTag as ChunkDataTagValue,
+  BlobManifestPayload,
+  admitBlobLeaf,
   encodeBlobManifestPayload,
-  materializeBlobGraph,
+  finalizeBlobGraph,
   ReferencedChunkRecipe as ReferencedChunkRecipeValue,
 } from "../internal/blobGraph.ts"
 
@@ -129,14 +131,6 @@ export namespace CasBlob {
     + (source[offset + 2] ?? 0) * 0x100
     + (source[offset + 3] ?? 0)
 
-  const readNat64 = (source: Uint8Array, offset: number): bigint => {
-    let value = 0n
-    for (let index = 0; index < 8; index += 1) {
-      value = (value << 8n) | BigInt(source[offset + index] ?? 0)
-    }
-    return value
-  }
-
   /** Canonical 16-byte manifest payload encoder. */
   export const encodeManifestPayload = encodeBlobManifestPayload
 
@@ -147,14 +141,8 @@ export namespace CasBlob {
   export const decodeManifestPayload = (
     bytes: Uint8Array,
   ): Option.Option<ManifestContent> => {
-    if (bytes.length !== 16) return Option.none()
-    const recipeId = readNat32(bytes, 0)
-    if (!KnownRecipes.has(recipeId)) return Option.none()
-    return Option.some({
-      recipeId,
-      totalBytes: readNat64(bytes, 4),
-      leafCount: readNat32(bytes, 12),
-    })
+    const decoded = Schema.decodeOption(BlobManifestPayload)(bytes)
+    return Option.filter(decoded, ({ recipeId }) => KnownRecipes.has(recipeId))
   }
 
   const format = (reason: string, id?: ContentId): FormatError =>
@@ -441,11 +429,29 @@ export namespace CasBlob {
     const put = <E, R>(
       source: Stream.Stream<Uint8Array, E, R>,
     ): Effect.Effect<BlobRef, E | CasError | BlobError, R> => Effect.suspend(() => {
-      const chunks: Array<Uint8Array> = []
+      const leaves: Array<ContentId> = []
+      let totalBytes = 0n
       let pending = new Uint8Array(ChunkSize)
       let pendingLength = 0
 
-      return Stream.runForEach(source, (part) => Effect.sync(() => {
+      const admit = Effect.fn("CasBlob.put.admitChunk")(function* (
+        bytes: Uint8Array,
+      ) {
+        const admitted = yield* admitBlobLeaf(
+          store,
+          leaves.length,
+          totalBytes,
+          bytes,
+        ).pipe(
+          Effect.mapError((error) => error._tag === "BlobGraphError"
+            ? format(error.reason)
+            : error),
+        )
+        leaves.push(admitted.leafId)
+        totalBytes = admitted.totalBytes
+      })
+
+      return Stream.runForEach(source, (part) => Effect.gen(function* () {
         let offset = 0
         while (offset < part.length) {
           const take = Math.min(ChunkSize - pendingLength, part.length - offset)
@@ -453,22 +459,22 @@ export namespace CasBlob {
           pendingLength += take
           offset += take
           if (pendingLength === ChunkSize) {
-            chunks.push(pending)
+            yield* admit(pending)
             pending = new Uint8Array(ChunkSize)
             pendingLength = 0
           }
         }
       })).pipe(
-        Effect.flatMap(() => {
-          if (pendingLength > 0 || chunks.length === 0) {
-            chunks.push(pending.slice(0, pendingLength))
+        Effect.andThen(Effect.gen(function* () {
+          if (pendingLength > 0 || leaves.length === 0) {
+            yield* admit(pending.slice(0, pendingLength))
           }
-          return materializeBlobGraph(store, chunks).pipe(
+          return yield* finalizeBlobGraph(store, leaves, totalBytes).pipe(
             Effect.mapError((error) => error._tag === "BlobGraphError"
               ? format(error.reason)
               : error),
           )
-        }),
+        })),
         Effect.map((graph) => BlobRef.make(graph.blobRef)),
       )
     })

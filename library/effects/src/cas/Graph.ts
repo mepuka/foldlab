@@ -11,7 +11,7 @@
  * pointing it at an untrusted host answers exactly whether that host
  * faithfully serves the graph.
  */
-import { Effect, Option } from "effect"
+import { Effect, Graph, Option } from "effect"
 import {
   ByteReader,
   type BackendFailure,
@@ -22,7 +22,9 @@ import {
   DanglingReference,
   NonCanonicalBytes,
   StoreFailure,
+  WrongKindReference,
   type CasError,
+  type CasNodeInput,
   type ContentId,
 } from "./Node.ts"
 import { decodeCasNode } from "../internal/casCodec.ts"
@@ -33,7 +35,10 @@ import {
 } from "./Store.ts"
 
 const backendFailure = (failure: BackendFailure): StoreFailure =>
-  new StoreFailure({ reason: `Backend failed: ${failure.reason}` })
+  new StoreFailure({
+    reason: `Backend failed: ${failure.reason}`,
+    cause: failure,
+  })
 
 /** Bytes at an id, absence typed: a missing root is `ContentNotFound`,
  * a missing child is the dangling reference it witnesses. */
@@ -114,13 +119,83 @@ export const verifyWith = (
   address: CasAddress,
 ): (
   root: ContentId,
-) => Effect.Effect<ReadonlyArray<ContentId>, CasError, ByteReader> => walkWith(
-  (reader, id, isRoot) => residentBytes(reader, id, isRoot).pipe(
-    Effect.flatMap((bytes) => verifyNodeBytes(address, id, bytes)),
-    Effect.map((node) => node.refs.map((ref) => ref.id)),
-  ),
-  "CasGraph.verify",
-)
+) => Effect.Effect<ReadonlyArray<ContentId>, CasError, ByteReader> =>
+  Effect.fn("CasGraph.verify")(function* (root) {
+    const reader = yield* ByteReader
+    const pushed = new Set<ContentId>([root])
+    const verified = new Map<ContentId, CasNodeInput>()
+    const nodes = new Map<ContentId, Graph.IndexedNode<ContentId>>()
+    const graph = Graph.beginMutation(Graph.directed<ContentId, number>())
+
+    const graphNode = (id: ContentId): Graph.IndexedNode<ContentId> => {
+      const resident = nodes.get(id)
+      if (resident !== undefined) return resident
+      const node = { index: Graph.addNode(graph, id), data: id }
+      nodes.set(id, node)
+      return node
+    }
+
+    const rootNode = graphNode(root)
+
+    const loadVerified = (
+      id: ContentId,
+      isRoot: boolean,
+    ): Effect.Effect<CasNodeInput, CasError> => {
+      const cached = verified.get(id)
+      if (cached !== undefined) return Effect.succeed(cached)
+      return residentBytes(reader, id, isRoot).pipe(
+        Effect.flatMap((bytes) => verifyNodeBytes(address, id, bytes)),
+        Effect.tap((node) => Effect.sync(() => verified.set(id, node))),
+      )
+    }
+
+    interface Frame {
+      readonly id: ContentId
+      node: CasNodeInput | undefined
+      next: number
+    }
+    const stack: Array<Frame> = [{ id: root, next: 0, node: undefined }]
+
+    while (stack.length > 0) {
+      const frame = stack.at(-1)!
+      if (frame.node === undefined) {
+        frame.node = yield* loadVerified(
+          frame.id,
+          frame.id === root && stack.length === 1,
+        )
+      }
+      if (frame.next < frame.node.refs.length) {
+        const ref = frame.node.refs[frame.next]!
+        frame.next += 1
+        const child = yield* loadVerified(ref.id, false)
+        if (child.kind.tag !== ref.expectedTag) {
+          return yield* new WrongKindReference({
+            ref: ref.id,
+            expectedTag: ref.expectedTag,
+            actualTag: child.kind.tag,
+          })
+        }
+        Graph.addEdge(
+          graph,
+          graphNode(frame.id).index,
+          graphNode(ref.id).index,
+          ref.expectedTag,
+        )
+        if (!pushed.has(ref.id)) {
+          pushed.add(ref.id)
+          stack.push({ id: ref.id, next: 0, node: child })
+        }
+        continue
+      }
+      stack.pop()
+    }
+
+    const complete = Graph.endMutation(graph)
+    const walked: ReadonlyArray<ContentId> = Array.from(
+      Graph.values(Graph.dfsPostOrder(complete, { start: [rootNode.index] })),
+    )
+    return walked
+  })
 
 /** Re-verify every node reachable from `root` under the composition's
  * address scheme: recomputed address, canonical decode, known kind.

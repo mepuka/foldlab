@@ -1,33 +1,19 @@
 /**
- * The canonical schema — the root of the schema plane, carried by
- * Effect Schema.
+ * Canonical Effect Schema identity.
  *
- * No schema stands above this one. A canonical schema is CONTENT: its
- * identity is the digest of its canonical bytes — the scheme-0
- * encoding of a schema node (reserved kind tag, the `{revision,
- * value}` canonical-JSON envelope as payload, no references) — so
- * schemas admit into the store, deduplicate, and are named by address
- * like every other value. Effect Schema is the runtime CARRIER, in two
- * senses: the AST below is itself defined as an Effect Schema codec
- * (the specific encoding of the schema plane), and the annotation API
- * lets any Effect Schema value declare the canonical schema it
- * carries. `fromAst` runs the generative direction — the canonical
- * AST produces its runtime carrier, fully typed through the `TypeOf`
- * interpreter and self-carrying by construction.
- *
- * Bytes are always DERIVED on read, never stored: the annotation
- * carries the AST, and `bytesFor`/`addressWith` recompute the
- * canonical form from it — a stored byte string would be a
- * hand-maintained derived file in disguise.
- *
- * Identity is structural everywhere: no constructor's meaning lives in
- * a function (the carrier-adequacy lesson from the SchemaAST census —
- * a closure-backed `Declaration` has no canonical form). The v0
- * constructor set covers what the value plane speaks today; `union`,
- * `mu`/`var` recursion, automatic derivation from `SchemaAST`, and the
- * Lean twin are the schema commission's, deferred by name.
+ * Effect's persistent `SchemaRepresentation.Document` is the schema-plane
+ * carrier. The CAS adds only its versioned node envelope and the declaration
+ * reviver for typed CAS references; it does not maintain a parallel AST.
  */
-import { cast, Effect, Match, Option, pipe, Predicate, Schema } from "effect"
+import {
+  Effect,
+  Option,
+  Predicate,
+  Result,
+  Schema,
+  SchemaAST,
+  SchemaRepresentation,
+} from "effect"
 import {
   Byte,
   ContentId,
@@ -44,317 +30,334 @@ import {
 } from "./Store.ts"
 import {
   canonicalJson,
-  decodedEnvelope,
+  decodedVersionedEnvelope,
   ProjectionCodecFailure,
-  refWithTag,
+  referenceRepresentation,
+  referenceRepresentationReviver,
   type ProjectionError,
-  type Root,
 } from "./Value.ts"
 import { SchemaKindTag } from "../internal/kindTags.ts"
 import type { StoreFailure } from "./Node.ts"
 
-/** The projection revision of schema nodes. */
-export const Revision = 0
+/** The current projection revision of schema nodes. */
+export const Revision = 1
+
+/** The legacy private-AST revision, retained for read compatibility. */
+export const LegacyRevision = 0
 
 /** The reserved kind tag schema nodes carry. */
 export const KindTag = SchemaKindTag
 
-/** A literal a canonical schema can pin: the canonical-JSON scalars. */
-export type LiteralValue = null | boolean | number | string
+/** The non-persistent annotation used to pin a carrier to an identity. */
+export const AnnotationKey = Symbol.for("foldlab/cas/canonical")
 
-export interface AstNull {
-  readonly _tag: "Null"
-}
-export interface AstBoolean {
-  readonly _tag: "Boolean"
-}
-/** Safe integers only — the one number form whose canonical rendering
- * is language-neutral (CAS-004). */
-export interface AstInteger {
-  readonly _tag: "Integer"
-}
-export interface AstString {
-  readonly _tag: "String"
-}
-export interface AstLiteral<V extends LiteralValue = LiteralValue> {
-  readonly _tag: "Literal"
-  readonly value: V
-}
-export interface AstArray<I extends Ast = Ast> {
-  readonly _tag: "Array"
-  readonly item: I
-}
-export interface AstField<
-  S extends Ast = Ast,
-  Opt extends boolean = boolean,
-> {
-  readonly optional: Opt
-  readonly schema: S
-}
-export interface AstStruct<
-  F extends { readonly [name: string]: AstField } = {
-    readonly [name: string]: AstField
-  },
-> {
-  readonly _tag: "Struct"
-  readonly fields: F
-}
-/** A typed reference: the kind tag expected at the target — the same
- * fact the store's admission law checks on the edge. */
-export interface AstRef<T extends number = number> {
-  readonly _tag: "Ref"
-  readonly tag: T
-}
-
-/** The canonical schema AST: all structure, no functions. */
-export type Ast =
-  | AstNull
-  | AstBoolean
-  | AstInteger
-  | AstString
-  | AstLiteral
-  | AstArray
-  | AstStruct
-  | AstRef
-
-const SafeInt = Schema.Int.check(Schema.isBetween({
-  minimum: Number.MIN_SAFE_INTEGER,
-  maximum: Number.MAX_SAFE_INTEGER,
-}))
-
-const LiteralValueSchema = Schema.Union([
-  Schema.Null,
-  Schema.Boolean,
-  SafeInt,
-  Schema.String,
-])
-
-/** The AST as an Effect Schema codec — the specific encoding of the
- * schema plane in the primary runtime. Plain tagged data on both
- * sides; canonical key order arrives at encode through the canonical
- * JSON rendering, never from insertion order. */
-export const AstSchema: Schema.Codec<Ast, Ast> = Schema.Union([
-  Schema.TaggedStruct("Null", {}),
-  Schema.TaggedStruct("Boolean", {}),
-  Schema.TaggedStruct("Integer", {}),
-  Schema.TaggedStruct("String", {}),
-  Schema.TaggedStruct("Literal", { value: LiteralValueSchema }),
-  Schema.TaggedStruct("Array", {
-    item: Schema.suspend((): Schema.Codec<Ast, Ast> => AstSchema),
-  }),
-  Schema.TaggedStruct("Struct", {
-    fields: Schema.Record(
-      Schema.String,
-      Schema.Struct({
-        optional: Schema.Boolean,
-        schema: Schema.suspend((): Schema.Codec<Ast, Ast> => AstSchema),
-      }),
-    ),
-  }),
-  Schema.TaggedStruct("Ref", { tag: Byte }),
-])
-
-/* ── Constructors — narrow return types, so a constructor-built AST
- * keeps the precise shape `TypeOf` interprets ─────────────────────── */
-
-export const nullAst: AstNull = { _tag: "Null" }
-export const booleanAst: AstBoolean = { _tag: "Boolean" }
-export const integerAst: AstInteger = { _tag: "Integer" }
-export const stringAst: AstString = { _tag: "String" }
-
-export const literal = <const V extends LiteralValue>(
-  value: V,
-): AstLiteral<V> => {
-  if (Predicate.isNumber(value) && !Number.isSafeInteger(value)) {
-    throw new TypeError(
-      "Canonical literals admit safe integers only — fractional and unsafe numbers have no language-neutral encoding",
-    )
-  }
-  return { _tag: "Literal", value }
-}
-
-export const array = <const I extends Ast>(item: I): AstArray<I> => ({
-  _tag: "Array",
-  item,
-})
-
-/** A required field. */
-export const field = <const S extends Ast>(schema: S): AstField<S, false> => ({
-  optional: false,
-  schema,
-})
-
-/** An optional field. */
-export const optionalField = <const S extends Ast>(
-  schema: S,
-): AstField<S, true> => ({
-  optional: true,
-  schema,
-})
-
-export const struct = <const F extends { readonly [name: string]: AstField }>(
-  fields: F,
-): AstStruct<F> => ({
-  _tag: "Struct",
-  fields,
-})
-
-export const ref = <const T extends number>(tag: T): AstRef<T> => {
-  Byte.make(tag)
-  return { _tag: "Ref", tag }
-}
-
-/* ── The generative direction: canonical AST → Effect Schema ────── */
-
-type StructTypeOf<F extends { readonly [name: string]: AstField }> =
-  & {
-    readonly [K in keyof F as F[K]["optional"] extends false ? K : never]:
-      TypeOf<F[K]["schema"]>
-  }
-  & {
-    readonly [K in keyof F as F[K]["optional"] extends true ? K : never]?:
-      TypeOf<F[K]["schema"]>
-  }
-
-/** The type a canonical schema denotes — the type-level interpreter.
- * Author ASTs through the constructors (or `as const`) so the shape
- * stays precise; a widened `Ast` denotes the union of everything. */
-export type TypeOf<A extends Ast> = A extends AstNull ? null
-  : A extends AstBoolean ? boolean
-  : A extends AstInteger ? number
-  : A extends AstString ? string
-  : A extends AstLiteral ? A["value"]
-  : A extends AstArray ? ReadonlyArray<TypeOf<A["item"]>>
-  : A extends AstStruct ? StructTypeOf<A["fields"]>
-  : A extends AstRef ? Root<unknown>
-  : never
-
-const compile: (ast: Ast) => Schema.Top = pipe(
-  Match.type<Ast>(),
-  Match.withReturnType<Schema.Top>(),
-  Match.tagsExhaustive({
-    Array: ({ item }) => Schema.Array(compile(item)),
-    Boolean: () => Schema.Boolean,
-    Integer: () => SafeInt,
-    Literal: ({ value }) =>
-      value === null ? Schema.Null : Schema.Literal(value),
-    Null: () => Schema.Null,
-    Ref: ({ tag }) => refWithTag(Byte.make(tag)),
-    String: () => Schema.String,
-    Struct: ({ fields: astFields }) => {
-      const fields: Record<
-        string,
-        Schema.Top | Schema.optionalKey<Schema.Top>
-      > = {}
-      for (const [name, f] of Object.entries(astFields)) {
-        fields[name] = f.optional
-          ? Schema.optionalKey(compile(f.schema))
-          : compile(f.schema)
-      }
-      return Schema.Struct(fields)
-    },
-  }),
-)
-
-/**
- * Derive the runtime Effect Schema a canonical schema denotes — the
- * root generating its carrier. The derived schema automatically
- * carries its source through the annotation, so `astOf`, `bytesFor`,
- * and the address all answer on it; authoring the AST through the
- * constructors keeps `TypeOf` precise, so the codec is fully typed.
- */
-export const fromAst = <const A extends Ast>(
-  ast: A,
-): Schema.Codec<TypeOf<A>, Schema.Json> =>
-  cast(compile(ast).annotate({ [AnnotationKey]: ast }))
-
-/* ── The canonical form — always derived, never stored ─────────── */
+const strictOptions = {
+  onExcessProperty: "error",
+} satisfies SchemaAST.ParseOptions
 
 const utf8Encoder = new TextEncoder()
 
-/** The envelope payload of a schema node. */
-export const payloadOf = (ast: Ast): Uint8Array =>
-  utf8Encoder.encode(canonicalJson({ revision: Revision, value: ast }))
+const deepFreeze = <A>(value: A): A => {
+  if (!Predicate.isObject(value) || Object.isFrozen(value)) return value
+  for (const key of Reflect.ownKeys(value)) {
+    deepFreeze(Reflect.get(value, key))
+  }
+  return Object.freeze(value)
+}
 
-/** The schema node itself: reserved kind, envelope payload, no
- * references. */
-export const nodeOf = (ast: Ast): CasNodeInput =>
+/** Canonicalize only order-insensitive object property declarations inside
+ * Effect's representation. Union, tuple, check, and reference order remain
+ * semantic and are never rearranged. */
+const normalizeRepresentationJson = (input: Schema.Json): Schema.Json => {
+  if (Array.isArray(input)) {
+    return input.map((item) => normalizeRepresentationJson(item))
+  }
+  if (!Predicate.isObject(input)) return input
+
+  const normalized: Record<string, Schema.Json> = Object.fromEntries(
+    Object.entries(input as Schema.JsonObject).map(([key, value]) => [
+      key,
+      normalizeRepresentationJson(value),
+    ]),
+  )
+  if (
+    normalized._tag === "Objects"
+    && Array.isArray(normalized.propertySignatures)
+  ) {
+    normalized.propertySignatures = [...normalized.propertySignatures]
+      .toSorted((left, right) => {
+        const leftName = Predicate.isObject(left) ? left.name : null
+        const rightName = Predicate.isObject(right) ? right.name : null
+        const leftText = canonicalJson(leftName)
+        const rightText = canonicalJson(rightName)
+        return leftText < rightText ? -1 : leftText > rightText ? 1 : 0
+      })
+  }
+  return normalized
+}
+
+/** Decode into fresh Effect-owned data, reject excess properties, normalize
+ * Effect's order-insensitive object fields, and freeze the identity snapshot. */
+const documentFromJson = (
+  input: Schema.Json,
+  requireCanonicalOrder = true,
+): SchemaRepresentation.Document => {
+  const document = SchemaRepresentation.fromJson(input)
+  const encoded = SchemaRepresentation.toJson(document)
+  if (canonicalJson(input) !== canonicalJson(encoded)) {
+    throw new TypeError(
+      "Canonical schema representation contains unsupported or excess properties",
+    )
+  }
+  const normalized = normalizeRepresentationJson(encoded)
+  if (
+    requireCanonicalOrder
+    && canonicalJson(encoded) !== canonicalJson(normalized)
+  ) {
+    throw new TypeError("Canonical schema object fields are not in canonical order")
+  }
+  return deepFreeze(SchemaRepresentation.fromJson(normalized))
+}
+
+const snapshotDocument = (
+  document: SchemaRepresentation.Document,
+): SchemaRepresentation.Document =>
+  documentFromJson(SchemaRepresentation.toJson(document), false)
+
+const nativeDocument = (schema: Schema.Top): SchemaRepresentation.Document =>
+  snapshotDocument(SchemaRepresentation.toRepresentation(schema.ast))
+
+const documentOf = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): SchemaRepresentation.Document =>
+  Schema.isSchema(identity) ? representationOf(identity) : snapshotDocument(identity)
+
+/** The frozen native representation carried by a runtime schema. */
+export const representationOf = (
+  schema: Schema.Top,
+): SchemaRepresentation.Document => {
+  const carried = Reflect.get(schema.ast.annotations ?? {}, AnnotationKey)
+  if (carried === undefined) return nativeDocument(schema)
+  const json = Schema.decodeUnknownSync(Schema.Json, strictOptions)(carried)
+  return documentFromJson(json)
+}
+
+const revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
+  Schema.isIntReviver,
+  Schema.isBetweenReviver,
+  Schema.isPatternReviver,
+  referenceRepresentationReviver,
+]
+
+/** Reconstruct a runtime Effect Schema from a persisted identity. */
+export const fromRepresentation = (
+  document: SchemaRepresentation.Document,
+): Schema.Top => {
+  const snapshot = snapshotDocument(document)
+  return SchemaRepresentation.fromRepresentation(snapshot, { revivers }).annotate({
+    [AnnotationKey]: deepFreeze(SchemaRepresentation.toJson(snapshot)),
+  })
+}
+
+/** Construct a carrier from Effect's own AST, snapshotting through Effect's
+ * persistent representation so later caller mutation cannot alter identity. */
+export const fromAst = (ast: SchemaAST.AST): Schema.Top => {
+  const document = snapshotDocument(SchemaRepresentation.toRepresentation(ast))
+  return fromRepresentation(document)
+}
+
+/** Strictly decode a persisted native representation document. */
+export const fromJson = (input: Schema.Json): SchemaRepresentation.Document =>
+  documentFromJson(input)
+
+/** A typed-reference declaration pinned to its expected resident kind tag. */
+export const ref = (tag: number) => referenceRepresentation(Byte.make(tag))
+
+/** Pin a runtime carrier to a canonical native representation snapshot. */
+export const annotate = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+) => <S extends Schema.Top>(schema: S) => {
+  const document = documentOf(identity)
+  const encoded = deepFreeze(SchemaRepresentation.toJson(document))
+  return schema.annotate({ [AnnotationKey]: encoded })
+}
+
+/** Direct access to the native Effect AST denoted by the carrier's canonical
+ * representation. A malformed carried snapshot fails closed as `None`. */
+export const astOf = (schema: Schema.Top): Option.Option<SchemaAST.AST> =>
+  Result.getSuccess(Result.try(() =>
+    deepFreeze(fromRepresentation(representationOf(schema)).ast)
+  ))
+
+/** The envelope payload of a schema node. */
+export const payloadOf = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): Uint8Array =>
+  utf8Encoder.encode(canonicalJson({
+    revision: Revision,
+    value: SchemaRepresentation.toJson(documentOf(identity)),
+  }))
+
+/** The schema node itself: reserved kind, envelope payload, no references. */
+export const nodeOf = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): CasNodeInput =>
   CasNodeInput.make({
     kind: { version: CasSchemeVersion, tag: KindTag },
-    payload: payloadOf(ast),
+    payload: payloadOf(identity),
     refs: [],
   })
 
-/** THE canonical bytes: the scheme-0 encoding of the schema node —
- * the digest pre-image, hence the identity. */
-export const bytesOf = (ast: Ast): Uint8Array => encodeCasNode(nodeOf(ast))
+/** The scheme-0 digest pre-image of a canonical schema. */
+export const bytesOf = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): Uint8Array => encodeCasNode(nodeOf(identity))
 
-/** The content address of a canonical schema under an explicit
- * address function — the model quantifies over the digest, and so
- * does the schema plane. */
-export const addressWith = (address: CasAddress) =>
-(ast: Ast): Effect.Effect<ContentId, StoreFailure> =>
-  address.digest(bytesOf(ast))
+/** The content address under an explicit address implementation. */
+export const addressWith = (address: CasAddress) => (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): Effect.Effect<ContentId, StoreFailure> =>
+  address.digest(bytesOf(identity))
 
-/* ── The annotation API — Effect Schema as the carrier ─────────── */
-
-/** The annotation key a carrying Effect Schema uses. */
-export const AnnotationKey = "foldlab/cas/canonical"
-
-/** Declare the canonical schema an Effect Schema value carries. */
-export const annotate = (ast: Ast) => <S extends Schema.Top>(schema: S) =>
-  schema.annotate({ [AnnotationKey]: ast })
-
-/** The canonical schema a value carries, if it declares one — read
- * through the codec, so a malformed annotation answers `None`, never
- * an unchecked value. */
-export const astOf = (schema: Schema.Top): Option.Option<Ast> => {
-  const raw = schema.ast.annotations?.[AnnotationKey]
-  if (raw === undefined) return Option.none()
-  return Schema.decodeUnknownOption(AstSchema)(raw)
-}
-
-/** The canonical bytes a carrying schema declares — derived from the
- * annotation on every read. */
+/** The canonical bytes declared by a carrying schema. Malformed annotations
+ * fail closed as `None`. */
 export const bytesFor = (schema: Schema.Top): Option.Option<Uint8Array> =>
-  Option.map(astOf(schema), bytesOf)
-
-/* ── The store round trip — schemas are content ────────────────── */
+  Result.getSuccess(Result.try(() => bytesOf(representationOf(schema))))
 
 /** Admit a canonical schema into the store; its address is its name. */
-export const put = (ast: Ast): Effect.Effect<ContentId, CasError, CasStore> =>
-  CasStore.use((store) => store.put(nodeOf(ast)))
+export const put = (
+  identity: Schema.Top | SchemaRepresentation.Document,
+): Effect.Effect<ContentId, CasError, CasStore> =>
+  CasStore.use((store) => store.put(nodeOf(identity)))
 
-/** Load a canonical schema back from its address, fail-closed: kind
- * checked, no references tolerated, envelope re-verified, AST decoded
- * through the codec. */
+const projectionFailure = (
+  id: ContentId,
+  issue: unknown,
+): ProjectionCodecFailure =>
+  new ProjectionCodecFailure({
+    direction: "decode",
+    id,
+    issue: String(issue),
+  })
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Predicate.isObject(value) && !Array.isArray(value)
+
+const exactRecord = (
+  value: unknown,
+  keys: ReadonlyArray<string>,
+  context: string,
+): Record<string, unknown> => {
+  if (!isRecord(value)) throw new TypeError(`${context} must be an object`)
+  const actual = Object.keys(value).toSorted()
+  const expected = [...keys].toSorted()
+  if (
+    actual.length !== expected.length
+    || actual.some((key, index) => key !== expected[index])
+  ) {
+    throw new TypeError(`${context} has unsupported or excess properties`)
+  }
+  return value
+}
+
+/** Strict revision-0 compatibility decoder. It maps legacy data directly to
+ * Effect Schema and deliberately exposes no replacement public AST. */
+const legacySchema = (value: unknown): Schema.Top => {
+  if (!isRecord(value) || typeof value._tag !== "string") {
+    throw new TypeError("legacy canonical schema must be a tagged object")
+  }
+  switch (value._tag) {
+    case "Null":
+      exactRecord(value, ["_tag"], "Null schema")
+      return Schema.Null
+    case "Boolean":
+      exactRecord(value, ["_tag"], "Boolean schema")
+      return Schema.Boolean
+    case "Integer":
+      exactRecord(value, ["_tag"], "Integer schema")
+      return Schema.Int.check(Schema.isBetween({
+        minimum: Number.MIN_SAFE_INTEGER,
+        maximum: Number.MAX_SAFE_INTEGER,
+      }))
+    case "String":
+      exactRecord(value, ["_tag"], "String schema")
+      return Schema.String
+    case "Literal": {
+      const literal = exactRecord(value, ["_tag", "value"], "Literal schema")
+      const item = literal.value
+      if (
+        item !== null
+        && typeof item !== "boolean"
+        && typeof item !== "string"
+        && !(typeof item === "number" && Number.isSafeInteger(item))
+      ) {
+        throw new TypeError("legacy literal must be a canonical JSON scalar")
+      }
+      return item === null ? Schema.Null : Schema.Literal(item)
+    }
+    case "Array": {
+      const array = exactRecord(value, ["_tag", "item"], "Array schema")
+      return Schema.Array(legacySchema(array.item))
+    }
+    case "Struct": {
+      const struct = exactRecord(value, ["_tag", "fields"], "Struct schema")
+      if (!isRecord(struct.fields)) {
+        throw new TypeError("Struct fields must be an object")
+      }
+      const fields: Record<string, Schema.Top | Schema.optionalKey<Schema.Top>> = {}
+      for (const [name, rawField] of Object.entries(struct.fields)) {
+        const field = exactRecord(
+          rawField,
+          ["optional", "schema"],
+          `Struct field ${canonicalJson(name)}`,
+        )
+        if (typeof field.optional !== "boolean") {
+          throw new TypeError(`Struct field ${canonicalJson(name)} optional must be boolean`)
+        }
+        const member = legacySchema(field.schema)
+        fields[name] = field.optional ? Schema.optionalKey(member) : member
+      }
+      return Schema.Struct(fields)
+    }
+    case "Ref": {
+      const reference = exactRecord(value, ["_tag", "tag"], "Ref schema")
+      return ref(Schema.decodeUnknownSync(Byte)(reference.tag))
+    }
+    default:
+      throw new TypeError(`unknown legacy canonical schema tag ${value._tag}`)
+  }
+}
+
+/** Load a canonical schema identity. Revision 1 returns Effect's persistent
+ * representation; revision 0 is accepted and projected into that same form. */
 export const get: (
   id: ContentId,
-) => Effect.Effect<Ast, ProjectionError, CasLoader> = Effect.fn(
-  "CanonicalSchema.get",
-)(
-  function* (id: ContentId) {
-    const loader = yield* CasLoader
-    const node = yield* loader.load(id)
-    if (node.kind.tag !== KindTag) {
-      return yield* new UnknownKind(node.kind)
-    }
-    if (node.refs.length > 0) {
-      return yield* new ProjectionCodecFailure({
-        direction: "decode",
-        id,
-        issue: "a schema node carries no references",
+) => Effect.Effect<SchemaRepresentation.Document, ProjectionError, CasLoader> =
+  Effect.fn("CanonicalSchema.get")(
+    function* (id: ContentId) {
+      const loader = yield* CasLoader
+      const node = yield* loader.load(id)
+      if (node.kind.tag !== KindTag) {
+        return yield* new UnknownKind(node.kind)
+      }
+      if (node.refs.length > 0) {
+        return yield* projectionFailure(id, "a schema node carries no references")
+      }
+      const envelope = yield* decodedVersionedEnvelope(node.payload, id)
+      return yield* Effect.try({
+        try: () => {
+          switch (envelope.revision) {
+            case Revision:
+              return documentFromJson(envelope.value)
+            case LegacyRevision:
+              return nativeDocument(legacySchema(envelope.value))
+            default:
+              throw new TypeError(
+                `unsupported canonical schema revision ${envelope.revision}`,
+              )
+          }
+        },
+        catch: (issue) => projectionFailure(id, issue),
       })
-    }
-    const value = yield* decodedEnvelope(node.payload, Revision, id)
-    return yield* Schema.decodeUnknownEffect(AstSchema)(value).pipe(
-      Effect.mapError((issue) =>
-        new ProjectionCodecFailure({
-          direction: "decode",
-          id,
-          issue: String(issue),
-        })
-      ),
-    )
-  },
-)
+    },
+  )

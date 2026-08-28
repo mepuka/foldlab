@@ -29,7 +29,7 @@ def house0 : Style := {}
 
 /-- Expressions: exactly what constructor-call emission needs. -/
 inductive Expr where
-  /-- A (possibly dotted) reference: `CanonicalSchema.struct`, `refAst`. -/
+  /-- A (possibly dotted) reference: `Schema.Struct`, `refSchema`. -/
   | ident (name : String)
   | str (value : String)
   | int (value : Int)

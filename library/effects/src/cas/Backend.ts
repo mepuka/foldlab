@@ -25,6 +25,7 @@
  * invalidated by a concurrent admission.
  */
 import { Context, Effect, Layer, Option, Schema } from "effect"
+import { bytesEqual } from "../internal/bytes.ts"
 import type { ContentId } from "./Node.ts"
 import type { PresenceStatus } from "../internal/remoteControl.ts"
 
@@ -34,7 +35,10 @@ export type { PresenceStatus }
  * class everywhere it surfaces, never to an admission verdict. */
 export class BackendFailure extends Schema.TaggedError<BackendFailure>()(
   "CasBackendFailure",
-  { reason: Schema.String },
+  {
+    reason: Schema.String,
+    cause: Schema.optionalKey(Schema.Defect()),
+  },
 ) {}
 
 export interface ByteReaderShape {
@@ -119,8 +123,17 @@ export const makeMemoryBackend = (): MemoryBackend => {
         ids.map((id): PresenceStatus => nodes.has(id) ? "present" : "missing")),
     },
     writer: {
-      putBytes: (id, bytes) => Effect.sync(() => {
-        if (!nodes.has(id)) nodes.set(id, bytes.slice())
+      putBytes: (id, bytes) => Effect.suspend(() => {
+        const resident = nodes.get(id)
+        if (resident === undefined) {
+          nodes.set(id, bytes.slice())
+          return Effect.void
+        }
+        return bytesEqual(resident, bytes)
+          ? Effect.void
+          : Effect.fail(new BackendFailure({
+              reason: `Content identifier collision at ${id}`,
+            }))
       }),
     },
     roots: {

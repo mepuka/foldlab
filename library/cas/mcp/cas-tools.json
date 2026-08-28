@@ -1,7 +1,7 @@
 {
   "language": "cas",
   "manifestVersion": 0,
-  "schemaRevision": 0,
+  "schemaRevision": 1,
   "tools": [
     {
       "description": "Admit one node; the reply is its content address. Admission is the only gate: well-formedness, reference presence, and kind agreement are checked, duplicates are inert, collisions refuse.",

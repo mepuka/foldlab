@@ -19,20 +19,24 @@ import {
   Option,
   PlatformError,
 } from "effect"
-import type { FileSystem } from "effect"
+import type { FileSystem, Path } from "effect"
 import {
   ByteReader,
   ByteWriter,
   layerMemoryBackend,
+  makeMemoryBackend,
   type BackendFailure,
   type ByteReaderShape,
   type ByteWriterShape,
   type RootStore,
 } from "./Backend.ts"
-import { layerFileBackend } from "./FileBackend.ts"
+import {
+  layerFileBackend,
+  layerFileBackendFromFileUrl,
+  layerFileBackendWithPath,
+} from "./FileBackend.ts"
 import {
   judgeAdmission,
-  kindTagOfCanonical,
   type AdmissionFacts,
 } from "../internal/admission.ts"
 import { bytesEqual } from "../internal/bytes.ts"
@@ -106,11 +110,15 @@ const validateNode = (
   CasNodeInput.makeEffect(input).pipe(
     Effect.mapError((issue) => new StoreFailure({
       reason: `Invalid CAS node input: ${String(issue)}`,
+      cause: issue,
     })),
   )
 
 const backendFailure = (failure: BackendFailure): StoreFailure =>
-  new StoreFailure({ reason: `Backend failed: ${failure.reason}` })
+  new StoreFailure({
+    reason: `Backend failed: ${failure.reason}`,
+    cause: failure,
+  })
 
 /** The read-verification law, shared by `load` and the graph walks:
  * canonical decode, byte-identical re-encoding, known kind, recomputed
@@ -149,6 +157,7 @@ export const makeSha256Address: Effect.Effect<CasAddress, never, Crypto.Crypto> 
         const digest = yield* crypto.digest("SHA-256", canonicalBytes).pipe(
           Effect.mapError((cause) => new StoreFailure({
             reason: `SHA-256 failed: ${String(cause)}`,
+            cause,
           })),
         )
         // A wrong-width digest is a broken host crypto service: fail typed
@@ -186,18 +195,27 @@ export const makeCasStoreOver = (
   writer: ByteWriterShape,
 ): CasStoreShape => {
   /** Answer the admission judgment's facts from the byte plane: the
-   * actual kind tag per reference (the second canonical byte), and any
-   * bytes resident at the candidate id. */
+   * verified kind tag per reference, and any bytes resident at the
+   * candidate id. */
   const admissionFacts = Effect.fn("CasStore.admissionFacts")(function* (
     node: CasNodeInput,
     id: ContentId,
   ) {
     const refTags: Array<Option.Option<number>> = []
     for (const ref of node.refs) {
-      const resident = yield* reader.loadBytes(ref.id)
-      refTags.push(Option.map(resident, kindTagOfCanonical))
+      const resident = yield* reader.loadBytes(ref.id).pipe(
+        Effect.mapError(backendFailure),
+      )
+      if (Option.isNone(resident)) {
+        refTags.push(Option.none())
+      } else {
+        const verified = yield* verifyNodeBytes(address, ref.id, resident.value)
+        refTags.push(Option.some(verified.kind.tag))
+      }
     }
-    const resident = yield* reader.loadBytes(id)
+    const resident = yield* reader.loadBytes(id).pipe(
+      Effect.mapError(backendFailure),
+    )
     const facts: AdmissionFacts = { refTags, resident }
     return facts
   })
@@ -213,7 +231,7 @@ export const makeCasStoreOver = (
     // check-then-insert sound without a lock.
     const verdict = judgeAdmission(
       canonicalBytes,
-      yield* admissionFacts(node, id).pipe(Effect.mapError(backendFailure)),
+      yield* admissionFacts(node, id),
     )
     switch (verdict._tag) {
       case "DanglingReference":
@@ -286,26 +304,7 @@ export const makeMemoryCasStore = (
   address: CasAddress,
 ): Effect.Effect<CasStoreShape> =>
   Effect.sync(() => {
-    const backend = (() => {
-      const nodes = new Map<ContentId, Uint8Array>()
-      return {
-        reader: {
-          loadBytes: (id: ContentId) => Effect.sync(() => {
-            const resident = nodes.get(id)
-            return resident === undefined
-              ? Option.none<Uint8Array>()
-              : Option.some(resident.slice())
-          }),
-          presence: (ids: ReadonlyArray<ContentId>) => Effect.sync(() =>
-            ids.map((id): "present" | "missing" => nodes.has(id) ? "present" : "missing")),
-        },
-        writer: {
-          putBytes: (id: ContentId, bytes: Uint8Array) => Effect.sync(() => {
-            if (!nodes.has(id)) nodes.set(id, bytes.slice())
-          }),
-        },
-      }
-    })()
+    const backend = makeMemoryBackend()
     return makeCasStoreOver(address, backend.reader, backend.writer)
   })
 
@@ -364,6 +363,20 @@ export const layerFile = (storeRoot: string): Layer.Layer<
   never,
   FileSystem.FileSystem | AddressScheme
 > => layerStore.pipe(Layer.provideMerge(layerFileBackend(storeRoot)))
+
+/** File-backed CAS using the host-provided Effect Path implementation. */
+export const layerFileWithPath = (storeRoot: string): Layer.Layer<
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
+  never,
+  FileSystem.FileSystem | Path.Path | AddressScheme
+> => layerStore.pipe(Layer.provideMerge(layerFileBackendWithPath(storeRoot)))
+
+/** File-backed CAS rooted at a file URL through `Path.fromFileUrl`. */
+export const layerFileFromFileUrl = (url: URL): Layer.Layer<
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
+  BackendFailure,
+  FileSystem.FileSystem | Path.Path | AddressScheme
+> => layerStore.pipe(Layer.provideMerge(layerFileBackendFromFileUrl(url)))
 
 /** The WebCrypto-backed `Crypto` layer: SHA-256 through the platform's
  * `crypto.subtle`, which every target runtime provides. The package ships

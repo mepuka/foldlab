@@ -5,11 +5,13 @@ import {
   Encoding,
   Effect,
   Layer,
+  Ref,
   Stream,
 } from "effect"
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
 import { createHash, randomBytes } from "node:crypto"
 import * as Cas from "../../src/Cas.ts"
+import { makeMemoryBackend } from "../../src/cas/Backend.ts"
 import { CasBlob } from "../../src/cas/Blob.ts"
 import {
   CasNodeInput,
@@ -25,6 +27,7 @@ import {
   AddressScheme,
   layerMemory,
   layerMemoryWith,
+  makeCasStoreOver,
   type CasAddress,
   type CasStoreShape,
 } from "../../src/cas/Store.ts"
@@ -47,6 +50,7 @@ import {
   sliceSourceSize,
 } from "./BlobFixtures.ts"
 import { toyAddress } from "../merkle/MerkleFixtures.ts"
+import { deterministicAddress } from "../fixtures/address.ts"
 import {
   awaitPeerSocketsReleased,
   type PeerEndpoint,
@@ -439,6 +443,50 @@ const registerRemoteFixtures = (
       }))
 
 }
+
+it.effect("put admits each full chunk before pulling again and never manifests a failed source", () =>
+  Effect.gen(function* () {
+    const backend = makeMemoryBackend()
+    const base = makeCasStoreOver(
+      deterministicAddress(),
+      backend.reader,
+      backend.writer,
+    )
+    const admittedTags = yield* Ref.make<ReadonlyArray<number>>([])
+    const observedStore: CasStoreShape = {
+      load: base.load,
+      put: (value) => base.put(value).pipe(
+        Effect.tap(() => Ref.update(admittedTags, (tags) => [...tags, value.kind.tag])),
+      ),
+    }
+    const blobLayer = CasBlob.layer.pipe(
+      Layer.provide(Layer.succeed(CasStore, observedStore)),
+    )
+    const full = bytesOfSize(CasBlob.ChunkSize)
+    const nextSegment = Stream.fromEffect(Ref.get(admittedTags).pipe(
+      Effect.tap((tags) => Effect.sync(() => {
+        expect(tags).toEqual([CasBlob.ChunkDataTag, CasBlob.BlobNodeTag])
+      })),
+      Effect.as(Uint8Array.of(1)),
+    ))
+    yield* CasBlob.put(Stream.concat(Stream.succeed(full), nextSegment)).pipe(
+      Effect.provide(blobLayer),
+    )
+
+    yield* Ref.set(admittedTags, [])
+    const result = yield* CasBlob.put(Stream.concat(
+      Stream.succeed(full),
+      Stream.fail("source-failed"),
+    )).pipe(
+      Effect.provide(blobLayer),
+      Effect.result,
+    )
+    expect(result).toMatchObject({ _tag: "Failure", failure: "source-failed" })
+    expect(yield* Ref.get(admittedTags)).toEqual([
+      CasBlob.ChunkDataTag,
+      CasBlob.BlobNodeTag,
+    ])
+  }))
 
 layer(localBlobLayer)("CasBlob local memory lane", (test) => {
   registerBlobSuite(test)

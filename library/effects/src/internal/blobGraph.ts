@@ -1,5 +1,5 @@
 /** Recipe-1 blob graph materialization over an explicit ordered chunk list. */
-import { Data, Effect } from "effect"
+import { Data, Effect, Schema, SchemaGetter } from "effect"
 import { CasNodeInput, type CasError, type ContentId } from "../cas/Node.ts"
 import type { CasStoreShape } from "../cas/Store.ts"
 import { pow2Below } from "./merkleTree.ts"
@@ -10,6 +10,16 @@ export const ReferencedChunkRecipe = 1
 
 const MaxUint32 = 0xffff_ffff
 const MaxUint64 = 0xffff_ffff_ffff_ffffn
+
+/** Exact scalar domains used by recipe-1's binary wire fields. */
+export const Uint32 = Schema.Int.check(Schema.isBetween({
+  minimum: 0,
+  maximum: MaxUint32,
+}))
+export const Uint64 = Schema.BigInt.check(Schema.isBetweenBigInt({
+  minimum: 0n,
+  maximum: MaxUint64,
+}))
 
 /** Internal recipe violation, carried as a typed tag in the error
  * channel and translated to the public format error at the boundary —
@@ -23,6 +33,11 @@ export interface BlobGraphResult {
   readonly treeRoot: ContentId
   readonly totalBytes: bigint
   readonly leafCount: number
+}
+
+export interface AdmittedBlobLeaf {
+  readonly leafId: ContentId
+  readonly totalBytes: bigint
 }
 
 const writeNat32 = (target: Uint8Array, offset: number, value: number): void => {
@@ -40,17 +55,51 @@ const writeNat64 = (target: Uint8Array, offset: number, value: bigint): void => 
   }
 }
 
+const readNat32 = (source: Uint8Array, offset: number): number =>
+  (source[offset] ?? 0) * 0x1000000
+  + (source[offset + 1] ?? 0) * 0x10000
+  + (source[offset + 2] ?? 0) * 0x100
+  + (source[offset + 3] ?? 0)
+
+const readNat64 = (source: Uint8Array, offset: number): bigint => {
+  let value = 0n
+  for (let index = 0; index < 8; index += 1) {
+    value = (value << 8n) | BigInt(source[offset + index] ?? 0)
+  }
+  return value
+}
+
+const ManifestContent = Schema.Struct({
+  recipeId: Uint32,
+  totalBytes: Uint64,
+  leafCount: Uint32,
+})
+
+/** The exact 16-byte, big-endian recipe manifest codec. The transformation
+ * is package-owned because Effect has native bigint validation but no
+ * fixed-width network-order integer codec. */
+export const BlobManifestPayload = Schema.Uint8Array.check(
+  Schema.isLengthBetween(16, 16),
+).pipe(Schema.decodeTo(ManifestContent, {
+  decode: SchemaGetter.transform((bytes) => ({
+    recipeId: readNat32(bytes, 0),
+    totalBytes: readNat64(bytes, 4),
+    leafCount: readNat32(bytes, 12),
+  })),
+  encode: SchemaGetter.transform((manifest) => {
+    const bytes = new Uint8Array(16)
+    writeNat32(bytes, 0, manifest.recipeId)
+    writeNat64(bytes, 4, manifest.totalBytes)
+    writeNat32(bytes, 12, manifest.leafCount)
+    return bytes
+  }),
+}))
+
 export const encodeBlobManifestPayload = (manifest: {
   readonly recipeId: number
   readonly totalBytes: bigint
   readonly leafCount: number
-}): Uint8Array => {
-  const bytes = new Uint8Array(16)
-  writeNat32(bytes, 0, manifest.recipeId)
-  writeNat64(bytes, 4, manifest.totalBytes)
-  writeNat32(bytes, 12, manifest.leafCount)
-  return bytes
-}
+}): Uint8Array => Schema.encodeSync(BlobManifestPayload)(manifest)
 
 const node = (
   tag: number,
@@ -64,42 +113,56 @@ const node = (
 
 const leafPayload = (index: number, chunkLength: number): Uint8Array => {
   const payload = new Uint8Array(8)
-  writeNat32(payload, 0, index)
-  writeNat32(payload, 4, chunkLength)
+  writeNat32(payload, 0, Uint32.make(index))
+  writeNat32(payload, 4, Uint32.make(chunkLength))
   return payload
 }
 
-/**
- * Materialize the complete recipe-1 graph for the supplied chunk boundaries.
- * Chunk order and boundaries are semantic input here; the public blob writer's
- * fixed-size chunker is a separate stage.
- */
-export const materializeBlobGraph = Effect.fn("BlobGraph.materialize")(
+/** Admit one ordered recipe-1 chunk and its position-binding leaf. Limits are
+ * checked before either node is admitted. */
+export const admitBlobLeaf = Effect.fn("BlobGraph.admitLeaf")(
   function* (
     store: CasStoreShape,
-    chunks: ReadonlyArray<Uint8Array>,
-  ): Effect.fn.Return<BlobGraphResult, CasError | BlobGraphError> {
-    if (chunks.length === 0) {
-      return yield* new BlobGraphError({ reason: "recipe 1 requires at least one chunk" })
-    }
-    if (chunks.length > MaxUint32) {
+    index: number,
+    totalBytes: bigint,
+    bytes: Uint8Array,
+  ): Effect.fn.Return<AdmittedBlobLeaf, CasError | BlobGraphError> {
+    if (!Number.isInteger(index) || index < 0 || index >= MaxUint32) {
       return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" })
     }
+    if (bytes.length > MaxUint32) {
+      return yield* new BlobGraphError({ reason: "recipe 1 chunk exceeds the u32 length field" })
+    }
+    const nextTotal = totalBytes + BigInt(bytes.length)
+    if (nextTotal > MaxUint64) {
+      return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" })
+    }
+    const chunkId = yield* store.put(node(ChunkDataTag, bytes.slice(), []))
+    const leafId = yield* store.put(node(
+      BlobNodeTag,
+      leafPayload(index, bytes.length),
+      [{ id: chunkId, expectedTag: ChunkDataTag }],
+    ))
+    return { leafId, totalBytes: nextTotal }
+  },
+)
 
-    const leaves: Array<ContentId> = []
-    let totalBytes = 0n
-    for (const bytes of chunks) {
-      totalBytes += BigInt(bytes.length)
-      if (totalBytes > MaxUint64) {
-        return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" })
-      }
-      const chunkId = yield* store.put(node(ChunkDataTag, bytes.slice(), []))
-      const leafId = yield* store.put(node(
-        BlobNodeTag,
-        leafPayload(leaves.length, bytes.length),
-        [{ id: chunkId, expectedTag: ChunkDataTag }],
-      ))
-      leaves.push(leafId)
+/** Finish a recipe-1 graph from already admitted leaves. This is the only
+ * operation that emits the tree root and manifest. */
+export const finalizeBlobGraph = Effect.fn("BlobGraph.finalize")(
+  function* (
+    store: CasStoreShape,
+    leaves: ReadonlyArray<ContentId>,
+    totalBytes: bigint,
+  ): Effect.fn.Return<BlobGraphResult, CasError | BlobGraphError> {
+    if (leaves.length === 0) {
+      return yield* new BlobGraphError({ reason: "recipe 1 requires at least one chunk" })
+    }
+    if (leaves.length > MaxUint32) {
+      return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" })
+    }
+    if (totalBytes < 0n || totalBytes > MaxUint64) {
+      return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" })
     }
 
     const buildTree = (
@@ -133,5 +196,33 @@ export const materializeBlobGraph = Effect.fn("BlobGraph.materialize")(
       [{ id: treeRoot, expectedTag: BlobNodeTag }],
     ))
     return { blobRef, treeRoot, totalBytes, leafCount: leaves.length }
+  },
+)
+
+/**
+ * Materialize the complete recipe-1 graph for the supplied chunk boundaries.
+ * Chunk order and boundaries are semantic input here; the public blob writer's
+ * fixed-size chunker is a separate stage.
+ */
+export const materializeBlobGraph = Effect.fn("BlobGraph.materialize")(
+  function* (
+    store: CasStoreShape,
+    chunks: ReadonlyArray<Uint8Array>,
+  ): Effect.fn.Return<BlobGraphResult, CasError | BlobGraphError> {
+    if (chunks.length === 0) {
+      return yield* new BlobGraphError({ reason: "recipe 1 requires at least one chunk" })
+    }
+    if (chunks.length > MaxUint32) {
+      return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" })
+    }
+
+    const leaves: Array<ContentId> = []
+    let totalBytes = 0n
+    for (const bytes of chunks) {
+      const admitted = yield* admitBlobLeaf(store, leaves.length, totalBytes, bytes)
+      leaves.push(admitted.leafId)
+      totalBytes = admitted.totalBytes
+    }
+    return yield* finalizeBlobGraph(store, leaves, totalBytes)
   },
 )

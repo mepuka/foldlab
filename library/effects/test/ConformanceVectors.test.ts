@@ -59,17 +59,17 @@ it.effect("admission order is semantics: a root put first dangles", () =>
   }).pipe(Effect.provide(layerMemoryLive)))
 
 it("the format carries its canonical, content-addressed identity", () => {
-  // The wire schema is a carrier: the annotation reads back the AST.
-  const carried = CanonicalSchema.astOf(ConformanceVector.ConformanceVector)
-  expect(Option.getOrThrow(carried)).toEqual(ConformanceVector.vectorAst)
-  const carriedIndex = CanonicalSchema.astOf(ConformanceVector.VectorIndex)
-  expect(Option.getOrThrow(carriedIndex)).toEqual(ConformanceVector.indexAst)
+  // The richer wire schema carries the generated schema's native identity.
+  expect(Option.getOrThrow(CanonicalSchema.astOf(ConformanceVector.ConformanceVector))._tag)
+    .toBe(ConformanceVector.vectorSchema.ast._tag)
+  expect(Option.getOrThrow(CanonicalSchema.astOf(ConformanceVector.VectorIndex))._tag)
+    .toBe(ConformanceVector.indexSchema.ast._tag)
   // Identity is derived bytes: deterministic, distinct per format.
   const vectorBytes =
-    Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.vectorAst))
-  expect(Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.vectorAst)))
+    Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.vectorSchema))
+  expect(Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.ConformanceVector)))
     .toBe(vectorBytes)
-  expect(Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.indexAst)))
+  expect(Encoding.encodeHex(CanonicalSchema.bytesOf(ConformanceVector.VectorIndex)))
     .not.toBe(vectorBytes)
 })
 

@@ -49,7 +49,7 @@
       "description": "the vector format's own canonical schema as a schema node (sort 0x53)",
       "file": "schema-vector-document.json",
       "name": "schema-vector-document",
-      "root": "d2ea192d76dafe3d90680abc6a99649d8f1356028d7f9d3f8248f9e0f4a7901d"
+      "root": "cf674c2dfdbd3582661e2f96a026969d31956880a8912f7c1ddd1bb613ad968c"
     }
   ]
 }

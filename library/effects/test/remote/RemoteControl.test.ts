@@ -6,6 +6,7 @@ import {
   decodePresenceDocument,
   encodeKeyListDocument,
   encodePresenceDocument,
+  keyListDocumentEncodedLength,
 } from "../../src/internal/remoteControl.ts"
 
 const key = (byte: number): ContentId => ContentId.make(byte.toString(16).padStart(2, "0").repeat(32))
@@ -24,6 +25,16 @@ it.effect("the key-list framing is canonical, exact, and order preserving", () =
   trailing.set(encoded)
   expect(Option.isNone(decodeKeyListDocument(trailing))).toBe(true)
 }))
+
+it("key-list encoded length is exact without allocation and rejects non-u32 counts", () => {
+  expect(keyListDocumentEncodedLength(0)).toEqual(Option.some(4))
+  expect(keyListDocumentEncodedLength(2)).toEqual(Option.some(68))
+  expect(keyListDocumentEncodedLength(0xffff_ffff))
+    .toEqual(Option.some(4 + 0xffff_ffff * 32))
+  expect(Option.isNone(keyListDocumentEncodedLength(-1))).toBe(true)
+  expect(Option.isNone(keyListDocumentEncodedLength(0x1_0000_0000))).toBe(true)
+  expect(Option.isNone(keyListDocumentEncodedLength(1.5))).toBe(true)
+})
 
 it.effect("the presence framing is canonical, exact, and positionally aligned", () => Effect.sync(() => {
   const present = key(0x12)

@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && bun scripts/rewrite-declaration-imports.ts",
+    "build": "bun scripts/clean-dist.ts && tsc -p tsconfig.build.json && bun scripts/rewrite-declaration-imports.ts",
     "prepack": "bun run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "oxlint --config oxlint.config.ts src scratch lint",
@@ -35,7 +35,7 @@
     "@effect/tsgo": "0.38.0",
     "@effect/vitest": "4.0.0-rc.111",
     "@types/bun": "1.4.0",
-    "effect-oxlint": "^0.3.3",
+    "effect-oxlint": "0.3.3",
     "oxlint": "1.80.0",
     "oxlint-plugin-effect": "0.11.0",
     "oxlint-tsgolint": "7.0.2001",

@@ -6,8 +6,8 @@
     "Grammar": 46,
     "IR": 78,
     "Lang": 129,
-    "Schema": 157,
-    "Values": 138,
+    "Schema": 161,
+    "Values": 142,
     "Vectors": 65
   },
   "axiomCensus": {
@@ -28,13 +28,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 75,
+    "Cas.Schema.Ast": 79,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 778,
-  "documented": 308,
+  "declarations": 783,
+  "documented": 313,
   "library": "Cas",
   "modules": [
     {
@@ -4839,8 +4839,8 @@
       ]
     },
     {
-      "declarations": 21,
-      "documented": 16,
+      "declarations": 26,
+      "documented": 21,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
         {
@@ -4848,6 +4848,14 @@
           "documented": true,
           "kind": "def",
           "name": "Cas.Schema.Ast.envelope",
+          "signature": "Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.legacyEnvelope",
           "signature": "Cas.Schema.Ast → Cas.Json.Value",
           "touches": ["Schema", "Values"]
         },
@@ -4879,7 +4887,23 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.Ast.representationDocument",
+          "signature": "Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.Ast.toJson",
+          "signature": "Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.toRepresentationJson",
           "signature": "Cas.Schema.Ast → Cas.Json.Value",
           "touches": ["Schema", "Values"]
         },
@@ -4914,15 +4938,6 @@
           "touches": ["Schema", "Values"]
         },
         {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
-          "carriers": ["Cas.Schema.Ast"],
-          "documented": true,
-          "kind": "theorem",
-          "name": "Cas.Schema.envelope_canonical",
-          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.envelope.Canonical",
-          "touches": ["Schema", "Values"]
-        },
-        {
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
@@ -4950,6 +4965,38 @@
         },
         {
           "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.fieldsToRepresentationJson",
+          "signature": "List (String × Bool × Cas.Schema.Ast) → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.legacyEnvelope_canonical",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.legacyEnvelope.Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.legacyEnvelope_renderPlain",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Json.renderCompact a.legacyEnvelope = Cas.Json.renderPlain a.legacyEnvelope",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.legacySchemaRevision",
+          "signature": "Nat"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.ofJsonFields",
@@ -4973,15 +5020,6 @@
           "name": "Cas.Schema.ofJson_toJson",
           "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofJson a.toJson = some a",
           "touches": ["Schema"]
-        },
-        {
-          "axioms": ["Classical.choice", "Quot.sound", "propext"],
-          "carriers": ["Cas.Schema.Ast"],
-          "documented": true,
-          "kind": "theorem",
-          "name": "Cas.Schema.payload_renderPlain",
-          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.payload = Cas.Json.renderPlain a.envelope",
-          "touches": ["Schema", "Values"]
         },
         {
           "documented": true,
@@ -6228,7 +6266,7 @@
   ],
   "totals": {
     "class": 3,
-    "def": 459,
+    "def": 464,
     "inductive": 23,
     "instance": 36,
     "structure": 29,

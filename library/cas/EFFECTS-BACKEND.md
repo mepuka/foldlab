@@ -72,8 +72,12 @@ presentations*, both pinned). Our position is more conservative than
 the frontier and cheaper than Unison's: F3's defunctionalized code
 points carry **no binder metatheory** (grammar-grill ruling 4), so
 program identity is canonical-spelling structural identity — the same
-discipline the schema plane just proved (`encode_canonical`,
-`payload_renderPlain`), below even α. If binders ever enter, Blaauwbroek
+discipline as the schema plane's structural code identity. The revision-0
+tagged projection has the `legacyEnvelope_canonical` and
+`legacyEnvelope_renderPlain` theorems; revision 1's Effect-native persistent
+representation is held by the independent Lean/TypeScript byte pin while its
+corresponding byte theorem remains pending. This remains below even α. If
+binders ever enter, Blaauwbroek
 et al. is the named template, not an unknown.
 
 **R5 — Equivalence is a certificate; the conformance gate is word
@@ -303,7 +307,7 @@ model's own bytes.
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six
-   canonical-schema mirrors of the vector wire format are generated
+   native Effect Schema mirrors of the vector wire format are generated
    (`Cas/Backend/Ts.lean` fragment + fixed-layout printer with
    `Style.house0`, `EmitAst.lean` lowering with structural sharing,
    `lake exe emitwire` under the byte-identity gate in `check:cas`);

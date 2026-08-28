@@ -59,7 +59,14 @@ export type {
 // The file backend: a store root on any `FileSystem` realization.
 export {
   layerFileBackend,
+  layerFileBackendFromFileUrl,
+  layerFileBackendWithPath,
   makeFileBackend,
+  makeFileBackendFromFileUrl,
+  makeFileBackendWithPath,
+  normalizeStoreRoot,
+  normalizeStoreRootWith,
+  storeRootFromFileUrl,
   StoreRoot,
 } from "./cas/FileBackend.ts"
 
@@ -86,6 +93,8 @@ export {
   layerAddressSha256Live,
   layerCryptoWebCrypto,
   layerFile,
+  layerFileFromFileUrl,
+  layerFileWithPath,
   layerMemory,
   layerMemoryLive,
   layerMemoryWith,
