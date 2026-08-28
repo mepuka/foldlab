@@ -145,6 +145,11 @@ it.effect("publish verifies the declared closure server-side and is idempotent",
       rawPut(endpoint.authority, `/roots/${parentId}`, keyList([childId])))
     expect(early.status).toBe(409)
 
+    // Root presence is a plain GET: absent until published.
+    const unpublished = yield* Effect.promise(() =>
+      fetch(`${endpoint.authority}/roots/${parentId}`, { headers: profileHeaders }))
+    expect(unpublished.status).toBe(404)
+
     yield* Effect.promise(() => rawPut(endpoint.authority, `/cas/${childId}`, childBytes))
     yield* Effect.promise(() => rawPut(endpoint.authority, `/cas/${parentId}`, parentBytes))
 
@@ -155,6 +160,11 @@ it.effect("publish verifies the declared closure server-side and is idempotent",
       rawPut(endpoint.authority, `/roots/${parentId}`, keyList([childId])))
     expect(republished.status).toBe(204)
     expect(endpoint.observe().publishedRoots).toEqual([parentId, parentId])
+
+    const present = yield* Effect.promise(() =>
+      fetch(`${endpoint.authority}/roots/${parentId}`, { headers: profileHeaders }))
+    expect({ status: present.status }).toEqual({ status: 204 })
+    expect((yield* Effect.promise(() => present.arrayBuffer())).byteLength).toBe(0)
   })))
 
 it.effect("presence answers positionally over the admitted set", () =>

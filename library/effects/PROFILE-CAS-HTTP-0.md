@@ -140,6 +140,14 @@ verification is OPTIONAL at `/0`; the client gate is the law.
 Publishing an identical root and closure again is an idempotent
 acceptance.
 
+`GET {authority}/roots/{hex}` is the additive root-presence read:
+`204` with a closed empty body when the root stands published at this
+authority, `404` otherwise. The request carries no body and no media
+type; the operation falls in §9's read class, so it is served
+anonymously wherever reads are. Root presence is registry fact only —
+it admits nothing about the closure's bytes, which remain
+load-verified like every read.
+
 ## 8. Caller surface (implemented — W6)
 
 The three primitives land on the streamed-transfer service,

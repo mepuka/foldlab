@@ -5,7 +5,7 @@
  * decoding consumes the input exactly and therefore returns the one canonical
  * document whose encoding is the original byte string.
  */
-import { Option, Schema } from "effect"
+import { Match, Option, pipe, Schema } from "effect"
 import type { Bytes } from "./merkleChunk.ts"
 import type { DInput } from "./merkleDecoder.ts"
 
@@ -55,7 +55,7 @@ const requireAddress = (address: Address32): void => {
 }
 
 const decodeByteInput = (input: ByteInput): Option.Option<Bytes> =>
-  Schema.decodeUnknownOption(ByteArraySchema)(Array.from(input))
+  Schema.decodeOption(ByteArraySchema)(Array.from(input))
 
 export const encodeNat32 = (value: number): Bytes => {
   requireUInt32(value)
@@ -134,20 +134,23 @@ export const decodeOpening = (input: ByteInput): Option.Option<OpeningDoc> => {
   })
 }
 
-export const encodeItem = (item: DInput<Address32>): Bytes => {
-  switch (item._tag) {
-    case "SkipNode":
-      return [0]
-    case "ChunkNode":
+export const encodeItem: (item: DInput<Address32>) => Bytes = pipe(
+  Match.type<DInput<Address32>>(),
+  Match.withReturnType<Bytes>(),
+  Match.tagsExhaustive({
+    ChunkNode: (item) => {
       requireUInt32(item.bytes.length)
       requireBytes(item.bytes)
       return [1, ...encodeNat32(item.bytes.length), ...item.bytes]
-    case "ParentNode":
+    },
+    ParentNode: (item) => {
       requireAddress(item.left)
       requireAddress(item.right)
       return [2, ...item.left, ...item.right]
-  }
-}
+    },
+    SkipNode: () => [0],
+  }),
+)
 
 const readItems = (
   bytes: Bytes,

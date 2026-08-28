@@ -14,9 +14,16 @@
  */
 import { it } from "@effect/vitest"
 import { Effect, Option, Schema } from "effect"
+import {
+  ByteReader,
+  ByteWriter,
+  RootStore,
+  type ByteReaderShape,
+  type ByteWriterShape,
+  type RootStoreShape,
+} from "../../src/cas/Backend.ts"
 import { ContentId } from "../../src/cas/Node.ts"
 import type { CasAddress } from "../../src/cas/Store.ts"
-import { CasServerBackend } from "../../src/server/Backend.ts"
 import { makeCasServerCore } from "../../src/server/Core.ts"
 import {
   CasOutcome,
@@ -123,11 +130,12 @@ const toyAddress: CasAddress = {
 
 /** A memory backend that also reifies every storage event, in the row
  * vocabulary — the implementation-side mirror of the model's traced
- * handler. */
+ * handler, answering all three seams over one shared state. */
 const makeRecordingBackend = () => {
   const nodes = new Map<ContentId, Uint8Array>()
+  const published = new Set<ContentId>()
   const events: Array<StorageEvent> = []
-  const shape: CasServerBackend["Service"] = {
+  const reader: ByteReaderShape = {
     loadBytes: (address) => Effect.sync(() => {
       const resident = nodes.get(address)
       events.push({
@@ -145,15 +153,21 @@ const makeRecordingBackend = () => {
       events.push({ _tag: "Presence", addresses, answer })
       return answer
     }),
-    publishRoot: (root) => Effect.sync(() => {
-      events.push({ _tag: "PublishRoot", root })
-    }),
+  }
+  const writer: ByteWriterShape = {
     putBytes: (address, bytes) => Effect.sync(() => {
       events.push({ _tag: "PutBytes", address, bytes: bytes.slice() })
       if (!nodes.has(address)) nodes.set(address, bytes.slice())
     }),
   }
-  return { events, shape }
+  const roots: RootStoreShape = {
+    publish: (root) => Effect.sync(() => {
+      events.push({ _tag: "PublishRoot", root })
+      published.add(root)
+    }),
+    list: Effect.sync(() => [...published]),
+  }
+  return { events, reader, writer, roots }
 }
 
 /** Project an implementation outcome onto the row vocabulary — the
@@ -173,6 +187,8 @@ const outcomeView = CasOutcome.$match({
   NodeBytes: ({ bytes }) => ({ _tag: "NodeBytes", bytes }) as const,
   Presence: ({ statuses }) => ({ _tag: "Presence", statuses }) as const,
   Published: () => ({ _tag: "Published" }) as const,
+  RootAbsent: () => ({ _tag: "RootAbsent" }) as const,
+  RootPublished: () => ({ _tag: "RootPublished" }) as const,
 })
 
 it.effect("SRV-001 replays every scripted session through the semantic core", () =>
@@ -181,7 +197,11 @@ it.effect("SRV-001 replays every scripted session through the semantic core", ()
     const core = yield* makeCasServerCore(
       { maxBatchKeys: 4, maxNodeBytes: 128 },
       toyAddress,
-    ).pipe(Effect.provideService(CasServerBackend, recording.shape))
+    ).pipe(
+      Effect.provideService(ByteReader, recording.reader),
+      Effect.provideService(ByteWriter, recording.writer),
+      Effect.provideService(RootStore, recording.roots),
+    )
 
     const outcomes = []
     for (const request of row.input.requests) {

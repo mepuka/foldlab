@@ -55,12 +55,12 @@ export const encodeCapabilityDocument = (
 export const decodeCapabilityDocument = (
   input: Uint8Array | ReadonlyArray<number>,
 ): Option.Option<RemoteCapabilitiesType> => {
-  const decodedBytes = Schema.decodeUnknownOption(CapabilityDocumentBytes)(Array.from(input))
+  const decodedBytes = Schema.decodeOption(CapabilityDocumentBytes)(Array.from(input))
   if (Option.isNone(decodedBytes)) return Option.none()
 
   const bytes = Uint8Array.from(decodedBytes.value)
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  const decodedLimits = Schema.decodeUnknownOption(RemoteCapabilities)({
+  const decodedLimits = Schema.decodeOption(RemoteCapabilities)({
     maxBatchKeys: view.getUint32(0, false),
     maxBlobBytes: view.getUint32(4, false),
   }, { onExcessProperty: "error" })
@@ -102,7 +102,7 @@ export const encodeKeyListDocument = (
 export const decodeKeyListDocument = (
   input: Uint8Array | ReadonlyArray<number>,
 ): Option.Option<ReadonlyArray<ContentIdType>> => {
-  const decodedBytes = Schema.decodeUnknownOption(ByteArray)(Array.from(input))
+  const decodedBytes = Schema.decodeOption(ByteArray)(Array.from(input))
   if (Option.isNone(decodedBytes) || decodedBytes.value.length < 4) return Option.none()
   const count = readUint32(decodedBytes.value, 0)
   if (decodedBytes.value.length !== 4 + count * 32) return Option.none()
@@ -110,7 +110,7 @@ export const decodeKeyListDocument = (
   const keys: Array<ContentIdType> = []
   for (let index = 0; index < count; index += 1) {
     const offset = 4 + index * 32
-    const key = Schema.decodeUnknownOption(ContentId)(
+    const key = Schema.decodeOption(ContentId)(
       Encoding.encodeHex(Uint8Array.from(decodedBytes.value.slice(offset, offset + 32))),
     )
     if (Option.isNone(key)) return Option.none()
@@ -121,11 +121,11 @@ export const decodeKeyListDocument = (
     : Option.none()
 }
 
-const presenceByte: Record<PresenceStatus, number> = {
+const presenceByte = {
   missing: 0,
   present: 1,
   failed: 2,
-}
+} satisfies Record<PresenceStatus, number>
 
 /** Encode the closed positional status document, one byte per requested key. */
 export const encodePresenceDocument = (
@@ -145,7 +145,7 @@ export const decodePresenceDocument = (
   keys: ReadonlyArray<ContentIdType>,
   input: Uint8Array | ReadonlyArray<number>,
 ): Option.Option<DecodedPresenceDocument> => {
-  const statuses = Schema.decodeUnknownOption(ByteArray)(Array.from(input))
+  const statuses = Schema.decodeOption(ByteArray)(Array.from(input))
   if (Option.isNone(statuses) || statuses.value.length !== keys.length) return Option.none()
 
   const present: Array<ContentIdType> = []

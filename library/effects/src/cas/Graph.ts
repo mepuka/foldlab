@@ -1,0 +1,137 @@
+/**
+ * Graph laws over the read seam alone — closure enumeration and full
+ * integrity verification, usable against any backend, read-only hosts
+ * included. Content addressing makes the reachable graph a DAG; walks
+ * emit children-first (a valid upload order) and deduplicate shared
+ * children.
+ *
+ * `closure` decodes only far enough to follow references. `verify` is
+ * the audit: every reachable node re-verified under the store law's
+ * read checks — recomputed address, canonical decode, known kind — so
+ * pointing it at an untrusted host answers exactly whether that host
+ * faithfully serves the graph.
+ */
+import { Crypto, Effect } from "effect"
+import { Option } from "effect"
+import {
+  ByteReader,
+  type BackendFailure,
+  type ByteReaderShape,
+} from "./Backend.ts"
+import {
+  ContentNotFound,
+  DanglingReference,
+  NonCanonicalBytes,
+  StoreFailure,
+  type CasError,
+  type ContentId,
+} from "./Node.ts"
+import { decodeCasNode } from "../internal/casCodec.ts"
+import {
+  makeSha256Address,
+  verifyNodeBytes,
+  type CasAddress,
+} from "./Store.ts"
+
+const backendFailure = (failure: BackendFailure): StoreFailure =>
+  new StoreFailure({ reason: `Backend failed: ${failure.reason}` })
+
+/** Bytes at an id, absence typed: a missing root is `ContentNotFound`,
+ * a missing child is the dangling reference it witnesses. */
+const residentBytes = (
+  reader: ByteReaderShape,
+  id: ContentId,
+  isRoot: boolean,
+): Effect.Effect<Uint8Array, CasError> =>
+  reader.loadBytes(id).pipe(
+    Effect.mapError(backendFailure),
+    Effect.flatMap((resident) => Option.match(resident, {
+      onNone: () => Effect.fail<CasError>(isRoot
+        ? new ContentNotFound({ id })
+        : new DanglingReference({ missing: id })),
+      onSome: (bytes) => Effect.succeed(bytes),
+    })),
+  )
+
+const walkWith = (
+  loadRefs: (
+    reader: ByteReaderShape,
+    id: ContentId,
+    isRoot: boolean,
+  ) => Effect.Effect<ReadonlyArray<ContentId>, CasError>,
+  name: string,
+) =>
+  Effect.fn(name)(function* (root: ContentId) {
+    const reader = yield* ByteReader
+    const ordered: Array<ContentId> = []
+    const pushed = new Set<ContentId>([root])
+    interface Frame {
+      readonly id: ContentId
+      refs: ReadonlyArray<ContentId> | undefined
+      next: number
+    }
+    const stack: Array<Frame> = [{ id: root, next: 0, refs: undefined }]
+
+    while (stack.length > 0) {
+      const frame = stack.at(-1)!
+      if (frame.refs === undefined) {
+        frame.refs = yield* loadRefs(reader, frame.id, ordered.length === 0
+          && stack.length === 1)
+      }
+      if (frame.next < frame.refs.length) {
+        const child = frame.refs[frame.next]!
+        frame.next += 1
+        if (!pushed.has(child)) {
+          pushed.add(child)
+          stack.push({ id: child, next: 0, refs: undefined })
+        }
+        continue
+      }
+      stack.pop()
+      ordered.push(frame.id)
+    }
+    return ordered as ReadonlyArray<ContentId>
+  })
+
+/** Every id reachable from `root` through references, children-first
+ * and deduplicated — root last. Decodes only far enough to follow
+ * references; `verify` is the full audit. */
+export const closure: (
+  root: ContentId,
+) => Effect.Effect<ReadonlyArray<ContentId>, CasError, ByteReader> = walkWith(
+  (reader, id, isRoot) => residentBytes(reader, id, isRoot).pipe(
+    Effect.flatMap((bytes) => Option.match(decodeCasNode(bytes), {
+      onNone: () => Effect.fail(new NonCanonicalBytes({ id })),
+      onSome: (node) => Effect.succeed(node.refs.map((ref) => ref.id)),
+    })),
+  ),
+  "CasGraph.closure",
+)
+
+/** The audit under an explicit digest — the model quantifies over the
+ * address function, and so does the walk. */
+export const verifyWith = (
+  address: CasAddress,
+): (
+  root: ContentId,
+) => Effect.Effect<ReadonlyArray<ContentId>, CasError, ByteReader> => walkWith(
+  (reader, id, isRoot) => residentBytes(reader, id, isRoot).pipe(
+    Effect.flatMap((bytes) => verifyNodeBytes(address, id, bytes)),
+    Effect.map((node) => node.refs.map((ref) => ref.id)),
+  ),
+  "CasGraph.verify",
+)
+
+/** Re-verify every node reachable from `root` under scheme-0 SHA-256:
+ * recomputed address, canonical decode, known kind. Succeeds with the
+ * children-first closure exactly when the backend faithfully serves
+ * the whole graph. */
+export const verify = (
+  root: ContentId,
+): Effect.Effect<
+  ReadonlyArray<ContentId>,
+  CasError,
+  ByteReader | Crypto.Crypto
+> => makeSha256Address.pipe(
+  Effect.flatMap((address) => verifyWith(address)(root)),
+)

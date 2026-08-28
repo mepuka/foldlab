@@ -662,12 +662,14 @@ it("pin DX-5: describeService validates prefixes and revisions", () => {
   expect(() => describeService<DupShape>("pins/negative")(spec(-1))).toThrowError(/revision/)
 })
 
-it("lock DX-7: the barrel is exactly the two plane doors", () => {
-  expect(Object.keys(barrel).sort()).toEqual(["Cas", "Replay"])
+it("lock DX-7: the barrel is exactly the three plane doors", () => {
+  expect(Object.keys(barrel).sort()).toEqual(["Cas", "Replay", "Server"])
   expect("value" in barrel.Cas).toBe(true)
   expect("restartable" in barrel.Cas).toBe(true)
   expect("reduce" in barrel.Replay).toBe(true)
   expect("replayable" in barrel.Replay).toBe(true)
+  expect("Core" in barrel.Server).toBe(true)
+  expect("httpApp" in barrel.Server).toBe(true)
   // The reducer clause helpers stay module-internal.
   expect("absorb" in barrel.Replay).toBe(false)
   expect("invokeRecord" in barrel.Replay).toBe(false)

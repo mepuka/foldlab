@@ -16,7 +16,9 @@ import {
   Data,
   Effect,
   Layer,
+  Match,
   Option,
+  Predicate,
   Random,
   Result,
   References,
@@ -54,11 +56,11 @@ import type {
   Invocation,
   MismatchCategory,
   Outcome,
-  ReplayMode,
   SessionOutcome,
   SessionOptions,
   SessionResult,
   SessionState,
+  StepOut,
   Terminal,
   TerminalSchemas,
 } from "./Session.ts"
@@ -141,21 +143,21 @@ const encodeOperationValue = <S extends OperationSchema>(
   schema: S,
   value: S["Type"],
 ): Effect.Effect<string, StoreFailure> =>
-  storageEffect("Operation value encoding failed", () => {
-    const encoded = Schema.encodeUnknownResult(schema)(value)
-    if (encoded._tag === "Failure") throw new InternalStorageError(String(encoded.failure))
-    return encodeStoredValue(encoded.success)
-  })
+  storageEffect("Operation value encoding failed", () =>
+    encodeStoredValue(Result.getOrThrowWith(
+      Schema.encodeUnknownResult(schema)(value),
+      (failure) => new InternalStorageError(String(failure)),
+    )))
 
 const decodeOperationValue = <S extends OperationSchema>(
   schema: S,
   value: string,
 ): Effect.Effect<S["Type"], StoreFailure> =>
-  storageEffect("Operation value decoding failed", () => {
-    const decoded = Schema.decodeUnknownResult(schema)(decodeStoredValue(value))
-    if (decoded._tag === "Failure") throw new InternalStorageError(String(decoded.failure))
-    return decoded.success
-  })
+  storageEffect("Operation value decoding failed", () =>
+    Result.getOrThrowWith(
+      Schema.decodeUnknownResult(schema)(decodeStoredValue(value)),
+      (failure) => new InternalStorageError(String(failure)),
+    ))
 
 const appendDecisions = (
   active: ActiveSession,
@@ -268,36 +270,30 @@ const encodeTerminalValue = <A>(
   schema: Schema.Codec<A, unknown, never, never> | undefined,
 ): Effect.Effect<StoredTerminalValue, StoreFailure> => {
   if (schema === undefined) {
-    return Effect.sync(() => {
-      try {
-        return encodeStoredValue(value)
-      } catch {
-        return unrepresentable()
-      }
-    })
+    return Effect.sync(() => encodeStoredValue(value)).pipe(
+      Effect.catchDefect(() => Effect.succeed(unrepresentable())),
+    )
   }
-  return storageEffect("Witness terminal encoding failed", () => {
-    const encoded = Schema.encodeUnknownResult(schema)(value)
-    if (encoded._tag === "Failure") {
-      throw new InternalStorageError(String(encoded.failure))
-    }
-    return encodeStoredValue(encoded.success)
-  })
+  return storageEffect("Witness terminal encoding failed", () =>
+    encodeStoredValue(Result.getOrThrowWith(
+      Schema.encodeUnknownResult(schema)(value),
+      (failure) => new InternalStorageError(String(failure)),
+    )))
 }
+
+type StoredTerminal =
+  | { readonly _tag: "Succeeded"; readonly value: StoredTerminalValue }
+  | { readonly _tag: "Failed"; readonly error: StoredTerminalValue }
 
 const makeStoredTerminal = <A, E>(
   terminal: Terminal<A, E>,
   schemas: TerminalSchemas<A, E> | undefined,
-): Effect.Effect<
-  | { readonly _tag: "Succeeded"; readonly value: StoredTerminalValue }
-  | { readonly _tag: "Failed"; readonly error: StoredTerminalValue },
-  StoreFailure
-> => terminal._tag === "Succeeded"
+): Effect.Effect<StoredTerminal, StoreFailure> => terminal._tag === "Succeeded"
   ? encodeTerminalValue(terminal.value, schemas?.success).pipe(
-      Effect.map((value) => ({ _tag: "Succeeded" as const, value })),
+      Effect.map((value): StoredTerminal => ({ _tag: "Succeeded", value })),
     )
   : encodeTerminalValue(terminal.error, schemas?.failure).pipe(
-      Effect.map((error) => ({ _tag: "Failed" as const, error })),
+      Effect.map((error): StoredTerminal => ({ _tag: "Failed", error })),
     )
 
 type WitnessOutcome<A, E> = SessionOutcome<A, E> | {
@@ -309,30 +305,36 @@ const makeStoredOutcome = <A, E>(
   outcome: WitnessOutcome<A, E>,
   schemas: TerminalSchemas<A, E> | undefined,
 ): Effect.Effect<StoredWitness["outcome"], StoreFailure> =>
-  Effect.gen(function* () {
-    switch (outcome._tag) {
-      case "Completed":
-        return {
+  Match.value(outcome).pipe(Match.tagsExhaustive({
+    Completed: (completed) =>
+      makeStoredTerminal(completed.terminal, schemas).pipe(
+        Effect.map((terminal): StoredWitness["outcome"] => ({
           _tag: "Completed",
-          terminal: yield* makeStoredTerminal(outcome.terminal, schemas),
-        }
-      case "Violated":
-        return { _tag: "Violated", service: outcome.service }
-      case "Aborted":
-        return outcome
-      case "Rejected": {
-        if (outcome.terminalSoFar === undefined) {
-          return { _tag: "Rejected", category: outcome.category, at: outcome.at }
-        }
-        return {
-          _tag: "Rejected",
-          category: outcome.category,
-          at: outcome.at,
-          terminalSoFar: yield* makeStoredTerminal(outcome.terminalSoFar, schemas),
-        }
-      }
-    }
-  })
+          terminal,
+        })),
+      ),
+    Violated: (violated) =>
+      Effect.succeed<StoredWitness["outcome"]>({
+        _tag: "Violated",
+        service: violated.service,
+      }),
+    Aborted: (aborted) => Effect.succeed<StoredWitness["outcome"]>(aborted),
+    Rejected: (rejected) =>
+      rejected.terminalSoFar === undefined
+        ? Effect.succeed<StoredWitness["outcome"]>({
+            _tag: "Rejected",
+            category: rejected.category,
+            at: rejected.at,
+          })
+        : makeStoredTerminal(rejected.terminalSoFar, schemas).pipe(
+            Effect.map((terminalSoFar): StoredWitness["outcome"] => ({
+              _tag: "Rejected",
+              category: rejected.category,
+              at: rejected.at,
+              terminalSoFar,
+            })),
+          ),
+  }))
 
 const persistWitness = <A, E>(
   store: CasStoreShape,
@@ -342,14 +344,16 @@ const persistWitness = <A, E>(
   schemas?: TerminalSchemas<A, E>,
 ): Effect.Effect<ContentId, CasError> =>
   Effect.gen(function* () {
-    const raw = {
+    const common = {
       mode: active.state.mode,
       executionId,
       consumed: active.state.cursor,
       trace: active.trace,
       outcome: yield* makeStoredOutcome(outcome, schemas),
-      ...(active.historyRoot === undefined ? {} : { historyRoot: active.historyRoot }),
     }
+    const raw = active.historyRoot === undefined
+      ? common
+      : { ...common, historyRoot: active.historyRoot }
     const witness = yield* StoredWitness.makeEffect(raw).pipe(
       Effect.mapError((issue) => new StoreFailure({
         reason: `Witness validation failed: ${String(issue)}`,
@@ -502,7 +506,14 @@ const invokeInSession = <D extends AnyOperationDescription>(
           transition.state,
           transition.decisions,
         )
-        return Effect.succeed([{ transition, at: current.state.cursor }, next] as const)
+        const step: readonly [
+          {
+            readonly transition: StepOut<string, string, unknown, unknown>
+            readonly at: number
+          },
+          ActiveSession,
+        ] = [{ transition, at: current.state.cursor }, next]
+        return Effect.succeed(step)
       })
       if (invoked.transition.result._tag === "Rejected") {
         // The model refused the invocation — delegation is exclusive, so
@@ -545,73 +556,77 @@ const invokeInSession = <D extends AnyOperationDescription>(
     const replayed = yield* cell.modify<ReplayCellResult<D>, never, never>(
       (current): Effect.Effect<readonly [ReplayCellResult<D>, ActiveSession]> =>
         Effect.gen(function* () {
-      const replayed = reduce(current.state, { _tag: "Invoke", invocation })
-      if (replayed.result._tag === "Rejected") {
-        const next = appendDecisions(current, replayed.state, replayed.decisions)
-        return [{
-          _tag: "Rejected" as const,
-          transport: new MismatchTransport({
-            category: replayed.result.category,
-            at: replayed.result.at,
-          }),
-        }, next] as const
-      }
-      if (replayed.result._tag !== "Substituted") {
-        return yield* Effect.die(new RuntimeTransport({
-          reason: `Replay invocation produced ${replayed.result._tag}`,
-        }))
-      }
+          const stepped = reduce(current.state, { _tag: "Invoke", invocation })
+          if (stepped.result._tag === "Rejected") {
+            const next = appendDecisions(current, stepped.state, stepped.decisions)
+            const rejected: readonly [ReplayCellResult<D>, ActiveSession] = [{
+              _tag: "Rejected",
+              transport: new MismatchTransport({
+                category: stepped.result.category,
+                at: stepped.result.at,
+              }),
+            }, next]
+            return rejected
+          }
+          if (stepped.result._tag !== "Substituted") {
+            return yield* Effect.die(new RuntimeTransport({
+              reason: `Replay invocation produced ${stepped.result._tag}`,
+            }))
+          }
 
-      const recorded = replayed.result.outcome
-      const encoded = recorded._tag === "Success" ? recorded.value : recorded.error
-      if (typeof encoded !== "string") {
-        const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
-        return [{ _tag: "Rejected" as const, transport }, next] as const
-      }
+          const recorded = stepped.result.outcome
+          const encoded = recorded._tag === "Success" ? recorded.value : recorded.error
+          if (!Predicate.isString(encoded)) {
+            const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
+            const rejected: readonly [ReplayCellResult<D>, ActiveSession] = [
+              { _tag: "Rejected", transport },
+              next,
+            ]
+            return rejected
+          }
 
-      if (recorded._tag === "Success") {
-        const decoded = yield* decodeOperationValue(operation.success, encoded).pipe(
-          Effect.match({
-            onFailure: () => ({ _tag: "DecodeFailure" as const }),
-            onSuccess: (value) => ({ _tag: "Decoded" as const, value }),
-          }),
-        )
-        if (decoded._tag === "DecodeFailure") {
-          const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
-          return [{ _tag: "Rejected" as const, transport }, next] as const
-        }
-        return [{ _tag: "Success" as const, value: decoded.value }, appendDecisions(
-          current,
-          replayed.state,
-          replayed.decisions,
-        )] as const
-      }
+          if (recorded._tag === "Success") {
+            const decoded = yield* Effect.result(
+              decodeOperationValue(operation.success, encoded),
+            )
+            if (Result.isFailure(decoded)) {
+              const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
+              const rejected: readonly [ReplayCellResult<D>, ActiveSession] = [
+                { _tag: "Rejected", transport },
+                next,
+              ]
+              return rejected
+            }
+            const substituted: readonly [ReplayCellResult<D>, ActiveSession] = [
+              { _tag: "Success", value: decoded.success },
+              appendDecisions(current, stepped.state, stepped.decisions),
+            ]
+            return substituted
+          }
 
-      const decoded = yield* decodeOperationValue(operation.failure, encoded).pipe(
-        Effect.match({
-          onFailure: () => ({ _tag: "DecodeFailure" as const }),
-          onSuccess: (error) => ({ _tag: "Decoded" as const, error }),
-        }),
-      )
-      if (decoded._tag === "DecodeFailure") {
-        const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
-        return [{ _tag: "Rejected" as const, transport }, next] as const
-      }
-      return [{ _tag: "Failure" as const, error: decoded.error }, appendDecisions(
-        current,
-        replayed.state,
-        replayed.decisions,
-      )] as const
+          const decoded = yield* Effect.result(
+            decodeOperationValue(operation.failure, encoded),
+          )
+          if (Result.isFailure(decoded)) {
+            const [next, transport] = rejectForMismatch(current, "OutcomeInadmissible")
+            const rejected: readonly [ReplayCellResult<D>, ActiveSession] = [
+              { _tag: "Rejected", transport },
+              next,
+            ]
+            return rejected
+          }
+          const substituted: readonly [ReplayCellResult<D>, ActiveSession] = [
+            { _tag: "Failure", error: decoded.success },
+            appendDecisions(current, stepped.state, stepped.decisions),
+          ]
+          return substituted
         }),
     )
-    switch (replayed._tag) {
-      case "Rejected":
-        return yield* Effect.die(replayed.transport)
-      case "Success":
-        return replayed.value
-      case "Failure":
-        return yield* Effect.fail(replayed.error)
-    }
+    return yield* Match.value(replayed).pipe(Match.tagsExhaustive({
+      Rejected: (rejected) => Effect.die(rejected.transport),
+      Success: (substituted) => Effect.succeed(substituted.value),
+      Failure: (failed) => Effect.fail(failed.error),
+    }))
   })
 
 const finishSession = <A, E>(
@@ -647,7 +662,11 @@ const finishSession = <A, E>(
       }))
     }
     const witness = yield* persistWitness(store, executionId, next, outcome, schemas)
-    return [sessionResult(next, outcome, witness), next] as const
+    const finished: readonly [SessionResult<A, E>, ActiveSession] = [
+      sessionResult(next, outcome, witness),
+      next,
+    ]
+    return finished
   }))
 
 const makeReplayRun = (
@@ -714,10 +733,12 @@ const makeReplayRun = (
                 active,
                 outcome,
                 options.terminal,
-              ).pipe(Effect.map((witness) => [
-                sessionResult<A, E>(active, outcome, witness),
-                active,
-              ] as const)))
+              ).pipe(Effect.map(
+                (witness): readonly [SessionResult<A, E>, ActiveSession] => [
+                  sessionResult<A, E>(active, outcome, witness),
+                  active,
+                ],
+              )))
           }
           if (defect instanceof AmbientTransport) {
             const outcome: SessionOutcome<A, E> = {
@@ -731,10 +752,12 @@ const makeReplayRun = (
                 active,
                 outcome,
                 options.terminal,
-              ).pipe(Effect.map((witness) => [
-                sessionResult<A, E>(active, outcome, witness),
-                active,
-              ] as const)))
+              ).pipe(Effect.map(
+                (witness): readonly [SessionResult<A, E>, ActiveSession] => [
+                  sessionResult<A, E>(active, outcome, witness),
+                  active,
+                ],
+              )))
           }
           return Effect.die(defect)
         }),
@@ -746,9 +769,9 @@ const makeReplayRun = (
           if (!Cause.hasDies(exit.cause) && !Cause.hasInterrupts(exit.cause)) {
             return Effect.void
           }
-          const reason = Cause.hasInterrupts(exit.cause)
-            ? "Interrupted" as const
-            : "Defect" as const
+          const reason: "Defect" | "Interrupted" = Cause.hasInterrupts(exit.cause)
+            ? "Interrupted"
+            : "Defect"
           return Effect.gen(function* () {
             const active = yield* cell.read
             const sink = yield* WitnessSink

@@ -30,7 +30,7 @@ export namespace CasBlob {
   export const BlobNodeTag = BlobNodeTagValue
   export const BlobManifestTag = BlobManifestTagValue
   export const ReferencedChunkRecipe = ReferencedChunkRecipeValue
-  export const ChunkSize = 65_536 as const
+  export const ChunkSize = 65_536
 
   const MaxUint32 = 0xffff_ffff
   const KnownRecipes = new Set([0, ReferencedChunkRecipe])
@@ -122,7 +122,7 @@ export namespace CasBlob {
   }
 
   export class Service extends Context.Service<Service, Shape>()(
-    "foldlab/effect-replay/CasBlob",
+    "foldlab/cas/CasBlob",
   ) {}
 
   const readNat32 = (source: Uint8Array, offset: number): number =>
@@ -245,7 +245,7 @@ export namespace CasBlob {
           id,
         ))
       }
-      return Effect.succeed([parent.refs[0].id, parent.refs[1].id] as const)
+      return Effect.succeed<readonly [ContentId, ContentId]>([parent.refs[0].id, parent.refs[1].id])
     }))
 
   const expectedChunkLength = (plan: ReadPlan, index: number): number => {
@@ -380,7 +380,7 @@ export namespace CasBlob {
     ): Stream.Stream<Uint8Array, CasError | BlobError> => {
       const end = range.offset + range.length
       if (range.offset < 0n || range.length < 0n || end > plan.totalBytes) {
-        return Stream.fail(new RangeError({
+        return Stream.fail(new CasBlob.RangeError({
           offset: range.offset,
           length: range.length,
           totalBytes: plan.totalBytes,

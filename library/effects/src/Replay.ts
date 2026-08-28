@@ -72,3 +72,13 @@ export type {
 // production compositions override the reference.
 export { WitnessSink } from "./replay/WitnessSink.ts"
 export type { WitnessReceipt, WitnessSinkShape } from "./replay/WitnessSink.ts"
+
+// Eager service hydration from typed CAS value projections — the
+// replayable kits' companion (lowercase `service`, a factory; the
+// capitalized `Service` above is the session tag).
+export { service } from "./replay/Service.ts"
+export type {
+  CasService,
+  EffectServiceOptions,
+  SyncServiceOptions,
+} from "./replay/Service.ts"

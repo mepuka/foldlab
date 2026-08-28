@@ -6,7 +6,7 @@
  * correspondence review can align both files rule by rule. This module owns
  * no Effect service and performs no I/O.
  */
-import { Equal, HashMap, HashSet, Option } from "effect"
+import { Equal, HashMap, HashSet, Match, Option, pipe } from "effect"
 
 export interface Budgets {
   readonly maxBytes: number
@@ -272,7 +272,7 @@ export const uploadEvent = <K, B>(
       state: {
         ...state,
         inFlight: HashMap.remove(state.inFlight, id),
-        rejected: HashSet.add(state.rejected, [key, bytes] as const),
+        rejected: HashSet.add<readonly [K, B]>(state.rejected, [key, bytes]),
       },
       commands: [],
       decisions: [
@@ -288,7 +288,7 @@ export const uploadEvent = <K, B>(
       state: {
         ...state,
         inFlight: HashMap.remove(state.inFlight, id),
-        rejected: HashSet.add(state.rejected, [key, bytes] as const),
+        rejected: HashSet.add<readonly [K, B]>(state.rejected, [key, bytes]),
       },
       commands: [],
       decisions: [
@@ -336,15 +336,17 @@ export const accountsFor = <K, B>(
   })
 }
 
+interface PresenceNote<K, B> {
+  readonly state: MachineState<K, B>
+  readonly found: ReadonlyArray<K>
+  readonly missing: ReadonlyArray<K>
+}
+
 /** Record advisory presence data without admitting or negatively caching anything. */
 export const notePresence = <K, B>(
   state: MachineState<K, B>,
   results: ReadonlyArray<KeyStatus<K, B>>,
-): {
-  readonly state: MachineState<K, B>
-  readonly found: ReadonlyArray<K>
-  readonly missing: ReadonlyArray<K>
-} => {
+): PresenceNote<K, B> => {
   let reportedPresent = state.reportedPresent
   let reportedMissing = state.reportedMissing
   const found: Array<K> = []
@@ -503,7 +505,7 @@ export const step = <K, B>(
           decisions: [{ op: input.id, decision: { _tag: "BudgetRejected", key } }],
         }
       }
-      if (HashSet.has(state.rejected, [key, bytes] as const)) {
+      if (HashSet.has<readonly [K, B]>(state.rejected, [key, bytes])) {
         return {
           result: { _tag: "RepeatRefused", key },
           state,
@@ -542,7 +544,7 @@ export const step = <K, B>(
         result: { _tag: "IntegrityRejected", key },
         state: {
           ...state,
-          rejected: HashSet.add(state.rejected, [key, bytes] as const),
+          rejected: HashSet.add<readonly [K, B]>(state.rejected, [key, bytes]),
         },
         commands: [],
         decisions: [
@@ -649,21 +651,23 @@ export const overBudget = <K, B>(
   params: Params<K, B>,
   state: MachineState<K, B>,
   input: MInput<K, B>,
-): boolean => {
-  switch (input._tag) {
-    case "Request":
-      return input.op._tag === "Upload"
-        && Option.isNone(HashMap.get(state.inFlight, input.id))
-        && params.size(input.op.bytes) > params.budgets.maxBytes
-    case "FromWire": {
-      if (input.event._tag !== "Ok") return false
-      const current = HashMap.get(state.inFlight, input.id)
-      return Option.isSome(current)
-        && current.value._tag === "Loading"
-        && input.event.declared > params.budgets.maxBytes
-    }
-  }
-}
+): boolean =>
+  pipe(
+    Match.type<MInput<K, B>>(),
+    Match.tagsExhaustive({
+      Request: (request) =>
+        request.op._tag === "Upload"
+          && Option.isNone(HashMap.get(state.inFlight, request.id))
+          && params.size(request.op.bytes) > params.budgets.maxBytes,
+      FromWire: (fromWire) => {
+        if (fromWire.event._tag !== "Ok") return false
+        const current = HashMap.get(state.inFlight, fromWire.id)
+        return Option.isSome(current)
+          && current.value._tag === "Loading"
+          && fromWire.event.declared > params.budgets.maxBytes
+      },
+    }),
+  )(input)
 
 /** Whether a result is the budget rejection. */
 export const isBudgetRejection = <K, B>(result: MResult<K, B>): boolean =>

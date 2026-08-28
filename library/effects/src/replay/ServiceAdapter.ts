@@ -76,10 +76,13 @@ interface RegisteredKit {
 const coreKits = new WeakMap<object, RegisteredKit>()
 
 type RuntimeMethod = (
-  request: unknown,
-) => Effect.Effect<unknown, unknown>
+  request: AnyOperationDescription["request"]["Type"],
+) => Effect.Effect<
+  AnyOperationDescription["success"]["Type"],
+  AnyOperationDescription["failure"]["Type"]
+>
 
-const isWrappedService = (value: unknown): boolean =>
+const isWrappedService = <S>(value: S): boolean =>
   Predicate.hasProperty(value, WrappedServiceBrand)
   && value[WrappedServiceBrand] === true
 
@@ -96,7 +99,9 @@ const brand = <S>(service: S): S => {
 const descriptionKeys = <S>(
   descriptions: ServiceDescriptions<S>,
 ): ReadonlyArray<keyof S> =>
-  Reflect.ownKeys(descriptions) as unknown as ReadonlyArray<keyof S>
+  Reflect.ownKeys(descriptions).filter(
+    (key): key is Extract<keyof S, string | symbol> => key in descriptions,
+  )
 
 const descriptionAt = <S>(
   descriptions: ServiceDescriptions<S>,
@@ -125,12 +130,15 @@ const sameDescriptions = <S>(
   return true
 }
 
+const isRuntimeMethod = <T>(value: T): value is T & RuntimeMethod =>
+  Predicate.isFunction(value)
+
 const asRuntimeMethod = <S>(service: S, key: keyof S): RuntimeMethod => {
-  const method = (service as Record<keyof S, unknown>)[key]
-  if (typeof method !== "function") {
+  const method = service[key]
+  if (!isRuntimeMethod(method)) {
     throw new TypeError(`Described service member ${String(key)} is not a function`)
   }
-  return method as RuntimeMethod
+  return method
 }
 
 /** Build a replay wrapper without accepting or closing over a live service. */
@@ -138,10 +146,10 @@ const replayService = <S>(
   descriptions: ServiceDescriptions<S>,
   replay: ReplayShape,
 ): S => {
-  const wrapped: Partial<Record<keyof S, unknown>> = {}
+  const wrapped: Partial<Record<keyof S, RuntimeMethod>> = {}
   for (const key of descriptionKeys(descriptions)) {
     const operation = descriptionAt(descriptions, key)
-    wrapped[key] = (request: unknown) => replay.invoke(operation, request)
+    wrapped[key] = (request) => replay.invoke(operation, request)
   }
   return brand(wrapped as S)
 }
@@ -152,11 +160,11 @@ const recordService = <S>(
   replay: ReplayShape,
   live: S,
 ): S => {
-  const wrapped: Partial<Record<keyof S, unknown>> = {}
+  const wrapped: Partial<Record<keyof S, RuntimeMethod>> = {}
   for (const key of descriptionKeys(descriptions)) {
     const liveMethod = asRuntimeMethod(live, key)
     const operation = bindLive(descriptionAt(descriptions, key), liveMethod)
-    wrapped[key] = (request: unknown) => replay.invoke(operation, request)
+    wrapped[key] = (request) => replay.invoke(operation, request)
   }
   return brand(wrapped as S)
 }
@@ -199,7 +207,7 @@ const makeKit = <Self, S>(
 
   const kit: ReplayableKit<Self, S> = { live, record, replay }
   coreKits.set(service, {
-    descriptions: descriptions as ServiceDescriptions<unknown>,
+    descriptions,
     kit,
   })
   return kit
@@ -236,12 +244,9 @@ export function replayable<Self, S>(
   const kit = makeKit(service, descriptions)
   if (implementation === undefined) return kit
   const liveRole = Layer.isLayer(implementation)
-    ? Layer.effect(
-        kit.live,
-        Effect.gen(function* () {
-          return yield* service
-        }),
-      ).pipe(Layer.provide(implementation as Layer.Layer<Self>))
+    ? Layer.effect(kit.live, service).pipe(
+        Layer.provide(implementation as Layer.Layer<Self>),
+      )
     : Layer.succeed(kit.live, implementation as S)
   return {
     ...kit,

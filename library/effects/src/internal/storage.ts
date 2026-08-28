@@ -5,7 +5,7 @@
  * decoded them. They do not encode digest bytes, and this binary format is an
  * in-memory-adapter detail with no public stability or canonicality claim.
  */
-import { Encoding, Schema } from "effect"
+import { Encoding, Predicate, Schema } from "effect"
 import { ContentId } from "../cas/Node.ts"
 
 const ReplayMode = Schema.Literals(["record", "replay"])
@@ -205,6 +205,21 @@ class Reader {
   }
 }
 
+/** The closed universe the binary reader can produce: every decoded
+ * carrier value is one of these shapes and nothing else. The writer
+ * still accepts `unknown` — feeding it arbitrary values and throwing on
+ * unsupported ones is its contract (the terminal-encoding path relies
+ * on exactly that). */
+type StoredValue =
+  | null
+  | boolean
+  | number
+  | string
+  | bigint
+  | Uint8Array
+  | ReadonlyArray<StoredValue>
+  | { readonly [key: string]: StoredValue }
+
 const writeValue = (writer: Writer, value: unknown): void => {
   if (value === null) {
     writer.byte(0)
@@ -218,12 +233,12 @@ const writeValue = (writer: Writer, value: unknown): void => {
     writer.byte(2)
     return
   }
-  if (typeof value === "number") {
+  if (Predicate.isNumber(value)) {
     writer.byte(3)
     writer.number(value)
     return
   }
-  if (typeof value === "string") {
+  if (Predicate.isString(value)) {
     writer.byte(4)
     writer.string(value)
     return
@@ -239,12 +254,12 @@ const writeValue = (writer: Writer, value: unknown): void => {
     writer.framed(value)
     return
   }
-  if (typeof value === "bigint") {
+  if (Predicate.isBigInt(value)) {
     writer.byte(7)
     writer.string(value.toString(10))
     return
   }
-  if (typeof value === "object") {
+  if (Predicate.isObject(value)) {
     const prototype = Object.getPrototypeOf(value)
     if (prototype !== Object.prototype && prototype !== null) {
       throw new InternalStorageError("Stored objects must have a plain prototype")
@@ -262,7 +277,7 @@ const writeValue = (writer: Writer, value: unknown): void => {
   throw new InternalStorageError(`Unsupported stored value: ${typeof value}`)
 }
 
-const readValue = (reader: Reader): unknown => {
+const readValue = (reader: Reader): StoredValue => {
   switch (reader.byte()) {
     case 0:
       return null
@@ -275,7 +290,7 @@ const readValue = (reader: Reader): unknown => {
     case 4:
       return reader.string()
     case 5: {
-      const output: Array<unknown> = []
+      const output: Array<StoredValue> = []
       const length = reader.uint32()
       for (let index = 0; index < length; index += 1) output.push(readValue(reader))
       return output
@@ -289,7 +304,7 @@ const readValue = (reader: Reader): unknown => {
         throw new InternalStorageError(`Invalid bigint: ${String(cause)}`)
       }
     case 8: {
-      const output: Record<string, unknown> = {}
+      const output: Record<string, StoredValue> = {}
       const length = reader.uint32()
       for (let index = 0; index < length; index += 1) {
         Object.defineProperty(output, reader.string(), {
@@ -310,7 +325,10 @@ const CarrierMagic = Uint8Array.from([0x46, 0x4c, 0x52, 0x50, 0x01])
 const HistoryCarrier = 1
 const WitnessCarrier = 2
 
-const encodeCarrier = (carrier: number, value: unknown): Uint8Array => {
+const encodeCarrier = (
+  carrier: number,
+  value: StoredHistoryEntry | StoredWitness,
+): Uint8Array => {
   const writer = new Writer()
   writer.raw(CarrierMagic)
   writer.byte(carrier)
@@ -318,7 +336,7 @@ const encodeCarrier = (carrier: number, value: unknown): Uint8Array => {
   return writer.finish()
 }
 
-const decodeCarrier = (carrier: number, bytes: Uint8Array): unknown => {
+const decodeCarrier = (carrier: number, bytes: Uint8Array): StoredValue => {
   const reader = new Reader(bytes)
   for (const expected of CarrierMagic) {
     if (reader.byte() !== expected) throw new InternalStorageError("Wrong carrier prefix")

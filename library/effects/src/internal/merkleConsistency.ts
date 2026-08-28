@@ -18,11 +18,11 @@ export const consRebuild = <A>(
 ): Option.Option<RebuiltPair<A>> => {
   if (newSize <= oldSize) {
     if (anchored && proof.length === 0) {
-      return Option.some([oldAnchor, oldAnchor] as const)
+      return Option.some<RebuiltPair<A>>([oldAnchor, oldAnchor])
     }
     if (!anchored && proof.length === 1) {
       const terminal = proof[0]!
-      return Option.some([terminal, terminal] as const)
+      return Option.some<RebuiltPair<A>>([terminal, terminal])
     }
     return Option.none()
   }
@@ -36,19 +36,19 @@ export const consRebuild = <A>(
   if (oldSize <= split) {
     return Option.map(
       consRebuild(P, oldAnchor, oldSize, split, anchored, rest),
-      ([oldRoot, newRoot]) => [
+      ([oldRoot, newRoot]): RebuiltPair<A> => [
         oldRoot,
         P.H({ _tag: "Parent", left: newRoot, right: hash }),
-      ] as const,
+      ],
     )
   }
 
   return Option.map(
     consRebuild(P, oldAnchor, oldSize - split, newSize - split, false, rest),
-    ([oldRoot, newRoot]) => [
+    ([oldRoot, newRoot]): RebuiltPair<A> => [
       P.H({ _tag: "Parent", left: hash, right: oldRoot }),
       P.H({ _tag: "Parent", left: hash, right: newRoot }),
-    ] as const,
+    ],
   )
 }
 

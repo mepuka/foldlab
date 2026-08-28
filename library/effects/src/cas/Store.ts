@@ -1,12 +1,14 @@
 /**
- * The CAS store service interface.
+ * The CAS store service: the typed-node law over the byte-plane seams.
  *
  * Closure and kind-typing are checked at put; load verifies address
  * recomputation, canonical decode, and known kind, fail-closed with the
  * clause-named CAS errors (ruling GR-6). Renormalize-on-read is a named
- * defect. The in-memory adapter arrives at M2; a trusted fast path for a
- * future filesystem or remote adapter would be a NEW declared mode, never a
- * silent default.
+ * defect. The store owns no storage: it is one law over whichever
+ * `ByteReader`/`ByteWriter` backend the composition supplies, so a
+ * corrupt, concurrent, or hostile backend surfaces as a typed refusal
+ * on read, never as silently served bytes. Check-then-insert is sound
+ * without a lock because the byte plane only grows.
  */
 import {
   Context,
@@ -16,9 +18,23 @@ import {
   Layer,
   Option,
   PlatformError,
-  SynchronizedRef,
 } from "effect"
-import { judgeAdmission, type AdmissionFacts } from "../internal/admission.ts"
+import type { FileSystem } from "effect"
+import {
+  ByteReader,
+  ByteWriter,
+  layerMemoryBackend,
+  type BackendFailure,
+  type ByteReaderShape,
+  type ByteWriterShape,
+  type RootStore,
+} from "./Backend.ts"
+import { layerFileBackend } from "./FileBackend.ts"
+import {
+  judgeAdmission,
+  kindTagOfCanonical,
+  type AdmissionFacts,
+} from "../internal/admission.ts"
 import { bytesEqual } from "../internal/bytes.ts"
 import {
   CasSchemeVersion,
@@ -48,7 +64,7 @@ export interface CasStoreShape {
 }
 
 export class CasStore extends Context.Service<CasStore, CasStoreShape>()(
-  "foldlab/effect-replay/CasStore",
+  "foldlab/cas/CasStore",
 ) {}
 
 /** Abstract address function. The model quantifies over this function; the
@@ -82,39 +98,42 @@ const validateNode = (
     })),
   )
 
-interface StoredNode {
-  readonly canonicalBytes: Uint8Array
-  readonly node: CasNodeInput
-}
+const backendFailure = (failure: BackendFailure): StoreFailure =>
+  new StoreFailure({ reason: `Backend failed: ${failure.reason}` })
 
-type MemoryState = ReadonlyMap<ContentId, StoredNode>
-
-/** Answer the admission core's facts from the in-memory map: the actual
- * kind tag per reference, and any bytes resident at the candidate id. */
-const memoryFacts = (
-  state: MemoryState,
-  node: CasNodeInput,
+/** The read-verification law, shared by `load` and the graph walks:
+ * canonical decode, byte-identical re-encoding, known kind, recomputed
+ * address. Never renormalizes; a failing byte plane surfaces typed. */
+export const verifyNodeBytes = (
+  address: CasAddress,
   id: ContentId,
-): AdmissionFacts => ({
-  refTags: node.refs.map((ref) => {
-    const resident = state.get(ref.id)
-    return resident === undefined
-      ? Option.none()
-      : Option.some(resident.node.kind.tag)
-  }),
-  resident: ((resident) => resident === undefined
-    ? Option.none()
-    : Option.some(resident.canonicalBytes))(state.get(id)),
-})
+  bytes: Uint8Array,
+): Effect.Effect<CasNodeInput, CasError> =>
+  Effect.gen(function* () {
+    const canonicalBytes = bytes.slice()
+    const decodedNode = decodeCasNode(canonicalBytes)
+    if (Option.isNone(decodedNode)
+      || !bytesEqual(encodeCasNode(decodedNode.value), canonicalBytes)) {
+      return yield* new NonCanonicalBytes({ id })
+    }
+    const decoded = decodedNode.value
+
+    yield* ensureKnownKind(decoded)
+    const actual = yield* address.digest(canonicalBytes.slice())
+    if (actual !== id) {
+      return yield* new AddressMismatch({ expected: id, actual })
+    }
+
+    return cloneNode(decoded)
+  })
 
 /** Resolve SHA-256 through Effect's platform-independent Crypto service. The
  * host runtime supplies the native implementation; this module never reaches
  * through an ambient global. */
 export const makeSha256Address: Effect.Effect<CasAddress, never, Crypto.Crypto> =
-  Effect.gen(function* () {
-    const crypto = yield* Crypto.Crypto
-    return {
-      digest: Effect.fn("CasAddress.sha256")(function* (canonicalBytes) {
+    Crypto.Crypto.pipe(
+      Effect.map((crypto) => ({
+        digest: Effect.fn("CasAddress.sha256")(function* (canonicalBytes) {
         const digest = yield* crypto.digest("SHA-256", canonicalBytes).pipe(
           Effect.mapError((cause) => new StoreFailure({
             reason: `SHA-256 failed: ${String(cause)}`,
@@ -129,109 +148,200 @@ export const makeSha256Address: Effect.Effect<CasAddress, never, Crypto.Crypto> 
         }
         return ContentId.make(Encoding.encodeHex(digest))
       }),
+    })))
+
+/** Construct the store law over explicit seam shapes — the constructor
+ * for embeddings that hold a backend directly, without Layer wiring. */
+export const makeCasStoreOver = (
+  address: CasAddress,
+  reader: ByteReaderShape,
+  writer: ByteWriterShape,
+): CasStoreShape => {
+  /** Answer the admission judgment's facts from the byte plane: the
+   * actual kind tag per reference (the second canonical byte), and any
+   * bytes resident at the candidate id. */
+  const admissionFacts = Effect.fn("CasStore.admissionFacts")(function* (
+    node: CasNodeInput,
+    id: ContentId,
+  ) {
+    const refTags: Array<Option.Option<number>> = []
+    for (const ref of node.refs) {
+      const resident = yield* reader.loadBytes(ref.id)
+      refTags.push(Option.map(resident, kindTagOfCanonical))
+    }
+    const resident = yield* reader.loadBytes(id)
+    const facts: AdmissionFacts = { refTags, resident }
+    return facts
+  })
+
+  const put = Effect.fn("CasStore.put")(function* (input: CasNodeInput) {
+    const node = yield* validateNode(input)
+    yield* ensureKnownKind(node)
+    const canonicalBytes = encodeCasNode(node)
+    const id = yield* address.digest(canonicalBytes.slice())
+
+    // One admission law for every backend: the shared pure judge over
+    // facts the byte plane answers. Grow-only monotonicity makes
+    // check-then-insert sound without a lock.
+    const verdict = judgeAdmission(
+      canonicalBytes,
+      yield* admissionFacts(node, id).pipe(Effect.mapError(backendFailure)),
+    )
+    switch (verdict._tag) {
+      case "DanglingReference":
+        return yield* new DanglingReference({ missing: verdict.missing })
+      case "WrongKindReference":
+        return yield* new WrongKindReference({
+          ref: verdict.ref,
+          expectedTag: verdict.expectedTag,
+          actualTag: verdict.actualTag,
+        })
+      case "Collision":
+        return yield* new StoreFailure({
+          reason: `Content identifier collision at ${id}`,
+        })
+      case "AlreadyResident":
+        return id
+      case "NonCanonical":
+      case "UnknownKind":
+        // Unreachable for a validated, freshly encoded node; kept
+        // typed so a codec regression cannot admit silently.
+        return yield* new StoreFailure({
+          reason: `Admission refused own encoding: ${verdict._tag}`,
+        })
+      case "Admit": {
+        yield* writer.putBytes(id, canonicalBytes).pipe(
+          Effect.mapError(backendFailure),
+        )
+        return id
+      }
     }
   })
 
-/** Construct an isolated in-memory store. The map contains admitted nodes
- * only and is updated atomically after closure and kind checks succeed. */
+  const load = Effect.fn("CasStore.load")(function* (id: ContentId) {
+    const resident = yield* reader.loadBytes(id).pipe(
+      Effect.mapError(backendFailure),
+    )
+    if (Option.isNone(resident)) {
+      return yield* new ContentNotFound({ id })
+    }
+    return yield* verifyNodeBytes(address, id, resident.value)
+  })
+
+  return CasStore.of({ put, load })
+}
+
+/** Construct the store law over the seams in context. */
+export const makeCasStore = (
+  address: CasAddress,
+): Effect.Effect<CasStoreShape, never, ByteReader | ByteWriter> =>
+  Effect.gen(function* () {
+    const reader = yield* ByteReader
+    const writer = yield* ByteWriter
+    return makeCasStoreOver(address, reader, writer)
+  })
+
+/** Construct an isolated in-memory store: the law over one fresh memory
+ * backend, for callers that need a store value rather than a Layer. */
 export const makeMemoryCasStore = (
   address: CasAddress,
 ): Effect.Effect<CasStoreShape> =>
-  Effect.gen(function* () {
-    const state = yield* SynchronizedRef.make<MemoryState>(new Map())
-
-    const put = Effect.fn("CasStore.put")(function* (input: CasNodeInput) {
-      const node = yield* validateNode(input)
-      yield* ensureKnownKind(node)
-      const canonicalBytes = encodeCasNode(node)
-      // Hashing needs no store state, so it runs before the atomic
-      // section — a slow digest must not serialize every other put.
-      const id = yield* address.digest(canonicalBytes.slice())
-
-      const update = (
-        current: MemoryState,
-      ): Effect.Effect<
-        readonly [ContentId, MemoryState],
-        StoreFailure | DanglingReference | WrongKindReference
-      > => {
-        // One admission law for every backend: the shared pure judge
-        // over facts this map answers.
-        const verdict = judgeAdmission(canonicalBytes, memoryFacts(current, node, id))
-        switch (verdict._tag) {
-          case "DanglingReference":
-            return Effect.fail(new DanglingReference({ missing: verdict.missing }))
-          case "WrongKindReference":
-            return Effect.fail(new WrongKindReference({
-              ref: verdict.ref,
-              expectedTag: verdict.expectedTag,
-              actualTag: verdict.actualTag,
-            }))
-          case "Collision":
-            return Effect.fail(new StoreFailure({
-              reason: `Content identifier collision at ${id}`,
-            }))
-          case "AlreadyResident":
-            return Effect.succeed([id, current] as const)
-          case "NonCanonical":
-          case "UnknownKind":
-            // Unreachable for a validated, freshly encoded node; kept
-            // typed so a codec regression cannot admit silently.
-            return Effect.fail(new StoreFailure({
-              reason: `Admission refused own encoding: ${verdict._tag}`,
-            }))
-          case "Admit": {
-            const next = new Map(current)
-            next.set(id, {
-              canonicalBytes: canonicalBytes.slice(),
-              node: cloneNode(node),
-            })
-            return Effect.succeed([id, next] as const)
-          }
-        }
+  Effect.sync(() => {
+    const backend = (() => {
+      const nodes = new Map<ContentId, Uint8Array>()
+      return {
+        reader: {
+          loadBytes: (id: ContentId) => Effect.sync(() => {
+            const resident = nodes.get(id)
+            return resident === undefined
+              ? Option.none<Uint8Array>()
+              : Option.some(resident.slice())
+          }),
+          presence: (ids: ReadonlyArray<ContentId>) => Effect.sync(() =>
+            ids.map((id) => nodes.has(id) ? "present" as const : "missing" as const)),
+        },
+        writer: {
+          putBytes: (id: ContentId, bytes: Uint8Array) => Effect.sync(() => {
+            if (!nodes.has(id)) nodes.set(id, bytes.slice())
+          }),
+        },
       }
-
-      return yield* SynchronizedRef.modifyEffect(state, update)
-    })
-
-    const load = Effect.fn("CasStore.load")(function* (id: ContentId) {
-      const current = yield* SynchronizedRef.get(state)
-      const resident = current.get(id)
-      if (resident === undefined) {
-        return yield* new ContentNotFound({ id })
-      }
-
-      const canonicalBytes = resident.canonicalBytes.slice()
-      const decodedNode = decodeCasNode(canonicalBytes)
-      if (Option.isNone(decodedNode)
-        || !bytesEqual(encodeCasNode(decodedNode.value), canonicalBytes)) {
-        return yield* new NonCanonicalBytes({ id })
-      }
-      const decoded = decodedNode.value
-
-      yield* ensureKnownKind(decoded)
-      const actual = yield* address.digest(canonicalBytes.slice())
-      if (actual !== id) {
-        return yield* new AddressMismatch({ expected: id, actual })
-      }
-
-      return cloneNode(decoded)
-    })
-
-    return CasStore.of({ put, load })
+    })()
+    return makeCasStoreOver(address, backend.reader, backend.writer)
   })
 
-/** Layer for one isolated in-memory CAS adapter. Without an override, the
- * layer requires the runtime's native `Crypto` service for SHA-256. */
-export function layerMemory(): Layer.Layer<CasStore, never, Crypto.Crypto>
-export function layerMemory(address: CasAddress): Layer.Layer<CasStore>
-export function layerMemory(
+/** The store-law Layer over whichever backend the composition supplies.
+ * Without an explicit address, SHA-256 through the runtime's `Crypto`. */
+export function layerStore(): Layer.Layer<
+  CasStore,
+  never,
+  ByteReader | ByteWriter | Crypto.Crypto
+>
+export function layerStore(
+  address: CasAddress,
+): Layer.Layer<CasStore, never, ByteReader | ByteWriter>
+export function layerStore(
   address?: CasAddress,
-): Layer.Layer<CasStore, never, Crypto.Crypto> {
+): Layer.Layer<CasStore, never, ByteReader | ByteWriter | Crypto.Crypto> {
   return Layer.effect(
     CasStore,
     address === undefined
-      ? makeSha256Address.pipe(Effect.flatMap(makeMemoryCasStore))
-      : makeMemoryCasStore(address),
+      ? makeSha256Address.pipe(Effect.flatMap(makeCasStore))
+      : makeCasStore(address),
+  )
+}
+
+/** One isolated in-memory CAS: the store law over a fresh memory
+ * backend, with the seams exposed for further composition — the same
+ * backend value can stand under a server. Without an override, the
+ * layer requires the runtime's native `Crypto` service for SHA-256. */
+export function layerMemory(): Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore,
+  never,
+  Crypto.Crypto
+>
+export function layerMemory(
+  address: CasAddress,
+): Layer.Layer<CasStore | ByteReader | ByteWriter | RootStore>
+export function layerMemory(
+  address?: CasAddress,
+): Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore,
+  never,
+  Crypto.Crypto
+> {
+  return (address === undefined ? layerStore() : layerStore(address)).pipe(
+    Layer.provideMerge(layerMemoryBackend),
+  )
+}
+
+/** One file-backed CAS: the store law over a store root, seams exposed
+ * for further composition — the same backend value can stand under a
+ * server. The `FileSystem` realization stays a visible layer
+ * requirement; without an address override, so does `Crypto`. */
+export function layerFile(storeRoot: string): Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore,
+  never,
+  FileSystem.FileSystem | Crypto.Crypto
+>
+export function layerFile(
+  storeRoot: string,
+  address: CasAddress,
+): Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore,
+  never,
+  FileSystem.FileSystem
+>
+export function layerFile(
+  storeRoot: string,
+  address?: CasAddress,
+): Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore,
+  never,
+  FileSystem.FileSystem | Crypto.Crypto
+> {
+  return (address === undefined ? layerStore() : layerStore(address)).pipe(
+    Layer.provideMerge(layerFileBackend(storeRoot)),
   )
 }
 
@@ -262,6 +372,7 @@ export const layerCryptoWebCrypto: Layer.Layer<Crypto.Crypto> = Layer.succeed(
 )
 
 /** The zero-configuration local runtime: one isolated in-memory store over
- * scheme-0 SHA-256 through WebCrypto. */
-export const layerMemoryLive: Layer.Layer<CasStore> =
-  layerMemory().pipe(Layer.provide(layerCryptoWebCrypto))
+ * scheme-0 SHA-256 through WebCrypto, seams exposed. */
+export const layerMemoryLive: Layer.Layer<
+  CasStore | ByteReader | ByteWriter | RootStore
+> = layerMemory().pipe(Layer.provide(layerCryptoWebCrypto))

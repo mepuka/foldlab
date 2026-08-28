@@ -1,5 +1,5 @@
 /** Real HttpClient realization of the project-owned cas-http/0 profile. */
-import { Channel, Effect, Option, Schema, SchemaGetter, Stream } from "effect"
+import { Channel, Effect, Match, Option, pipe, Predicate, Schema, SchemaGetter, Stream } from "effect"
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
 import * as HttpClient from "effect/unstable/http/HttpClient"
 import type * as HttpClientError from "effect/unstable/http/HttpClientError"
@@ -19,12 +19,19 @@ import type {
 
 const PROFILE = "cas-http/0"
 
+// Failures raised while the request is still being prepared: nothing was
+// transmitted, so the attempt is known unprocessed.
+const isKnownUnprocessedReason = Predicate.or(
+  Predicate.isTagged("EncodeError"),
+  Predicate.isTagged("InvalidUrlError"),
+)
+
 export const classifyTransportFailure = (
   error: HttpClientError.HttpClientError,
   preparedBytes: number,
   receivedBytes = 0,
 ): RemoteTransportFailure => {
-  if (error.reason._tag === "EncodeError" || error.reason._tag === "InvalidUrlError") {
+  if (isKnownUnprocessedReason(error.reason)) {
     return {
       _tag: "RemoteTransportFailure",
       code: "connectionFailed",
@@ -37,7 +44,7 @@ export const classifyTransportFailure = (
   let connectionReset = false
   let timedOut = false
   let cancelled = false
-  for (let depth = 0; depth < 2 && typeof current === "object" && current !== null; depth += 1) {
+  for (let depth = 0; depth < 2 && Predicate.isObjectOrArray(current); depth += 1) {
     const causeCode = "code" in current ? current.code : undefined
     const causeName = "name" in current ? current.name : undefined
     connectionReset ||= causeCode === "ECONNRESET"
@@ -78,13 +85,13 @@ const finishAfter = (
   )
 
 const NonNegativeIntegerHeader = Schema.String.check(
-  Schema.isPattern(/^(0|[1-9][0-9]*)$/),
+  Schema.isPattern(/^(0|[1-9][0-9]*)$/u),
 ).pipe(
   Schema.decodeTo(
     Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER })),
     {
-      decode: SchemaGetter.transform((value) => Number(value)),
-      encode: SchemaGetter.transform((value) => String(value)),
+      decode: SchemaGetter.transform(Number),
+      encode: SchemaGetter.transform(String),
     },
   ),
 )
@@ -95,7 +102,7 @@ type ParsedNonNegativeInteger =
 
 const parseNonNegativeInteger = (value: string | undefined): ParsedNonNegativeInteger => {
   if (value === undefined) return { _tag: "Valid", value: undefined }
-  const decoded = Schema.decodeUnknownOption(NonNegativeIntegerHeader)(value)
+  const decoded = Schema.decodeOption(NonNegativeIntegerHeader)(value)
   return Option.isSome(decoded)
     ? { _tag: "Valid", value: decoded.value }
     : { _tag: "Invalid" }
@@ -183,31 +190,30 @@ const binaryBody = (
 const loadResponse = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
-): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
-  const selected = HttpClientResponse.matchStatus(response, {
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> =>
+  HttpClientResponse.matchStatus(response, {
     ...sharedStatusCases(sentBytes),
-    200: () => undefined,
+    200: (ok) => binaryBody(ok, sentBytes),
     404: () => responseEvent({ _tag: "Absent" }, sentBytes),
     orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
   })
-  return selected === undefined ? binaryBody(response, sentBytes) : selected
-}
 
 const controlResponse = (
   response: HttpClientResponse.HttpClientResponse,
   sentBytes: number,
   acceptsPayloadTooLarge: boolean,
-): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> => {
-  const selected = HttpClientResponse.matchStatus(response, {
+): Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> =>
+  HttpClientResponse.matchStatus(response, {
     ...sharedStatusCases(sentBytes),
-    200: () => undefined,
-    ...(acceptsPayloadTooLarge
-      ? { 413: () => responseEvent({ _tag: "Capacity" }, sentBytes) }
-      : {}),
+    200: (ok) => binaryBody(ok, sentBytes),
+    // 413 carries capacity meaning only on the batch plane; elsewhere it
+    // stays an invalid status.
+    413: () =>
+      acceptsPayloadTooLarge
+        ? responseEvent({ _tag: "Capacity" }, sentBytes)
+        : responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
     orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
   })
-  return selected === undefined ? binaryBody(response, sentBytes) : selected
-}
 
 const emptyAcknowledgement = (
   response: HttpClientResponse.HttpClientResponse,
@@ -260,10 +266,33 @@ const acknowledgementResponse = (
     orElse: () => responseEvent({ _tag: "Reset" }, sentBytes, "invalidStatus"),
   })
 
+/** Select the profile's response interpretation for the issued command. */
+const commandResponse = (
+  response: HttpClientResponse.HttpClientResponse,
+  sentBytes: number,
+): (
+  command: RemoteIssue["command"],
+) => Channel.Channel<RemoteWireEvent, RemoteTransportFailure, CompletionWitness> =>
+  pipe(
+    Match.type<RemoteIssue["command"]>(),
+    Match.tagsExhaustive({
+      ProbeCapabilities: () => controlResponse(response, sentBytes, false),
+      Load: () => loadResponse(response, sentBytes),
+      FindMissing: () => controlResponse(response, sentBytes, true),
+      Upload: () => acknowledgementResponse(response, sentBytes),
+      PublishRoot: () => acknowledgementResponse(response, sentBytes),
+    }),
+  )
+
+interface PreparedRequest {
+  readonly request: HttpClientRequest.HttpClientRequest
+  readonly sentBytes: number
+}
+
 const commandRequest = (
   config: CasRemoteConfig,
   issue: RemoteIssue,
-): { readonly request: HttpClientRequest.HttpClientRequest; readonly sentBytes: number } => {
+): PreparedRequest => {
   let request: HttpClientRequest.HttpClientRequest
   let sentBytes = 0
   if (issue._tag === "Publish") {
@@ -334,20 +363,7 @@ export const makeRemoteHttp = (
           client.execute(prepared.request).pipe(
             Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
             Effect.mapError((error) => classifyTransportFailure(error, prepared.sentBytes)),
-            Effect.map((response) => {
-              switch (command._tag) {
-                case "ProbeCapabilities":
-                  return controlResponse(response, prepared.sentBytes, false)
-                case "Load":
-                  return loadResponse(response, prepared.sentBytes)
-                case "FindMissing":
-                  return controlResponse(response, prepared.sentBytes, true)
-                case "Upload":
-                  return acknowledgementResponse(response, prepared.sentBytes)
-                case "PublishRoot":
-                  return acknowledgementResponse(response, prepared.sentBytes)
-              }
-            }),
+            Effect.map((response) => commandResponse(response, prepared.sentBytes)(command)),
           ),
         )
       },

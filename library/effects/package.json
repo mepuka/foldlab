@@ -1,9 +1,9 @@
 {
-  "name": "@foldlab/effect-replay",
+  "name": "@foldlab/cas",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Effect-native content-addressed record/replay with local and remote CAS adapters",
+  "description": "A content-addressed store as a data structure — memory, file, or any static host below one seam; servable over cas-http/0; Effect-native record/replay built on it",
   "license": "Apache-2.0",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -24,18 +24,22 @@
     "prepack": "bun run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "oxlint --config oxlint.config.ts src scratch lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "effect-tsgo patch --typescript --oxlint"
   },
   "dependencies": {
     "effect": "4.0.0-rc.111"
   },
   "devDependencies": {
+    "@effect/tsgo": "0.38.0",
     "@effect/vitest": "4.0.0-rc.111",
     "@types/bun": "1.4.0",
     "effect-oxlint": "^0.3.3",
-    "oxlint": "^1.80.0",
-    "typescript": "5.9.2",
-    "vitest": "4.1.11"
+    "oxlint": "1.80.0",
+    "oxlint-plugin-effect": "0.11.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11",
+    "oxlint-tsgolint": "7.0.2001"
   },
   "foldlab": {
     "effectProvenance": {

@@ -6,7 +6,11 @@ type LiveHandler<D extends AnyOperationDescription> = (
   request: D["request"]["Type"],
 ) => Effect.Effect<D["success"]["Type"], D["failure"]["Type"]>
 
-const handlers = new WeakMap<object, unknown>()
+/** Values are dependently typed by their key: `bindLive` is the only
+ * writer and always pairs an operation with its own `LiveHandler<D>`;
+ * the `any` parameter records that the map itself cannot express that
+ * dependency. */
+const handlers = new WeakMap<object, LiveHandler<any>>()
 
 export const bindLive = <D extends AnyOperationDescription>(
   operation: D,
@@ -19,4 +23,4 @@ export const bindLive = <D extends AnyOperationDescription>(
 
 export const liveHandler = <D extends AnyOperationDescription>(
   operation: D,
-): LiveHandler<D> | undefined => handlers.get(operation) as LiveHandler<D> | undefined
+): LiveHandler<D> | undefined => handlers.get(operation)

@@ -6,7 +6,7 @@ import { pow2Below } from "./merkleTree.ts"
 import { BlobManifestTag, BlobNodeTag, ChunkDataTag } from "./kindTags.ts"
 
 export { BlobManifestTag, BlobNodeTag, ChunkDataTag }
-export const ReferencedChunkRecipe = 1 as const
+export const ReferencedChunkRecipe = 1
 
 const MaxUint32 = 0xffff_ffff
 const MaxUint64 = 0xffff_ffff_ffff_ffffn
@@ -80,10 +80,10 @@ export const materializeBlobGraph = (
 ): Effect.Effect<BlobGraphResult, CasError | BlobGraphError> =>
   Effect.gen(function* () {
     if (chunks.length === 0) {
-      return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 requires at least one chunk" }))
+      return yield* new BlobGraphError({ reason: "recipe 1 requires at least one chunk" })
     }
     if (chunks.length > MaxUint32) {
-      return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" }))
+      return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u32 leaf-count field" })
     }
 
     const leaves: Array<ContentId> = []
@@ -91,7 +91,7 @@ export const materializeBlobGraph = (
     for (const bytes of chunks) {
       totalBytes += BigInt(bytes.length)
       if (totalBytes > MaxUint64) {
-        return yield* Effect.fail(new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" }))
+        return yield* new BlobGraphError({ reason: "recipe 1 exceeds the u64 total-bytes field" })
       }
       const chunkId = yield* store.put(node(ChunkDataTag, bytes.slice(), []))
       const leafId = yield* store.put(node(

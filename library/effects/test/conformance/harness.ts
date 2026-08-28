@@ -6,7 +6,7 @@
  * ... })` form below is the house shape for row-driven suites.
  */
 import { expect } from "@effect/vitest"
-import { Context, Effect, Equal, Layer, Schema, type SchemaIssue } from "effect"
+import { Context, Effect, Equal, Layer, Schema } from "effect"
 import { readFileSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import type {
@@ -27,6 +27,13 @@ const manifestIndex: { readonly manifests: ReadonlyArray<string>; readonly model
 
 export const ManifestModel: string = manifestIndex.model
 export const manifestIndexNames: ReadonlyArray<string> = manifestIndex.manifests
+
+/** A manifest that could not be read or decoded — tagged so harness
+ * failures stay distinct in the error channel. */
+export class ManifestReadError extends Schema.TaggedError<ManifestReadError>()(
+  "ManifestReadError",
+  { cause: Schema.Defect() },
+) {}
 
 type ContextFreeSchema = Schema.Top & {
   readonly DecodingServices: never
@@ -89,7 +96,7 @@ export const loadFamily = <
   binding: FamilyBinding<Family, RowSchema>,
 ): Effect.Effect<
   LoadedFamily<RowSchema["Type"]>,
-  Error | SchemaIssue.Issue
+  ManifestReadError | Schema.SchemaError
 > => Effect.gen(function* () {
   const json = yield* Effect.tryPromise({
     try: async () => {
@@ -99,7 +106,7 @@ export const loadFamily = <
       )
       return JSON.parse(text) as unknown
     },
-    catch: (cause) => cause instanceof Error ? cause : new Error(String(cause)),
+    catch: (cause) => new ManifestReadError({ cause }),
   })
   const decoded = yield* Schema.decodeUnknownEffect(manifestSchema(binding))(json, {
     onExcessProperty: "error",

@@ -42,11 +42,14 @@ export type Principal = Data.TaggedEnum<{
 }>
 export const Principal = Data.taggedEnum<Principal>()
 
-/** The closed request algebra — the server's event signature. */
+/** The closed request algebra — the server's event signature.
+ * `ReadRoot` is the /0-additive root-presence read: has this root been
+ * published here? */
 export type CasRequest = Data.TaggedEnum<{
   ReadCapabilities: {}
   QueryPresence: { readonly keys: ReadonlyArray<ContentId> }
   LoadNode: { readonly id: ContentId }
+  ReadRoot: { readonly root: ContentId }
   UploadNode: { readonly id: ContentId; readonly bytes: Uint8Array }
   PublishRoot: {
     readonly root: ContentId
@@ -61,12 +64,14 @@ export type OperationClass = "read" | "write" | "publish"
 
 export const operationClass: (request: CasRequest) => OperationClass = pipe(
   Match.type<CasRequest>(),
+  Match.withReturnType<OperationClass>(),
   Match.tagsExhaustive({
-    LoadNode: () => "read" as const,
-    PublishRoot: () => "publish" as const,
-    QueryPresence: () => "read" as const,
-    ReadCapabilities: () => "read" as const,
-    UploadNode: () => "write" as const,
+    LoadNode: () => "read",
+    PublishRoot: () => "publish",
+    QueryPresence: () => "read",
+    ReadCapabilities: () => "read",
+    ReadRoot: () => "read",
+    UploadNode: () => "write",
   }),
 )
 
@@ -101,6 +106,8 @@ export type CasOutcome = Data.TaggedEnum<{
   NodeBytes: { readonly bytes: Uint8Array }
   Presence: { readonly statuses: ReadonlyArray<PresenceStatus> }
   Published: {}
+  RootAbsent: {}
+  RootPublished: {}
 }>
 export const CasOutcome = Data.taggedEnum<CasOutcome>()
 
@@ -217,6 +224,9 @@ export const decide = (
 
   const root = rootsPath.exec(facts.path)?.[1]
   if (root !== undefined) {
+    if (facts.method === "GET") {
+      return accept(CasRequest.ReadRoot({ root: ContentId.make(root) }))
+    }
     if (facts.method !== "PUT") return refused(WireRefusal.MethodNotAllowed())
     if (facts.contentType !== octetStream) {
       return refused(WireRefusal.WrongMediaType())
@@ -294,5 +304,7 @@ export const renderOutcome: (
     NodeBytes: ({ bytes }) => bytesResponse(bytes),
     Presence: ({ statuses }) => bytesResponse(encodePresenceDocument(statuses)),
     Published: () => status(204),
+    RootAbsent: () => status(404),
+    RootPublished: () => status(204),
   }),
 )

@@ -48,9 +48,8 @@ export const makeCasHttpApp = (
   >,
   never,
   CasServerCore
-> => Effect.gen(function* () {
-  const core = yield* CasServerCore
-  return Effect.gen(function* () {
+> => Effect.map(CasServerCore, (core) =>
+  Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     const facts = yield* gatherFacts(request)
     return yield* WireDecision.$match(decide(policy, facts), {
@@ -58,5 +57,4 @@ export const makeCasHttpApp = (
         core.serve(principal, operation).pipe(Effect.map(renderOutcome)),
       Refused: ({ refusal }) => Effect.succeed(renderRefusal(refusal)),
     })
-  })
-})
+  }))

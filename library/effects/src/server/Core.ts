@@ -1,17 +1,26 @@
 /**
  * The cas-http/0 semantic core: the closed request algebra interpreted
- * over the byte backend, with no transport anywhere in sight.
+ * over the byte-plane seams, with no transport anywhere in sight.
  *
  * `serve` is total — every conclusion is a member of the closed outcome
  * vocabulary, a backend that cannot answer included. The principal is
  * an explicit argument to every operation per §9, and every upload is
- * judged by the shared pure admission law before the backend sees it.
+ * judged by the shared pure admission law before the writer sees it.
  * The core is an ordinary service: a deployment topology is a choice of
- * backend layer beneath it, and a new wire plane is new request
- * constructors matched here.
+ * backend layers beneath it — the same seams an embedded store stands
+ * on — and a new wire plane is new request constructors matched here.
  */
 import { Context, Effect, Layer, Option } from "effect"
 import type { Crypto } from "effect"
+import {
+  ByteReader,
+  ByteWriter,
+  RootStore,
+  type BackendFailure,
+  type ByteReaderShape,
+  type ByteWriterShape,
+  type RootStoreShape,
+} from "../cas/Backend.ts"
 import type { ContentId } from "../cas/Node.ts"
 import { makeSha256Address, type CasAddress } from "../cas/Store.ts"
 import {
@@ -20,7 +29,6 @@ import {
   kindTagOfCanonical,
   type AdmissionFacts,
 } from "../internal/admission.ts"
-import { CasServerBackend, type ServerBackendFailure } from "./Backend.ts"
 import {
   CasOutcome,
   CasRequest,
@@ -33,12 +41,16 @@ export class CasServerCore extends Context.Service<CasServerCore, {
     principal: Principal,
     request: CasRequest,
   ) => Effect.Effect<CasOutcome>
-}>()("foldlab/effect-replay/CasServerCore") {
-  /** Build the core over whichever backend layer sits beneath it,
+}>()("foldlab/cas/CasServerCore") {
+  /** Build the core over whichever backend layers sit beneath it,
    * addressing through scheme-0 SHA-256. */
   static readonly layer = (
     policy: CasServerPolicy,
-  ): Layer.Layer<CasServerCore, never, CasServerBackend | Crypto.Crypto> =>
+  ): Layer.Layer<
+    CasServerCore,
+    never,
+    ByteReader | ByteWriter | RootStore | Crypto.Crypto
+  > =>
     Layer.effect(
       CasServerCore,
       makeSha256Address.pipe(
@@ -57,9 +69,11 @@ export const makeCasServerCore = (
 ): Effect.Effect<
   CasServerCore["Service"],
   never,
-  CasServerBackend
+  ByteReader | ByteWriter | RootStore
 > => Effect.gen(function* () {
-  const backend = yield* CasServerBackend
+  const reader: ByteReaderShape = yield* ByteReader
+  const writer: ByteWriterShape = yield* ByteWriter
+  const roots: RootStoreShape = yield* RootStore
 
   const admissionFacts = Effect.fn("CasServerCore.admissionFacts")(function* (
     id: ContentId,
@@ -67,10 +81,10 @@ export const makeCasServerCore = (
   ) {
     const refTags: Array<Option.Option<number>> = []
     for (const ref of refs) {
-      const resident = yield* backend.loadBytes(ref.id)
+      const resident = yield* reader.loadBytes(ref.id)
       refTags.push(Option.map(resident, kindTagOfCanonical))
     }
-    const resident = yield* backend.loadBytes(id)
+    const resident = yield* reader.loadBytes(id)
     const facts: AdmissionFacts = { refTags, resident }
     return facts
   })
@@ -78,8 +92,8 @@ export const makeCasServerCore = (
   const loadNode = Effect.fn("CasServerCore.load")(function* (
     _principal: Principal,
     id: ContentId,
-  ): Effect.fn.Return<CasOutcome, ServerBackendFailure> {
-    const resident = yield* backend.loadBytes(id)
+  ): Effect.fn.Return<CasOutcome, BackendFailure> {
+    const resident = yield* reader.loadBytes(id)
     return Option.match(resident, {
       onNone: () => CasOutcome.NodeAbsent(),
       onSome: (bytes) => CasOutcome.NodeBytes({ bytes }),
@@ -90,12 +104,12 @@ export const makeCasServerCore = (
     _principal: Principal,
     id: ContentId,
     bytes: Uint8Array,
-  ): Effect.fn.Return<CasOutcome, ServerBackendFailure> {
+  ): Effect.fn.Return<CasOutcome, BackendFailure> {
     if (bytes.length > policy.maxNodeBytes) {
       return CasOutcome.NodeBudgetExceeded()
     }
     const actual = yield* address.digest(bytes.slice()).pipe(
-      Effect.map(Option.some),
+      Effect.asSome,
       Effect.orElseSucceed(() => Option.none<ContentId>()),
     )
     if (Option.isNone(actual) || actual.value !== id) {
@@ -111,7 +125,7 @@ export const makeCasServerCore = (
     )
     switch (verdict._tag) {
       case "Admit":
-        yield* backend.putBytes(id, bytes)
+        yield* writer.putBytes(id, bytes)
         return CasOutcome.Admitted()
       case "AlreadyResident":
         return CasOutcome.AlreadyAdmitted()
@@ -123,27 +137,37 @@ export const makeCasServerCore = (
   const queryPresence = Effect.fn("CasServerCore.missing")(function* (
     _principal: Principal,
     keys: ReadonlyArray<ContentId>,
-  ): Effect.fn.Return<CasOutcome, ServerBackendFailure> {
+  ): Effect.fn.Return<CasOutcome, BackendFailure> {
     if (keys.length > policy.maxBatchKeys) {
       return CasOutcome.BatchBudgetExceeded()
     }
-    const statuses = yield* backend.presence(keys)
+    const statuses = yield* reader.presence(keys)
     return CasOutcome.Presence({ statuses })
+  })
+
+  const readRoot = Effect.fn("CasServerCore.readRoot")(function* (
+    _principal: Principal,
+    root: ContentId,
+  ): Effect.fn.Return<CasOutcome, BackendFailure> {
+    const published = yield* roots.list
+    return published.includes(root)
+      ? CasOutcome.RootPublished()
+      : CasOutcome.RootAbsent()
   })
 
   const publishRoot = Effect.fn("CasServerCore.publish")(function* (
     _principal: Principal,
     root: ContentId,
     closure: ReadonlyArray<ContentId>,
-  ): Effect.fn.Return<CasOutcome, ServerBackendFailure> {
+  ): Effect.fn.Return<CasOutcome, BackendFailure> {
     // Server-side closure verification — optional at /0, enforced
     // here: the root and every declared closure key must be admitted
     // content.
-    const held = yield* backend.presence([root, ...closure])
+    const held = yield* reader.presence([root, ...closure])
     if (held.some((presence) => presence !== "present")) {
       return CasOutcome.ClosureUnverified()
     }
-    yield* backend.publishRoot(root)
+    yield* roots.publish(root)
     return CasOutcome.Published()
   })
 
@@ -159,11 +183,12 @@ export const makeCasServerCore = (
         maxBatchKeys: policy.maxBatchKeys,
         maxNodeBytes: policy.maxNodeBytes,
       })),
+      ReadRoot: ({ root }) => readRoot(principal, root),
       UploadNode: ({ bytes, id }) => uploadNode(principal, id, bytes),
     }).pipe(
       // A backend that cannot answer is the capacity class, never an
       // admission verdict.
-      Effect.catchTag("CasServerBackendFailure", () =>
+      Effect.catchTag("CasBackendFailure", () =>
         Effect.succeed(CasOutcome.BackendUnavailable())),
     )
 

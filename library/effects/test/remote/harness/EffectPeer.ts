@@ -9,9 +9,9 @@ import { Context, Effect, Layer } from "effect"
 import { HttpEffect } from "effect/unstable/http"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import type { Socket } from "node:net"
+import { ByteWriter, layerMemoryBackend } from "../../../src/cas/Backend.ts"
 import { ContentId } from "../../../src/cas/Node.ts"
 import { layerCryptoWebCrypto } from "../../../src/cas/Store.ts"
-import { CasServerBackend } from "../../../src/server/Backend.ts"
 import { CasServerCore } from "../../../src/server/Core.ts"
 import { makeCasHttpApp } from "../../../src/server/HttpApp.ts"
 import type { CasServerPolicy } from "../../../src/server/Protocol.ts"
@@ -68,16 +68,16 @@ export const makeEffectPeer = (options: EffectPeerOptions = {}): ConformancePeer
     const context = yield* Layer.build(
       CasServerCore.layer(policy).pipe(
         Layer.provideMerge(Layer.mergeAll(
-          CasServerBackend.layerMemory,
+          layerMemoryBackend,
           layerCryptoWebCrypto,
         )),
       ),
     )
-    const backend = Context.get(context, CasServerBackend)
+    const writer = Context.get(context, ByteWriter)
     for (const [id, bytes] of realization.nodes ?? []) {
       // Seeded nodes are peer-granted facts; the memory backend cannot
       // actually fail, so a refusal here is a harness defect.
-      yield* backend.putBytes(ContentId.make(id), bytes).pipe(Effect.orDie)
+      yield* writer.putBytes(ContentId.make(id), bytes).pipe(Effect.orDie)
     }
 
     const app = yield* makeCasHttpApp(policy).pipe(Effect.provide(context))

@@ -6,10 +6,10 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer, Redacted } from "effect"
 import { createHash } from "node:crypto"
+import { layerMemoryBackend } from "../../src/cas/Backend.ts"
 import { CasNodeInput, ContentId } from "../../src/cas/Node.ts"
 import { encodeCasNode, layerCryptoWebCrypto } from "../../src/cas/Store.ts"
 import { encodeKeyListDocument } from "../../src/internal/remoteControl.ts"
-import { CasServerBackend } from "../../src/server/Backend.ts"
 import { CasServerCore } from "../../src/server/Core.ts"
 import {
   CasOutcome,
@@ -104,6 +104,12 @@ it.effect("the wire law decides the precedence table purely", () =>
         expected: "Accepted/LoadNode/Anonymous",
       },
       {
+        name: "a root read is a read: GET /roots decodes and stays anonymous",
+        policy: guardedPolicy,
+        facts: facts({ path: `/roots/${hex("ab")}` }),
+        expected: "Accepted/ReadRoot/Anonymous",
+      },
+      {
         name: "anonymous writes never pass under the guarded policy",
         policy: guardedPolicy,
         facts: facts({ method: "PUT", path: `/cas/${hex("ab")}` }),
@@ -135,7 +141,7 @@ it.effect("the wire law decides the precedence table purely", () =>
 
 const coreLayer = CasServerCore.layer(openPolicy).pipe(
   Layer.provideMerge(Layer.mergeAll(
-    CasServerBackend.layerMemory,
+    layerMemoryBackend,
     layerCryptoWebCrypto,
   )),
 )
@@ -189,10 +195,22 @@ it.effect("the semantic core round-trips a graph with no transport at all", () =
       }),
     )).toEqual(CasOutcome.Presence({ statuses: ["present", "missing"] }))
 
+    // Root presence answers over the published set — absent before,
+    // published after.
+    expect(yield* core.serve(
+      anonymous,
+      CasRequest.ReadRoot({ root: parentId }),
+    )).toEqual(CasOutcome.RootAbsent())
+
     expect(yield* core.serve(
       anonymous,
       CasRequest.PublishRoot({ closure: [childId], root: parentId }),
     )).toEqual(CasOutcome.Published())
+
+    expect(yield* core.serve(
+      anonymous,
+      CasRequest.ReadRoot({ root: parentId }),
+    )).toEqual(CasOutcome.RootPublished())
 
     // The decoded key-list codec and the core agree on the wire body.
     expect(encodeKeyListDocument([childId]).length).toBe(36)

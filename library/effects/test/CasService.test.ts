@@ -1,6 +1,6 @@
 import { expect, it } from "@effect/vitest"
 import { Context, Effect, Layer, Schema } from "effect"
-import { Cas } from "../src/index.ts"
+import { Cas, Replay } from "../src/index.ts"
 import { ContentId } from "../src/cas/Node.ts"
 import { layerMemory } from "../src/cas/Store.ts"
 import type { Root } from "../src/cas/Value.ts"
@@ -88,7 +88,7 @@ type Equal<Left, Right> = [Left] extends [Right]
   : false
 
 it.effect("PRJ-004 fixed-root hydration matches by-value service behavior", () => {
-  const hydrated = Cas.service({
+  const hydrated = Replay.service({
     service: Catalog,
     projection,
     make: makeCatalog,
@@ -111,7 +111,7 @@ it.effect("PRJ-004 fixed-root hydration matches by-value service behavior", () =
 })
 
 it.effect("PRJ-004 keeps eager construction errors on the Layer channel", () => {
-  const failing = Cas.service({
+  const failing = Replay.service({
     service: Catalog,
     projection,
     make: (_value: CatalogSnapshot) =>
@@ -132,7 +132,7 @@ it.effect("PRJ-004 keeps eager construction errors on the Layer channel", () => 
 it.effect("PRJ-005 hydrates the internal live role for record then live-free replay", () => {
   let hydrations = 0
   let invocations = 0
-  const hydrated = Cas.service({
+  const hydrated = Replay.service({
     service: Catalog,
     projection,
     make: (value) => {
@@ -181,7 +181,7 @@ it.effect("PRJ-005 rejects a wrapped service hydrated under the live role", () =
   return Effect.gen(function* () {
     const root = yield* projection.put(snapshot)
     const wrapped = yield* Catalog.pipe(Effect.provide(kit.replay))
-    const wrappedHydration = Cas.service({
+    const wrappedHydration = Replay.service({
       service: Catalog,
       projection,
       make: (_value: CatalogSnapshot) => wrapped,
@@ -198,7 +198,7 @@ it.effect("PRJ-005 rejects a wrapped service hydrated under the live role", () =
 it.effect("PRJ-005 keeps public-tag hydration distinct from the internal live role", () =>
   Effect.sync(() => {
     const compileOnlyRoot = ContentId.make("00".repeat(32)) as Root<CatalogSnapshot>
-    const publicLayer = Cas.service({
+    const publicLayer = Replay.service({
       service: Catalog,
       projection,
       make: makeCatalog,

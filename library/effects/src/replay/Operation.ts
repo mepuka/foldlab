@@ -77,8 +77,10 @@ export const describeService =
     if (prefix.length === 0) {
       throw new TypeError("Replay service description prefix must be non-empty")
     }
-    const descriptions: Partial<Record<keyof S, unknown>> = {}
-    const keys = Reflect.ownKeys(specs) as unknown as ReadonlyArray<keyof S>
+    const descriptions: Partial<Record<keyof S, AnyOperationDescription>> = {}
+    const keys = Reflect.ownKeys(specs).filter(
+      (key): key is Extract<keyof S, string | symbol> => key in specs,
+    )
     for (const key of keys) {
       const spec = specs[key] as Omit<AnyOperationDescription, "id" | "leafReplay">
       if (!Number.isInteger(spec.revision) || spec.revision < 0) {

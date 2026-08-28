@@ -4,20 +4,19 @@ import type { CasError, ContentId } from "./Node.ts"
 
 export const RemoteAuthority = Schema.String.check(
   Schema.makeFilter((value) => {
-    try {
-      const url = new URL(value)
-      return (url.protocol === "http:" || url.protocol === "https:")
-          && url.username === ""
-          && url.password === ""
-          && url.pathname === "/"
-          && url.search === ""
-          && url.hash === ""
-          && url.origin === value
-        ? undefined
-        : "authority must be an http(s) origin with no userinfo, path, query, or fragment"
-    } catch {
+    if (!URL.canParse(value)) {
       return "authority must be a valid URL origin"
     }
+    const url = new URL(value)
+    return (url.protocol === "http:" || url.protocol === "https:")
+        && url.username === ""
+        && url.password === ""
+        && url.pathname === "/"
+        && url.search === ""
+        && url.hash === ""
+        && url.origin === value
+      ? undefined
+      : "authority must be an http(s) origin with no userinfo, path, query, or fragment"
   }),
 ).pipe(Schema.brand("RemoteAuthority"))
 export type RemoteAuthority = typeof RemoteAuthority.Type
@@ -261,6 +260,13 @@ export interface RemoteConfigOptions {
 
 const DefaultRemoteBudgetBytes = 1_000_000
 
+/** The optional-key fields of the explicit config: present only when the
+ * caller supplied them, so the constructed props omit the keys entirely. */
+interface RemoteConfigOptionals {
+  decisionTranscriptCapacity?: number
+  credentials?: Exclude<CasRemoteConfig["credentials"], undefined>
+}
+
 /**
  * Validate a plain HTTP(S) authority and fill the ordinary remote policy
  * defaults without weakening the fully explicit CasRemoteConfig contract.
@@ -268,19 +274,25 @@ const DefaultRemoteBudgetBytes = 1_000_000
 export const remoteConfig = (
   authority: string,
   options: RemoteConfigOptions = {},
-): CasRemoteConfig => new CasRemoteConfig({
-  authority: RemoteAuthority.make(authority),
-  authorityMode: options.authorityMode ?? "remote-authoritative",
-  maxEncodedBytes: options.maxEncodedBytes ?? DefaultRemoteBudgetBytes,
-  maxDecodedBytes: options.maxDecodedBytes ?? DefaultRemoteBudgetBytes,
-  maxDecompressedBytes: options.maxDecompressedBytes ?? DefaultRemoteBudgetBytes,
-  maxQueuedBytes: options.maxQueuedBytes ?? DefaultRemoteBudgetBytes,
-  maxAttempts: options.maxAttempts ?? 1,
-  operationDeadlineMs: options.operationDeadlineMs ?? 10_000,
-  ...(options.decisionTranscriptCapacity === undefined
-    ? {}
-    : { decisionTranscriptCapacity: options.decisionTranscriptCapacity }),
-  capabilityProbe: options.capabilityProbe ?? "eager",
-  redirectPolicy: options.redirectPolicy ?? { maxRedirects: 0, crossOrigin: "deny" },
-  ...(options.credentials === undefined ? {} : { credentials: options.credentials }),
-})
+): CasRemoteConfig => {
+  const optionals: RemoteConfigOptionals = {}
+  if (options.decisionTranscriptCapacity !== undefined) {
+    optionals.decisionTranscriptCapacity = options.decisionTranscriptCapacity
+  }
+  if (options.credentials !== undefined) {
+    optionals.credentials = options.credentials
+  }
+  return new CasRemoteConfig({
+    authority: RemoteAuthority.make(authority),
+    authorityMode: options.authorityMode ?? "remote-authoritative",
+    maxEncodedBytes: options.maxEncodedBytes ?? DefaultRemoteBudgetBytes,
+    maxDecodedBytes: options.maxDecodedBytes ?? DefaultRemoteBudgetBytes,
+    maxDecompressedBytes: options.maxDecompressedBytes ?? DefaultRemoteBudgetBytes,
+    maxQueuedBytes: options.maxQueuedBytes ?? DefaultRemoteBudgetBytes,
+    maxAttempts: options.maxAttempts ?? 1,
+    operationDeadlineMs: options.operationDeadlineMs ?? 10_000,
+    capabilityProbe: options.capabilityProbe ?? "eager",
+    redirectPolicy: options.redirectPolicy ?? { maxRedirects: 0, crossOrigin: "deny" },
+    ...optionals,
+  })
+}

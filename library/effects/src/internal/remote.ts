@@ -9,6 +9,7 @@ import {
   HashSet,
   Layer,
   Option,
+  Predicate,
   Pull,
   Ref,
   Stream,
@@ -19,7 +20,6 @@ import {
   CasNodeInput,
   ContentNotFound,
   DanglingReference,
-  NonCanonicalBytes,
   RemoteFailure,
   StoreFailure,
   UnknownKind,
@@ -38,7 +38,6 @@ import {
   type CasPushReport,
   type CasRemoteConfig,
   type CasRemoteError,
-  type RemoteCapabilities,
 } from "../cas/Remote.ts"
 import { CasTransfer, type CasTransferShape, type PutStreamOptions, type UploadSource } from "../cas/Transfer.ts"
 import {
@@ -55,10 +54,10 @@ import {
   initialMachineState,
   step,
   type Event,
+  type KeyStatus,
   type MInput,
   type MachineState,
   type MResult,
-  type RDecision,
   type StepOut,
   type TaggedDecision,
 } from "./remoteMachine.ts"
@@ -149,6 +148,38 @@ const joinChunks = (chunks: ReadonlyArray<Uint8Array>, length: number): Uint8Arr
   return output
 }
 
+type Pulled =
+  | { readonly _tag: "Element"; readonly event: RemoteWireEvent }
+  | { readonly _tag: "Done"; readonly witness: CompletionWitness }
+
+type BudgetResult = Extract<MResult<ContentId, Uint8Array>, {
+  readonly _tag: "BudgetRejected" | "KeyBudgetRejected"
+}>
+type NonBudgetResult = Exclude<MResult<ContentId, Uint8Array>, BudgetResult>
+type BudgetEvidence = {
+  readonly stage: RemoteBudgetError["stage"]
+  readonly observed: number
+  readonly bound: number
+}
+
+const hasBudgetRejectionTag = Predicate.or(
+  Predicate.isTagged("BudgetRejected"),
+  Predicate.isTagged("KeyBudgetRejected"),
+)
+
+const isBudgetResult = (
+  result: MResult<ContentId, Uint8Array>,
+): result is BudgetResult => hasBudgetRejectionTag(result)
+
+const hasRetryableFailureTag = Predicate.or(
+  Predicate.isTagged("CasRemoteError/Protocol"),
+  Predicate.isTagged("CasRemoteError/Unavailable"),
+)
+
+const isRetryableUploadFailure = (
+  error: CasError | CasRemoteError,
+): error is RemoteProtocolError | RemoteUnavailableError => hasRetryableFailureTag(error)
+
 /** Construct one shared adapter build. */
 export const makeRemoteAdapter = (
   config: CasRemoteConfig,
@@ -162,7 +193,9 @@ export const makeRemoteAdapter = (
   const runtime = yield* SynchronizedRef.make<MachineRuntime>({
     machine: initialMachineState(),
     transcript: {
-      buffer: new Array(decisionCapacity),
+      buffer: Array.from<TaggedDecision<ContentId, Uint8Array> | undefined>({
+        length: decisionCapacity,
+      }),
       head: 0,
       length: 0,
       dropped: 0,
@@ -178,14 +211,17 @@ export const makeRemoteAdapter = (
     receivedBytes: number,
     stage: RemoteIntegrityError["stage"] = "admission",
     attemptId?: number,
-  ): RemoteIntegrityError => new RemoteIntegrityError({
-    opId,
-    ...(attemptId === undefined ? {} : { attemptId }),
-    stage,
-    authority: config.authority,
-    code,
-    receivedBytes,
-  })
+  ): RemoteIntegrityError => {
+    let props: ConstructorParameters<typeof RemoteIntegrityError>[0] = {
+      opId,
+      stage,
+      authority: config.authority,
+      code,
+      receivedBytes,
+    }
+    if (attemptId !== undefined) props = { ...props, attemptId }
+    return new RemoteIntegrityError(props)
+  }
 
   const remoteBudget = (
     opId: number | undefined,
@@ -193,30 +229,36 @@ export const makeRemoteAdapter = (
     observed: number,
     bound: number,
     attemptId?: number,
-  ): RemoteBudgetError => new RemoteBudgetError({
-    ...(opId === undefined ? {} : { opId }),
-    ...(attemptId === undefined ? {} : { attemptId }),
-    stage,
-    authority: config.authority,
-    observed,
-    bound,
-  })
+  ): RemoteBudgetError => {
+    let props: ConstructorParameters<typeof RemoteBudgetError>[0] = {
+      stage,
+      authority: config.authority,
+      observed,
+      bound,
+    }
+    if (opId !== undefined) props = { ...props, opId }
+    if (attemptId !== undefined) props = { ...props, attemptId }
+    return new RemoteBudgetError(props)
+  }
 
   const remoteProtocol = (
     opId: number,
     code: RemoteProtocolError["code"],
     witness: CompletionWitness,
     attemptId?: number,
-  ): RemoteProtocolError => new RemoteProtocolError({
-    opId,
-    ...(attemptId === undefined ? {} : { attemptId }),
-    stage: "response",
-    authority: config.authority,
-    code,
-    completion: "possiblyProcessed",
-    receivedBytes: witness.receivedBytes,
-    sentBytes: witness.sentBytes,
-  })
+  ): RemoteProtocolError => {
+    let props: ConstructorParameters<typeof RemoteProtocolError>[0] = {
+      opId,
+      stage: "response",
+      authority: config.authority,
+      code,
+      completion: "possiblyProcessed",
+      receivedBytes: witness.receivedBytes,
+      sentBytes: witness.sentBytes,
+    }
+    if (attemptId !== undefined) props = { ...props, attemptId }
+    return new RemoteProtocolError(props)
+  }
 
   const remoteUnavailable = (
     opId: number,
@@ -226,17 +268,20 @@ export const makeRemoteAdapter = (
     sentBytes: number,
     attemptId?: number,
     retryAfter?: number,
-  ): RemoteUnavailableError => new RemoteUnavailableError({
-    opId,
-    ...(attemptId === undefined ? {} : { attemptId }),
-    stage: "response",
-    authority: config.authority,
-    code,
-    completion,
-    receivedBytes,
-    sentBytes,
-    ...(retryAfter === undefined ? {} : { retryAfter }),
-  })
+  ): RemoteUnavailableError => {
+    let props: ConstructorParameters<typeof RemoteUnavailableError>[0] = {
+      opId,
+      stage: "response",
+      authority: config.authority,
+      code,
+      completion,
+      receivedBytes,
+      sentBytes,
+    }
+    if (attemptId !== undefined) props = { ...props, attemptId }
+    if (retryAfter !== undefined) props = { ...props, retryAfter }
+    return new RemoteUnavailableError(props)
+  }
 
   const remotePolicy = (
     opId: number,
@@ -248,17 +293,18 @@ export const makeRemoteAdapter = (
   ): RemotePolicyError => {
     const receivedBytes = exchange?.witness.receivedBytes ?? cause?.receivedBytes ?? 0
     const sentBytes = exchange?.witness.sentBytes ?? cause?.sentBytes ?? 0
-    return new RemotePolicyError({
+    let props: ConstructorParameters<typeof RemotePolicyError>[0] = {
       opId,
-      ...(attemptId === undefined ? {} : { attemptId }),
       stage: exchange === undefined && cause === undefined ? "request" : "response",
       authority: config.authority,
       code,
       completion,
       receivedBytes,
       sentBytes,
-      ...(cause === undefined ? {} : { cause }),
-    })
+    }
+    if (attemptId !== undefined) props = { ...props, attemptId }
+    if (cause !== undefined) props = { ...props, cause }
+    return new RemotePolicyError(props)
   }
 
   const unavailableFromTransport = (
@@ -280,7 +326,9 @@ export const makeRemoteAdapter = (
     maxBytes: number,
     maxKeys = Number.MAX_SAFE_INTEGER,
   ): Effect.Effect<StepOut<ContentId, Uint8Array>> =>
-    SynchronizedRef.modify(runtime, (current) => {
+    SynchronizedRef.modify(runtime, (
+      current,
+    ): readonly [StepOut<ContentId, Uint8Array>, MachineRuntime] => {
       const output = step({
         budgets: { maxBytes, maxKeys },
         size: (bytes) => bytes.length,
@@ -305,7 +353,7 @@ export const makeRemoteAdapter = (
       return [output, {
         machine: output.state,
         transcript,
-      }] as const
+      }]
     })
 
   const clearInFlight = (
@@ -345,8 +393,8 @@ export const makeRemoteAdapter = (
       : undefined
     while (true) {
       const pulled = yield* Pull.catchDone(
-        pull.pipe(Effect.map((event) => ({ _tag: "Element" as const, event }))),
-        (witness) => Effect.succeed({ _tag: "Done" as const, witness }),
+        pull.pipe(Effect.map((event): Pulled => ({ _tag: "Element", event }))),
+        (witness) => Effect.succeed<Pulled>({ _tag: "Done", witness }),
       ).pipe(Effect.result)
       if (pulled._tag === "Failure") {
         const observedReceivedBytes = yield* Ref.get(receivedRef)
@@ -355,25 +403,24 @@ export const makeRemoteAdapter = (
           { _tag: "Reset" },
           command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
         )
-        return yield* Effect.fail(unavailableFromTransport(
+        return yield* unavailableFromTransport(
           opId,
           attemptId,
           {
             ...pulled.failure,
             receivedBytes: Math.max(observedReceivedBytes, pulled.failure.receivedBytes),
           },
-        ))
+        )
       }
       const next = pulled.success
 
       if (next._tag === "Done") {
         const witness = next.witness
         if (direct !== undefined) {
-          return {
-            event: direct.event,
-            ...(direct.protocolCode === undefined ? {} : { protocolCode: direct.protocolCode }),
-            witness,
+          if (direct.protocolCode === undefined) {
+            return { event: direct.event, witness }
           }
+          return { event: direct.event, protocolCode: direct.protocolCode, witness }
         }
 
         if (witness.terminalFraming !== "complete") {
@@ -411,27 +458,32 @@ export const makeRemoteAdapter = (
         }
         if (command._tag === "ProbeCapabilities") {
           const limits = decodeCapabilityDocument(bytes)
-          const event: Event<ContentId, Uint8Array> = Option.isSome(limits)
-            ? { _tag: "Capabilities", limits: limits.value }
-            : { _tag: "Truncated" }
-          return Option.isSome(limits)
-            ? { event, witness }
-            : { event, protocolCode: "invalidFraming" as const, witness }
+          if (Option.isNone(limits)) {
+            const event: Event<ContentId, Uint8Array> = { _tag: "Truncated" }
+            const protocolCode: NonNullable<Exchange["protocolCode"]> = "invalidFraming"
+            return { event, protocolCode, witness }
+          }
+          const event: Event<ContentId, Uint8Array> = {
+            _tag: "Capabilities",
+            limits: limits.value,
+          }
+          return { event, witness }
         }
         if (command._tag === "FindMissing") {
           const decoded = decodePresenceDocument(command.keys, bytes)
           if (Option.isNone(decoded)) {
             const event: Event<ContentId, Uint8Array> = { _tag: "Truncated" }
-            return { event, protocolCode: "invalidFraming" as const, witness }
+            const protocolCode: NonNullable<Exchange["protocolCode"]> = "invalidFraming"
+            return { event, protocolCode, witness }
           }
-          const results = command.keys.map((key, index) => {
+          const results = command.keys.map((key, index): KeyStatus<ContentId, Uint8Array> => {
             switch (decoded.value.statuses[index]) {
               case "missing":
-                return { _tag: "Missing" as const, key }
+                return { _tag: "Missing", key }
               case "present":
-                return { _tag: "Found" as const, key, bytes: new Uint8Array() }
+                return { _tag: "Found", key, bytes: new Uint8Array() }
               default:
-                return { _tag: "Failed" as const, key }
+                return { _tag: "Failed", key }
             }
           })
           const event: Event<ContentId, Uint8Array> = { _tag: "BatchResult", results }
@@ -542,14 +594,14 @@ export const makeRemoteAdapter = (
         { _tag: "Silence" },
         command._tag === "Upload" ? config.maxEncodedBytes : config.maxDecodedBytes,
       )
-      return yield* Effect.fail(remoteUnavailable(
+      return yield* remoteUnavailable(
         opId,
         "timeout",
         "possiblyProcessed",
         receivedBytes,
         preparedSentBytes,
         attemptId,
-      ))
+      )
     })),
   )
   })
@@ -559,10 +611,10 @@ export const makeRemoteAdapter = (
     attemptId: number,
     exchange: Exchange | undefined,
   ): Effect.Effect<never, CasRemoteError> => {
-    const witness = exchange?.witness ?? {
+    const witness: CompletionWitness = exchange?.witness ?? {
       receivedBytes: 0,
       sentBytes: 0,
-      terminalFraming: "reset" as const,
+      terminalFraming: "reset",
     }
     if (exchange?.protocolCode !== undefined) {
       return Effect.fail(remoteProtocol(opId, exchange.protocolCode, witness, attemptId))
@@ -635,21 +687,6 @@ export const makeRemoteAdapter = (
         ))
     }
   }
-
-  type BudgetResult = Extract<MResult<ContentId, Uint8Array>, {
-    readonly _tag: "BudgetRejected" | "KeyBudgetRejected"
-  }>
-  type NonBudgetResult = Exclude<MResult<ContentId, Uint8Array>, BudgetResult>
-  type BudgetEvidence = {
-    readonly stage: RemoteBudgetError["stage"]
-    readonly observed: number
-    readonly bound: number
-  }
-
-  const isBudgetResult = (
-    result: MResult<ContentId, Uint8Array>,
-  ): result is BudgetResult => result._tag === "BudgetRejected"
-    || result._tag === "KeyBudgetRejected"
 
   const budgetResultError = (
     opId: number,
@@ -1273,11 +1310,11 @@ export const makeRemoteAdapter = (
 
   const putTransfer = Effect.fn("CasTransfer.Remote.putStream")(function* (
     source: UploadSource,
-    options: PutStreamOptions,
+    putOptions: PutStreamOptions,
   ) {
     if (config.authorityMode === "remote-authoritative") yield* capabilities
     const opId = yield* allocateOpId
-    let expected = options.expected
+    let expected = putOptions.expected
     let attemptId = 1
 
     // The explicit loop preserves attemptId threading and acquires a fresh
@@ -1304,8 +1341,8 @@ export const makeRemoteAdapter = (
       }))
 
       const node = CasNodeInput.make({
-        kind: options.kind,
-        refs: [...options.refs],
+        kind: putOptions.kind,
+        refs: [...putOptions.refs],
         payload: joinChunks(chunks, length),
       })
       const validated = yield* validateUploadNode(node)
@@ -1335,8 +1372,7 @@ export const makeRemoteAdapter = (
       ).pipe(Effect.result)
       if (uploaded._tag === "Success") return uploaded.success
 
-      const retryable = uploaded.failure._tag === "CasRemoteError/Protocol"
-        || uploaded.failure._tag === "CasRemoteError/Unavailable"
+      const retryable = isRetryableUploadFailure(uploaded.failure)
       if (source._tag === "OneShot" && retryable) {
         return yield* remotePolicy(
           opId,
@@ -1347,7 +1383,7 @@ export const makeRemoteAdapter = (
         )
       }
       if (!retryable || attemptId >= config.maxAttempts) {
-        return yield* Effect.fail(uploaded.failure)
+        return yield* uploaded.failure
       }
       attemptId += 1
     }
@@ -1360,7 +1396,7 @@ export const makeRemoteAdapter = (
     const opId = yield* allocateOpId
     const validated = yield* validateUploadNode(input)
     if (config.authorityMode === "offline") {
-      return yield* Effect.fail(wrapRemoteFailure(remotePolicy(opId, "offline")))
+      return yield* wrapRemoteFailure(remotePolicy(opId, "offline"))
     }
     if (config.authorityMode === "local-authoritative") {
       return yield* localStore.put(validated.node)
@@ -1372,7 +1408,7 @@ export const makeRemoteAdapter = (
 
   const load = Effect.fn("CasStore.Remote.load")(function* (id: ContentId) {
     const local = yield* localStore.load(id).pipe(
-      Effect.map(Option.some),
+      Effect.asSome,
       Effect.catchTag("CasError/ContentNotFound", () => Effect.succeed(Option.none())),
     )
     if (local._tag === "Some") return local.value
@@ -1400,7 +1436,9 @@ export const makeRemoteAdapter = (
     return Stream.succeed(bytes)
   })
 
-  const snapshot = SynchronizedRef.modify(runtime, (current) => {
+  const snapshot = SynchronizedRef.modify(runtime, (
+    current,
+  ): readonly [RemoteMachineSnapshot, MachineRuntime] => {
     const decisions: Array<TaggedDecision<ContentId, Uint8Array>> = []
     for (let offset = 0; offset < current.transcript.length; offset += 1) {
       const decision = current.transcript.buffer[
@@ -1418,7 +1456,7 @@ export const makeRemoteAdapter = (
       rejectedSize: HashSet.size(current.machine.rejected),
       reportedMissingSize: HashSet.size(current.machine.reportedMissing),
       reportedPresentSize: HashSet.size(current.machine.reportedPresent),
-    }, current] as const
+    }, current]
   })
 
   return {

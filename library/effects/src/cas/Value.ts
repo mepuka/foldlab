@@ -9,21 +9,37 @@
  * The kind tag and revision together version this projection: the kind tag is
  * the CAS node tag and the revision is carried in the payload envelope.
  *
+ * Typed references (CAS-005): a schema field built with `ref` holds a
+ * `Root<B>` — a typed content id, decoded lazily, never a loaded
+ * child. On the wire the field is a positional `{"$ref": k}` marker in
+ * the payload and the k-th entry of the node's reference array, so the
+ * store's admission law checks every typed edge (`WrongKindReference`)
+ * with no projection-side machinery. Construction is leaf-up: putting
+ * a value whose references are not yet admitted fails with the store's
+ * `DanglingReference`.
+ *
  * This is a runtime projection contract only. It makes no canonicality or
  * equivalence claim about the independent Lean printer.
  */
-import { Effect, Schema } from "effect"
+import { cast, Effect, Predicate, Result, Schema, SchemaGetter, SchemaIssue } from "effect"
 import {
   Byte,
   CasNodeInput,
   ContentId,
   UnknownKind,
   type CasError,
+  type CasReference,
   type ContentId as ContentIdType,
 } from "./Node.ts"
 import { CasSchemeVersion, CasStore } from "./Store.ts"
 import { bytesEqual } from "../internal/bytes.ts"
 import { ReservedKindTags } from "../internal/kindTags.ts"
+import {
+  markerize,
+  RefSentinelKey,
+  resolveMarkers,
+  violationReason,
+} from "../internal/refMarkers.ts"
 
 declare const RootTypeId: unique symbol
 
@@ -32,7 +48,7 @@ declare const RootTypeId: unique symbol
 export type Root<A> = ContentIdType & {
   readonly [RootTypeId]: {
     readonly value: (value: A) => A
-    readonly expectedKindTag: typeof Byte.Type
+    readonly expectedKindTag: Byte
   }
 }
 
@@ -49,12 +65,15 @@ export class ProjectionCodecFailure
 export type ProjectionError = CasError | ProjectionCodecFailure
 
 export interface ValueOptions<A> {
-  readonly kindTag: typeof Byte.Type
+  readonly kindTag: Byte
   readonly revision: number
   readonly schema: Schema.Codec<A, Schema.Json, never, never>
 }
 
 export interface CasValue<A> {
+  /** The projection's CAS node tag — what a typed reference to this
+   * projection expects at its target. */
+  readonly kindTag: Byte
   readonly put: (value: A) => Effect.Effect<Root<A>, ProjectionError, CasStore>
   readonly get: (root: Root<A>) => Effect.Effect<A, ProjectionError, CasStore>
 }
@@ -64,18 +83,12 @@ const utf8Decoder = new TextDecoder("utf-8", { fatal: true })
 
 const projectionFailure = (
   direction: "encode" | "decode",
-  issue: unknown,
+  issue: string,
   id?: ContentIdType,
-): ProjectionCodecFailure => new ProjectionCodecFailure({
-  direction,
-  issue: String(issue),
-  ...(id === undefined ? {} : { id }),
-})
-
-const isPlainObject = (value: object): boolean => {
-  const prototype = Object.getPrototypeOf(value)
-  return prototype === Object.prototype || prototype === null
-}
+): ProjectionCodecFailure =>
+  new ProjectionCodecFailure(
+    id === undefined ? { direction, issue } : { direction, issue, id },
+  )
 
 /** Codepoint order — equal to UTF-8 byte order, the language-neutral
  * key ordering CAS-004 pins. Default string comparison is UTF-16
@@ -85,7 +98,7 @@ const compareCodepoints = (left: string, right: string): number => {
   const b = Array.from(right)
   const shorter = Math.min(a.length, b.length)
   for (let index = 0; index < shorter; index += 1) {
-    const delta = (a[index] as string).codePointAt(0)! - (b[index] as string).codePointAt(0)!
+    const delta = a[index]!.codePointAt(0)! - b[index]!.codePointAt(0)!
     if (delta !== 0) return delta
   }
   return a.length - b.length
@@ -131,17 +144,16 @@ export const canonicalJson = (
         }
         return `[${items.join(",")}]`
       }
-      if (!isPlainObject(value)) {
+      const prototype = Object.getPrototypeOf(value)
+      if (prototype !== Object.prototype && prototype !== null) {
         throw new TypeError("Canonical JSON objects must have a plain prototype")
       }
       if (Object.getOwnPropertySymbols(value).length > 0) {
         throw new TypeError("Canonical JSON objects cannot have symbol keys")
       }
-      const fields = Object.keys(value).sort(compareCodepoints).map((key) =>
-        `${JSON.stringify(key)}:${canonicalJson(
-          (value as Record<string, unknown>)[key],
-          nextAncestors,
-        )}`)
+      const fields = Object.entries(value)
+        .sort(([left], [right]) => compareCodepoints(left, right))
+        .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item, nextAncestors)}`)
       return `{${fields.join(",")}}`
     }
     default:
@@ -151,11 +163,11 @@ export const canonicalJson = (
 
 const payloadFor = (
   revision: number,
-  encoded: unknown,
+  encoded: Schema.Json,
 ): Effect.Effect<Uint8Array, ProjectionCodecFailure> =>
   Effect.try({
     try: () => utf8Encoder.encode(canonicalJson({ revision, value: encoded })),
-    catch: (issue) => projectionFailure("encode", issue),
+    catch: (issue) => projectionFailure("encode", String(issue)),
   })
 
 const decodedEnvelope = (
@@ -172,24 +184,56 @@ const decodedEnvelope = (
         throw new TypeError("Projection payload is not canonical JSON")
       }
       if (
-        typeof parsed !== "object"
-        || parsed === null
-        || Array.isArray(parsed)
+        !Predicate.isObject(parsed)
         || Object.keys(parsed).length !== 2
         || !("revision" in parsed)
         || !("value" in parsed)
       ) {
         throw new TypeError("Projection payload must be the exact revision/value envelope")
       }
-      if ((parsed as { readonly revision?: unknown }).revision !== revision) {
+      if (parsed.revision !== revision) {
         throw new TypeError(`Projection revision does not match ${revision}`)
       }
-      return (parsed as { readonly value: unknown }).value
+      return parsed.value
     },
-    catch: (issue) => projectionFailure("decode", issue, id),
+    catch: (issue) => projectionFailure("decode", String(issue), id),
   })
 
-const makeRoot = <A>(id: ContentIdType): Root<A> => id as Root<A>
+const makeRoot = <A>(id: ContentIdType): Root<A> => cast(id)
+
+/** The wire shape of a typed reference before marker assignment. */
+const sentinelSchema = Schema.Struct({
+  [RefSentinelKey]: Schema.Struct({ id: ContentId, tag: Byte }),
+})
+
+/** A typed-reference field: `Root<B>` in the decoded value, a
+ * positional marker plus a reference-array entry on the wire. The
+ * target projection arrives as a thunk so self- and mutual reference
+ * elaborate; its kind tag is stamped into the reference at encode and
+ * demanded of it at decode. */
+export const ref = <B>(
+  target: () => CasValue<B>,
+): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
+  sentinelSchema.pipe(Schema.decodeTo(
+    Schema.declare<Root<B>>(
+      (candidate): candidate is Root<B> => Predicate.isString(candidate),
+    ),
+    {
+      decode: SchemaGetter.transformOrFail((sentinel, options) => {
+        const expected = target().kindTag
+        return sentinel[RefSentinelKey].tag === expected
+          ? Effect.succeed(makeRoot<B>(sentinel[RefSentinelKey].id))
+          : Effect.fail(new SchemaIssue.InvalidValue(
+              { message: `reference expects kind tag ${expected}, node carries ${sentinel[RefSentinelKey].tag}` },
+              sentinel,
+              options,
+            ))
+      }),
+      encode: SchemaGetter.transform((root: Root<B>) => ({
+        [RefSentinelKey]: { id: ContentId.make(root), tag: target().kindTag },
+      })),
+    },
+  ))
 
 /** Construct a typed value projection over the in-memory CAS service. */
 export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
@@ -208,13 +252,26 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
     function* (input) {
       const store = yield* CasStore
       const encoded = yield* Schema.encodeUnknownEffect(options.schema)(input).pipe(
-        Effect.mapError((issue) => projectionFailure("encode", issue)),
+        Effect.mapError((issue) => projectionFailure("encode", String(issue))),
       )
-      const payload = yield* payloadFor(options.revision, encoded)
+      // Reference sentinels become positional markers (CAS-005): the
+      // k-th marker in canonical byte order carries index k, and the
+      // references ride the node, where admission checks their kinds.
+      const markerized = markerize(encoded)
+      if (Result.isFailure(markerized)) {
+        return yield* projectionFailure(
+          "encode",
+          violationReason(markerized.failure),
+        )
+      }
+      const payload = yield* payloadFor(
+        options.revision,
+        cast(markerized.success.payload),
+      )
       const id = yield* store.put(CasNodeInput.make({
         kind: { version: CasSchemeVersion, tag: kindTag },
         payload,
-        refs: [],
+        refs: markerized.success.refs,
       }))
       return makeRoot<A>(id)
     },
@@ -227,19 +284,22 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
       if (node.kind.tag !== kindTag) {
         return yield* new UnknownKind(node.kind)
       }
-      if (node.refs.length !== 0) {
+      const encoded = yield* decodedEnvelope(node.payload, options.revision, root)
+      // The exact inverse walk: forced marker indexes verified against
+      // the node's reference array, markers restored to sentinels.
+      const resolved = resolveMarkers(encoded, node.refs)
+      if (Result.isFailure(resolved)) {
         return yield* projectionFailure(
           "decode",
-          "Projection values cannot carry CAS references",
+          violationReason(resolved.failure),
           root,
         )
       }
-      const encoded = yield* decodedEnvelope(node.payload, options.revision, root)
-      return yield* Schema.decodeUnknownEffect(options.schema)(encoded).pipe(
-        Effect.mapError((issue) => projectionFailure("decode", issue, root)),
+      return yield* Schema.decodeUnknownEffect(options.schema)(resolved.success).pipe(
+        Effect.mapError((issue) => projectionFailure("decode", String(issue), root)),
       )
     },
   )
 
-  return { put, get }
+  return { get, kindTag, put }
 }

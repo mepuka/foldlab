@@ -13,9 +13,10 @@
  * - scratch/foldkit/demo.ts — an entry point; running effects is its job.
  */
 import { defineConfig } from "oxlint"
+import { recommended } from "oxlint-plugin-effect/presets/recommended"
 
 export default defineConfig({
-  jsPlugins: ["./lint/foldlab-rules.ts"],
+  jsPlugins: ["./lint/foldlab-rules.ts", "oxlint-plugin-effect/plugin"],
   // Strictest SIGNAL categories at error. `style` stays off: its rules
   // (kebab-case filenames, no-ternary, sort-keys, one-var, id-length) contradict
   // the estate's ratified conventions (PascalCase modules, idiomatic ternaries,
@@ -28,6 +29,36 @@ export default defineConfig({
     perf: "error",
   },
   rules: {
+    // The full oxlint-plugin-effect recommended set, everything on.
+    ...recommended,
+    // Convention conflicts, off with the ruling cited — these would red the
+    // ratified estate idiom itself, not defects in it:
+    // - `*Shape` service interfaces are the house API naming convention.
+    // - Idiomatic ternaries are ratified (see the categories note below).
+    // - `| undefined` under exactOptionalPropertyTypes is the effect v4
+    //   API idiom; Option is used at domain boundaries, not option bags.
+    "effect/noNullish": "off",
+    "effect/noShapeInSymbolNames": "off",
+    "effect/noTernary": "off",
+    // Frozen-tree findings ledger, effect edition: real hits across the
+    // attested tree held at warn pending a ratified cleanup slice —
+    // visible, never red, ratchet selectively when ruled.
+    "effect/noAs": "warn",
+    "effect/noChainedTypeAssertions": "warn",
+    "effect/noConditionalEmptyObjectSpread": "warn",
+    "effect/noEffectBind": "warn",
+    "effect/noEffectDo": "warn",
+    "effect/noGlobals": "warn",
+    "effect/noKnownValueWidening": "warn",
+    "effect/noNewError": "warn",
+    "effect/noObjectParameters": "warn",
+    "effect/noRuntimeTypeof": "warn",
+    "effect/noThrowStatement": "warn",
+    "effect/noTryCatch": "warn",
+    "effect/noUnknownParameters": "warn",
+    "effect/noUnsafeDictionaryType": "warn",
+    "effect/preferMatchTagsExhaustive": "warn",
+    "effect/preferPredicateIsTagged": "warn",
     // Effect-idiom false positives: Schema class+type declaration merging,
     // the `_tag` discriminator, error families per module, generator length.
     "no-redeclare": "off",

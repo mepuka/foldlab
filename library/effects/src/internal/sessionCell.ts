@@ -17,7 +17,7 @@ export const makeSessionCell = <State>(
 ): Effect.Effect<SessionCell<State>> => Effect.map(
   SynchronizedRef.make(initial),
   (ref): SessionCell<State> => ({
-    read: SynchronizedRef.modify(ref, (state) => [state, state] as const),
+    read: SynchronizedRef.modify(ref, (state): readonly [State, State] => [state, state]),
     modify: (update) => SynchronizedRef.modifyEffect(ref, update),
     modifyMasked: (update) => Effect.uninterruptible(
       SynchronizedRef.modifyEffect(ref, update),

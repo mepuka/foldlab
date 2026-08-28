@@ -15,7 +15,7 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Schema } from "effect"
 import { readdir, readFile } from "node:fs/promises"
-import { ManifestModel, manifestIndexNames } from "./harness.ts"
+import { ManifestModel, ManifestReadError, manifestIndexNames } from "./harness.ts"
 
 const manifestDir = new URL("../../conformance/manifest/", import.meta.url)
 
@@ -101,7 +101,7 @@ it.effect.each([...manifestIndexNames])(
         JSON.parse(text),
         { onExcessProperty: "error" },
       ).pipe(Effect.mapError((issue) =>
-        new Error(`${name}: ${String(issue)}`)))
+        new ManifestReadError({ cause: `${name}: ${String(issue)}` })))
       expect({ name, family: decoded.family }).toEqual({
         name,
         family: name.replace(/\.json$/, ""),

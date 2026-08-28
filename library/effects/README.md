@@ -1,248 +1,172 @@
-# effects — Effect-native content-addressed record/replay
+# @foldlab/cas — a content-addressed store as a data structure
 
-`@foldlab/effect-replay` is a private mixed TypeScript/Lean library for
-recording explicitly described Effect service calls into a content-addressed
-history and replaying them without a live adapter. The TypeScript implementation
-is current through M5, the E2/E3 descriptor slice, the R3 remote front end, and
-the record-mode delegation protocol at `effects-model@0.2.0`: the in-memory and
-remote CAS adapters, pure reducer, session service, replayable service kit,
-transparent orchestration, streamed transfer service, verified blob reads, and
-typed value/service projection are present.
+`@foldlab/cas` is a private mixed TypeScript/Lean library: a mini
+general-purpose content-addressed store (CAS) for Effect. You use it the
+way you use a Map — put a value, get a typed root back, follow typed
+references — except every node is addressed by the hash of its canonical
+bytes, every edge is kind-checked at admission, and every read
+re-verifies what storage returned. The same store value can then be
+served over a small wire profile, or read straight off any static host,
+because storage sits behind one dumb byte-plane seam.
 
-The library keeps different evidence surfaces separate. TypeScript compilation
-and tests observe the runtime implementation; the Lean model, conformance
-ledger, and ratified manifest vectors live under their own gates. See
-[`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md) and the minted vocabulary in
+The library keeps different evidence surfaces separate. TypeScript
+compilation and tests observe the runtime implementation; the Lean
+model, conformance ledger, and ratified manifest vectors live under
+their own gates. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
+and the minted vocabulary in
 [`docs/effect-replay/CONTEXT.md`](../../docs/effect-replay/CONTEXT.md).
+
+## The shape
+
+Three layers, one seam:
+
+```
+  laws        Cas.value / Cas.ref     typed values, typed DAG references
+              Cas.Blob                verified chunked blobs
+              Cas.Graph               closure walks, untrusted-host audit
+              Cas.Store               the typed-node law: admission at put,
+                                      re-verification at load
+              Server.Core / httpApp   the same seams, served (cas-http/0)
+  ──────────────────────────────────────────────────────────────────────
+  seams       Cas.ByteReader          reads and presence  (every backend)
+              Cas.ByteWriter          grow-only joins     (writable backends)
+              Cas.RootStore           published-roots registry
+  ──────────────────────────────────────────────────────────────────────
+  backends    Cas.layerMemoryBackend  plain maps
+              Cas.layerFileBackend    a store root on any FileSystem
+              Cas.layerPathReader     read-only, over any host that serves
+                                      bytes at a path (supply one function)
+              Cas.layerRemote         the cas-http/0 client adapter
+```
+
+Backends are deliberately dumb byte planes — admission and verification
+are laws above the seam, so a backend cannot weaken the store and a
+hostile host cannot serve you wrong bytes without a typed refusal. The
+read/write split is type-level: a read-only composition (a git-hosted
+store, say) simply never provides `ByteWriter`, and writing over it is a
+compile error.
 
 ## Install and consume
 
-The package remains private while publication is an operator decision. Its
-proposed first package version is `0.1.0`; the built package is ESM-only and
-publishes JavaScript plus declarations from `dist`. Once publication is
-approved, consumers install it alongside the exact Effect release it targets:
+The package remains private while publication is an operator decision.
+The built package is ESM-only and publishes JavaScript plus declarations
+from `dist`:
 
 ```sh
-bun add @foldlab/effect-replay@0.1.0 effect@4.0.0-rc.111
+bun add @foldlab/cas@0.1.0 effect@4.0.0-rc.111
 ```
-
-The supported package root is intentionally small:
 
 ```ts
-import { Effect, Layer } from "effect"
-import { Cas, Replay } from "@foldlab/effect-replay"
+import { Cas, Replay, Server } from "@foldlab/cas"
 ```
 
-`Cas` and `Replay` are the only root exports. The package currently pins Effect
-as a direct dependency; whether a public release should instead declare it as a
-peer dependency remains a separate operator decision.
+`Cas`, `Server`, and `Replay` are the only root exports — one namespace
+per plane.
+
+## The data structure
+
+```ts
+import { Effect, Layer, Schema } from "effect"
+import { Cas } from "@foldlab/cas"
+
+const Author = Cas.value({
+  kindTag: 0x21,
+  revision: 0,
+  schema: Schema.Struct({ name: Schema.String }),
+})
+
+const Post = Cas.value({
+  kindTag: 0x22,
+  revision: 0,
+  schema: Schema.Struct({
+    title: Schema.String,
+    author: Cas.ref(() => Author),          // a typed edge
+  }),
+})
+
+const program = Effect.gen(function* () {
+  const author = yield* Author.put({ name: "ada" })
+  const post = yield* Post.put({ title: "hi", author })   // leaf-up
+  const back = yield* Post.get(post)     // back.author : Root<Author>
+  return yield* Author.get(back.author)  // descent is explicit and lazy
+})
+
+program.pipe(Effect.provide(Cas.layerMemoryLive))
+```
+
+Typed references are positional markers in the canonical payload plus
+typed entries in the node's reference array, so the store's admission
+law checks every edge: a reference that points at the wrong kind of
+node, or at nothing, refuses at `put` with the clause-named error.
+Reading decodes references to typed roots — never loaded children — so
+every load stays visible.
+
+Swap `Cas.layerMemoryLive` for a file-backed store, seams exposed:
+
+```ts
+const local = Cas.layerFile("./store").pipe(
+  Layer.provide(myFileSystemLayer),        // any FileSystem realization
+  Layer.provideMerge(Cas.layerCryptoWebCrypto),
+)
+```
+
+The on-disk layout is `objects/<2 hex>/<62 hex>` plus `roots/<64 hex>`
+empty files — rsync-able, diff-able, and committable. Push the store
+root to a git repo and anyone can read it with no server at all:
+
+```ts
+const hosted = Cas.layerPathReader((path) =>
+  httpGetOption(`https://raw.githubusercontent.com/org/repo/main/store/${path}`))
+// Cas.Graph.verify(root) now audits the host: every reachable node
+// re-hashed and re-decoded — a corrupt or hostile host is a typed
+// refusal, not wrong data.
+```
+
+## Serving it
+
+A server is the same seams under a wire law — no new storage concepts:
+
+```ts
+import { Server } from "@foldlab/cas"
+
+const app = Server.httpApp({ maxBatchKeys: 64, maxNodeBytes: 1 << 20 }).pipe(
+  Effect.provide(Server.Core.layer(policy)),
+  Effect.provide(backendLayers),           // the SAME backend value
+)
+```
+
+`cas-http/0` is the wire authority — see
+[`PROFILE-CAS-HTTP-0.md`](PROFILE-CAS-HTTP-0.md): content-addressed
+`PUT`/`GET` under `/cas/{hex}`, presence under `/control/missing`,
+capabilities, root publish and presence under `/roots/{hex}`, bearer
+authorization with anonymous reads as policy. The request algebra, the
+pure wire-decision law, and the status tables are all data
+(`Server.Request`, `Server.decide`, `Server.renderOutcome`), so a
+deployment topology is a choice of layers and nothing else. The remote
+client (`Cas.layerRemote`, policy under `Cas.Remote.*`) speaks the same
+profile with verified transfer, budgets, and explicit trust policy.
 
 ## Runtime surface
 
-The package barrel exports exactly two namespaces — `Cas` and `Replay` — one
-per plane. Inside a namespace the `Cas` prefix of internal module names drops:
-the store tag is `Cas.Store`, the transfer tag is `Cas.Transfer`, the blob
-surface is `Cas.Blob`, and the remote configuration is `Cas.RemoteConfig`.
-
-- `Cas` carries the node Schemas, clause-named errors (with `Cas.ErrorTag`
-  constants, the `Cas.isCasError` guard, and the `Cas.matchError` fold),
-  and content identifiers; the `Store` service tag with the isolated
-  in-memory adapter (`Cas.layerMemory`), the shipped WebCrypto digest path
-  (`Cas.layerCryptoWebCrypto`), the zero-configuration local runtime
-  (`Cas.layerMemoryLive`), and the scheme-0 canonical node codec
-  (`Cas.encodeNode`/`Cas.decodeNode`, the decoder returning `Option`); the
-  `value` typed-value projection and `service` eager hydration descriptor;
-  verified blob reads and recipe-1 blob construction under `Cas.Blob`
-  (streaming `slice` plus the buffer-returning `readRange`);
-  the `Transfer` service tag with the `restartable`/`oneShot` upload sources;
-  the typed remote configuration and failure family; and `Cas.layerRemote`,
-  which builds one shared `Store | Transfer` adapter, owns its Fetch transport,
-  and keeps native `Crypto` visible as a layer requirement.
-- `Replay` carries the runtime `Replay` service with `Replay.layer` and
-  `Replay.session`; the synchronous pure reducer `Replay.reduce` with its
-  session carriers and decision vocabulary; `Replay.describeService`
-  operation descriptions; and the `Replay.replayable` service kit, which
-  returns the internal-live role, record, and replay layers.
-
-Deeper module paths (`cas/*.ts`, `replay/*.ts`) remain importable inside
-this repository for tests and correspondence work; the published package
-exposes only the root entry, so consumers reach everything through the two
-namespaces.
-
-`internal/storage.ts`, `internal/live.ts`, and the `internal/remote*.ts` and
-`internal/merkle*.ts` modules are never exported. Their history/witness
-Schemas, binary carriers, live bindings, remote state machine, untrusted
-transport seam, and merkle tree/proof codecs are implementation details with
-no public canonicality or stability claim.
-
-`Cas.value` encodes a Schema's Encoded form as recursively key-sorted,
-finite-number-only UTF-8 JSON under an explicit kind tag and revision. Its
-phantom `Root<A>` never skips the resident-node kind check. Encoding and
-decoding failures are `ProjectionCodecFailure`; CAS failures retain their own
-error members. `Cas.service` returns a descriptor whose `layer` and `layerAs`
-load and decode the root and run its constructor while the returned Layer is
-acquired; `descriptor.layerAs(kit.live, root)` installs that same shape under a
-replayable kit's internal live role instead of the public tag.
-
-## CAS value schema discipline
-
-A value descriptor chooses one stable JSON-safe Encoded representation for
-each field:
-
-- Encode bytes with `Schema.Uint8ArrayFromHex`, or with
-  `Schema.Uint8ArrayFromBase64` where size matters. Pick one representation per
-  descriptor; never accept both.
-- Encode big integers with `Schema.BigIntFromString`.
-- Encode instants with `Schema.DateTimeUtcFromMillis`; epoch numbers avoid the
-  format and zone ambiguity of ISO strings.
-- Encode options with `Schema.OptionFromNullOr`. If the inner type is itself
-  nullable, use a distinguishing representation instead because `null` cannot
-  identify both cases.
-- Encode set-like data as arrays sorted by an explicitly declared ordering;
-  insertion order is not content identity.
-
-Custom domain codecs use `Schema.decodeTo` or `Schema.encodeTo` only when their
-encode direction is deterministic and total, their Encoded type stays within
-`Schema.Json` (with finite numbers enforced at runtime), and the descriptor has
-a `put` → `get` → `put` fixture asserting that both puts return the same root.
-
-Each described service method must accept exactly one request value — the
-constraint is enforced structurally, so zero-argument, optional, variadic,
-and multi-argument methods are rejected at the type level. Wrap multiple
-logical arguments in a request object before describing the method. The
-request, success, and typed-failure codecs are inferred per method, while
-the operation revision remains explicit. A method with no typed failure
-still names one: pass `Schema.Never` as its `failure` codec.
-
-## Remote CAS profile
-
-`Cas.layerRemote` speaks `cas-http/0`. The wire contract — resource
-spaces, framings, status mappings, the capability document, batch and
-publish semantics, and the blob node graph — is normative in
-[`PROFILE-CAS-HTTP-0.md`](PROFILE-CAS-HTTP-0.md); this section
-describes the library's behavior above that wire.
-
-Remote layers eagerly probe `GET /control/capabilities` by default; setting
-`capabilityProbe: "lazy"` lets the Layer acquire without network traffic and
-defers one deadline-bounded, per-layer memoized probe until the first
-wire-backed operation. The eight-byte document remains required and is never
-persisted across layers.
-`CasTransfer.missing` sends canonical, order-preserving key-list batches no
-larger than the probed key limit and returns positional planning data only—it
-never admits content or negatively caches absence. `CasTransfer.publish`
-refuses locally unless the root and declared closure are confirmed.
-`CasTransfer.push` preflights the complete local closure by identifier before
-operation-specific wire traffic, then materializes and negotiates one
-capability-sized batch at a time. It uploads children before parents and
-publishes the root last. A missing answer that contradicts the machine's
-existing confirmation fails closed as `remoteRejected`; it is never reported
-as a transfer that did not occur.
-
-The HTTP shell performs no retry and follows no redirect. The library supplies
-`redirect: "manual"` around each request, including with plain
-`FetchHttpClient` wiring, so every `3xx` reaches the machine and becomes the
-typed `redirectDenied` policy outcome. `redirectPolicy.maxRedirects` and
-`redirectPolicy.crossOrigin` are validated configuration reserved for R4;
-redirect following is not active in this slice. The semantic adapter retries only a
-`Cas.restartable` source — a stream factory reacquired for every attempt — up
-to `maxAttempts`, with the content address rechecked on every attempt. A
-retryable failure from `Cas.oneShot` becomes `oneShotRetryRefused` and retains
-the underlying transport evidence.
-
-Authority modes never silently fall back. `remote-authoritative` uses the
-wire, `local-authoritative` admits locally without a remote claim, and
-`offline` rejects puts with the typed `offline` policy marker. On Fetch
-transport errors, `sentBytes` is necessarily a conservative prepared-byte
-witness because the platform does not expose the transmitted count.
-
-Four byte budgets and one key-count bound bind at these `cas-http/0` stages:
-
-| Stage | Plane and bound |
-|---|---|
-| `encoded` | Canonical upload bytes, checked by the machine before wire issue. |
-| `decoded` | Load `content-length` declaration and the running response-byte counter. |
-| `decompressed` | Non-identity `content-encoding` is refused as `invalidHeaders`, so no codec stage ever runs; the bound is still checked against the `decoded` response counter. |
-| `queued` | Bytes buffered awaiting admission, independent of transport or source rechunking. |
-| `keys` | Batch key count, bounded by the probed `maxBatchKeys` capability rather than by configuration. |
-
-The current adapter recomputes and checks downloads completely before exposing bytes, using a scoped,
-decoded-budget-bounded in-memory spool. Filesystem spooling and authenticated
-chunk proofs are later slices. The test-side `ConformancePeer` interface is
-the named landing point for the adopted LeanServer peer; this slice provides the Node
-reference and hostile raw-socket bindings only.
-
-Cold-pull limitation (deferred pull-staging boundary): a cold replica cannot yet load a
-reference-carrying parent when its children are absent locally. Parent
-admission therefore returns `RemoteFailure` wrapping `DanglingReference`;
-discovery-order closure pulling remains a later slice. The adapter's diagnostic
-decision transcript is a most-recent ring capped by
-`decisionTranscriptCapacity` (default 4096); snapshots report how many older
-entries were dropped. It remains diagnostic state, not a production telemetry
-buffer.
-
-## Usage sketch
-
-Assume `Rates` is an ordinary Effect service declaration with
-`RatesShape = Rates["Service"]`, `QuoteUnavailable` a `Schema.TaggedError`,
-and `liveRates` a value of the shape (`Replay.replayable` also accepts a
-`Layer` implementation). `runtimeLayer` supplies `Replay.layer` over
-`Cas.layerMemoryLive` — the zero-configuration local runtime. A session
-returns its durable witness root and, when present, the recorded or
-consumed history root alongside the outcome.
-
-```ts
-import { Cas, Replay } from "@foldlab/effect-replay"
-
-const descriptions = Replay.describeService<RatesShape>("app/Rates")({
-  quote: { revision: 1, request: Schema.String,
-    success: Schema.Number, failure: QuoteUnavailable },
-})
-const kit = Replay.replayable(Rates, descriptions, liveRates)
-const program = Rates.use((rates) => rates.quote("EUR"))
-const flow = Effect.gen(function* () {
-  const recorded = yield* Replay.record(program.pipe(Effect.provide(kit.record)))
-  if (recorded.history === undefined) return yield* Effect.die("no history")
-  const replayed = yield* Replay.replay(
-    program.pipe(Effect.provide(kit.replay)),
-    recorded.history,
-  )
-  return { recorded: recorded.outcome, replayed: replayed.outcome }
-})
-```
-
-`Replay.record` and `Replay.replay` are thin wrappers over `Replay.session`
-that make the two call sites structurally distinct: recording cannot name a
-history root, and replay requires one positionally. Record construction uses
-the live adapter; replay construction has no live dependency. Both expose
-the original caller-facing method types. Session witnesses default to a
-process-local execution identity — production callers that correlate
-witnesses across processes supply their own `executionId` in the options.
-
-## Replay ambient defaults
-
-Replay mode overrides the default `Clock` and `Random` references with
-tripwires and sets `TracerTimingEnabled` to `false`. Traced `Effect.fn`
-orchestration therefore replays without consulting the tripwire Clock, while a
-semantic `Clock` or `Random` use still produces a `Violated` session outcome.
-Direct host calls such as `Date.now()` cannot be intercepted by these Effect
-service defaults.
+- `Cas` — node vocabulary and clause-named errors (`Cas.ErrorTag`,
+  `Cas.isCasError`, `Cas.matchError`); the seams and backends above;
+  the `Store` service with the scheme-0 canonical codec
+  (`Cas.encodeNode`/`Cas.decodeNode`); `value`/`ref` typed projection;
+  `Graph.closure`/`Graph.verify`; verified blob reads under `Cas.Blob`;
+  streamed transfer under `Cas.Transfer`; remote configuration
+  (`Cas.remoteConfig`) with the policy machinery under `Cas.Remote.*`.
+- `Server` — `Core` (the semantic core over the seams), `httpApp` (the
+  four-step HTTP shell), and the wire law as data.
+- `Replay` — Effect-native record/replay over the store: the session
+  runtime, pure reducer, operation description, the replayable service
+  kit, and `Replay.service` eager hydration from value projections.
 
 ## Gates
 
-From the repository root:
-
-```powershell
-mise run check:effects:ts
-mise run check:effects
-mise run check:effects:research
-```
-
-The first performs the frozen Bun install, strict source/test typechecks, and
-Vitest suite. The second builds the Lean package under `--wfail`, regenerates
-the ledger and manifests, checks transition and mutant constraints, and asserts
-that generated conformance surfaces are byte-unchanged. The third asserts the
-research snapshots are byte-equal to their canonical owners.
-
-Research snapshots and their ownership are indexed in
-[`research/README.md`](research/README.md). Code is licensed under the
-[Apache-2.0 license](LICENSE).
+`bun run typecheck` (the Effect-aware native compiler), `bun run lint`
+(oxlint with the effect ruleset and the house laws), `bun run test`
+(unit, law, and conformance suites — the Lean model's generated vectors
+replayed against the implementation), and the Lean lane's own build and
+mutation battery. TypeScript observations and Lean model claims remain
+separate surfaces; every "verified" in this README means "covered by
+the named gate", nothing more.

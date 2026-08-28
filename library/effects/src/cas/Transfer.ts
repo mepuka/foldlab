@@ -80,7 +80,7 @@ export interface CasTransferShape {
 }
 
 export class CasTransfer extends Context.Service<CasTransfer, CasTransferShape>()(
-  "foldlab/effect-replay/CasTransfer",
+  "foldlab/cas/CasTransfer",
 ) {}
 
 export type { CasNodeInput }
