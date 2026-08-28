@@ -7,6 +7,7 @@ description = "Regenerate every derived file from declared sources"
 run = [
   "mise run gen:vectors",
   "mise run gen:cas-vectors",
+  "mise run gen:cas-schemas",
   "mise run gen:ledger",
 ]
 
@@ -47,12 +48,18 @@ description = "Regenerate the CAS conformance vectors from the Lean registry"
 dir = "{{config_root}}/library/cas"
 run = "lake exe vectors"
 
+[tasks."gen:cas-schemas"]
+description = "Regenerate the canonical-schema payload fixtures from the Lean self-codec registry"
+dir = "{{config_root}}/library/cas"
+run = "lake exe schemas"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector byte-identity gate"
+description = "Build the CAS type model under --wfail and run the vector and schema byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
+  "lake exe schemas --check",
 ]
 
 [tasks."check:effects:archive"]

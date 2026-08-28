@@ -1395,9 +1395,20 @@ registry; a tracking manifest):
   `ConformanceVector.vectorAst`/`indexAst` mirror the codes through
   the CanonicalSchema constructors and the wire schemas carry them via
   the annotation API (carrier/identity split). Asserting the schema
-  bytes agree across runtimes (the canonical-schema pin) is BLOCKED on
-  the schema commission's Lean Ast codec — first cross-pin when that
-  lands.
+  bytes agree across runtimes (the canonical-schema pin) was BLOCKED
+  on the schema commission's Lean Ast codec — **UNBLOCKED and LANDED
+  2026-08-28**: `Cas.Schema.SelfCodec` (the codes' JSON projection,
+  envelope, and canonical payload), the `cas_struct` authoring
+  notation (`Cas.Schema.Notation`: one declaration → structure +
+  `Described` instance + raw-schema surface), the `lake exe schemas`
+  registry with committed byte fixtures under `library/cas/schemas/`,
+  and `test/CanonicalSchemaPin.test.ts` asserting
+  `CanonicalSchema.payloadOf` answers the Lean-emitted bytes for every
+  registered code (the vector document/index codes among them — the
+  hand-mirror tripwire is now byte-armed). Open obligation, stated:
+  the byte-level rendering theorem binding `encode` to
+  `Json.renderCompact` remains pending; the pin is executable
+  evidence, not a theorem.
 
 **THE FIRST CAS (2026-08-28, delegated wave 1, coordinator-verified):**
 the library now demonstrably creates a real, durable, on-disk store.

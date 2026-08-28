@@ -3,6 +3,7 @@ import Cas.Schema.El
 import Cas.Schema.Codec
 import Cas.Schema.Described
 import Cas.Schema.Foreign
+import Cas.Schema.SelfCodec
 
 /-!
 # The schema plane — layer above the values, root of the hierarchy
@@ -26,7 +27,12 @@ Named increments, in order:
 - **Deriving extension** — the opt-in `Cas.Schema.Deriving` module
   generates `Described` instances for non-recursive structures while
   leaving compiler metaprogramming outside this runtime facade.
-- **Self-description** — the codes' own schema as a schema value, and
-  the byte-level rendering theorem (sorted canonical fields) binding
-  `encode` to `Json.renderCompact` and the store's envelope.
+- **Self-description** — LANDED in part (2026-08-28): `SelfCodec`
+  carries the codes' JSON projection, the schema-node envelope, and
+  the canonical payload, cross-pinned byte-for-byte against the
+  TypeScript `CanonicalSchema.payloadOf` (`lake exe schemas --check`
+  + `test/CanonicalSchemaPin.test.ts`). Still open: the byte-level
+  rendering theorem (sorted canonical fields) binding `encode` to
+  `Json.renderCompact` and the store's envelope — the projection is
+  executable-checked only until that theorem lands.
 -/

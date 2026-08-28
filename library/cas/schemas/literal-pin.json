@@ -1,0 +1,1 @@
+{"revision":0,"value":{"_tag":"Struct","fields":{"a":{"optional":false,"schema":{"_tag":"Literal","value":null}},"b":{"optional":false,"schema":{"_tag":"Literal","value":true}},"c":{"optional":true,"schema":{"_tag":"Literal","value":-7}},"d":{"optional":false,"schema":{"_tag":"Literal","value":"pinned"}}}}}

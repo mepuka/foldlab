@@ -18,3 +18,11 @@ srcDir = "examples"
 name = "vectors"
 srcDir = "tools"
 root = "Vectors"
+
+# The schema emitter: `lake exe schemas` regenerates the committed
+# canonical-schema payload fixtures under schemas/ (the cross-runtime
+# pin surface); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "schemas"
+srcDir = "tools"
+root = "Schemas"
