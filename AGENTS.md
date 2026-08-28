@@ -135,6 +135,8 @@ gates carry the trust.
 
 | Situation | Invocation |
 |---|---|
+| Any work on the store language, effects reasoning, proofs over `Prog`, or backend surfaces | `store-language` (the ratified law, projected) |
+| Generating or regenerating TypeScript, adding vectors/schemas/mirrors/programs, red byte gates | `backend-materialize` |
 | No Lake package yet, or broken toolchain state | `lean` → project-bootstrap |
 | Informal intent, no approved contract | `lean` → formalization-strategy Pass A |
 | Choosing carriers, invariants, representations | `lean` → model-invariants |
