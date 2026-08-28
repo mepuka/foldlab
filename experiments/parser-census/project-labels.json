@@ -51,7 +51,7 @@
   {
    "id": "typescript-compiler",
    "repo": "https://github.com/microsoft/TypeScript",
-   "pin": "e26b8d24bee09bf66d59941912166c5aa7975d20",
+   "pin": "7e133bea121ac13e6f11ddc69a4fd25c6797ffbf",
    "localPath": "corpus/microsoft__typescript",
    "license": "Apache-2.0",
    "labels": [
@@ -61,7 +61,8 @@
    "slices": {
     "non-effect-baseline": "src/compiler/** (sampled)"
    },
-   "note": "control stratum: large, idiomatic, zero Effect; also the grammar's hardest natural workout [materialized 2026-08-28 at the recorded pin; bytes under corpus/ (gitignored), see corpus-manifest.json]"
+   "note": "control stratum: large, idiomatic, zero Effect; also the grammar's hardest natural workout [materialized 2026-08-28 at the corrected pin; bytes under corpus/ (gitignored), see corpus-manifest.json]",
+   "pinNote": "re-pinned 2026-08-28 (session): the original pin e26b8d24 resolved main AFTER the Go-port takeover - src/compiler/** does not exist there (the repo's .ts files are tsc/testdata conformance fixtures, not idiomatic source). New pin is release-5.9 head, where the stratum's slice exists as intended."
   },
   {
    "id": "definitely-typed",
