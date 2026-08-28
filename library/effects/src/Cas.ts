@@ -77,6 +77,7 @@ export type { ReadPath } from "./cas/PathReader.ts"
 // codec, and the composed conveniences (memory and file stores with
 // their seams exposed).
 export {
+  CasLoader as Loader,
   CasSchemeVersion as SchemeVersion,
   CasStore as Store,
   decodeCasNode as decodeNode,
@@ -85,14 +86,20 @@ export {
   layerFile,
   layerMemory,
   layerMemoryLive,
+  layerReadStore,
   layerStore,
+  makeCasLoaderOver as makeLoaderOver,
   makeCasStore as makeStore,
   makeCasStoreOver as makeStoreOver,
   makeMemoryCasStore as makeMemoryStore,
   makeSha256Address,
   verifyNodeBytes,
 } from "./cas/Store.ts"
-export type { CasAddress as Address, CasStoreShape as StoreShape } from "./cas/Store.ts"
+export type {
+  CasAddress as Address,
+  CasLoaderShape as LoaderShape,
+  CasStoreShape as StoreShape,
+} from "./cas/Store.ts"
 
 // Graph laws over the read seam alone: children-first closure and the
 // untrusted-host audit.

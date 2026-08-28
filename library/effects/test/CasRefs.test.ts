@@ -5,14 +5,18 @@
  * markers in the payload, typed entries in the reference array.
  */
 import { expect, it } from "@effect/vitest"
-import { cast, Effect, Layer, Schema } from "effect"
+import { cast, Effect, FileSystem, Layer, Schema } from "effect"
 import { ContentId } from "../src/cas/Node.ts"
+import { PathReadError, layerPathReader } from "../src/cas/PathReader.ts"
 import {
   CasStore,
   layerCryptoWebCrypto,
+  layerFile,
   layerMemory,
+  layerReadStore,
 } from "../src/cas/Store.ts"
 import { ref, value, type Root } from "../src/cas/Value.ts"
+import { makeMemoryFs } from "./MemoryFsHarness.ts"
 
 interface Author {
   readonly name: string
@@ -107,6 +111,49 @@ it.effect("admission checks typed edges: wrong-kind and dangling refuse", () =>
     }).pipe(Effect.flip)
     expect(dangling._tag).toBe("CasError/DanglingReference")
   }).pipe(Effect.provide(layer)))
+
+it.effect("typed reads work over a read-only host: no writer anywhere", () =>
+  Effect.gen(function* () {
+    const memory = yield* makeMemoryFs
+    const writeLayer = layerFile("published").pipe(
+      Layer.provide(Layer.mergeAll(
+        Layer.succeed(FileSystem.FileSystem, memory.fs),
+        layerCryptoWebCrypto,
+      )),
+    )
+    const { author, post } = yield* Effect.gen(function* () {
+      const authorRoot = yield* Author.put({ name: "kokok" })
+      const postRoot = yield* Post.put({
+        author: authorRoot,
+        replies: [],
+        title: "hosted",
+      })
+      return { author: authorRoot, post: postRoot }
+    }).pipe(Effect.provide(writeLayer))
+
+    // The host serves bytes at paths; the read-only law stack decodes
+    // typed values over it — ByteWriter appears nowhere.
+    const host = layerPathReader((relativePath) =>
+      memory.fs.readFile(`published/${relativePath}`).pipe(
+        Effect.asSome,
+        Effect.catchTag("PlatformError", (error) =>
+          error.reason._tag === "NotFound"
+            ? Effect.succeedNone
+            : Effect.fail(new PathReadError({
+                path: relativePath,
+                reason: error.message,
+              }))),
+      ))
+    yield* Effect.gen(function* () {
+      const decoded = yield* Post.get(post)
+      expect(decoded.title).toBe("hosted")
+      expect((yield* Author.get(decoded.author)).name).toBe("kokok")
+      expect(decoded.author).toBe(author)
+    }).pipe(Effect.provide(layerReadStore().pipe(
+      Layer.provideMerge(host),
+      Layer.provide(layerCryptoWebCrypto),
+    )))
+  }))
 
 it.effect("user data colliding with the reserved keys refuses the encode", () =>
   Effect.gen(function* () {

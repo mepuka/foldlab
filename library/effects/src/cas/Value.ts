@@ -31,7 +31,7 @@ import {
   type CasReference,
   type ContentId as ContentIdType,
 } from "./Node.ts"
-import { CasSchemeVersion, CasStore } from "./Store.ts"
+import { CasLoader, CasSchemeVersion, CasStore } from "./Store.ts"
 import { bytesEqual } from "../internal/bytes.ts"
 import { ReservedKindTags } from "../internal/kindTags.ts"
 import {
@@ -75,7 +75,9 @@ export interface CasValue<A> {
    * projection expects at its target. */
   readonly kindTag: Byte
   readonly put: (value: A) => Effect.Effect<Root<A>, ProjectionError, CasStore>
-  readonly get: (root: Root<A>) => Effect.Effect<A, ProjectionError, CasStore>
+  /** Reads require only the load law, so typed values decode over
+   * read-only compositions — a path-reader host included. */
+  readonly get: (root: Root<A>) => Effect.Effect<A, ProjectionError, CasLoader>
 }
 
 const utf8Encoder = new TextEncoder()
@@ -279,8 +281,8 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
 
   const get: CasValue<A>["get"] = Effect.fn("CasValue.get")(
     function* (root) {
-      const store = yield* CasStore
-      const node = yield* store.load(root)
+      const loader = yield* CasLoader
+      const node = yield* loader.load(root)
       if (node.kind.tag !== kindTag) {
         return yield* new UnknownKind(node.kind)
       }

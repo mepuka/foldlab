@@ -31,8 +31,9 @@ export default defineConfig({
   rules: {
     // The full oxlint-plugin-effect recommended set, everything on.
     ...recommended,
-    // Convention conflicts, off with the ruling cited — these would red the
-    // ratified estate idiom itself, not defects in it:
+    // Convention conflicts, off with the ruling cited (RATIFIED
+    // 2026-08-28) — these would red the ratified estate idiom itself,
+    // not defects in it:
     // - `*Shape` service interfaces are the house API naming convention.
     // - Idiomatic ternaries are ratified (see the categories note below).
     // - `| undefined` under exactOptionalPropertyTypes is the effect v4
@@ -40,9 +41,11 @@ export default defineConfig({
     "effect/noNullish": "off",
     "effect/noShapeInSymbolNames": "off",
     "effect/noTernary": "off",
-    // Frozen-tree findings ledger, effect edition: real hits across the
-    // attested tree held at warn pending a ratified cleanup slice —
-    // visible, never red, ratchet selectively when ruled.
+    // Standing warn ledger, effect edition (RATIFIED 2026-08-28): the
+    // residue is the documented defect boundaries (canonicalJson,
+    // construction-time invariants, codec guards feeding Effect.try).
+    // Visible, never red; ratchet individual rules to error
+    // opportunistically — no dedicated cleanup slice.
     "effect/noAs": "warn",
     "effect/noChainedTypeAssertions": "warn",
     "effect/noConditionalEmptyObjectSpread": "warn",

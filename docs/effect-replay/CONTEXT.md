@@ -21,7 +21,18 @@ R2-delivered transfer and transport labels filled. Amended 2026-08-27
 at the R1–R11 ratification (operator-ratified, R11): one entry minted
 — solicited delegation — the mismatch taxonomy grown to eight
 categories, and the replay session's form gains the pending slot and
-its well-formedness clause. Kind:
+its well-formedness clause. Amended 2026-08-28 at the CAS-first
+ratification (operator-ratified, the seven rulings all as recommended):
+the dual-lane effects-model@0.3.0 corpus is retired in place to
+`library/effects/archive/lean-model-0.3` (tag `archive/effects-model-0.3`)
+and the record/replay plane stashed to
+`library/effects/archive/replay-plane` while the library focuses on CAS
+semantics, the DSL, and metaprogramming; the live Lean model moves to
+`library/cas` and every code label follows its file. Six entries minted
+— byte-plane seam, path reader, store-root layout, typed-reference
+marker law, store loader, server plane — and the typed root gains its
+edge form and model carrier. Replay-plane entries remain minted
+vocabulary; their code labels point into the stash. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
@@ -59,7 +70,7 @@ enters as an ordinary refactor proposal at that time.
 ## Terms
 
 ### Operation description
-- **Kind:** schema. **Code label:** `src/replay/Operation.ts`
+- **Kind:** schema. **Code label:** `library/effects/archive/replay-plane/src/replay/Operation.ts`
   (descriptions and the statically checked `describeService`).
 - **Form:** stable operation identity, revision, request Schema, success Schema,
   typed-failure Schema, and leaf-replay class for one method of a described
@@ -71,8 +82,8 @@ enters as an ordinary refactor proposal at that time.
   identities with different revisions as matchable.
 
 ### CAS node
-- **Kind:** model (carrier). **Code label:** `Effects/Cas/Node.lean`
-  (carrier) and `Effects/Cas/Codec.lean` (canonical codec); provisional
+- **Kind:** model (carrier). **Code label:** `library/cas/Cas/Node.lean`
+  (carrier) and `library/cas/Cas/Codec.lean` (canonical codec); provisional
   `src/cas/Node.ts`.
 - **Form:** versioned kind, canonical payload bytes, and ordered typed
   references — the data-plus-references pattern. References live inside the
@@ -85,8 +96,8 @@ enters as an ordinary refactor proposal at that time.
 
 ### Content identifier
 - **Kind:** model (function with premises). **Code label:**
-  `Effects/Cas/Address.lean` (address function and lattice levels) and
-  `Effects/Cas/Separation.lean` (kind/version separation).
+  `library/cas/Cas/Address.lean` (address function and lattice levels) and
+  `library/cas/Cas/Separation.lean` (kind/version separation).
 - **Form:** digest of the project-owned pre-image
   `versionByte ++ kindTag ++ frame(encode(canon node))`. The hash `H` is
   abstract in the model; the concrete digest is an injected adapter (first:
@@ -102,9 +113,9 @@ enters as an ordinary refactor proposal at that time.
   without its lattice level; "hashing proves identity."
 
 ### Node admission
-- **Kind:** model (judgment). **Code label:** `Effects/Cas/Admission.lean`
+- **Kind:** model (judgment). **Code label:** `library/cas/Cas/Admission.lean`
   (judgment and checked put) with the store carrier in
-  `Effects/Cas/Store.lean`; provisional `src/cas/Store.ts`.
+  `library/cas/Cas/Store.lean`; provisional `src/cas/Store.ts`.
 - **Form:** raw node to admitted node or clause-named typed CAS error
   (address mismatch, non-canonical bytes, unknown kind, dangling or wrong-kind
   reference). Closure and kind-typing are checked at `put`; `load` verifies
@@ -117,9 +128,9 @@ enters as an ordinary refactor proposal at that time.
   mismatch taxonomy.
 
 ### History entry
-- **Kind:** model (carrier). **Code label:** `Effects/Replay/History.lean`
+- **Kind:** model (carrier). **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/History.lean`
   (invocation and entry carriers) with the outcome envelope in
-  `Effects/Replay/Outcome.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Outcome.lean`.
 - **Form:** one logical operation occurrence: operation identity and revision,
   canonical request, decision, outcome envelope, and predecessor information.
 - **Obligations:** the outcome envelope is channel-preserving two-case data —
@@ -134,8 +145,8 @@ enters as an ordinary refactor proposal at that time.
 
 ### Occurrence identity
 - **Kind:** model (identity discipline). **Code label:**
-  `Effects/Replay/Session.lean` (flat history; position is the occurrence)
-  with the distinctness law in `Effects/Replay/Laws.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Session.lean` (flat history; position is the occurrence)
+  with the distinctness law in `library/effects/archive/lean-model-0.3/Effects/Replay/Laws.lean`.
 - **Form:** structural `(executionId, index)`. Under exact positional matching,
   position is the semantics; identity and matching rule coincide.
 - **Obligations:** identical invocation content never collapses occurrences —
@@ -146,10 +157,10 @@ enters as an ordinary refactor proposal at that time.
 
 ### Replay session
 - **Kind:** model (state machine). **Code label:**
-  `Effects/Replay/Session.lean` (state carrier) with the total reducer in
-  `Effects/Replay/Reducer.lean` and the derived relation in
-  `Effects/Replay/Relation.lean`; provisional `src/replay/Session.ts`,
-  `src/replay/Reducer.ts`, and `src/replay/Replay.ts`.
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Session.lean` (state carrier) with the total reducer in
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Reducer.lean` and the derived relation in
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Relation.lean`; provisional `library/effects/archive/replay-plane/src/replay/Session.ts`,
+  `library/effects/archive/replay-plane/src/replay/Reducer.ts`, and `library/effects/archive/replay-plane/src/replay/Replay.ts`.
 - **Form:** mode (record or replay), execution identity, history root, flat
   cursor, pending delegation slot, ordered decision trace, and terminal
   abort state. Well-formedness keeps the cursor inside the history, pins it
@@ -171,9 +182,9 @@ enters as an ordinary refactor proposal at that time.
   dependency; "poisoned flag" phrasing — the abort is structural.
 
 ### Solicited delegation
-- **Kind:** model (protocol). **Code label:** `Effects/Replay/Session.lean`
-  (`pending` slot) with the guarding steps in `Effects/Replay/Reducer.lean`;
-  provisional `src/replay/Reducer.ts`.
+- **Kind:** model (protocol). **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/Session.lean`
+  (`pending` slot) with the guarding steps in `library/effects/archive/lean-model-0.3/Effects/Replay/Reducer.lean`;
+  provisional `library/effects/archive/replay-plane/src/replay/Reducer.ts`.
 - **Form:** record-mode delegation is exclusive and paired — an invoke
   registers the outstanding invocation in the session's pending slot, the
   live outcome appends only by naming that registered invocation, and the
@@ -188,7 +199,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Decision trace
 - **Kind:** model (observable). **Code label:**
-  `Effects/Replay/Decision.lean`; provisional `src/replay/Decision.ts`.
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Decision.lean`; provisional `library/effects/archive/replay-plane/src/replay/Decision.ts`.
 - **Form:** the ordered decisions emitted by the pure reducer. Minimum cases:
   live delegation, record-mode occurrence append, recorded substitution,
   history consumption, typed rejection, completion.
@@ -198,7 +209,7 @@ enters as an ordinary refactor proposal at that time.
 - **Avoid:** comparators that drop live-delegation or rejection decisions.
 
 ### Mismatch category
-- **Kind:** taxonomy. **Code label:** `Effects/Replay/Decision.lean`
+- **Kind:** taxonomy. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/Decision.lean`
   (`MismatchCategory`).
 - **Form:** eight categories. Request-side, checked against the entry at the
   cursor: operation mismatch, revision mismatch, request mismatch, history
@@ -214,8 +225,8 @@ enters as an ordinary refactor proposal at that time.
 
 ### Session outcome
 - **Kind:** model (tagged result). **Code label:**
-  `Effects/Replay/Session.lean` (`SessionOutcome`); completion checked
-  uniformly by the reducer in `Effects/Replay/Reducer.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Replay/Session.lean` (`SessionOutcome`); completion checked
+  uniformly by the reducer in `library/effects/archive/lean-model-0.3/Effects/Replay/Reducer.lean`.
 - **Form:** `Completed` with the terminal; `Rejected` with category, position,
   and — for the unconsumed-suffix case only — the program's terminal so far; or
   `Violated` with the ambient-service violation.
@@ -229,8 +240,8 @@ enters as an ordinary refactor proposal at that time.
   errors; presenting the transport defect as modeled defect behavior.
 
 ### Replay witness
-- **Kind:** schema. **Code label:** `Effects/Replay/Witness.lean`
-  (immutable carrier); `src/internal/storage.ts` (`StoredWitness`,
+- **Kind:** schema. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/Witness.lean`
+  (immutable carrier); `library/effects/archive/replay-plane/src/storage.ts` (`StoredWitness`,
   internal: consumed count plus history root — the ratified selected
   representation; entries stay recoverable through the root chain).
 - **Form:** mode, execution identity, consumed history, decision trace, and
@@ -243,8 +254,8 @@ enters as an ordinary refactor proposal at that time.
   world would answer the same today.
 
 ### Reified program
-- **Kind:** model (carrier). **Code label:** `Effects/Replay/Program.lean`;
-  interpreted in `Effects/Replay/Interp.lean`.
+- **Kind:** model (carrier). **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/Program.lean`;
+  interpreted in `library/effects/archive/lean-model-0.3/Effects/Replay/Interp.lean`.
 - **Form:** a closed, terminating sequential program over invocation
   leaves: a returned value, the program's own typed failure, or an
   invocation whose continuation receives the recorded outcome envelope.
@@ -262,7 +273,7 @@ enters as an ordinary refactor proposal at that time.
   TypeScript orchestration (the G2 quantifier gap).
 
 ### Interpretation halt
-- **Kind:** taxonomy. **Code label:** `Effects/Replay/Interp.lean`
+- **Kind:** taxonomy. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Replay/Interp.lean`
   (`Halt`).
 - **Form:** why an interpretation stopped short of a value: the program's
   own typed failure; the session's typed rejection at a position; or
@@ -292,13 +303,19 @@ enters as an ordinary refactor proposal at that time.
   equality beyond the hash-hypothesis lattice.
 
 ### Typed root
-- **Kind:** schema. **Code label:** `src/cas/Value.ts`.
+- **Kind:** schema. **Code label:** `src/cas/Value.ts` (runtime) and
+  `library/cas/Cas/Refs.lean` (model carrier `Root α`).
 - **Form:** a branded content identifier carrying the descriptor's
   phantom value type and expected kind tag; assignable wherever a
-  content identifier is; constructed by `put`.
+  content identifier is; constructed by `put`. Its edge form is an
+  ordinary typed reference (expected tag plus address) — exactly what
+  node admission checks — so typed edges need no projection-side
+  machinery. In the model, dereference is total over closed stores
+  (`Root.closed_deref`).
 - **Obligations:** the phantom never bypasses runtime kind validation —
   every load re-checks the kind; a root is data, never proof of
-  presence: a dangling root fails closed at load.
+  presence: a dangling root fails closed at load. Reads require only
+  the store loader, never the writer.
 - **Avoid:** phantom-only trust; treating a root as a replay-compared
   identity before the session dependency-manifest extension exists.
 
@@ -327,7 +344,7 @@ enters as an ordinary refactor proposal at that time.
   service root read as replay identity.
 
 ### Remote exchange event
-- **Kind:** taxonomy. **Code label:** `Effects/Remote/Event.lean`.
+- **Kind:** taxonomy. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Remote/Event.lean`.
 - **Form:** the abstract server-event alphabet the remote client
   machine consumes: ok with declared length and bytes; absent;
   truncated; reset; silence; unauthenticated; denied; rate-limited
@@ -342,7 +359,7 @@ enters as an ordinary refactor proposal at that time.
   into transport members; events carrying credentials.
 
 ### Wire command
-- **Kind:** taxonomy. **Code label:** `Effects/Remote/Command.lean`.
+- **Kind:** taxonomy. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Remote/Command.lean`.
 - **Form:** what the machine emits toward the shell: capability probe,
   load, find-missing, upload, query-committed, publish-root.
 - **Obligations:** commands are data and the shell owns their transport
@@ -353,7 +370,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Fault schedule
 - **Kind:** schema. **Code label:** the schedule-vector rows emitted by
-  `Effects/Conformance/ManifestRemote.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Conformance/ManifestRemote.lean`.
 - **Form:** identifier-tagged operations, scripted server events each
   correlated to the operation they answer (declared interruption
   included), and an explicit interleaving sequence referencing every
@@ -369,8 +386,8 @@ enters as an ordinary refactor proposal at that time.
 
 ### Remote client machine
 - **Kind:** model (state machine). **Code label:**
-  `Effects/Remote/Machine.lean` with the laws in
-  `Effects/Remote/Laws.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Remote/Machine.lean` with the laws in
+  `library/effects/archive/lean-model-0.3/Effects/Remote/Laws.lean`.
 - **Form:** sans-io: state and one input in; a result, wire commands,
   and decisions out, commands and decisions identifier-tagged.
   Operations carry client-assigned identifiers with an in-flight map,
@@ -435,7 +452,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Chunk tree
 - **Kind:** model concept. **Code label:**
-  `Effects/Merkle/Chunk.lean` and `Effects/Merkle/Tree.lean`
+  `library/effects/archive/lean-model-0.3/Effects/Merkle/Chunk.lean` and `library/effects/archive/lean-model-0.3/Effects/Merkle/Tree.lean`
   (TypeScript pending the Merkle implementation slice).
 - **Form:** chunking under a DECLARED recipe (a positive chunk size)
   is a lossless partition — rejoining restores the bytes, and the
@@ -456,7 +473,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Inclusion opening
 - **Kind:** model concept. **Code label:**
-  `Effects/Merkle/Verify.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Merkle/Verify.lean`.
 - **Form:** an index, a count, leaf bytes, a root-side-first sibling
   list, and an expected root. The verifier DERIVES the combination
   sides from the index and the count, so an adversary controls
@@ -473,8 +490,8 @@ enters as an ordinary refactor proposal at that time.
   acceptance than the stated judgment.
 
 ### Verified-streaming decoder
-- **Kind:** machine. **Code label:** `Effects/Merkle/Decoder.lean`
-  with its laws in `Effects/Merkle/Laws.lean`.
+- **Kind:** machine. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Merkle/Decoder.lean`
+  with its laws in `library/effects/archive/lean-model-0.3/Effects/Merkle/Laws.lean`.
 - **Form:** a sans-io frame-stack machine over parsed nodes — parent
   pairs, chunks, and explicit skip tokens. The stack holds expected
   subtree addresses; consumption is pre-order, so verification order
@@ -509,7 +526,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Consistency proof
 - **Kind:** judgment with executable verifier. **Code label:**
-  `Effects/Merkle/Consistency.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Merkle/Consistency.lean`.
 - **Form:** the RFC 9162 subproof shape over the standards split: a
   bare hash list relating the root of the first m chunks to the root
   of all n, consumed linearly down one spine — one sibling per level
@@ -531,8 +548,8 @@ enters as an ordinary refactor proposal at that time.
   hash list.
 
 ### Proof documents
-- **Kind:** codecs. **Code label:** `Effects/Merkle/ProofCodec.lean`
-  over the shared field tools in `Effects/Wire/Nat32.lean`.
+- **Kind:** codecs. **Code label:** `library/effects/archive/lean-model-0.3/Effects/Merkle/ProofCodec.lean`
+  over the shared field tools in `library/cas/Cas/Nat32.lean`.
 - **Form:** byte realizations for the proof plane under the
   control-codec discipline. The opening document: index, count,
   length-prefixed leaf, sibling addresses root-side first — sides
@@ -553,7 +570,7 @@ enters as an ordinary refactor proposal at that time.
 
 ### Blob node graph
 - **Kind:** refinement tie. **Code label:**
-  `Effects/Merkle/Blob.lean`.
+  `library/effects/archive/lean-model-0.3/Effects/Merkle/Blob.lean`.
 - **Form:** a blob is a node graph, not a second store: leaves are
   ordinary nodes carrying index-prefixed chunk bytes, parents are
   ordinary two-reference nodes, and the Merkle root IS the address
@@ -576,7 +593,7 @@ enters as an ordinary refactor proposal at that time.
   cannot see them.
 
 ### Service kit
-- **Kind:** module. **Code label:** `src/replay/ServiceAdapter.ts`.
+- **Kind:** module. **Code label:** `library/effects/archive/replay-plane/src/replay/ServiceAdapter.ts`.
 - **Form:** one kit constructor per described service, minting an internal live
   role tag and returning the record construction (requires the live role and
   the replay service) and the replay construction (requires the replay service
@@ -639,3 +656,89 @@ fixtures; deterministic overrides arrive only when a fixture demands one.
 sequence-nondeterministic schedule use is subtle enough that drawing it is
 later work; declining all of it is honest. **Avoid:** treating `R = never` as
 purity; adjudicating individual combinators ad hoc.
+
+### Byte-plane seam
+- **Kind:** schema (service seam). **Code label:** `src/cas/Backend.ts`.
+- **Form:** three capability services over one grow-only byte plane —
+  the byte reader (bytes at an address, advisory presence), the byte
+  writer (join one admitted node), and the root store (grow and list
+  the published-roots registry). Each plane is a join-semilattice:
+  re-insertion of identical bytes is the identity, publication grows a
+  monotone set.
+- **Obligations:** grow-only monotonicity — nothing removed, nothing
+  replaced — is what makes check-then-insert admission sound without a
+  lock. Backends stay dumb: admission and verification are laws above
+  the seam, so a backend cannot weaken the store. Read-only is the
+  absence of the writer capability, checked at compile time.
+- **Avoid:** verification inside a backend; a backend that retracts;
+  read-only expressed as a runtime refusal.
+
+### Path reader
+- **Kind:** schema (backend). **Code label:** `src/cas/PathReader.ts`.
+- **Form:** the byte reader realized over one caller-supplied read
+  capability: store-root-relative path in, optional bytes out — absence
+  answers none; only a host that cannot answer fails, typed.
+- **Obligations:** reads exactly the store-root layout the file backend
+  writes, so publishing a store is committing a directory. The host is
+  untrusted by construction: the load law re-verifies every byte, so a
+  hostile or corrupt host is a typed refusal, never wrong data.
+- **Avoid:** minting per-forge URL schemes into the library; conflating
+  host failure with absence.
+
+### Store-root layout
+- **Kind:** rule. **Code label:** `src/cas/Backend.ts` (the relative
+  path functions) and `src/cas/FileBackend.ts` (the writer of record).
+- **Form:** `objects/<2 hex>/<62 hex>` holds canonical bytes — the
+  address is the path — and `roots/<64 hex>` empty files, where
+  presence is the publication.
+- **Obligations:** shared verbatim by every path-shaped backend; writes
+  publish by temp-file-then-rename so readers never observe a half
+  object; no index or manifest lives beside the tree.
+- **Avoid:** layout participating in identity; auxiliary index files;
+  fan-out depth as a tunable.
+
+### Typed-reference marker law
+- **Kind:** rule (CAS-005). **Code label:** `src/internal/refMarkers.ts`
+  (runtime walks) and `library/cas/Cas/Refs.lean` (model, guard-executed).
+- **Form:** a value's typed references are positional markers: the k-th
+  marker in canonical byte order carries index k into the node's
+  reference array — indexes forced, sharing by repeated entries, and
+  the reserved key refused outside the exact marker shape, at encode
+  and at decode.
+- **Obligations:** assignment and scan walk one canonical order
+  (codepoint-sorted keys at every depth); collisions refuse, never
+  escape — an escape would give one user value two spellings and split
+  its content identity. The coherence law (scan of a lowering reads
+  `0…n-1`) is guard-executed over the model fixtures; its general
+  induction is a named follow-up.
+- **Avoid:** escaping collisions; dedup laws over shared targets;
+  assigning marker indexes in declaration order.
+
+### Store loader
+- **Kind:** schema. **Code label:** `src/cas/Store.ts` (`CasLoader`).
+- **Form:** the load-only law as its own service — load and re-verify a
+  node, requiring only the byte reader. Every store composition
+  provides it beside the full store; a read-only composition provides
+  it alone.
+- **Obligations:** every typed read (value projections, graph walks)
+  requires only the loader, so typed values decode over read-only
+  hosts with no writer anywhere in the composition.
+- **Avoid:** widening a read to require the full store; a loader that
+  skips re-verification.
+
+### Server plane
+- **Kind:** schema. **Code label:** `src/Server.ts` with
+  `src/server/Protocol.ts` (wire law as data), `src/server/Core.ts`
+  (semantic core), and `src/server/HttpApp.ts` (the four-step shell).
+- **Form:** the closed cas-http/0 request algebra, refusal vocabulary,
+  and outcome vocabulary as tagged sums; one pure total wire law from
+  gathered facts to a refusal or an authenticated decoded operation;
+  the semantic core interpreting requests over the byte-plane seams —
+  the same seams an embedded store stands on.
+- **Obligations:** serve is total — every conclusion is a member of the
+  closed outcome vocabulary, a backend that cannot answer included,
+  mapped to the capacity class and never to an admission verdict. A new
+  wire plane is new constructors and new table rows, never a reshaped
+  pipeline.
+- **Avoid:** transport knowledge in the core; opinions in the shell;
+  rendering that consults policy instead of the outcome.

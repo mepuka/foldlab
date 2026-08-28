@@ -4,6 +4,7 @@ import Cas.Node
 import Cas.Codec
 import Cas.Store
 import Cas.Address
+import Cas.Separation
 import Cas.Admission
 import Cas.Json
 import Cas.Refs

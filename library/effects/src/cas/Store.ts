@@ -54,13 +54,24 @@ import {
   type CasError,
 } from "./Node.ts"
 
-export interface CasStoreShape {
-  /** Admit and store a node. Every referenced address must already resolve
-   * in the store, at its declared kind. */
-  readonly put: (node: CasNodeInput) => Effect.Effect<ContentId, CasError>
+export interface CasLoaderShape {
   /** Load and re-verify a node: recomputed address, canonical decode, known
    * kind. Never renormalizes. */
   readonly load: (id: ContentId) => Effect.Effect<CasNodeInput, CasError>
+}
+
+/** The load-only law: everything a typed read needs, requiring only the
+ * read seam — so a read-only composition (a path-reader host) serves
+ * typed values and graphs with no writer anywhere. Every store
+ * composition provides it alongside `CasStore`. */
+export class CasLoader extends Context.Service<CasLoader, CasLoaderShape>()(
+  "foldlab/cas/CasLoader",
+) {}
+
+export interface CasStoreShape extends CasLoaderShape {
+  /** Admit and store a node. Every referenced address must already resolve
+   * in the store, at its declared kind. */
+  readonly put: (node: CasNodeInput) => Effect.Effect<ContentId, CasError>
 }
 
 export class CasStore extends Context.Service<CasStore, CasStoreShape>()(
@@ -150,6 +161,22 @@ export const makeSha256Address: Effect.Effect<CasAddress, never, Crypto.Crypto> 
       }),
     })))
 
+/** Construct the load-only law over an explicit read seam. */
+export const makeCasLoaderOver = (
+  address: CasAddress,
+  reader: ByteReaderShape,
+): CasLoaderShape => ({
+  load: Effect.fn("CasStore.load")(function* (id: ContentId) {
+    const resident = yield* reader.loadBytes(id).pipe(
+      Effect.mapError(backendFailure),
+    )
+    if (Option.isNone(resident)) {
+      return yield* new ContentNotFound({ id })
+    }
+    return yield* verifyNodeBytes(address, id, resident.value)
+  }),
+})
+
 /** Construct the store law over explicit seam shapes — the constructor
  * for embeddings that hold a backend directly, without Layer wiring. */
 export const makeCasStoreOver = (
@@ -218,17 +245,7 @@ export const makeCasStoreOver = (
     }
   })
 
-  const load = Effect.fn("CasStore.load")(function* (id: ContentId) {
-    const resident = yield* reader.loadBytes(id).pipe(
-      Effect.mapError(backendFailure),
-    )
-    if (Option.isNone(resident)) {
-      return yield* new ContentNotFound({ id })
-    }
-    return yield* verifyNodeBytes(address, id, resident.value)
-  })
-
-  return CasStore.of({ put, load })
+  return CasStore.of({ put, ...makeCasLoaderOver(address, reader) })
 }
 
 /** Construct the store law over the seams in context. */
@@ -270,25 +287,52 @@ export const makeMemoryCasStore = (
     return makeCasStoreOver(address, backend.reader, backend.writer)
   })
 
-/** The store-law Layer over whichever backend the composition supplies.
- * Without an explicit address, SHA-256 through the runtime's `Crypto`. */
+/** The store-law Layer over whichever backend the composition supplies,
+ * the load-only law provided beside it. Without an explicit address,
+ * SHA-256 through the runtime's `Crypto`. */
 export function layerStore(): Layer.Layer<
-  CasStore,
+  CasStore | CasLoader,
   never,
   ByteReader | ByteWriter | Crypto.Crypto
 >
 export function layerStore(
   address: CasAddress,
-): Layer.Layer<CasStore, never, ByteReader | ByteWriter>
+): Layer.Layer<CasStore | CasLoader, never, ByteReader | ByteWriter>
 export function layerStore(
   address?: CasAddress,
-): Layer.Layer<CasStore, never, ByteReader | ByteWriter | Crypto.Crypto> {
-  return Layer.effect(
-    CasStore,
-    address === undefined
+): Layer.Layer<CasStore | CasLoader, never, ByteReader | ByteWriter | Crypto.Crypto> {
+  return Layer.effectContext(
+    (address === undefined
       ? makeSha256Address.pipe(Effect.flatMap(makeCasStore))
-      : makeCasStore(address),
+      : makeCasStore(address)).pipe(
+        Effect.map((store) => Context.make(CasStore, store).pipe(
+          Context.add(CasLoader, { load: store.load }),
+        )),
+      ),
   )
+}
+
+/** The load-only law over the read seam alone — what a read-only
+ * composition (a path-reader host) provides so typed reads work with
+ * no writer anywhere. Without an explicit address, SHA-256 through the
+ * runtime's `Crypto`. */
+export function layerReadStore(): Layer.Layer<
+  CasLoader,
+  never,
+  ByteReader | Crypto.Crypto
+>
+export function layerReadStore(
+  address: CasAddress,
+): Layer.Layer<CasLoader, never, ByteReader>
+export function layerReadStore(
+  address?: CasAddress,
+): Layer.Layer<CasLoader, never, ByteReader | Crypto.Crypto> {
+  const loader = Effect.gen(function* () {
+    const reader = yield* ByteReader
+    const resolved = address === undefined ? yield* makeSha256Address : address
+    return makeCasLoaderOver(resolved, reader)
+  })
+  return Layer.effect(CasLoader, loader)
 }
 
 /** One isolated in-memory CAS: the store law over a fresh memory
@@ -296,17 +340,17 @@ export function layerStore(
  * backend value can stand under a server. Without an override, the
  * layer requires the runtime's native `Crypto` service for SHA-256. */
 export function layerMemory(): Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore,
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
   Crypto.Crypto
 >
 export function layerMemory(
   address: CasAddress,
-): Layer.Layer<CasStore | ByteReader | ByteWriter | RootStore>
+): Layer.Layer<CasStore | CasLoader | ByteReader | ByteWriter | RootStore>
 export function layerMemory(
   address?: CasAddress,
 ): Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore,
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
   Crypto.Crypto
 > {
@@ -320,7 +364,7 @@ export function layerMemory(
  * server. The `FileSystem` realization stays a visible layer
  * requirement; without an address override, so does `Crypto`. */
 export function layerFile(storeRoot: string): Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore,
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
   FileSystem.FileSystem | Crypto.Crypto
 >
@@ -328,7 +372,7 @@ export function layerFile(
   storeRoot: string,
   address: CasAddress,
 ): Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore,
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
   FileSystem.FileSystem
 >
@@ -336,7 +380,7 @@ export function layerFile(
   storeRoot: string,
   address?: CasAddress,
 ): Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore,
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore,
   never,
   FileSystem.FileSystem | Crypto.Crypto
 > {
@@ -374,5 +418,5 @@ export const layerCryptoWebCrypto: Layer.Layer<Crypto.Crypto> = Layer.succeed(
 /** The zero-configuration local runtime: one isolated in-memory store over
  * scheme-0 SHA-256 through WebCrypto, seams exposed. */
 export const layerMemoryLive: Layer.Layer<
-  CasStore | ByteReader | ByteWriter | RootStore
+  CasStore | CasLoader | ByteReader | ByteWriter | RootStore
 > = layerMemory().pipe(Layer.provide(layerCryptoWebCrypto))
