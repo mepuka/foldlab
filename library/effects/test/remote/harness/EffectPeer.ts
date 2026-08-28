@@ -12,7 +12,9 @@ import type { Socket } from "node:net"
 import { ContentId } from "../../../src/cas/Node.ts"
 import { layerCryptoWebCrypto } from "../../../src/cas/Store.ts"
 import { CasServerBackend } from "../../../src/server/Backend.ts"
-import { makeCasHttpApp, type CasServerPolicy } from "../../../src/server/HttpApp.ts"
+import { CasServerCore } from "../../../src/server/Core.ts"
+import { makeCasHttpApp } from "../../../src/server/HttpApp.ts"
+import type { CasServerPolicy } from "../../../src/server/Protocol.ts"
 import {
   registerSocketReleaseHook,
   socketReleaseHook,
@@ -56,10 +58,21 @@ export const makeEffectPeer = (options: EffectPeerOptions = {}): ConformancePeer
   name: "effect-cas-http-0-server",
   capabilities: { profile: "cas-http/0", supportsUpload: true },
   serve: (realization: ScenarioRealization) => Effect.gen(function* () {
-    const context = yield* Layer.build(Layer.mergeAll(
-      CasServerBackend.layerMemory,
-      layerCryptoWebCrypto,
-    ))
+    const policy: CasServerPolicy = {
+      maxBatchKeys: realization.capabilities?.maxBatchKeys ?? 4,
+      maxNodeBytes: realization.capabilities?.maxBlobBytes ?? 4096,
+      ...options.policy,
+    }
+    // The topology seam in one expression: the semantic core over
+    // whichever backend layer this peer chooses to stand on.
+    const context = yield* Layer.build(
+      CasServerCore.layer(policy).pipe(
+        Layer.provideMerge(Layer.mergeAll(
+          CasServerBackend.layerMemory,
+          layerCryptoWebCrypto,
+        )),
+      ),
+    )
     const backend = Context.get(context, CasServerBackend)
     for (const [id, bytes] of realization.nodes ?? []) {
       // Seeded nodes are peer-granted facts; the memory backend cannot
@@ -67,11 +80,6 @@ export const makeEffectPeer = (options: EffectPeerOptions = {}): ConformancePeer
       yield* backend.putBytes(ContentId.make(id), bytes).pipe(Effect.orDie)
     }
 
-    const policy: CasServerPolicy = {
-      maxBatchKeys: realization.capabilities?.maxBatchKeys ?? 4,
-      maxNodeBytes: realization.capabilities?.maxBlobBytes ?? 4096,
-      ...options.policy,
-    }
     const app = yield* makeCasHttpApp(policy).pipe(Effect.provide(context))
     const webHandler = HttpEffect.toWebHandler(app)
 
