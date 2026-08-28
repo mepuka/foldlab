@@ -34,3 +34,11 @@ root = "Schemas"
 name = "emitwire"
 srcDir = "tools"
 root = "EmitWire"
+
+# The program emitter: `lake exe emitprograms <path>` regenerates the
+# straight-line Effect programs of the registered grammar terms;
+# `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitprograms"
+srcDir = "tools"
+root = "EmitPrograms"

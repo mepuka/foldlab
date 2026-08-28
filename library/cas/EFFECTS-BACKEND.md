@@ -151,8 +151,16 @@ after slice 2's semantics gate.
    unchanged, and the pin suite now compares GENERATED values against
    the Lean fixtures — the drift tripwire derived on both sides,
    generator correctness by independent evaluation.
-2. **The language's hello world** — compile `PutTree` to Effect TS, run
-   both hosts, assert identical store words (R5's gate made real).
+2. **The language's hello world** — LANDED 2026-08-28: every
+   registered grammar term (the six vector trees, schema node
+   included) lowers to a straight-line Effect program
+   (`Cas/Backend/EmitProg.lean`, `lake exe emitprograms`,
+   byte-identity-gated) that re-performs its puts against the live TS
+   store, addresses computed by the host's own digest; the
+   VectorPrograms suite asserts the answered addresses equal the
+   Lean-computed word binding for binding, duplicates included — R5's
+   cross-host run gate, real and green. The store language executes on
+   its second host.
 3. **F3** — code points and step/cont sorts; programs become
    store-resident content and the R7 boundary becomes load-bearing.
 4. **Surface ingestion** (R8) — the extract→generate pipeline pointed

@@ -63,7 +63,7 @@ where
       | .arr item => .call (cs "array") [go false item]
       | .struct fields =>
         .call (cs "struct")
-          [.object (fields.map fun (name, opt, schema) =>
+          [.objectML (fields.map fun (name, opt, schema) =>
             (name,
               .call (cs (if opt then "optionalField" else "field"))
                 [go false schema]))]

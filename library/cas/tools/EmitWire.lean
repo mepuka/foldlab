@@ -40,11 +40,11 @@ def registry : List (String × String × Ast) := [
     Described.code (α := Cas.Vectors.Wire.VectorIndex))
 ]
 
-def decls : List ConstDecl := Id.run do
+def decls : List Decl := Id.run do
   let mut env : List (String × Ast) := []
-  let mut out : List ConstDecl := []
+  let mut out : List Decl := []
   for (name, doc, code) in registry do
-    out := out ++ [{ doc := [doc], name, value := constructorExpr env code }]
+    out := out ++ [.const { doc := [doc], name, value := constructorExpr env code }]
     env := env ++ [(name, code)]
   return out
 
@@ -59,7 +59,7 @@ def wireModule : Ts.Module where
     "against the Lean-emitted fixtures — the drift tripwire, now",
     "derived on both sides."
   ]
-  imports := [{ name := "CanonicalSchema", path := "../CanonicalSchema.ts" }]
+  imports := [.all "CanonicalSchema" "../CanonicalSchema.ts"]
   decls := decls
 
 def rendered : String := Render.module house0 wireModule

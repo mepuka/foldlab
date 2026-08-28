@@ -9,6 +9,7 @@ run = [
   "mise run gen:cas-vectors",
   "mise run gen:cas-schemas",
   "mise run gen:backend-wire",
+  "mise run gen:backend-programs",
   "mise run gen:ledger",
 ]
 
@@ -59,14 +60,20 @@ description = "Regenerate the effects package's generated canonical-schema mirro
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorAst.ts"
 
+[tasks."gen:backend-programs"]
+description = "Regenerate the straight-line Effect programs of the registered grammar terms"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitprograms ../effects/test/generated/VectorPrograms.ts"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, and wire-mirror byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, and program byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
   "lake exe schemas --check",
   "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorAst.ts",
+  "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
 ]
 
 [tasks."check:effects:archive"]
