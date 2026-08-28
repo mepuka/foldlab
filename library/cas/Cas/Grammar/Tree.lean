@@ -83,6 +83,13 @@ inductive Tree : Ty → Type where
   | schema (code : Cas.Schema.Ast) (wf : code.WF)
       (small : (Grammar.utf8 code.payload).length < 4294967296) :
       Tree .schema
+  /-- A git object as content: the payload IS the loose-object
+  preimage (`"<type> <len>\0" ++ content`), so the git SHA-1 identity
+  is derivable from the payload alone by any host — dual identity
+  with no declared field. References empty in v0: git's internal
+  SHA-1 edges stay opaque, and typed git edges are a named follow-up
+  exactly like the schema sort's $defs graph. -/
+  | git (obj : Payload) : Tree .git
 
 section Elaboration
 
@@ -115,6 +122,7 @@ def Tree.node : Tree t → Node
        ⟨Ty.entry.wireTag, H (encodeNode (prev.node))⟩]⟩
   | .schema code _ _ =>
     ⟨schemeVersion, Ty.schema.wireTag, Grammar.utf8 code.payload, []⟩
+  | .git obj => ⟨schemeVersion, Ty.git.wireTag, obj.val, []⟩
 
 /-- The content address: the abstract digest of the canonical
 pre-image of the elaborated node (ledger L2 — by definition, which is
@@ -171,6 +179,10 @@ theorem Tree.node_wf (tr : Tree t) : (tr.node H).WF := by
     refine ⟨small, ?_⟩
     simp only [Tree.node, List.length_nil]
     omega
+  | git obj =>
+    refine ⟨obj.property, ?_⟩
+    simp only [Tree.node, List.length_nil]
+    omega
 
 /-- Trees are addressable through elaboration: the admitted node a
 term projects to. Not a `Canonical` instance — the elaboration embeds
@@ -201,6 +213,7 @@ def Tree.flatten : (tr : Tree t) → Word
     item.flatten ++ prev.flatten ++
       [Binding.mk (tr.address H) (tr.node H)]
   | tr@(.schema _ _ _) => [Binding.mk (tr.address H) (tr.node H)]
+  | tr@(.git _) => [Binding.mk (tr.address H) (tr.node H)]
 
 /-- One store binding per grammar node. -/
 def Tree.size : Tree t → Nat
@@ -213,6 +226,7 @@ def Tree.size : Tree t → Nat
   | .genesis => 1
   | .entry _ item prev => item.size + prev.size + 1
   | .schema _ _ _ => 1
+  | .git _ => 1
 
 theorem Tree.length_flatten (tr : Tree t) :
     (tr.flatten H).length = tr.size := by
@@ -250,6 +264,11 @@ theorem Honest.nil : Honest H [] := by
 theorem Tree.flatten_honest (tr : Tree t) : Honest H (tr.flatten H) := by
   induction tr with
   | schema code wf small =>
+    intro q hq
+    simp only [Tree.flatten, List.mem_singleton] at hq
+    subst hq
+    exact ⟨rfl, Tree.node_wf H _⟩
+  | git obj =>
     intro q hq
     simp only [Tree.flatten, List.mem_singleton] at hq
     subst hq
@@ -349,6 +368,7 @@ theorem Tree.flatten_wfFrom (hInj : Function.Injective H) (tr : Tree t)
   | chunk p => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | genesis => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | schema code wf small => simp [Tree.flatten, Word.wfFrom, Tree.node]
+  | git obj => simp [Tree.flatten, Word.wfFrom, Tree.node]
   | leaf i l d ih =>
     simp only [Tree.flatten]
     rw [Word.wfFrom_append]

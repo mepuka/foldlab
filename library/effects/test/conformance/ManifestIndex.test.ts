@@ -13,11 +13,11 @@
  *   model-side addition can never be a silent gap.
  */
 import { expect, it } from "@effect/vitest"
-import { Effect, Schema } from "effect"
-import { readdir, readFile } from "node:fs/promises"
+import { Effect, FileSystem, Schema } from "effect"
+import { layerNodeFs } from "../fixtures/diskFs.ts"
 import { ManifestModel, ManifestReadError, manifestIndexNames } from "./harness.ts"
 
-const manifestDir = new URL("../../archive/lean-model-0.3/conformance/manifest/", import.meta.url)
+const manifestPath = "archive/lean-model-0.3/conformance/manifest"
 
 const RowSchema = Schema.Struct({
   case: Schema.String,
@@ -82,21 +82,22 @@ const REGISTRY: Record<string, Binding> = {
 
 it.effect("the index names exactly the committed family manifests", () =>
   Effect.gen(function* () {
-    const entries = yield* Effect.promise(() => readdir(manifestDir))
+    const fs = yield* FileSystem.FileSystem
+    const entries = yield* fs.readDirectory(manifestPath).pipe(Effect.orDie)
     const committed = entries
       .filter((name) => name.endsWith(".json") && name !== "INDEX.json")
       .sort()
     expect([...manifestIndexNames]).toEqual(committed)
     // The index itself is canonically sorted.
     expect([...manifestIndexNames]).toEqual([...manifestIndexNames].sort())
-  }))
+  }).pipe(Effect.provide(layerNodeFs)))
 
 it.effect.each([...manifestIndexNames])(
   "family %s decodes through the closed envelope at the declared model",
   (name) =>
     Effect.gen(function* () {
-      const text = yield* Effect.promise(() =>
-        readFile(new URL(name, manifestDir), "utf8"))
+      const fs = yield* FileSystem.FileSystem
+      const text = yield* fs.readFileString(`${manifestPath}/${name}`).pipe(Effect.orDie)
       const decoded = yield* Schema.decodeUnknownEffect(FamilyDocSchema)(
         JSON.parse(text),
         { onExcessProperty: "error" },
@@ -117,7 +118,7 @@ it.effect.each([...manifestIndexNames])(
         name,
         unique: ids.length,
       })
-    }),
+    }).pipe(Effect.provide(layerNodeFs)),
 )
 
 it.effect("the binding registry covers the index exactly", () =>

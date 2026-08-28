@@ -9,7 +9,6 @@
  */
 import { expect, it } from "@effect/vitest"
 import { Crypto, Effect, Encoding, Layer, Schema } from "effect"
-import { readFile } from "node:fs/promises"
 import { Cas } from "../src/index.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
 import {
@@ -18,9 +17,11 @@ import {
   encodeCasNode,
   layerMemory,
 } from "../src/cas/Store.ts"
+import { layerNodeFs } from "./fixtures/diskFs.ts"
+import { readFixtureString } from "./fixtures/read.ts"
 import {
   buildCasKatFixture,
-  casKatFixtureUrl,
+  casKatFixturePath,
   productionCrypto,
   renderCasKatFixture,
 } from "./fixtures/casScheme0.ts"
@@ -59,7 +60,10 @@ it.effect("the shipped digest path reproduces the published FIPS 180-2 vectors",
 it.effect("the committed known-answer fixture regenerates from the shipped digest path", () =>
   Effect.gen(function* () {
     const regenerated = renderCasKatFixture(yield* buildCasKatFixture)
-    const committed = yield* Effect.promise(() => readFile(casKatFixtureUrl, "utf8"))
+    const committed = yield* readFixtureString(casKatFixturePath).pipe(
+      Effect.orDie,
+      Effect.provide(layerNodeFs),
+    )
     // Compared byte for byte, less the carriage returns a Windows checkout
     // introduces: no vector, address, or field can drift undetected.
     expect(committed.replaceAll("\r\n", "\n")).toBe(regenerated)

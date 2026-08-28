@@ -17,16 +17,15 @@
  * fixture, and a missing fixture is a red suite.
  */
 import { expect, it } from "@effect/vitest"
-import { readFileSync } from "node:fs"
-import { Effect, Option } from "effect"
+import { Effect, Layer, Option } from "effect"
 import { Cas } from "../src/index.ts"
+import { layerNodeFs } from "./fixtures/diskFs.ts"
+import { readFixtureBytes, readFixtureString } from "./fixtures/read.ts"
 
 const { CanonicalSchema, ConformanceVector, layerMemoryLive } = Cas
 
-const schemasDir = new URL("../../cas/schemas/", import.meta.url)
-
-const fixtureBytes = (name: string): Uint8Array =>
-  new Uint8Array(readFileSync(new URL(`${name}.json`, schemasDir)))
+const fixtureBytes = (name: string) =>
+  readFixtureBytes(`../cas/schemas/${name}.json`).pipe(Effect.orDie)
 
 /** Lean `SchemasMain.PinSample`, hand-mirrored: every constructor the
  * deriving handler reaches. */
@@ -58,19 +57,19 @@ const registry: ReadonlyArray<readonly [string, Cas.CanonicalSchema.Ast]> = [
 ] as const
 
 it.effect("every registered code's payload bytes agree across runtimes", () =>
-  Effect.sync(() => {
+  Effect.gen(function* () {
     for (const [name, ast] of registry) {
-      const expected = fixtureBytes(name)
+      const expected = yield* fixtureBytes(name)
       const actual = CanonicalSchema.payloadOf(ast)
       expect(`${name} ${Buffer.from(actual).toString("utf8")}`)
         .toBe(`${name} ${Buffer.from(expected).toString("utf8")}`)
     }
-  }))
+  }).pipe(Effect.provide(layerNodeFs)))
 
 it.effect("the schema-node vector's payload IS payloadOf(vectorAst)", () =>
-  Effect.sync(() => {
+  Effect.gen(function* () {
     const vector = JSON.parse(
-      readFileSync(new URL("../../cas/vectors/schema-vector-document.json", import.meta.url), "utf8"),
+      yield* readFixtureString("../cas/vectors/schema-vector-document.json").pipe(Effect.orDie),
     ) as { word: ReadonlyArray<{ node: { tag: number; payload: string } }> }
     expect(vector.word.length).toBe(1)
     const node = vector.word[0]!.node
@@ -78,12 +77,12 @@ it.effect("the schema-node vector's payload IS payloadOf(vectorAst)", () =>
     const payload = Buffer.from(node.payload, "hex")
     const expected = Buffer.from(CanonicalSchema.payloadOf(ConformanceVector.vectorAst))
     expect(payload.toString("utf8")).toBe(expected.toString("utf8"))
-  }))
+  }).pipe(Effect.provide(layerNodeFs)))
 
 it.effect("every registered code is admitted at the Lean-computed address", () =>
   Effect.gen(function* () {
     const committed = JSON.parse(
-      readFileSync(new URL("addresses.json", schemasDir), "utf8"),
+      yield* readFixtureString("../cas/schemas/addresses.json").pipe(Effect.orDie),
     ) as { schemas: ReadonlyArray<{ name: string; address: string }> }
     expect(committed.schemas.length).toBe(registry.length)
     for (const [name, ast] of registry) {
@@ -95,7 +94,7 @@ it.effect("every registered code is admitted at the Lean-computed address", () =
       const id = yield* CanonicalSchema.put(ast)
       expect(`${name} ${id}`).toBe(`${name} ${expected.address}`)
     }
-  }).pipe(Effect.provide(layerMemoryLive)))
+  }).pipe(Effect.provide(Layer.mergeAll(layerMemoryLive, layerNodeFs))))
 
 it.effect("every registered code survives the annotation round trip", () =>
   Effect.sync(() => {

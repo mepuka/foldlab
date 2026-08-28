@@ -12,6 +12,9 @@ export const BlobNodeTag = 9
 export const BlobManifestTag = 10
 /** Canonical-schema nodes: the schema plane's own kind. */
 export const SchemaKindTag = 0x53
+/** Git objects as content: the payload is the loose-object preimage,
+ * so the git SHA-1 identity is derivable from the payload alone. */
+export const GitKindTag = 0x47
 
 export const ReservedKindTags: ReadonlySet<number> = new Set([
   HistoryKindTag,
@@ -20,4 +23,5 @@ export const ReservedKindTags: ReadonlySet<number> = new Set([
   BlobNodeTag,
   BlobManifestTag,
   SchemaKindTag,
+  GitKindTag,
 ])

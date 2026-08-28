@@ -72,6 +72,7 @@ partial def lowerTree : Tree t → StateM (Array Stmt × Nat) String
       [(ia, Ty.file.wireTag), (pa, Ty.entry.wireTag)]
   | .schema code _ _ =>
     putNode Ty.schema.wireTag (Grammar.utf8 code.payload) []
+  | .git obj => putNode Ty.git.wireTag obj.val []
 
 /-- One tree as one exported program declaration: every put in
 `flatten` order, answering the word's addresses in order. -/

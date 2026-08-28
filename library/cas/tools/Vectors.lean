@@ -60,7 +60,10 @@ def candidates : List ConformanceVector := [
     "a journal: genesis and two entries over saved files" journalTwo,
   vector ⟨"shared-chunk", by simp [validVectorName, validVectorNameTail]⟩
     "a blob whose two leaves share one chunk — the word carries a duplicate binding that replays as a dedup"
-    blobSharedChunk
+    blobSharedChunk,
+  vector ⟨"git-pin-commit", by simp [validVectorName, validVectorNameTail]⟩
+    "the lean4-tree-sitter pin commit as a git node (sort 0x47): the payload is the loose-object preimage, so sha1(payload) IS the git id 3a57f55e…"
+    gitPinCommit
 ]
 
 /-! ## Emission -/

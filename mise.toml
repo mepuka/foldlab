@@ -132,6 +132,7 @@ dir = "{{config_root}}/library/effects"
 run = [
   "bun scripts/check-src-purity.ts",
   "bun install --frozen-lockfile",
+  "bun run lint",
   "bun run typecheck",
   "bun run test",
   "bun run build",

@@ -76,6 +76,7 @@ export default defineConfig({
     "foldlab/no-throw": "error",
     "foldlab/no-run-in-library": "error",
     "foldlab/no-node-ambient": "error",
+    "foldlab/no-node-fs": "error",
     "foldlab/no-ambient-fetch": "error",
     "foldlab/prefer-pipe": "warn",
   },
@@ -109,12 +110,30 @@ export default defineConfig({
       },
     },
     {
-      files: ["test/**", "scripts/**"],
+      // Peer independence keeps node:http in harness peers BY DESIGN;
+      // node:fs stays BANNED here — the FileSystem service is the door.
+      files: ["test/**"],
       rules: {
         "foldlab/no-node-ambient": "off",
         "foldlab/no-run-in-library": "off",
         "foldlab/no-throw": "off",
       },
+    },
+    {
+      // Gate tooling runs outside the Effect register and IS the checker.
+      files: ["scripts/**"],
+      rules: {
+        "foldlab/no-node-ambient": "off",
+        "foldlab/no-node-fs": "off",
+        "foldlab/no-run-in-library": "off",
+        "foldlab/no-throw": "off",
+      },
+    },
+    {
+      // The one sanctioned sync read: suite-structure data must exist
+      // before any Effect can run (it.effect.each lists, family bindings).
+      files: ["test/conformance/suiteIndex.ts"],
+      rules: { "foldlab/no-node-fs": "off" },
     },
     {
       files: ["scratch/foldkit/demo.ts"],

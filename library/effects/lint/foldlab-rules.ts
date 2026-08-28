@@ -35,6 +35,15 @@ const noNodeAmbient = Rule.banImport(
   { message: "Stay in Effect: FileSystem, HttpClient, and Crypto are platform services, never ambient node modules." },
 )
 
+const noNodeFs = Rule.banImport(
+  (source) => source === "node:fs" || source === "node:fs/promises",
+  {
+    message: "NO node:fs, ever (operator ruling 2026-08-28): filesystem is an effect — "
+      + "reads go through the FileSystem service (test/fixtures/read.ts); the one "
+      + "sync suite-structure seam is test/conformance/suiteIndex.ts.",
+  },
+)
+
 const noAmbientFetch = Rule.banCallOf("fetch", {
   message: "HTTP goes through the pinned FetchHttpClient realization; bare fetch bypasses redirect observation.",
 })
@@ -48,6 +57,7 @@ export default Plugin.define({
   specifier: "./lint/foldlab-rules.ts",
   rules: {
     "no-ambient-time": noAmbientTime,
+    "no-node-fs": noNodeFs,
     "no-ambient-random": noAmbientRandom,
     "no-json-codec": noJsonCodec,
     "no-throw": noThrow,

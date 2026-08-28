@@ -10,6 +10,12 @@ import { join } from "node:path"
 const forbidden =
   /\bEffect\.(runSync|runSyncExit|runPromise|runPromiseExit|runFork|runCallback)\b|\brunMain\b|\bunsafeRun\w*\b/
 
+/** NO node:fs, ever (operator ruling 2026-08-28): filesystem is an
+ * effect and enters through the FileSystem service. The one sync
+ * suite-structure seam is allowlisted. */
+const forbiddenFs = /from\s+"node:fs(\/promises)?"/
+const fsAllowlist = ["test/conformance/suiteIndex.ts"]
+
 const walk = (dir: string): Array<string> =>
   readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
@@ -23,6 +29,14 @@ for (const file of walk(join(import.meta.dirname ?? ".", "..", "src"))) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/)
   lines.forEach((line, index) => {
     if (forbidden.test(line)) hits.push(`${file}:${index + 1}: ${line.trim()}`)
+    if (forbiddenFs.test(line)) hits.push(`${file}:${index + 1}: node:fs is banned — ${line.trim()}`)
+  })
+}
+for (const file of walk(join(import.meta.dirname ?? ".", "..", "test"))) {
+  if (fsAllowlist.some((allowed) => file.endsWith(allowed))) continue
+  const lines = readFileSync(file, "utf8").split(/\r?\n/)
+  lines.forEach((line, index) => {
+    if (forbiddenFs.test(line)) hits.push(`${file}:${index + 1}: node:fs is banned — ${line.trim()}`)
   })
 }
 

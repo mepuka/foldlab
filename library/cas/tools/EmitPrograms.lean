@@ -38,7 +38,10 @@ def pureRows : List Row := [
     "A journal: genesis and two entries over saved files.", ⟨_, journalTwo⟩),
   ("sharedChunk", "shared-chunk",
     "Two leaves over one shared chunk — the duplicate put replays as a dedup.",
-    ⟨_, blobSharedChunk⟩)
+    ⟨_, blobSharedChunk⟩),
+  ("gitPinCommit", "git-pin-commit",
+    "The lean4-tree-sitter pin commit as a git node — a provenance pin as store content.",
+    ⟨_, gitPinCommit⟩)
 ]
 
 /-- The schema program needs the payload-bound witness, so it joins
