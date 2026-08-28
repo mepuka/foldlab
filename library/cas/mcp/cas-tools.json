@@ -1,0 +1,253 @@
+{
+  "language": "cas",
+  "manifestVersion": 0,
+  "schemaRevision": 0,
+  "tools": [
+    {
+      "description": "Admit one node; the reply is its content address. Admission is the only gate: well-formedness, reference presence, and kind agreement are checked, duplicates are inert, collisions refuse.",
+      "name": "cas_put",
+      "params": {
+        "_tag": "Struct",
+        "fields": {
+          "payload": {
+            "optional": false,
+            "schema": {
+              "_tag": "String"
+            }
+          },
+          "refs": {
+            "optional": false,
+            "schema": {
+              "_tag": "Array",
+              "item": {
+                "_tag": "Struct",
+                "fields": {
+                  "expectedTag": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "Integer"
+                    }
+                  },
+                  "id": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "String"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tag": {
+            "optional": false,
+            "schema": {
+              "_tag": "Integer"
+            }
+          },
+          "version": {
+            "optional": false,
+            "schema": {
+              "_tag": "Integer"
+            }
+          }
+        }
+      },
+      "result": {
+        "_tag": "Struct",
+        "fields": {
+          "address": {
+            "optional": false,
+            "schema": {
+              "_tag": "String"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Load the node at an address, fail-closed: the frame is parsed exactly and the kind is answered as stored.",
+      "name": "cas_load",
+      "params": {
+        "_tag": "Struct",
+        "fields": {
+          "address": {
+            "optional": false,
+            "schema": {
+              "_tag": "String"
+            }
+          }
+        }
+      },
+      "result": {
+        "_tag": "Struct",
+        "fields": {
+          "payload": {
+            "optional": false,
+            "schema": {
+              "_tag": "String"
+            }
+          },
+          "refs": {
+            "optional": false,
+            "schema": {
+              "_tag": "Array",
+              "item": {
+                "_tag": "Struct",
+                "fields": {
+                  "expectedTag": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "Integer"
+                    }
+                  },
+                  "id": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "String"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tag": {
+            "optional": false,
+            "schema": {
+              "_tag": "Integer"
+            }
+          },
+          "version": {
+            "optional": false,
+            "schema": {
+              "_tag": "Integer"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Run a straight-line program: instructions in admission order, references naming earlier answers by index. The reply is the word — the run's history, byte-decidable evidence.",
+      "name": "cas_run",
+      "params": {
+        "_tag": "Struct",
+        "fields": {
+          "instructions": {
+            "optional": false,
+            "schema": {
+              "_tag": "Array",
+              "item": {
+                "_tag": "Struct",
+                "fields": {
+                  "payloadHex": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "String"
+                    }
+                  },
+                  "refs": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "Array",
+                      "item": {
+                        "_tag": "Struct",
+                        "fields": {
+                          "expectedTag": {
+                            "optional": false,
+                            "schema": {
+                              "_tag": "Integer"
+                            }
+                          },
+                          "source": {
+                            "optional": false,
+                            "schema": {
+                              "_tag": "Integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "tag": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "Integer"
+                    }
+                  },
+                  "version": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "Integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "result": {
+        "_tag": "Struct",
+        "fields": {
+          "word": {
+            "optional": false,
+            "schema": {
+              "_tag": "Array",
+              "item": {
+                "_tag": "Struct",
+                "fields": {
+                  "address": {
+                    "optional": false,
+                    "schema": {
+                      "_tag": "String"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Publish an address as a root.",
+      "name": "cas_publish_root",
+      "params": {
+        "_tag": "Struct",
+        "fields": {
+          "address": {
+            "optional": false,
+            "schema": {
+              "_tag": "String"
+            }
+          }
+        }
+      },
+      "result": {
+        "_tag": "Struct",
+        "fields": {}
+      }
+    },
+    {
+      "description": "List the published roots.",
+      "name": "cas_list_roots",
+      "params": {
+        "_tag": "Struct",
+        "fields": {}
+      },
+      "result": {
+        "_tag": "Struct",
+        "fields": {
+          "roots": {
+            "optional": false,
+            "schema": {
+              "_tag": "Array",
+              "item": {
+                "_tag": "String"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

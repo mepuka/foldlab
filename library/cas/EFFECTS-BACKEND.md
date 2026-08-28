@@ -276,6 +276,30 @@ program and the leaf/operation cases of every proof close by
 theorem statements, typeclass form in program text (definitionally
 equal — structural patterns for proofs, readable sugar for programs).
 
+**R15 — Both ways, and the model as an evidence producer**
+(operator-directed 2026-08-28; carrier `Cas/Backend/Mcp.lean`,
+manifest `library/cas/mcp/cas-tools.json`, byte-gated). The agent
+seam is symmetric, and both directions are the SAME algebra: an agent
+programs the store as a client of `CasSig` — the MCP tools are the
+signature's operations with canonical-schema params and replies, and
+the run tool carries the straight-line program document (references
+by index — F3's first citizen) answering the word; and an agent is
+programmed BY the store as a handler of `LlmSig` — `infer` calls the
+model as an operation, and its answer enters only as recorded
+content. An LLM is therefore modeled exactly like any other function
+at the seam: an operation to the caller, a handler to the callee,
+with nondeterminism admitted only as recorded answers.
+
+Model-produced code follows the ACQUISITION LOOP, which is the
+direction law applied to inference: **acquire** (the model's output
+is evidence, standing law: empty trust contribution) → **ingest**
+(parse through admitted instruments to stratum-1 data) →
+**normalize** (re-emit through the canonical printer — the model's
+spelling dies at the boundary; only substance survives) → **gate**
+(byte, typecheck, parse-back, run) → **admit**. Nothing
+model-produced enters the store or the generated surfaces in the
+model's own bytes.
+
 ## Slices
 
 1. **The generated mirror** — LANDED 2026-08-28: the six

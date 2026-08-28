@@ -10,6 +10,7 @@ run = [
   "mise run gen:cas-schemas",
   "mise run gen:backend-wire",
   "mise run gen:backend-programs",
+  "mise run gen:backend-mcp",
   "mise run gen:ledger",
 ]
 
@@ -65,8 +66,13 @@ description = "Regenerate the straight-line Effect programs of the registered gr
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitprograms ../effects/test/generated/VectorPrograms.ts"
 
+[tasks."gen:backend-mcp"]
+description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
+dir = "{{config_root}}/library/cas"
+run = "lake exe mcpspec"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, and program byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, program, and MCP-manifest byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -74,6 +80,7 @@ run = [
   "lake exe schemas --check",
   "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorAst.ts",
   "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
+  "lake exe mcpspec --check",
 ]
 
 [tasks."check:effects:archive"]

@@ -18,6 +18,7 @@ runs from `library/cas` unless noted.
 | `lake exe schemas` | `schemas/*.json` (schema payloads) | `--check` in `check:cas` |
 | `lake exe emitwire <path>` | generated wire mirrors in effects `src/cas/generated/` | `--check` in `check:cas` |
 | `lake exe emitprograms <path>` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
+| `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) | `--check` in `check:cas` |
 
 `mise run gen` runs all regenerations; `mise run check` asserts a
 clean tree after. A red byte gate means regenerate and READ THE DIFF —

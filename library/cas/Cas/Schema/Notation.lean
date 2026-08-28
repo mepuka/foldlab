@@ -34,12 +34,13 @@ open Lean
 /-- One field: `name : type`. -/
 syntax casSchemaField := ident " : " term
 
-/-- The kind-authoring notation. -/
-syntax "cas_struct " ident " where "
+/-- The kind-authoring notation. A doc comment, when given, lands on
+the generated structure. -/
+syntax (docComment)? "cas_struct " ident " where "
   withPosition((colGe casSchemaField ppLine)*) : command
 
 macro_rules
-  | `(cas_struct $name:ident where $fields:casSchemaField*) => do
+  | `($[$doc:docComment]? cas_struct $name:ident where $fields:casSchemaField*) => do
     let mut binders : Array (TSyntax ``Lean.Parser.Command.structExplicitBinder) := #[]
     for f in fields do
       match f with
@@ -49,7 +50,8 @@ macro_rules
       | _ => Macro.throwUnsupported
     let codeId := mkIdentFrom name (name.getId ++ `schemaCode)
     let rawId := mkIdentFrom name (name.getId ++ `rawSchema)
-    let structCmd ← `(structure $name where $[$binders:structExplicitBinder]*
+    let structCmd ← `($[$doc:docComment]? structure $name where
+      $[$binders:structExplicitBinder]*
       deriving Cas.Schema.Described)
     let codeCmd ← `(def $codeId : Cas.Schema.Ast :=
       Cas.Schema.Described.code (α := $name))
