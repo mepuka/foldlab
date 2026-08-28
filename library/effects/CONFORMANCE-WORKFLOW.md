@@ -1958,3 +1958,38 @@ Stop and return to grilling if:
   explicit guard would state it. With the streaming push landed,
   the queued exchange-count arithmetic suite and the deferred test
   consolidations unblock.
+- **SRV-001 minted: the model server is a program, and its run is the
+  vector (2026-08-27):** the interaction-tree seam gains its
+  executable half and its first conformance family in one move.
+  Reification is interpretation: `traced` transforms any handler to
+  also reify each event with its answer — the same combinator shape
+  as `tiered` — with the erasure theorem proving tracing
+  observationally free, so every handler law transports to its
+  traced form. `runServer` folds a request script through the tree
+  denotations; `runServerTraced` is the same fold under the
+  transformation, and its output — outcomes plus the reified
+  storage transcript — IS a conformance row, never hand-typed. The
+  vector server instantiates the tree at the shared remote vector
+  environment (toy-digest addresses over ratified CAS-codec
+  encodings) with FULL admission as the judgment parameter, and
+  seven compile-time `#guard`s query it in place: capabilities,
+  loads, the upload round trip, dangling and non-canonical and
+  oversized refusals — the server answers at elaboration, forever.
+  Four scripted sessions render with hex-string addresses and
+  bytes — the wire profile's own representation — so the
+  implementation binding decodes rows through its branded address
+  schema and the stock hex codec, and a decoded request IS the
+  protocol's `CasRequest` (an identity function witnesses it; the
+  compiler proves the alignment, no cast). The binding replays each
+  session through the semantic core over a recording backend under
+  the vector digest — the core now takes its address function
+  explicitly, quantifying over the digest exactly as the model does
+  — and must reproduce outcomes AND the exact storage-event
+  sequence, in order: the transcript is law, so a skipped admission
+  check, an extra load, or a reordered negotiation is a red row.
+  The AdmitDangling mutant — a judgment that never consults the
+  declared references — is declared and killed: thirty-five
+  mutants. Additive at 0.3.0: every existing manifest byte-stable,
+  INDEX gains one name, the index registry binds the family, and
+  SRV-001 enters the ledger tsSide-evidenced. Deprecation note:
+  `String.mk` is deprecated at this toolchain — `String.ofList`.

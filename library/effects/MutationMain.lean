@@ -35,6 +35,7 @@ import Effects.Mutants.SES003_AcceptUnsolicited
 import Effects.Mutants.CMP002_CollapseIdentical
 import Effects.Mutants.CAS004_UnsortedKeys
 import Effects.Mutants.MRK020_FullWalk
+import Effects.Mutants.SRV001_AdmitDangling
 
 /-!
 Direction 1 of the ratified mutation form: for every declared mutant, the
@@ -114,6 +115,9 @@ def valueRenderMutants : List (Mutant ValueRenderFn) :=
 
 def rangedAccessMutants : List (Mutant RangedAccessFn) :=
   [ Effects.Mutants.MRK020FullWalk.mutant ]
+
+def serverJudgeMutants : List (Mutant SrvJudgeFn) :=
+  [ Effects.Mutants.SRV001AdmitDangling.mutant ]
 
 /-- The CMP-001 witness start: two recorded successes ahead of the
 cursor. -/
@@ -205,7 +209,8 @@ def groups : List (IO Nat) :=
   , checkGroup merkleBlobRowsRendered blobTreeNodes merkleBlobMutants
   , checkGroup merkleFragRowsRendered realFeed merkleFragMutants
   , checkGroup cas004RowsRendered realValueRender valueRenderMutants
-  , checkGroup merkleAccessRowsRendered realRangedAccess rangedAccessMutants ]
+  , checkGroup merkleAccessRowsRendered realRangedAccess rangedAccessMutants
+  , checkGroup srvRowsRendered srvJudge serverJudgeMutants ]
 
 /-- How many mutants the groups declare between them. -/
 def declaredCount : Nat :=
@@ -216,6 +221,7 @@ def declaredCount : Nat :=
     + merkleStreamMutants.length + merkleManifestMutants.length
     + merkleBlobMutants.length + merkleFragMutants.length
     + valueRenderMutants.length + rangedAccessMutants.length
+    + serverJudgeMutants.length
 
 def main : IO UInt32 := do
   let mut survivors := 0

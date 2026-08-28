@@ -13,7 +13,7 @@
 import { Context, Effect, Layer, Option } from "effect"
 import type { Crypto } from "effect"
 import type { ContentId } from "../cas/Node.ts"
-import { makeSha256Address } from "../cas/Store.ts"
+import { makeSha256Address, type CasAddress } from "../cas/Store.ts"
 import {
   canonicalNode,
   judgeAdmission,
@@ -34,22 +34,32 @@ export class CasServerCore extends Context.Service<CasServerCore, {
     request: CasRequest,
   ) => Effect.Effect<CasOutcome>
 }>()("foldlab/effect-replay/CasServerCore") {
-  /** Build the core over whichever backend layer sits beneath it. */
+  /** Build the core over whichever backend layer sits beneath it,
+   * addressing through scheme-0 SHA-256. */
   static readonly layer = (
     policy: CasServerPolicy,
   ): Layer.Layer<CasServerCore, never, CasServerBackend | Crypto.Crypto> =>
-    Layer.effect(CasServerCore, makeCasServerCore(policy))
+    Layer.effect(
+      CasServerCore,
+      makeSha256Address.pipe(
+        Effect.flatMap((address) => makeCasServerCore(policy, address)),
+      ),
+    )
 }
 
+/** Build the core over an explicit address function — the model
+ * quantifies over the digest, and so does the core, which is what lets
+ * the conformance binding replay model vectors under the vector
+ * digest. */
 export const makeCasServerCore = (
   policy: CasServerPolicy,
+  address: CasAddress,
 ): Effect.Effect<
   CasServerCore["Service"],
   never,
-  CasServerBackend | Crypto.Crypto
+  CasServerBackend
 > => Effect.gen(function* () {
   const backend = yield* CasServerBackend
-  const address = yield* makeSha256Address
 
   const admissionFacts = Effect.fn("CasServerCore.admissionFacts")(function* (
     id: ContentId,

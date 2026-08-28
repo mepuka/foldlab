@@ -61,7 +61,8 @@ def tsEvidence : List (String × String) :=
   , ("PRJ-002", "test/CasValue.test.ts")
   , ("PRJ-003", "test/CasValue.test.ts")
   , ("PRJ-004", "test/CasService.test.ts")
-  , ("PRJ-005", "test/CasService.test.ts") ]
+  , ("PRJ-005", "test/CasService.test.ts")
+  , ("SRV-001", "test/server/ServerConformance.test.ts") ]
 
 def statusOf (rows : List LedgerEntry) (o : Obligation) : String :=
   match rows.find? (·.id == o.id) with

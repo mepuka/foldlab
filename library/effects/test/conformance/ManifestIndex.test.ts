@@ -77,6 +77,7 @@ const REGISTRY: Record<string, Binding> = {
   "SES-001": { status: "bound", by: "ReplayReducer.test.ts" },
   "SES-002": { status: "bound", by: "ReplayReducer.test.ts" },
   "SES-003": { status: "bound", by: "ReplayReducer.test.ts" },
+  "SRV-001": { status: "bound", by: "server/ServerConformance.test.ts" },
 }
 
 it.effect("the index names exactly the committed family manifests", () =>

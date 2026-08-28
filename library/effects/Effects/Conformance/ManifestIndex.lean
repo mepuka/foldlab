@@ -2,6 +2,7 @@ import Effects.Conformance.Manifest
 import Effects.Conformance.ManifestReplay
 import Effects.Conformance.ManifestRemote
 import Effects.Conformance.ManifestMerkle
+import Effects.Conformance.ManifestServer
 
 /-!
 # The manifest index
@@ -22,7 +23,7 @@ open Json
 /-- Every consumable family manifest in emission order — the single
 list the emitter writes, the briefing names, and the index projects. -/
 def allFiles : List (String × String) :=
-  files ++ replayFiles ++ remoteFiles ++ merkleFiles
+  files ++ replayFiles ++ remoteFiles ++ merkleFiles ++ serverFiles
 
 /-- The index document: the family manifest names, sorted, bound to the
 declared model version. -/
