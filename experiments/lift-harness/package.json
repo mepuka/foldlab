@@ -3,6 +3,7 @@
   "private": true,
   "description": "v0 store-language recognition harness: contract + sieve + two gated engines (ck, oxc). Pre-grade (.staging).",
   "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.112",
     "effect": "4.0.0-rc.112",
     "effect-oxlint": "0.3.4",
     "fast-check": "4.9.0",
@@ -11,6 +12,7 @@
     "wink-naive-bayes-text-classifier": "2.2.1"
   },
   "devDependencies": {
+    "@effect/platform-node": "4.0.0-rc.112",
     "@effect/vitest": "4.0.0-rc.112",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "bun-types": "1.4.0",

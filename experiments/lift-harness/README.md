@@ -30,7 +30,14 @@ src/oxc-engine.mjs engine 2 (oxc): the recognizer itself, over ESTree.
                   engine, not two engines.
 src/plugin.mjs    the oxlint surface: a thin wrapper over oxc-engine.
 src/gate.ts       the agreement gate + oxc invocation, as a typed report.
-src/cli.ts        gate | lift | census | sieve.
+src/cli.ts        the CLI, pure Effect 4 (effect/unstable/cli): gate |
+                  lift | census | sieve. Requires FileSystem, Path, a
+                  process spawner and HarnessPaths; provides NONE of them.
+src/HarnessPaths.ts  WHERE the material lives, as a service. The only
+                  module that computes `../..`, so nothing else has to
+                  know how deep it sits in the tree.
+bin/main.ts       the entry point, and the ONLY file that decides what
+                  the world is (BunServices + the layout layer).
 test/             the differential suite, T1–T8 (see below).
 models/           sieve-r1.json (NB model + threshold + anchor config).
 examples/         blobTree32.ts — the 97-operation showpiece.
@@ -39,7 +46,7 @@ examples/         blobTree32.ts — the 97-operation showpiece.
 ```sh
 mise run check     # tsc --noEmit (strict, green) + agreement gate (green)
 mise run census    # wild refusal histogram + spectrum rollup
-bun src/cli.ts lift examples/blobTree32.ts
+bun bin/main.ts lift examples/blobTree32.ts
 ```
 
 State at extraction: gate 265/265 verdict agreement, 9/9 lifts both
@@ -150,3 +157,45 @@ standalone source-text-to-AST parse — its `createSourceFile` is a factory
 over already-parsed statements, and real parses go through the
 project/program API against files on disk. Moving the ENGINE to TS7 is a
 rearchitecture, not a swap.
+
+## The CLI is pure Effect 4
+
+Refactored 2026-08-28. `src/` contains no `node:*` import, no `Bun` global,
+and no default filesystem: every module names what it needs — `FileSystem`,
+`Path`, `ChildProcessSpawner`, `HarnessPaths` — in its requirement channel
+and satisfies none of it. `bin/main.ts` chooses the world (bun);
+`test/runtime.ts` chooses a different one (node, because vitest executes
+test bodies in a node worker even under `bun x`). Same code, two worlds —
+that is the property the refactor buys, and T7 asserts it.
+
+Shapes are Effect `Schema`, and the TypeScript types are derived from them
+rather than declared beside them. That matters where data crosses a
+boundary: verdicts arrive as canonical JSON inside an oxlint diagnostic,
+and the manifest is JSON on disk. Both are decoded, so a malformed verdict
+fails as a malformed verdict instead of surfacing later as a mysterious
+gate disagreement. The ENCODED side is fixed — `kind` stays the
+discriminant, not `_tag` — because those bytes are what the gate compares.
+oxlint's report envelope stays permissive and the one entry the gate reads
+is decoded strictly: validate what you consume, tolerate what you ignore.
+
+Where the fixture corpus lives is a service, not arithmetic on
+`import.meta.url`. Depth in a directory tree is a deployment fact, and a
+gate that computed its own depth would silently look in the wrong place
+after a file move. `HarnessPaths.layer` is the one place `../..` appears,
+and it is replaced wholesale rather than edited — which is also how a test
+points the same gate at a corpus it built itself.
+
+```sh
+bun bin/main.ts --help            # subcommands, wizard mode, completions
+bun bin/main.ts gate              # the agreement gate
+bun bin/main.ts lift <file...>    # canonical JSON on stdout
+```
+
+Verdicts go to stdout through `Console`, never the logger: they are data
+with a machine-readable contract, and a timestamped `INFO` prefix would
+break every consumer that pipes them.
+
+Note on the `oxc-engine.mjs` leg: it imports the manifest with a JSON
+import attribute rather than reading it, because that module is loaded by
+two foreign hosts — oxlint's plugin runtime and vitest's node worker — and
+must not assume either has a filesystem it may reach for.

@@ -8,9 +8,8 @@
  * `source → source` plus the invariance assertion on both engines.
  */
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { readFileSync } from "node:fs";
 import { BASELINE, ENGINES, dropScratch, ledgerSource, listKey } from "./engines";
-import { FIXTURES, fixtureFiles } from "../src/gate";
+import { FIXTURES } from "./runtime";
 import ledger from "./ledger.json" with { type: "json" };
 
 afterAll(dropScratch);
@@ -70,8 +69,7 @@ function corpus(): { id: string; src: string }[] {
   // reason that has nothing to do with the relation. T2 owns those rows.
   for (const row of ledger.rows)
     if (row.status !== "open") out.push({ id: row.id, src: ledgerSource(row) });
-  for (const f of fixtureFiles())
-    out.push({ id: `fixture:${f.slice(FIXTURES.length + 1)}`, src: readFileSync(f, "utf8") });
+  for (const f of FIXTURES) out.push({ id: `fixture:${f.name}`, src: f.src });
   return out;
 }
 

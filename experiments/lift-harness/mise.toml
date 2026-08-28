@@ -14,7 +14,7 @@
 # not a swap; the TYPECHECKER moves today. See TOOLS.md for both pins.
 [tasks.check]
 description = "Strict typecheck + the differential suite (T1-T7) + the multi-parser agreement gate"
-run = ["bun x tsgo --noEmit", "bun x vitest run", "bun src/cli.ts gate"]
+run = ["bun x tsgo --noEmit", "bun x vitest run", "bun bin/main.ts gate"]
 
 [tasks.test]
 description = "The differential-testing suite alone (T1 contract, T2 ledger, T3 metamorphic, T4 property, T5 gate+adequacy, T6 reproducibility, T7 portability)"
@@ -22,8 +22,8 @@ run = "bun x vitest run"
 
 [tasks.census]
 description = "Wild linearizability census over the corpus manifest's wild-effect projects"
-run = "bun src/cli.ts census"
+run = "bun bin/main.ts census"
 
 [tasks.lift]
 description = "Lift a file with the ck engine (canonical-JSON verdicts to stdout): mise run lift -- <file>"
-run = "bun src/cli.ts lift"
+run = "bun bin/main.ts lift"

@@ -11,7 +11,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SPECTRUM, canonJson } from "../src/contract";
-import { fixtureFiles, hasFixtureLane } from "../src/gate";
+import { FIXTURES, LANE } from "./runtime";
 import { liftSource } from "../src/lift";
 import { BASELINE, dropScratch, ledgerSource } from "./engines";
 import ledger from "./ledger.json" with { type: "json" };
@@ -29,11 +29,9 @@ describe("T6 recognition is a pure function of source bytes", () => {
     }
   });
 
-  it.runIf(hasFixtureLane())("repeats identically over the fixture corpus", () => {
-    for (const f of fixtureFiles()) {
-      const src = readFileSync(f, "utf8");
-      expect(canonJson(liftSource(src)), f).toBe(canonJson(liftSource(src)));
-    }
+  it.runIf(LANE)("repeats identically over the fixture corpus", () => {
+    for (const f of FIXTURES)
+      expect(canonJson(liftSource(f.src)), f.name).toBe(canonJson(liftSource(f.src)));
   });
 
   it("does not depend on how the source reached the engine", () => {

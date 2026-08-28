@@ -7,8 +7,8 @@
  * is too weak, and a green gate over it means nothing.
  */
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { readFileSync } from "node:fs";
-import { LIFTS_EXPECTED, fixtureFiles, gateReport, hasFixtureLane } from "../src/gate";
+import { LIFTS_EXPECTED, gateReport } from "../src/gate";
+import { FIXTURES, LANE, run } from "./runtime";
 import { ENGINES, dropScratch, ledgerSource, listKey } from "./engines";
 import { canonJson, verdictKey, type Verdict } from "../src/contract";
 import { liftSource } from "../src/lift";
@@ -16,11 +16,10 @@ import ledger from "./ledger.json" with { type: "json" };
 
 afterAll(dropScratch);
 
-const LANE = hasFixtureLane();
 
 describe("T5 agreement gate", () => {
-  it.runIf(LANE)("is green over the by-construction corpus", () => {
-    const r = gateReport();
+  it.runIf(LANE)("is green over the by-construction corpus", async () => {
+    const r = await run(gateReport);
     expect(r.kind).toBe("ran");
     if (r.kind !== "ran") return;
     expect(r.disagreements).toEqual([]);
@@ -30,16 +29,16 @@ describe("T5 agreement gate", () => {
     expect(r.green).toBe(true);
   });
 
-  it.skipIf(LANE)("reports a MISSING LANE rather than crashing or claiming green", () => {
-    const r = gateReport();
+  it.skipIf(LANE)("reports a MISSING LANE rather than crashing or claiming green", async () => {
+    const r = await run(gateReport);
     expect(r.kind).toBe("missing-lane");
     if (r.kind !== "missing-lane") return;
     expect(r.fixtures).toContain("fixture-gen");
     expect(r.hint).toContain("mise run gen");
   });
 
-  it("never reports green without having run", () => {
-    const r = gateReport();
+  it("never reports green without having run", async () => {
+    const r = await run(gateReport);
     if (r.kind === "missing-lane") expect(Object.keys(r)).not.toContain("green");
   });
 });
@@ -89,7 +88,7 @@ const MUTANTS: Mutant[] = [
  * fixtures when the lane is present. */
 function adequacyCorpus(): string[] {
   const out = ledger.rows.map((r) => ledgerSource(r));
-  for (const f of fixtureFiles()) out.push(readFileSync(f, "utf8"));
+  for (const f of FIXTURES) out.push(f.src);
   return out;
 }
 
