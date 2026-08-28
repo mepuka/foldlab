@@ -39,6 +39,13 @@ so no session re-derives or drifts:
   byte-gated, never the reverse.
 - Programs are content; hosts are code (R7). Generated code that
   becomes a program's authoritative home is a defect.
+- The PURE DISCIPLINE (R14a, `Representation.lean`): effect-free work
+  stays OUTSIDE `Prog` as plain definitions on first-order data —
+  never lifted; continuations end in `.pure` and programs compose by
+  smart constructors + `bind`, so inductions are as short as the
+  operation tree and leaves close by `rfl` (`interpret_pure`,
+  `interpret_op`); constructor form in theorem statements, typeclass
+  form in program text.
 
 ## Standing discipline
 

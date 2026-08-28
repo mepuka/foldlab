@@ -264,7 +264,17 @@ HANDLER IMAGES — semantic values equated only by theorem (`SemEq`,
 (4) HOST IO — the admitted seams, no equational theory, reasoning
 stops at the trust statement. The stable effects API to reason over is
 strata 1–2 with the equations named here; stratum 3 supplies
-certificates; stratum 4 supplies nothing.
+certificates; stratum 4 supplies nothing. **R14a — the pure
+discipline** (operator-pressed, same day): `pure` is the effect
+boundary, and three rules keep proofs wieldy — P1: effect-free work
+stays OUTSIDE `Prog` as plain definitions on first-order data, never
+lifted, so inductions are exactly as long as the operation tree; P2:
+continuations end in `.pure` and programs compose by smart
+constructors + `bind`, so the proved monad laws normalize every
+program and the leaf/operation cases of every proof close by
+`interpret_pure` (rfl) and `interpret_op`; P3: constructor form in
+theorem statements, typeclass form in program text (definitionally
+equal — structural patterns for proofs, readable sugar for programs).
 
 ## Slices
 

@@ -83,6 +83,39 @@ theorem eq_of_forall_interpret {p q : Prog S A}
   have := h (Prog S) idHandler
   rwa [interpret_id, interpret_id] at this
 
+/-! ## The pure discipline (R14a) — what keeps proofs wieldy
+
+`pure` is the effect boundary, and the discipline has three rules:
+
+- **P1 — everything effect-free stays OUTSIDE `Prog`.** A function
+  that performs no operation is a plain Lean definition on
+  first-order data, with ordinary `simp`/`rfl` reasoning — never
+  lifted into the program type. Computation between operations
+  happens in Lean and enters through `pure`/`let`. Programs carry
+  the minimum `vis` nodes; every induction is exactly as long as the
+  operation tree, so short trees are short proofs.
+- **P2 — continuations end in `.pure`; programs are authored as
+  smart constructors composed by `bind`.** The proved monad laws
+  then normalize any program, lemmas are stated against the
+  constructors, and the leaf case of every induction closes by
+  `interpret_pure` (rfl) while each operation closes by
+  `interpret_op`.
+- **P3 — constructor form in statements, typeclass form in program
+  text.** `.pure a` and `pure a` are definitionally equal; the
+  constructor keeps patterns structural and `rfl`-friendly, the
+  typeclass keeps programs readable and generic. -/
+
+/-- The leaf law: interpreting a finished program is `pure` — by
+definition, so every induction's base case is `rfl`. -/
+theorem interpret_pure [Monad M] (h : Handler S M) (a : A) :
+    interpret h (.pure a) = pure a := rfl
+
+/-- The operation law: interpreting a single operation IS the
+handler's meaning for it — the one-step case of every proof. -/
+theorem interpret_op [Monad M] [LawfulMonad M] (h : Handler S M)
+    (e : S.Op) : interpret h (Prog.op e) = h.handle e := by
+  simp [Prog.op, interpret]
+
 /-! ## The semantic equalities — stratum 3, always by theorem -/
 
 /-- Equality under one chosen semantics. -/
