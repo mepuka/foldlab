@@ -7,3 +7,6 @@ node_modules/
 .reference/papers/*.pdf
 # Personal Claude Code overrides (machine-specific)
 .claude/settings.local.json
+# Vendored corpus bytes: never committed - the committed artifact is
+# experiments/parser-census/corpus-manifest.json (pins, licenses, counts).
+corpus/
