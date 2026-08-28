@@ -41,9 +41,14 @@ description = "Build the machine library under --wfail"
 dir = "{{config_root}}/library/machine"
 run = "lake --wfail build"
 
-[tasks."check:effects"]
-description = "Build the effects library under --wfail, regenerate the ledger, assert transition legality and byte equality"
-dir = "{{config_root}}/library/effects"
+[tasks."check:cas"]
+description = "Build the CAS type model under --wfail"
+dir = "{{config_root}}/library/cas"
+run = "lake --wfail build"
+
+[tasks."check:effects:archive"]
+description = "Build the RETIRED effects-model@0.3.0 corpus and run its frozen gates (manual; not in CI)"
+dir = "{{config_root}}/library/effects/archive/lean-model-0.3"
 run = [
   "lake --wfail build",
   "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
@@ -54,25 +59,17 @@ run = [
   "git diff --exit-code -- CONFORMANCE-LEDGER.md conformance/manifest",
 ]
 
-[tasks."check:effects:mutation"]
-description = "Assert the mutant quarantine and that every declared mutant moves its attacked family's vectors"
-dir = "{{config_root}}/library/effects"
-run = [
-  "bun scripts/check-mutant-quarantine.ts",
-  "lake exe conformance_mutation",
-]
-
-[tasks."gen:effects"]
-description = "Regenerate the effects conformance ledger and manifests"
-dir = "{{config_root}}/library/effects"
+[tasks."gen:effects:archive"]
+description = "Regenerate the RETIRED corpus's ledger and manifests (must stay byte-identical at 0.3.0)"
+dir = "{{config_root}}/library/effects/archive/lean-model-0.3"
 run = [
   "lake exe conformance_ledger CONFORMANCE-LEDGER.md",
   "lake exe conformance_manifest conformance/manifest",
 ]
 
-[tasks."brief:effects"]
-description = "Print a lane briefing (pass conformance or implementation)"
-dir = "{{config_root}}/library/effects"
+[tasks."brief:effects:archive"]
+description = "Print the RETIRED corpus's lane briefing"
+dir = "{{config_root}}/library/effects/archive/lean-model-0.3"
 run = "lake exe conformance_brief"
 
 [tasks."gen:effects:research"]
@@ -113,7 +110,7 @@ run = [
   "mise run check:fips202",
   "mise run check:entity-store",
   "mise run check:machine",
-  "mise run check:effects",
+  "mise run check:cas",
   "mise run check:effects:ts",
   "mise run check:effects:research",
   "mise run check:ledger",
