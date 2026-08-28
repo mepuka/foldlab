@@ -22,6 +22,9 @@ import Effects.Remote.Machine
 import Effects.Remote.Laws
 import Effects.Remote.ControlCodec
 import Effects.Wire.Nat32
+import Effects.Server.Free
+import Effects.Server.Model
+import Effects.Server.Laws
 import Effects.Merkle.Chunk
 import Effects.Merkle.Tree
 import Effects.Merkle.Verify
