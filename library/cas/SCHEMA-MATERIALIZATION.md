@@ -358,6 +358,20 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     member, loss stated where it bites; not worked around. Decide:
     report upstream, and/or exclude literal-`oneOf` from any future
     reliance on Effect's text generation.
+
+    **WEIGHED AT THE ADDRESS, 2026-08-29**
+    (`MaterializeDifferential.test.ts`, items 17/18): with both
+    registers committed and EVALUATED, the two printers agree on the
+    denotation of every registered fixture except `union-pin`, and
+    there they differ at exactly one datum — `exact`'s mode.
+    Re-lowering each evaluated schema and admitting it answers the
+    address `addresses.json` pins for all seven estate-emitted modules
+    and for six of seven Effect-emitted ones; `union-pin` is the
+    seventh. The loss is therefore a measured ADDRESS DRIFT, not a
+    reading of the printer's source. It is a difference of identity and
+    not of decision: `exact`'s members are disjoint literals, so
+    `oneOf` and `anyOf` accept the same values, and the suite pins that
+    too.
 14. **Union refusal taxonomy**: empty `types` refuses as `illFormed`,
     unknown `mode` as `notASchema` — both `#guard`-pinned. A separate
     `emptyUnion` name would be a taxonomy change, available on order.
@@ -376,10 +390,12 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     materializer lane (`.staging/treesitter/MATERIALIZER-LANE.md`) was
     blocked on union AND `mu`/named references. Union landed (C1);
     recursion/references (C6, ruling 2) is the remaining half.
-17. **Materialized-source compile gate**: `Materialize.source` output
-    is byte-pinned but never typechecked as a module; a `tsc`
-    round-trip on materialized output is the natural next gate (same
-    shape as the estate-native byte gate).
+17. **Materialized-source compile gate — CLOSED 2026-08-29**: both
+    registers' output is committed under
+    `library/effects/test/generated/materialized/` and therefore
+    typechecked by `bun run typecheck` (`tsconfig.test.json`), with
+    `MaterializeDifferential.test.ts` re-rendering the Effect-native
+    snapshots so a stale one is a red suite rather than a stale file.
 18. **The estate-native second register — CLOSED 2026-08-29**
     (`tools/Materialize.lean`): `lake exe materialize` reads each
     committed schema payload back through `ingestBytes` and prints the

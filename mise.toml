@@ -13,6 +13,7 @@ run = [
   "mise run gen:backend-programs",
   "mise run gen:backend-mcp",
   "mise run gen:backend-materialize",
+  "mise run gen:effects-materialize",
   "mise run gen:lift-manifest",
   "mise run gen:cas-surface",
   "mise run gen:ledger",
@@ -89,6 +90,11 @@ run = "lake exe emitlift"
 description = "Regenerate the estate-native materialized modules (P6's second register) from the committed schema payloads"
 dir = "{{config_root}}/library/cas"
 run = "lake exe materialize"
+
+[tasks."gen:effects-materialize"]
+description = "Regenerate the Effect-native materialized modules (Materialize.source's committed snapshots)"
+dir = "{{config_root}}/library/effects"
+run = "bun scripts/gen-materialized.ts"
 
 [tasks."gen:cas-surface"]
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"

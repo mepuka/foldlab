@@ -40,6 +40,7 @@ import { Cas } from "../src/index.ts"
 import { canonicalJson, refWithTag } from "../src/cas/Value.ts"
 import { CasStore } from "../src/cas/Store.ts"
 import { deterministicAddress } from "./fixtures/address.ts"
+import { astDifferences } from "./fixtures/astEquality.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
 import { readFixtureBytes } from "./fixtures/read.ts"
 import { registry } from "./fixtures/schemaRegistry.ts"
@@ -75,50 +76,8 @@ const documentFromStore = (name: string) =>
 const liveRepresentation = (schema: Schema.Top) =>
   SchemaRepresentation.toRepresentation(schema.ast)
 
-/** Structural AST equality, quotienting function identity. Effect builds
- * a fresh closure every time a filter is constructed (`Schema.isInt()`
- * allocates its own `run`, `toCode`, and `toJsonSchema`), so two ASTs
- * that agree in every datum still differ by reference. Functions are
- * required to be functions of the same name at the same path; every
- * other value, the check identities included, must match exactly. */
-const astDifferences = (
-  left: unknown,
-  right: unknown,
-  path: string,
-  found: Array<string>,
-): void => {
-  if (Object.is(left, right)) return
-  if (typeof left === "function" && typeof right === "function") {
-    if (left.name !== right.name) {
-      found.push(`${path}: function ${left.name} vs function ${right.name}`)
-    }
-    return
-  }
-  if (
-    typeof left !== "object" || typeof right !== "object"
-    || left === null || right === null
-  ) {
-    found.push(`${path}: ${String(left)} vs ${String(right)}`)
-    return
-  }
-  if (Object.getPrototypeOf(left) !== Object.getPrototypeOf(right)) {
-    found.push(`${path}: differing prototypes`)
-    return
-  }
-  for (const key of new Set([...Reflect.ownKeys(left), ...Reflect.ownKeys(right)])) {
-    astDifferences(
-      Reflect.get(left, key),
-      Reflect.get(right, key),
-      `${path}.${String(key)}`,
-      found,
-    )
-  }
-}
-
 const expectAstEqual = (name: string, left: Schema.Top, right: Schema.Top) => {
-  const found: Array<string> = []
-  astDifferences(left.ast, right.ast, name, found)
-  expect(found).toEqual([])
+  expect(astDifferences(left.ast, right.ast, name)).toEqual([])
 }
 
 /** `verifyLosslessTransformation`'s law, run where its own assertion
