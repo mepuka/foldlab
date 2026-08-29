@@ -100,7 +100,10 @@ theorem DeclPayload.toJson_inj {p q : DeclPayload} (h : p.toJson = q.toJson) :
 
 /-! ## The registry -/
 
-/-- THE declaration registry: every declaration id the store admits,
+/-- LAW SM-7: the adopted Effect rows are taken verbatim and mint no
+estate identity.
+
+THE declaration registry: every declaration id the store admits,
 row zero first. The set grows only by adding a row here — that is what
 stipulation S3's "full control" buys, and what an unadmitted id runs
 into at the door.

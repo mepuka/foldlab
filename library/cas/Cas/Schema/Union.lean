@@ -25,7 +25,10 @@ keeps one code, one spelling, one address.
 
 namespace Cas.Schema
 
-/-- A union's semantics. Row order is Effect's own declaration order
+/-- LAW SM-6: both modes are carried and admitted, and a union's
+member order is its identity.
+
+A union's semantics. Row order is Effect's own declaration order
 (`Schema.Literals(["anyOf", "oneOf"])`, `SchemaRepresentation.ts:1064`). -/
 inductive UnionMode where
   /-- Try the members in order; the first success is the result. Effect's

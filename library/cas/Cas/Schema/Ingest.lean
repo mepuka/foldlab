@@ -79,7 +79,10 @@ namespace Cas.Schema
 
 open Cas.Json
 
-/-- Why an ingested value was refused. -/
+/-- LAW SM-14: these five names are the refusal taxonomy, so an empty
+union refuses `illFormed` and an unknown mode `notASchema`.
+
+Why an ingested value was refused. -/
 inductive IngestRefusal where
   /-- The normalized value is not a spelling of any code. -/
   | notASchema

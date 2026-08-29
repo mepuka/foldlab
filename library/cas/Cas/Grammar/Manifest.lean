@@ -207,7 +207,10 @@ inductive Witness where
   consumers, with no constructor standing between. -/
   | node (n : Node)
 
-/-- One node form of a sort. A sort with two forms (a blob `tree` is a
+/-- LAW SM-28: a form's layout is read off its witness term, never
+transcribed.
+
+One node form of a sort. A sort with two forms (a blob `tree` is a
 leaf or an interior node; an `entry` is the genesis or a linked entry)
 has two rows here and ONE wire tag: the forms are told apart by their
 payload, never by the tag.
@@ -403,6 +406,12 @@ quantify over them; the payload is framed rather than trailing, so the \
 reference count is reachable without knowing a sort. Each reference \
 record is one expected-tag byte followed by a 32-byte address."]
 
+/-- LAW SM-26: the human kind-tag registry is this value's Markdown
+projection, and every sort carries a row.
+
+The authority for both projections — `REGISTRY.md` for readers and the
+front ends' `manifest.json` — so the registry is generated from one
+description rather than kept in step by hand. -/
 def manifestV0 : Manifest where
   manifestVersion := 1
   grammar := "cas-grammar"

@@ -120,6 +120,18 @@ srcDir = "tools"
 root = "Obligations"
 supportInterpreter = true
 
+# The law index: `lake exe laws` joins the ruling registry (a Lean
+# value) to the `LAW SM-<n>:` lines the enforcing declarations carry at
+# the head of their docstrings, emitting surface/cas-laws.json;
+# `--check` is the byte-identity gate and the run also fails on an
+# unregistered binding or a status lie. `--self-test` plants one defect
+# per rule.
+[[lean_exe]]
+name = "laws"
+srcDir = "tools"
+root = "Laws"
+supportInterpreter = true
+
 # The lift-manifest emitter: `lake exe emitlift` regenerates the
 # effect-lift lane's rule manifest (the R11 interchange document the
 # recognition engines consume) at the target the tool bakes in (a

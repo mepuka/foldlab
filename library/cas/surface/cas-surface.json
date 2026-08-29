@@ -36,7 +36,7 @@
     "Cas.Word": 111
   },
   "declarations": 1916,
-  "documented": 954,
+  "documented": 956,
   "library": "Cas",
   "modules": [
     {
@@ -3344,7 +3344,7 @@
     },
     {
       "declarations": 96,
-      "documented": 27,
+      "documented": 28,
       "module": "Cas.Grammar.Manifest",
       "surface": [
         {
@@ -3992,7 +3992,7 @@
           "touches": ["Grammar"]
         },
         {
-          "documented": false,
+          "documented": true,
           "kind": "def",
           "name": "Cas.Grammar.manifestV0",
           "signature": "Cas.Grammar.Manifest",
@@ -12830,7 +12830,7 @@
     },
     {
       "declarations": 39,
-      "documented": 8,
+      "documented": 9,
       "module": "Cas.Values.Json",
       "surface": [
         {
@@ -12848,7 +12848,7 @@
           "touches": ["Values"]
         },
         {
-          "documented": false,
+          "documented": true,
           "kind": "inductive",
           "name": "Cas.Json.Value",
           "signature": "Type"

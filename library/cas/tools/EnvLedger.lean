@@ -115,6 +115,7 @@ def residence : List (String × String × String) := [
   ("gen:oxc-surface", "host-local",
     "the oxc surface census reads the full pinned source cache, gitignored with no bootstrap"),
   ("gen:cas-obligations", "portable", "all inputs tracked"),
+  ("gen:cas-laws", "portable", "all inputs tracked"),
   ("gen:backend-materialize", "portable", "all inputs tracked"),
   ("gen:backend-mcp", "portable", "all inputs tracked"),
   ("gen:backend-programs", "portable", "all inputs tracked"),
