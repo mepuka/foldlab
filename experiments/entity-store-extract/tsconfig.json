@@ -7,7 +7,10 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": ["bun"],
+    // `bun-types`, not `bun`: the lane pins the types package directly (as the lift
+    // harness does) so `tsgo --noEmit` resolves it. `"bun"` named a type library that
+    // was never installed here, so the typecheck could not run at all.
+    "types": ["bun-types"],
 
     // Bundler mode
     "moduleResolution": "bundler",
@@ -26,5 +29,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+
+  // `twin/harness` is a SEPARATE package with its own package.json, lockfile and
+  // node_modules (it pins `effect` and is installed only when the twin gate runs).
+  // Without this bound the lane's typecheck pulled it into one program and failed on
+  // dependencies that were never meant to be resolvable from here.
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

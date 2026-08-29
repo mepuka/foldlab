@@ -210,3 +210,27 @@ run = [
   "bash -c 'cd extract-lean && lake build'",
   "bash -c 'cd harness && bun install --frozen-lockfile && bun run check'",
 ]
+
+# TYPECHECKER: tsgo (@typescript/native-preview, TS7), per the 2026-08-28 ruling. The
+# `typescript@5.9.2` dependency stays: it is the compiler-API LEG's parser, which this
+# gate uses only as the offline differential, never on the hot path.
+#
+# Not in the default `check` chain, for one reason and it is the lane's standing one:
+# every input lives under gitignored `.staging/e2/src-cache` and no bootstrap script
+# materializes it (INGESTION-HARNESS.md M1, grill item 1). The gate is host-local until
+# that is ruled; it is wired here so it is one command, not a procedure in a report.
+[tasks."check:extract-oxc"]
+description = "Stage 1 oxc gate: all six pinned rc.111 files parse with ZERO errors, and the oxc leg's inventory is byte-identical to the committed one (instrument fields normalized) — the two files the tree-sitter twin cannot read included"
+dir = "{{config_root}}/experiments/entity-store-extract"
+run = [
+  "bun install --frozen-lockfile",
+  "bun x tsgo --noEmit",
+  "bun x vitest run",
+  "bun test test/extract.test.ts",
+  "bun run src/oxc-check.ts",
+]
+
+[tasks."gen:oxc-surface"]
+description = "Regenerate experiments/entity-store-extract/oxc-surface.json — the oxc leg's census of the full six-file surface (parse cleanliness, declaration histogram, and every declaration the tree-sitter grammar cannot read)"
+dir = "{{config_root}}/experiments/entity-store-extract"
+run = "bun run src/oxc-extract.ts"

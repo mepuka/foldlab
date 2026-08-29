@@ -19,8 +19,12 @@ import {
   gitBlobSha1,
   PIN
 } from "../src/extract.ts"
+import { resolveSrcDir } from "../src/contract.ts"
 
-const SRC = new URL("../../../.staging/e2/src-cache", import.meta.url).pathname
+// Resolved rather than hard-coded relative: the package-relative `../../../.staging`
+// does not exist from a git worktree, and an ENOENT three frames down is a worse
+// message than a named refusal. Same directory on a normal checkout.
+const SRC = resolveSrcDir(new URL("..", import.meta.url).pathname)
 
 describe("pin verification", () => {
   test("SchemaAST.ts and SchemaRepresentation.ts match the lock's git blobs", () => {

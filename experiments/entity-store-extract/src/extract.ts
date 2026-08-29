@@ -19,69 +19,25 @@
  * inventory.json shape: see INVENTORY-SCHEMA.md (the frozen generator contract).
  */
 
-import { createHash } from "node:crypto"
 import { readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import ts from "typescript"
+import {
+  CLOSURE_BEARING_NAMES,
+  crossCheck,
+  DERIVED_CACHE_FIELDS,
+  emit,
+  gitBlobSha1,
+  INVENTORY_SCHEMA_VERSION,
+  PIN
+} from "./contract.ts"
+import type { CrossCheckReport, CtorParam, FieldEntry, VariantEntry } from "./contract.ts"
 
-// ---------- pins ----------
-
-export const PIN = {
-  commit: "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
-  package: "effect@4.0.0-rc.111",
-  files: {
-    // verified against .reference/provenance/sources.lock.json (gitBlob only — the
-    // lock's bytes/sha256 fields are known-wrong, CRLF defect, repair in flight)
-    "SchemaAST.ts": "e99d7f473b4ecc0e6ba919ddbc98bb0dace8fe40",
-    "SchemaRepresentation.ts": "6282ab9cbf5c7a50b79580065881b5a6c5799aae"
-  }
-} as const
-
-export const INVENTORY_SCHEMA_VERSION = 1
-
-/**
- * Closure-bearing type names (census §7 item 5): a field whose typeText references one
- * of these holds or reaches a JavaScript closure even though its own type node is not
- * a FunctionTypeNode. Declared, not resolved — the type checker is deliberately out of
- * the trusted seam. Receipts: DeclarationRun SchemaAST.ts:666; Filter.run :3209;
- * Checks = Check[] = (Filter|FilterGroup)[]; Encoding = Link[] with
- * Link.transformation : Transformation|Middleware :403-405.
- */
-const CLOSURE_BEARING_NAMES = new Set([
-  // The annotation bag is an open string-keyed record (census §7 hatch 2) and holds
-  // function values in practice (e.g. toJsonSchema) — never pre-image-safe as a whole.
-  "Annotations",
-  "DeclarationRun",
-  "Encoding",
-  "Checks",
-  "Check",
-  "Filter",
-  "FilterGroup",
-  "Link",
-  "Transformation",
-  "Middleware",
-  "Getter"
-])
-
-/**
- * Constructor-derived caches (census §1 TemplateLiteral): recomputed fields that must
- * never enter a pre-image. Keyed (variant, field). Declared, not inferred.
- */
-const DERIVED_CACHE_FIELDS = new Set([
-  "TemplateLiteral.encodedParts",
-  "TemplateLiteral.literals",
-  "TemplateLiteral.suffixLengths"
-])
-
-// ---------- git blob verification ----------
-
-export const gitBlobSha1 = (bytes: Uint8Array): string => {
-  const header = new TextEncoder().encode(`blob ${bytes.length}\0`)
-  const h = createHash("sha1")
-  h.update(header)
-  h.update(bytes)
-  return h.digest("hex")
-}
+// The pins, the declared name tables, the record shapes, the cross-check and the
+// canonical emit now live in `contract.ts` — the DATA both legs read. Re-exported here
+// so this module's published surface is unchanged (test/, twin/, INVENTORY-SCHEMA.md).
+export { crossCheck, emit, gitBlobSha1, INVENTORY_SCHEMA_VERSION, PIN }
+export type { CrossCheckReport, CtorParam, FieldEntry, VariantEntry }
 
 const readVerified = (srcDir: string, file: keyof typeof PIN.files): string => {
   const bytes = readFileSync(join(srcDir, file))
@@ -127,34 +83,6 @@ const referencesClosureName = (typeText: string): boolean => {
     if (new RegExp(`\\b${name}\\b`).test(typeText)) return true
   }
   return false
-}
-
-// ---------- inventory types ----------
-
-interface FieldEntry {
-  name: string
-  typeText: string
-  kind: "data" | "closure" | "closure-bearing" | "derived-cache"
-  kindBy: "syntax" | "name-table"
-  declLine: number
-  optional: boolean
-}
-
-interface CtorParam {
-  name: string
-  typeText: string
-  optional: boolean
-  hasDefault: boolean
-}
-
-interface VariantEntry {
-  variant: string
-  tagLiteral: string
-  unionIndex: number
-  declLine: number
-  tagDeclLine: number
-  fields: Array<FieldEntry>
-  ctorParams: Array<CtorParam>
 }
 
 // ---------- enumerations (census §7) ----------
@@ -344,60 +272,6 @@ export const enumRuntimeArray = (sf: ts.SourceFile): Array<string> => {
   return result
 }
 
-// ---------- cross-checks (fail loudly; census §7 item 6) ----------
-
-const setEq = (a: ReadonlyArray<string>, b: ReadonlyArray<string>): boolean =>
-  a.length === new Set(a).size &&
-  b.length === new Set(b).size &&
-  a.length === b.length &&
-  [...a].sort().join(" ") === [...b].sort().join(" ")
-
-export interface CrossCheckReport {
-  unionAliasCount: number
-  guardTagCount: number
-  classCount: number
-  representationUnionCount: number
-  runtimeArrayCount: number
-  failures: Array<string>
-}
-
-export const crossCheck = (
-  union: ReadonlyArray<string>,
-  guards: ReadonlyArray<string>,
-  variants: ReadonlyArray<VariantEntry>,
-  repUnion: ReadonlyArray<string>,
-  runtimeArr: ReadonlyArray<string>
-): CrossCheckReport => {
-  const failures: Array<string> = []
-  const classNames = variants.map((v) => v.variant)
-  const classTags = variants.map((v) => v.tagLiteral)
-
-  if (union.length !== 21) failures.push(`AST union alias has ${union.length} members, expected 21`)
-  if (!setEq(union, classNames)) {
-    failures.push(`union alias ≠ Base-extending classes: [${union}] vs [${classNames}]`)
-  }
-  // Count trap (brief): 23 _tags exist in the file (Filter, FilterGroup included);
-  // the guard check is against the 21 Base-extending variants only.
-  if (!setEq(guards, classTags)) {
-    failures.push(`makeGuard tags ≠ class _tag literals: [${guards}] vs [${classTags}]`)
-  }
-  const expectedRep = [...union, "Reference"]
-  if (!setEq(repUnion, expectedRep)) {
-    failures.push(`Representation union ≠ AST union + Reference: [${repUnion.toSorted()}]`)
-  }
-  if (!setEq(runtimeArr, repUnion)) {
-    failures.push(`RepresentationUnion runtime array ≠ Representation type union: [${runtimeArr.toSorted()}]`)
-  }
-  return {
-    unionAliasCount: union.length,
-    guardTagCount: guards.length,
-    classCount: variants.length,
-    representationUnionCount: repUnion.length,
-    runtimeArrayCount: runtimeArr.length,
-    failures
-  }
-}
-
 // ---------- extraction + deterministic emit ----------
 
 export const extract = (srcDir: string): { inventory: unknown; report: CrossCheckReport } => {
@@ -455,8 +329,6 @@ export const extract = (srcDir: string): { inventory: unknown; report: CrossChec
   }
   return { inventory, report }
 }
-
-export const emit = (inventory: unknown): string => JSON.stringify(inventory, null, 2) + "\n"
 
 // ---------- CLI ----------
 

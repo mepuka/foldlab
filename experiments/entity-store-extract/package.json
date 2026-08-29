@@ -4,5 +4,15 @@
   "type": "module",
   "dependencies": {
     "typescript": "5.9.2"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "bun-types": "1.4.0",
+    "oxc-parser": "0.147.0",
+    "vitest": "4.1.11"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "check:oxc": "bun run src/oxc-check.ts"
   }
 }
