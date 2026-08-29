@@ -1,6 +1,6 @@
 # Kind-tag registry — scheme 0
 
-GENERATED — projection of `Cas.Grammar.manifestV0` by `lake exe emitgrammar`; do not edit. The layouts below are read off the encoders in `Cas/Grammar/Tree.lean` through a witness term per form, so this document cannot drift from them.
+GENERATED — projection of `Cas.Grammar.manifestV0` by `lake exe emitgrammar`; do not edit. Every layout below is read off a witness term per form — the encoders in `Cas/Grammar/Tree.lean` where the grammar has a constructor, the node itself where it has none — so this document cannot drift from what is written.
 
 The wire kind tags of the grammar's sorts (`Cas/Grammar/Sorts.lean`, `Ty.wireTag`/`Ty.ofTag`). Ratified by the grammar grill (2026-08-28, rulings 2 and 3; recorded in `library/effects/IMPLEMENTATION-PLAN.md` §14). Tags 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; references type-check at tag granularity, so a row here is a contract on every wire.
 
@@ -26,7 +26,7 @@ Every node is written as `version ++ tag ++ frame(payload) ++ nat32(refCount) ++
 | 10 | `0x0A` | `manifest` | RATIFIED core | `blob-two-leaves` | Recipe-1 blob manifest (profile blob kind). Sixteen payload bytes in this order: recipe, total, leaf count — the total is the only 64-bit field in the grammar. |
 | 11 | `0x0B` | `file` | RATIFIED core | `file-readme` | Named file over a blob manifest. Both payload fields are framed, so the payload is self-delimiting; each is bounded under 2^16 bytes so the framed pair stays inside one node payload bound. |
 | 12 | `0x0C` | `entry` | RATIFIED core | `journal-two-entries` | Journal entry or genesis. The sort does not fix its reference list: the codec constrains a reference's expected tag, never the arity, and the agent language writes a three-edge entry (context, value, entry) over this same tag. A reader dispatches on what it finds, not on this row. |
-| 13 | `0x0D` | `context` | RATIFIED core | — | Context node: typed edges, no payload. A ratified tag with NO grammar form — `Cas/Grammar/Tree.lean` has no `context` constructor, so nothing in the grammar writes this sort's layout. It is elaborated at the node layer by consumers (`CasExamples.AgentStep.contextNode`): empty payload, one typed edge per folded item, the edge tags read off whatever was loaded. Giving `context` a grammar form is its own slice. |
+| 13 | `0x0D` | `context` | RATIFIED core | — | Context node: typed edges, no payload. The grammar has no `context` constructor — `Cas/Grammar/Tree.lean` writes no layout for this sort — so the row's witness is the NODE itself, the shape `CasExamples.AgentStep.contextNode` writes: empty payload, one typed edge per folded item, the edge tags read off whatever was loaded. A `Tree.context` constructor remains its own slice; the form does not wait on it. |
 | 14 | `0x0E` | `step` | RESERVED | — | F3 defunctionalized code point. Spelled as the bare def `Cas.Lang.stepWireTag`, outside `Ty`, and pinned against this row by `#guard` in `Cas/Lang/Defun.lean`. |
 | 15 | `0x0F` | `cont` | RESERVED | — | F3 continuation. Spelled as the bare def `Cas.Lang.contWireTag`, outside `Ty`, and pinned against this row by `#guard` in `Cas/Lang/Defun.lean`. |
 | 71 | `0x47` | `git` | RATIFIED core | `git-pin-commit` | The estate's VERSIONING primitive (drafted 2026-08-29; awaiting ratification). A git object enters the store as content: the payload IS the loose-object preimage — `"<type> <length>\0" ++ content` — so `sha1(payload)` is the object's git id while the node's own address is the digest of its canonical pre-image. One node, two identities, neither declared in a field and both derivable by any host from the bytes alone. That dual identity is what makes the sort a versioning primitive rather than an import format: a commit admitted this way carries its git-side name with it, so pinning a dependency by revision and pinning it by content address name the same bytes, and the estate can hold a version without leaving the store. The exemplar is the `git-pin-commit` vector — the lean4-tree-sitter pin commit as one node, its payload's SHA-1 the commit id it names. References are empty in v0: git's internal SHA-1 edges (a commit's tree and parents, a tree's entries) stay inside the payload rather than becoming typed CAS edges, exactly as the schema sort's `$defs` graph does. Promoting them is the named follow-up, and is what would turn a pinned object into a walkable history. |
@@ -38,7 +38,7 @@ Rows 14 and 15 carry a reconciliation debt on purpose: they are used by `Cas/Lan
 
 ## Payload layout and reference discipline
 
-One section per node form, read off the encoders in `Cas/Grammar/Tree.lean` through a witness term. Rows with no form: context, step, cont — see their notes above.
+One section per node form, read off a witness term — a grammar term of `Cas/Grammar/Tree.lean`, or the node itself for a sort the grammar has no constructor for. Rows with no form: step, cont — see their notes above.
 
 ### value.value
 
@@ -145,6 +145,17 @@ One journal entry over a file, linked to its predecessor.
 | --- | --- | --- | --- |
 | `item` | `file` | `0x0B` | the file this entry records |
 | `prev` | `entry` | `0x0C` | the entry before it |
+
+### context.context
+
+A folded context: no payload, one typed edge per folded item.
+
+- payload: 0 bytes
+- references: item
+
+| reference | expects | tag | meaning |
+| --- | --- | --- | --- |
+| `item` | `value` | `0x01` | one folded item, its edge tag read off the node that was loaded |
 
 ### git.git
 

@@ -41,7 +41,7 @@
   },
   "grammar": "cas-grammar",
   "manifestVersion": 0,
-  "preamble": ["GENERATED — projection of Cas.Grammar.manifestV0 by lake exe emitgrammar; do not edit. The layouts below are read off the encoders in Cas/Grammar/Tree.lean through a witness term per form, so this document cannot drift from them.", "The wire kind tags of the grammar's sorts (Cas/Grammar/Sorts.lean, Ty.wireTag/Ty.ofTag). Ratified by the grammar grill (2026-08-28, rulings 2 and 3; recorded in library/effects/IMPLEMENTATION-PLAN.md §14). Tags 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; references type-check at tag granularity, so a row here is a contract on every wire."],
+  "preamble": ["GENERATED — projection of Cas.Grammar.manifestV0 by lake exe emitgrammar; do not edit. Every layout below is read off a witness term per form — the encoders in Cas/Grammar/Tree.lean where the grammar has a constructor, the node itself where it has none — so this document cannot drift from what is written.", "The wire kind tags of the grammar's sorts (Cas/Grammar/Sorts.lean, Ty.wireTag/Ty.ofTag). Ratified by the grammar grill (2026-08-28, rulings 2 and 3; recorded in library/effects/IMPLEMENTATION-PLAN.md §14). Tags 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; references type-check at tag granularity, so a row here is a contract on every wire."],
   "scheme": 0,
   "sorts": [
     {
@@ -297,9 +297,26 @@
     },
     {
       "exemplar": null,
-      "forms": [],
+      "forms": [
+        {
+          "fields": [],
+          "meaning": "A folded context: no payload, one typed edge per folded item.",
+          "name": "context",
+          "payloadBytes": 0,
+          "payloadMinBytes": 0,
+          "refs": [
+            {
+              "expects": "value",
+              "expectsTag": 1,
+              "expectsTagHex": "0x01",
+              "meaning": "one folded item, its edge tag read off the node that was loaded",
+              "name": "item"
+            }
+          ]
+        }
+      ],
       "name": "context",
-      "notes": "Context node: typed edges, no payload. A ratified tag with NO grammar form — Cas/Grammar/Tree.lean has no context constructor, so nothing in the grammar writes this sort's layout. It is elaborated at the node layer by consumers (CasExamples.AgentStep.contextNode): empty payload, one typed edge per folded item, the edge tags read off whatever was loaded. Giving context a grammar form is its own slice.",
+      "notes": "Context node: typed edges, no payload. The grammar has no context constructor — Cas/Grammar/Tree.lean writes no layout for this sort — so the row's witness is the NODE itself, the shape CasExamples.AgentStep.contextNode writes: empty payload, one typed edge per folded item, the edge tags read off whatever was loaded. A Tree.context constructor remains its own slice; the form does not wait on it.",
       "reserved": false,
       "status": "RATIFIED core",
       "tag": 13,

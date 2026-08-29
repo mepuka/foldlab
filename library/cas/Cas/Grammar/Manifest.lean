@@ -13,19 +13,26 @@ JSON the front ends consume and `REGISTRY.md`, the human registry, from
 this one value; neither is hand-maintained and both are byte-gated.
 
 The rows do not TRANSCRIBE a layout. Every form carries a WITNESS —
-a `Tree` term whose elaboration IS the shape the row states — and the
-guards below read the tag, the payload width, and the reference
-discipline off `Tree.node` (the `Cas.Backend.Admission` pattern). A
+a term whose elaboration IS the shape the row states — and the guards
+below read the tag, the payload width, and the reference discipline off
+the node that witness produces (the `Cas.Backend.Admission` pattern). A
 change to an encoder in `Cas/Grammar/Tree.lean` therefore moves this
 manifest's bytes or turns the build red; it cannot silently part from
 it.
 
-Two rows carry no form on purpose and the guards say so out loud:
-`context` is a ratified tag the grammar has no constructor for, and
-14/15 (`step`/`cont`) are RESERVED code points spelled outside `Ty` by
-`Cas/Lang/Defun.lean`. Both exceptions are pinned, so landing a
-`Tree.context` constructor — or ratifying a reserved tag into `Ty` —
-turns this file red and names the site that must follow.
+A witness has two arms, because a sort can be real on the wire without
+having a `Tree` constructor: `.tree` is a grammar term, elaborated by
+`Tree.node`; `.node` is the node itself, for a sort whose only writers
+sit at the node layer. `context` is the one such sort today — a
+ratified tag with real consumers (`CasExamples.AgentStep.contextNode`)
+and no constructor — so it states its form as a literal node rather
+than through a fake constructor.
+
+The only rows that carry no form are the RESERVED ones: 14/15
+(`step`/`cont`) are code points spelled outside `Ty` by
+`Cas/Lang/Defun.lean`. That exception is pinned, so ratifying a
+reserved tag into `Ty` turns this file red and names the site that must
+follow.
 -/
 
 namespace Cas.Grammar
@@ -145,6 +152,18 @@ structure Slot where
   expects : Ty
   meaning : String
 
+/-- What a form's shape is read off. `.tree` is a grammar term, whose
+elaboration under `Tree.node` IS the form's node; `.node` is that node
+written directly, for a ratified sort the grammar has no constructor
+for. Both arms answer the same question — what bytes does this form
+write — so every guard below reads `Form.node` and never the arm. -/
+inductive Witness where
+  /-- A grammar term: `Cas/Grammar/Tree.lean` elaborates the shape. -/
+  | tree (w : Σ t : Ty, Tree t)
+  /-- The node itself: the sort is written at the node layer, by
+  consumers, with no constructor standing between. -/
+  | node (n : Node)
+
 /-- One node form of a sort. A sort with two forms (a blob `tree` is a
 leaf or an interior node; an `entry` is the genesis or a linked entry)
 has two rows here and ONE wire tag: the forms are told apart by their
@@ -155,7 +174,7 @@ and slots below are checked against it; they are not a second spelling
 of the encoder. -/
 structure Form where
   name : String
-  witness : Σ t : Ty, Tree t
+  witness : Witness
   fields : List Field
   slots : List Slot
   meaning : String
@@ -167,7 +186,10 @@ private def noAddr : Addr32 := ⟨List.replicate 32 0, by simp⟩
 
 private def noH : Bytes → Addr32 := fun _ => noAddr
 
-def Form.node (f : Form) : Node := f.witness.2.node noH
+def Form.node (f : Form) : Node :=
+  match f.witness with
+  | .tree w => w.2.node noH
+  | .node n => n
 
 /-- The form's payload width, when every field is fixed-width. -/
 def Form.payloadBytes (f : Form) : Option Nat :=
@@ -264,6 +286,16 @@ private def wSchema : Tree .schema := .schema (Payload.ofBytes [123, 125])
 private def wGit : Tree .git :=
   .git (Payload.ofBytes [98, 108, 111, 98, 32, 49, 0, 120])
 
+/-- The `context` shape as a node, because the grammar has no
+constructor for it: empty payload, one typed edge per folded item, the
+edge tag read off whatever was loaded. This is the shape
+`CasExamples.AgentStep.contextNode` writes — layer 2 cannot import the
+examples, so the witness is that node spelled here, and any drift
+between the two is a drift the consumer's own build shows. One
+value-tag edge stands for the list. -/
+private def wContext : Node :=
+  ⟨schemeVersion, Ty.context.wireTag, [], [⟨Ty.value.wireTag, noAddr⟩]⟩
+
 def envelopeV0 : Envelope where
   fields := [
     { name := "version", enc := .u8,
@@ -294,9 +326,10 @@ def manifestV0 : Manifest where
   preamble := [
     [.text "GENERATED — projection of ", .code "Cas.Grammar.manifestV0",
      .text " by ", .code "lake exe emitgrammar", .text "; do not edit. \
-The layouts below are read off the encoders in ",
-     .code "Cas/Grammar/Tree.lean", .text " through a witness term per \
-form, so this document cannot drift from them."],
+Every layout below is read off a witness term per form — the encoders \
+in ", .code "Cas/Grammar/Tree.lean", .text " where the grammar has a \
+constructor, the node itself where it has none — so this document \
+cannot drift from what is written."],
     [.text "The wire kind tags of the grammar's sorts (",
      .code "Cas/Grammar/Sorts.lean", .text ", ", .code "Ty.wireTag",
      .text "/", .code "Ty.ofTag", .text "). Ratified by the grammar \
@@ -311,7 +344,7 @@ here is a contract on every wire."]
     { id := .sort .value, name := "value", status := .core
       exemplar := some "value-single"
       forms := [
-        { name := "value", witness := ⟨.value, wValue⟩
+        { name := "value", witness := .tree ⟨.value, wValue⟩
           fields := [
             { name := "payload", enc := .opaque,
               meaning := "the value's bytes; nothing in the grammar reads them" }]
@@ -321,7 +354,7 @@ here is a contract on every wire."]
     { id := .sort .chunk, name := "chunk", status := .core
       exemplar := some "blob-two-leaves"
       forms := [
-        { name := "chunk", witness := ⟨.chunk, wChunk⟩
+        { name := "chunk", witness := .tree ⟨.chunk, wChunk⟩
           fields := [
             { name := "bytes", enc := .opaque,
               meaning := "the chunk's bytes" }]
@@ -334,7 +367,7 @@ shared by two leaves."] },
     { id := .sort .tree, name := "tree", status := .core
       exemplar := some "blob-two-leaves"
       forms := [
-        { name := "leaf", witness := ⟨.tree, wLeaf⟩
+        { name := "leaf", witness := .tree ⟨.tree, wLeaf⟩
           fields := [
             { name := "index", enc := .beU32,
               meaning := "the leaf's absolute chunk index within the blob" },
@@ -344,7 +377,7 @@ shared by two leaves."] },
             { name := "data", expects := .chunk,
               meaning := "the chunk this leaf positions" }]
           meaning := "A blob leaf: a positioned pointer at one chunk." },
-        { name := "parent", witness := ⟨.tree, wParent⟩
+        { name := "parent", witness := .tree ⟨.tree, wParent⟩
           fields := []
           slots := [
             { name := "left", expects := .tree, meaning := "the earlier subtree" },
@@ -357,7 +390,7 @@ payload: eight bytes for a leaf, none for an interior node."] },
     { id := .sort .manifest, name := "manifest", status := .core
       exemplar := some "blob-two-leaves"
       forms := [
-        { name := "manifest", witness := ⟨.manifest, wManifest⟩
+        { name := "manifest", witness := .tree ⟨.manifest, wManifest⟩
           fields := [
             { name := "recipe", enc := .beU32,
               meaning := "the chunking recipe id (1 = fixed-size chunks)" },
@@ -375,7 +408,7 @@ total is the only 64-bit field in the grammar."] },
     { id := .sort .file, name := "file", status := .core
       exemplar := some "file-readme"
       forms := [
-        { name := "file", witness := ⟨.file, wFile⟩
+        { name := "file", witness := .tree ⟨.file, wFile⟩
           fields := [
             { name := "name", enc := .framed,
               meaning := "the file name, UTF-8, under 2^16 bytes" },
@@ -392,11 +425,11 @@ bound."] },
     { id := .sort .entry, name := "entry", status := .core
       exemplar := some "journal-two-entries"
       forms := [
-        { name := "genesis", witness := ⟨.entry, wGenesis⟩
+        { name := "genesis", witness := .tree ⟨.entry, wGenesis⟩
           fields := []
           slots := []
           meaning := "The journal's first entry: no note, no edges." },
-        { name := "entry", witness := ⟨.entry, wEntry⟩
+        { name := "entry", witness := .tree ⟨.entry, wEntry⟩
           fields := [
             { name := "note", enc := .opaque,
               meaning := "the entry's note bytes, uninterpreted" }]
@@ -413,15 +446,21 @@ never the arity, and the agent language writes a three-edge entry \
 it finds, not on this row."] },
     { id := .sort .context, name := "context", status := .core
       exemplar := none
-      forms := []
-      notes := [.text "Context node: typed edges, no payload. A ratified \
-tag with NO grammar form — ", .code "Cas/Grammar/Tree.lean",
-        .text " has no ", .code "context", .text " constructor, so \
-nothing in the grammar writes this sort's layout. It is elaborated at \
-the node layer by consumers (", .code "CasExamples.AgentStep.contextNode",
-        .text "): empty payload, one typed edge per folded item, the \
-edge tags read off whatever was loaded. Giving ", .code "context",
-        .text " a grammar form is its own slice."] },
+      forms := [
+        { name := "context", witness := .node wContext
+          fields := []
+          slots := [
+            { name := "item", expects := .value,
+              meaning := "one folded item, its edge tag read off the node that was loaded" }]
+          meaning := "A folded context: no payload, one typed edge per folded item." }]
+      notes := [.text "Context node: typed edges, no payload. The \
+grammar has no ", .code "context", .text " constructor — ",
+        .code "Cas/Grammar/Tree.lean", .text " writes no layout for \
+this sort — so the row's witness is the NODE itself, the shape ",
+        .code "CasExamples.AgentStep.contextNode", .text " writes: \
+empty payload, one typed edge per folded item, the edge tags read off \
+whatever was loaded. A ", .code "Tree.context", .text " constructor \
+remains its own slice; the form does not wait on it."] },
     { id := .reserved 14, name := "step", status := .reserved
       exemplar := none
       forms := []
@@ -439,7 +478,7 @@ bare def ", .code "Cas.Lang.stepWireTag", .text ", outside ", .code "Ty",
     { id := .sort .git, name := "git", status := .core
       exemplar := some "git-pin-commit"
       forms := [
-        { name := "git", witness := ⟨.git, wGit⟩
+        { name := "git", witness := .tree ⟨.git, wGit⟩
           fields := [
             { name := "object", enc := .opaque,
               meaning := "the git loose-object preimage: the type word, a space, the decimal byte length, a NUL, then the object's content" }]
@@ -468,7 +507,7 @@ is what would turn a pinned object into a walkable history."] },
     { id := .sort .schema, name := "schema", status := .revision1
       exemplar := some "schema-vector-document"
       forms := [
-        { name := "schema", witness := ⟨.schema, wSchema⟩
+        { name := "schema", witness := .tree ⟨.schema, wSchema⟩
           fields := [
             { name := "bytes", enc := .opaque,
               meaning := "the schema's canonical bytes, opaque at this layer" }]
@@ -538,18 +577,19 @@ theorem manifestV0_rows_complete (t : Ty) :
 #guard manifestV0.rows.all fun r =>
   (match r.id with | .reserved _ => true | .sort _ => false) == r.status.isReserved
 
--- A row carries no form exactly when it is reserved or is `context` —
--- the two exceptions, named out loud. Landing a `Tree.context`
--- constructor, or ratifying 14/15 into `Ty`, turns this red.
-#guard manifestV0.rows.all fun r =>
-  r.forms.isEmpty == (decide (r.id = RowId.sort .context) || r.status.isReserved)
+-- A row carries no form exactly when it is RESERVED. That is now the
+-- only exception: every sort of the grammar states a form, whether the
+-- grammar has a constructor for it or not. Ratifying 14/15 into `Ty`
+-- turns this red and names the site that must follow.
+#guard manifestV0.rows.all fun r => r.forms.isEmpty == r.status.isReserved
 
--- Each form's witness is a term of its own row's sort.
-#guard manifestV0.rows.all fun r =>
-  r.forms.all fun f => decide (RowId.sort f.witness.1 = r.id)
-
--- Elaboration stamps the row's tag.
+-- Elaboration stamps the row's tag. This is what ties a form to its
+-- row: the witness's own sort is not read anywhere, so a `.node`
+-- witness is held to exactly the standard a `.tree` one is.
 #guard (formsOf manifestV0).all fun (tag, f) => f.node.tag == tag
+
+-- Every witness writes the scheme version the grammar declares.
+#guard (formsOf manifestV0).all fun (_, f) => f.node.version == schemeVersion
 
 -- The declared reference discipline IS the witness's, in order.
 #guard (formsOf manifestV0).all fun (_, f) =>
@@ -704,9 +744,10 @@ def Manifest.toMarkdown (m : Manifest) : String :=
             ⟨r.notes⟩] }] ++
     m.closing.map Block.p ++
     [.h2 "Payload layout and reference discipline",
-     .p [.text "One section per node form, read off the encoders in ",
-         .code "Cas/Grammar/Tree.lean", .text " through a witness term. \
-Rows with no form: ",
+     .p [.text "One section per node form, read off a witness term — a \
+grammar term of ", .code "Cas/Grammar/Tree.lean", .text ", or the node \
+itself for a sort the grammar has no constructor for. Rows with no \
+form: ",
          .text (if formless.isEmpty then "none"
            else String.intercalate ", " (formless.map Row.name)),
          .text " — see their notes above."]] ++
