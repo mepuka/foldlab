@@ -77,6 +77,17 @@ export {
 export { layerKvsBackend, makeKvsBackend } from "./cas/KvsBackend.ts"
 export type { KvsBackend } from "./cas/KvsBackend.ts"
 
+// The roots registry over SQL: the one capability the key-value
+// backend cannot serve, because SQL enumerates and a key-value store
+// does not. It is the naming plane only — the bytes stay the key-value
+// backend's — so the two compose into a whole store over one database.
+export {
+  defaultRootsTable,
+  layerSqlRootStore,
+  makeSqlRootStore,
+} from "./cas/SqlRootStore.ts"
+export type { SqlRootStoreOptions } from "./cas/SqlRootStore.ts"
+
 // The path-reader backend: a read-only byte plane over any host that
 // serves bytes at a path — a git server's raw endpoint, an object
 // store, a static file host. The caller supplies `ReadPath`.
