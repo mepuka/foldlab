@@ -31,12 +31,24 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-// R11 - the manifest is the shared AUTHORITY: this leg reads the same
-// bytes `contract.ts` types. Engines share DATA, never code; that is the
-// whole reason the agreement gate proves anything.
-const MANIFEST = JSON.parse(
-  readFileSync(fileURLToPath(new URL('./manifest.json', import.meta.url)), 'utf8'),
+// R11 - the manifest is the shared AUTHORITY, and the authority is the
+// Lean-generated file: `lake exe emitlift` writes it from `Cas.Lift.manifestV0`
+// and `check:cas` byte-gates it. `contract.ts` imports THESE bytes and types
+// them; this leg reads THESE bytes and parses them. Engines share DATA, never
+// code; that is the whole reason the agreement gate proves anything — and a
+// second copy of the manifest anywhere in this package breaks it silently,
+// because a Lean edit would then move one leg and not the other. There was
+// such a copy at `src/manifest.json`; it is deleted, and
+// `test/T1-contract.test.ts` fails if one comes back.
+//
+// It must stay a `readFileSync`: this module is loaded by oxlint's plugin
+// runtime (via `plugin.mjs`) as well as by vitest's node worker, and only the
+// latter would honour a JSON import attribute.
+export const MANIFEST_PATH = fileURLToPath(
+  new URL('../../../library/effects/src/cas/generated/lift/manifest.json', import.meta.url),
 );
+
+const MANIFEST = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
 /** Fill a pinned detail template. Implemented INDEPENDENTLY of the ck leg's
  * `detail` on purpose - R10 puts detail strings inside gate equality, so a

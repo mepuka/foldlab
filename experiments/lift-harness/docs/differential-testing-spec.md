@@ -150,6 +150,18 @@ rulings; each ruling's probe joins the pinned corpus.
   hand-authored and becomes the generated projection of Lean
   first-order data — same file, new authority.
 
+  *Status 2026-08-29 (the ruling stands; the file moved).* The Lean
+  port landed: the authority is now
+  `library/effects/src/cas/generated/lift/manifest.json`, emitted by
+  `lake exe emitlift` from `Cas.Lift.manifestV0` and byte-gated in
+  `check:cas`. `src/manifest.json` survived the port as an unread
+  second copy and had already drifted — the oxc leg was reading it
+  while `contract.ts` read the generated file, so R11's premise was
+  false at HEAD even though every load-bearing field still agreed.
+  The copy is deleted; both legs name the generated file, and
+  `test/T1-contract.test.ts` fails if a second manifest reappears
+  under `src/`.
+
 ## 5. The suite (tiers)
 
 Runner: `vitest` + `@effect/vitest` at the pinned rc — the estate's

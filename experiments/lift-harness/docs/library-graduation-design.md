@@ -58,8 +58,16 @@ host: local package links hang bun):
 ## 4. Manifest authority inversion (byte-parity migration)
 
 R11 (interchange) already rules that one manifest owns the protocol
-and both surfaces are generated. Today `src/manifest.json` is
-hand-authored TS-side. The inversion is adapt-to-existing-bytes:
+and both surfaces are generated. The inversion is
+adapt-to-existing-bytes:
+
+*Status 2026-08-29: steps 1-2 are done.* The authority is
+`library/effects/src/cas/generated/lift/manifest.json`, emitted from
+`Cas.Lift.manifestV0` and byte-gated in `check:cas`; the hand-authored
+`src/manifest.json` is deleted and both engines read the generated
+bytes. Step 3 — `contract.ts` itself becoming an emitted mirror —
+stands open.
+
 
 1. Freeze the committed `manifest.json` bytes as the target.
 2. Author the Lean first-order data + emitter until emitted bytes ≡

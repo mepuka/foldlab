@@ -32,8 +32,41 @@ against the receipt), `lake build` of the twin, then the harness:
    the instrument identities and source pins the harness expects.
 
 Green ends with `CROSS-INSTRUMENT GATE GREEN`. The gate needs network on
-first run (clone + vendoring) and the Lean v4.32.0 toolchain via elan; it is
-deliberately NOT in the default `mise run check` chain.
+first run (clone + vendoring) and the Lean v4.32.0 toolchain via elan.
+
+## Standing exception: this gate is manual
+
+It is deliberately NOT in the default `mise run check` chain, and that is now a
+recorded decision rather than an accident. It was re-examined on 2026-08-29
+against the option of vendoring the C seam, which would have let it join the
+chain. Vendoring was priced and refused, for three reasons:
+
+- **The seam is not the TypeScript slice.** `extract-lean/lakefile.toml`
+  requires the lean4-tree-sitter package by path, and that package's
+  `extern_lib «tree-sitter-lean»` links all ten vendored grammars
+  unconditionally — java, python, kotlin, typescript, tsx, javascript, go,
+  rust, csharp, ruby. That is 111 MB of generated C, none of which Stage 1
+  reads.
+- **Vendoring would not remove the network fetch.** The clone pins
+  `leanprover/lean4:v4.32.0` while the rest of the estate is on v4.33.1, so
+  the first run still fetches a second toolchain through elan. The toolchain
+  split is itself unruled (grill item 3 of the ingestion-harness report).
+- **Trimming the grammar set is a re-admission, not a wiring change.**
+  Building only `ts_typescript.o` means editing an admitted third party's
+  lakefile, which moves the artifact TOOLS.md admitted.
+
+**What would lift the exception:** the twin bumped to v4.33.1 with a
+lean4-tree-sitter re-admission, or an upstream release that makes the grammar
+set selectable. Either one, and this task joins `check`.
+
+**While it stands:** run `mise run check:extract-twin` by hand after any change
+to `src/extract.ts`, to the twin's walk, or to the pins. Nothing else runs it.
+
+Stage 1's *single*-instrument gates — pin verification, the four-way
+enumeration agreement, byte-determinism — are in the chain as
+`mise run check:extract`, and run from a clean checkout off the vendored
+sources in `../vendor/effect-src`. The exception costs the cross-instrument
+agreement only.
 
 ## Known defect (held, not hidden)
 

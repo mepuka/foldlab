@@ -198,7 +198,12 @@ Verdicts go to stdout through `Console`, never the logger: they are data
 with a machine-readable contract, and a timestamped `INFO` prefix would
 break every consumer that pipes them.
 
-Note on the `oxc-engine.mjs` leg: it imports the manifest with a JSON
-import attribute rather than reading it, because that module is loaded by
-two foreign hosts — oxlint's plugin runtime and vitest's node worker — and
-must not assume either has a filesystem it may reach for.
+Note on the `oxc-engine.mjs` leg: it `readFileSync`s the manifest rather
+than importing it with a JSON import attribute, because that module is
+loaded by two foreign hosts — oxlint's plugin runtime and vitest's node
+worker — and only the second honours the attribute. The path it reads is
+exported as `MANIFEST_PATH`; `contract.ts` imports the same file, and
+`test/T1-contract.test.ts` asserts the two legs' bytes are identical. There
+is no second copy of the manifest in this package — there was one at
+`src/manifest.json`, and it had already drifted (R11 split-brain, closed
+2026-08-29).
