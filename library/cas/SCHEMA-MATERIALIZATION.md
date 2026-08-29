@@ -511,6 +511,17 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     every `Ty` constructor has a row, so the omission class is closed,
     not just this instance. The row's versioning prose is DRAFTED, not
     ratified — the operator's to rule on.
+
+    **The registry's last reconciliation debt is paid, 2026-08-29** (G3
+    of the reification-substrate growth order): rows 14/15 (`step`,
+    `cont`) were RESERVED tags spelled as bare `UInt8` defs in
+    `Cas/Lang/Defun.lean` and held there by `#guard`s pinning
+    `Ty.ofTag`'s refusal of both. They are now `Ty.step` and `Ty.cont`
+    with real Node-witness forms, the refusal guards are gone with the
+    reservation they pinned, and `Defun`'s two names are abbreviations
+    of the sorts' own tags. No registry row is reserved or formless
+    today; the `.reserved` row id, the `.reserved` status, and their
+    guards are kept unpopulated for the next reservation.
 27. **The rc.111/rc.112 split**: library/effects pins
     `effect@4.0.0-rc.111` (the provenance lock); the workbench and
     experiments/lift-harness are on rc.112 (foldkit peer-pins it

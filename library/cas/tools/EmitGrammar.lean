@@ -21,9 +21,12 @@ ruling-queue item 26 was about. The TypeScript projection rides beside
 the JSON, so a re-pointed target moves the pair together.
 
 This root is also where the grammar manifest and the `Lang` layer meet,
-so the RESERVED rows are pinned here — the manifest cannot import
-`Defun` (layer 3 sits above layer 2), but the tool that renders it can,
-and `check:cas` builds it.
+so the cross-layer pins live here — the manifest cannot import `Defun`
+(layer 3 sits above layer 2), but the tool that renders it can, and
+`check:cas` builds it. The pins used to hold the RESERVED rows against
+`Defun`'s literals; since those rows were ratified (2026-08-29) they
+hold the `step` and `cont` witnesses against `Defun`'s own encoders,
+which is the same bargain one rung stronger.
 -/
 
 namespace EmitGrammarMain
@@ -31,14 +34,55 @@ namespace EmitGrammarMain
 open Cas.Grammar
 open Cas.Backend.Ts
 
-/-- The reserved rows carry the tags `Cas/Lang/Defun.lean` actually
-writes. `Defun` guards those literals against the registry table; this
-guards the table against `Defun`, closing the loop the layering forbids
-stating in one module. -/
+/-- The reserved rows — the tags the registry holds outside `Ty`.
+EMPTY since 2026-08-29: rows 14/15 were the last two, and they are now
+the `step` and `cont` sorts. The definition and its guard stay for the
+next reservation, which they hold to the same bargain. -/
 private def reservedTags : List UInt8 :=
   (manifestV0.rows.filter (·.status.isReserved)).map (·.id.wireTag)
 
-#guard reservedTags == [Cas.Lang.stepWireTag, Cas.Lang.contWireTag]
+#guard reservedTags == []
+
+/-! ## The program sorts, pinned across the layering
+
+`Cas/Grammar/Manifest.lean` may not import `Cas/Lang/Defun.lean` —
+layer 3 sits above layer 2 — so the manifest's `step` and `cont`
+witnesses spell the encoder's layout by hand. This root is where the
+two meet, so this is where the hand-spelling is held to the encoder:
+the witness node of each form must be the node `Defun` actually writes.
+That closes the loop the layering forbids stating in either module,
+exactly as the reserved-tag guard above used to.
+
+`noAddr` matches `Manifest.lean`'s private witness address; a table's
+line addresses are `H`-determined and the guard reads only tag,
+version, payload, and expected tags. -/
+
+private def noAddr : Cas.Addr32 := ⟨List.replicate 32 0, by simp⟩
+
+/-- The put line the `step.put` witness states. -/
+private def wLinePut : Cas.Lang.PLine :=
+  .put Cas.Grammar.schemeVersion Ty.value.wireTag [7, 7, 7]
+    [(Ty.value.wireTag, .ans 0)]
+
+/-- The load line the `step.load` witness states. -/
+private def wLineLoad : Cas.Lang.PLine := .load (.ans 0)
+
+/-- The form of a row, by row name and form name. -/
+private def formNamed (row form : String) : Option Form :=
+  (manifestV0.rows.find? (·.name == row)).bind
+    (·.forms.find? (·.name == form))
+
+private def witnessOf (row form : String) : Option Cas.Node :=
+  (formNamed row form).map Form.node
+
+-- The `step` forms ARE `Cas.Lang.encodeLine`'s nodes.
+#guard witnessOf "step" "put" == some (Cas.Lang.encodeLine wLinePut)
+#guard witnessOf "step" "load" == some (Cas.Lang.encodeLine wLineLoad)
+
+-- The `cont` form IS `Cas.Lang.tableNode`'s node, up to the address
+-- the manifest's constant `H` writes into the one edge it exhibits.
+#guard witnessOf "cont" "cont"
+  == some (Cas.Lang.tableNode (fun _ => noAddr) [wLinePut])
 
 /-! ## The TypeScript door
 
@@ -74,8 +118,9 @@ carries is deliberately expression-only. -/
 private def typeBlock : String :=
   "/** One registry row's tag surface: the sort's registry name, its\n" ++
   " * wire kind tag, and whether the row is RESERVED — a code point the\n" ++
-  " * registry holds outside `Ty` — rather than a ratified sort. Both\n" ++
-  " * kinds of row are refused identically at the door. */\n" ++
+  " * registry holds outside `Ty` — rather than a ratified sort. No row\n" ++
+  " * is reserved today; both kinds are refused identically at the door,\n" ++
+  " * so the flag is a fact about the registry, never a door policy. */\n" ++
   "export interface KindTagRow {\n" ++
   "  readonly name: string\n" ++
   "  readonly tag: number\n" ++
@@ -118,9 +163,11 @@ private def module : Module where
     "`Cas.value` refuses every tag listed here, which is what stops a",
     "caller-defined projection from aliasing a kind plane the library",
     "already reads. A RESERVED row is a code point the registry holds",
-    "outside `Ty` (`Cas/Lang/Defun.lean` writes 14 and 15); it is",
-    "refused exactly like a ratified sort, because a tag with a second",
-    "public interpretation is the same hole either way."
+    "outside `Ty`; none is today (14 and 15 were ratified as the `step`",
+    "and `cont` sorts on 2026-08-29). Reserved or ratified, a row is",
+    "refused identically, because a tag with a second public",
+    "interpretation is the same hole either way — so this door's",
+    "membership did not move when those two rows did."
   ]
   imports := []
   decls := decls

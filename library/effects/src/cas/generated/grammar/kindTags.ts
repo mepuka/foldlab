@@ -10,15 +10,18 @@
  * `Cas.value` refuses every tag listed here, which is what stops a
  * caller-defined projection from aliasing a kind plane the library
  * already reads. A RESERVED row is a code point the registry holds
- * outside `Ty` (`Cas/Lang/Defun.lean` writes 14 and 15); it is
- * refused exactly like a ratified sort, because a tag with a second
- * public interpretation is the same hole either way.
+ * outside `Ty`; none is today (14 and 15 were ratified as the `step`
+ * and `cont` sorts on 2026-08-29). Reserved or ratified, a row is
+ * refused identically, because a tag with a second public
+ * interpretation is the same hole either way — so this door's
+ * membership did not move when those two rows did.
  */
 
 /** One registry row's tag surface: the sort's registry name, its
  * wire kind tag, and whether the row is RESERVED — a code point the
- * registry holds outside `Ty` — rather than a ratified sort. Both
- * kinds of row are refused identically at the door. */
+ * registry holds outside `Ty` — rather than a ratified sort. No row
+ * is reserved today; both kinds are refused identically at the door,
+ * so the flag is a fact about the registry, never a door policy. */
 export interface KindTagRow {
   readonly name: string
   readonly tag: number
@@ -66,12 +69,12 @@ export const KindTagRows: ReadonlyArray<KindTagRow> = [
   {
     name: "step",
     tag: 14,
-    reserved: true,
+    reserved: false,
   },
   {
     name: "cont",
     tag: 15,
-    reserved: true,
+    reserved: false,
   },
   {
     name: "git",
