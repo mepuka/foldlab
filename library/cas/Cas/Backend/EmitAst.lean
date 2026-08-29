@@ -23,6 +23,7 @@ def astBeq : Ast → Ast → Bool
   | .arr a, .arr b => astBeq a b
   | .struct fs, .struct gs => fieldsBeq fs gs
   | .ref a, .ref b => a == b
+  | .decl i p ps, .decl j q qs => i == j && p == q && paramsBeq ps qs
   | _, _ => false
 
 def fieldsBeq :
@@ -30,6 +31,11 @@ def fieldsBeq :
   | [], [] => true
   | (n, o, a) :: fs, (m, p, b) :: gs =>
     n == m && o == p && astBeq a b && fieldsBeq fs gs
+  | _, _ => false
+
+def paramsBeq : List Ast → List Ast → Bool
+  | [], [] => true
+  | a :: as, b :: bs => astBeq a b && paramsBeq as bs
   | _, _ => false
 
 end
@@ -66,6 +72,12 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
     | .struct fields =>
       .call (schema "Struct") [.objectML (constructorFields env fields)]
     | .ref tag => .call (canonicalSchema "ref") [.int tag.toNat]
+    -- A general declaration lowers to the built-in Effect's own
+    -- `toCode` prints for that id — the point of speaking Effect's
+    -- declaration ids verbatim (PLAN P3/P4).
+    | .decl .date _ _ => schema "Date"
+    | .decl .url _ _ => schema "URL"
+    | .decl .option _ ps => .call (schema "Option") (constructorParams env ps)
 
 private def constructorFields (env : List (String × Ast)) :
     List (String × Bool × Ast) → List (String × Expr)
@@ -74,6 +86,11 @@ private def constructorFields (env : List (String × Ast)) :
     (name,
       if opt then .call (schema "optionalKey") [constructorGo env false code]
       else constructorGo env false code) :: constructorFields env rest
+
+private def constructorParams (env : List (String × Ast)) :
+    List Ast → List Expr
+  | [] => []
+  | code :: rest => constructorGo env false code :: constructorParams env rest
 
 end
 

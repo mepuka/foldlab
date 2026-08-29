@@ -1,5 +1,6 @@
 import Cas.Core.Node
 import Cas.Values.Json
+import Cas.Schema.Declarations
 
 /-!
 # The codes — the canonical schema, Lean side
@@ -50,6 +51,20 @@ inductive Ast where
   | arr (item : Ast)
   | struct (fields : List (String × Bool × Ast))
   | ref (tag : UInt8)
+  /-- The general declaration code (increment C-decl): Effect's opaque
+  `Declaration` as content — a registry id, a first-order payload, and
+  the type parameters, exactly the persisted shape
+  (`SchemaRepresentation.ts:144-153`).
+
+  `id` ranges over `DeclarationId.General`, so an unadmitted
+  declaration has no spelling here at all: admission is by
+  construction, and the door names what it refuses. Row zero of the
+  registry, `foldlab/cas/ref`, is NOT general — it keeps its dedicated
+  code `.ref`, which is what keeps the revision-1 projection injective.
+  Whether `.ref` should later become sugar for this code is an operator
+  ruling, recorded and not taken. -/
+  | decl (id : DeclarationId.General) (payload : DeclPayload)
+      (typeParameters : List Ast)
 
 mutual
 
@@ -57,15 +72,27 @@ mutual
 STRICT sorted name order — so the only admissible spelling of a struct
 is the canonical one, and the Lean identity agrees with the sorted
 canonical-JSON identity on the TypeScript side by construction. Strict
-order subsumes no-duplicates, which is what the round trip needs. -/
+order subsumes no-duplicates, which is what the round trip needs.
+
+On a declaration this is the registry's own discipline read off the
+row: the payload is one the id admits and the type parameters are as
+many as the id takes. WHICH ids exist is not asked here — that is
+settled by the carrier (`DeclarationId.General`); this clause asks only
+whether the row's contract is honoured. -/
 def Ast.WF : Ast → Prop
   | .arr a => a.WF
   | .struct fs => List.Pairwise (fun a b => a.1 < b.1) fs ∧ WFFields fs
+  | .decl id p ps => id.PayloadWF p ∧ ps.length = id.arity ∧ WFParams ps
   | _ => True
 
 def WFFields : List (String × Bool × Ast) → Prop
   | [] => True
   | (_, _, a) :: fs => a.WF ∧ WFFields fs
+
+/-- A declaration's type parameters are codes, each well-formed. -/
+def WFParams : List Ast → Prop
+  | [] => True
+  | a :: as => a.WF ∧ WFParams as
 
 end
 

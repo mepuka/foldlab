@@ -36,6 +36,15 @@ What is proved:
   spelled — the exactness law needs no canonicality hypothesis;
 - `ingestLegacy_wf` / `ingestLegacy_toJson` — the same two laws for
   the revision-0 arm, unchanged in substance.
+
+The declaration allowlist (increment C-decl) is enforced here and
+nowhere else on the failure path: `Ast.ofEnvelope` refuses a
+`Declaration` whose id is no row of `Cas.Schema.DeclarationId`, and
+`refusalOf` names that refusal `unknownDeclaration` instead of letting
+it read as a shape failure. The gate `Ast.wf` grew the row's own
+discipline with it — payload shape and type-parameter count, read off
+the registry — so `ingest_wf` and `ingest_envelope` hold over the grown
+carrier with their statements unchanged.
 -/
 
 namespace Cas.Schema
@@ -55,6 +64,13 @@ inductive IngestRefusal where
   side today (no `Suspend`, no `Reference` constructor), so a code
   answered from one could not be re-emitted by the projection. -/
   | nonEmptyReferences
+  /-- A `Declaration` whose `representation.id` is no row of the
+  declaration registry (`Cas.Schema.DeclarationId`). The allowlist is
+  the only safe admission rule for Effect's open extension point
+  (PLAN P4), so an unknown id is refused BY NAME rather than carried as
+  opaque content — the carrier has no spelling for it. Admitting one is
+  a registry change, not a decoder change. -/
+  | unknownDeclaration
   deriving DecidableEq, Repr
 
 /-- Boolean twin of the strict-order clause: every later field name is
@@ -71,11 +87,18 @@ door. -/
 def Ast.wf : Ast → Bool
   | .arr a => a.wf
   | .struct fs => pairwiseNames fs && wfFields fs
+  | .decl id p ps =>
+    id.payloadWf p && decide (ps.length = id.arity) && wfParams ps
   | _ => true
 
 def wfFields : List (String × Bool × Ast) → Bool
   | [] => true
   | (_, _, a) :: fs => a.wf && wfFields fs
+
+/-- Boolean twin of `WFParams`. -/
+def wfParams : List Ast → Bool
+  | [] => true
+  | a :: as => a.wf && wfParams as
 
 end
 
@@ -99,26 +122,66 @@ theorem Ast.wf_iff : ∀ (a : Ast), a.wf = true ↔ a.WF
   | .arr a => by simp [Ast.wf, Ast.WF, Ast.wf_iff a]
   | .struct fs => by
     simp [Ast.wf, Ast.WF, pairwiseNames_iff fs, wfFields_iff fs]
+  | .decl id p ps => by
+    simp [Ast.wf, Ast.WF, DeclarationId.General.payloadWf_iff id p,
+      wfParams_iff ps, and_assoc]
 
 theorem wfFields_iff : ∀ fs, wfFields fs = true ↔ WFFields fs
   | [] => by simp [wfFields, WFFields]
   | (_, _, a) :: fs => by
     simp [wfFields, WFFields, Ast.wf_iff a, wfFields_iff fs]
 
+theorem wfParams_iff : ∀ ps, wfParams ps = true ↔ WFParams ps
+  | [] => by simp [wfParams, WFParams]
+  | a :: as => by
+    simp [wfParams, WFParams, Ast.wf_iff a, wfParams_iff as]
+
 end
 
 /-! ## The door — revision 1 -/
 
+/-- One `Declaration` node, tested against the registry: is its
+`representation.id` no row at all? -/
+private def unknownDeclarationHere : List (String × Json.Value) → Bool
+  | [("_tag", .str "Declaration"), ("checks", _),
+     ("representation", .obj [("id", .str w), ("payload", _)]),
+     ("typeParameters", _)] => (DeclarationId.ofWire w).isNone
+  | _ => false
+
+mutual
+
+/-- Does the representation carry a declaration the registry does not
+admit? A structural search over the normalized value — it decides
+nothing (`Ast.ofEnvelope` alone decides admission); it only tells the
+refusal apart from a shape failure. -/
+private def unknownDeclarationIn : Json.Value → Bool
+  | .obj fields => unknownDeclarationHere fields || unknownDeclarationFields fields
+  | .arr xs => unknownDeclarationItems xs
+  | _ => false
+
+private def unknownDeclarationFields : List (String × Json.Value) → Bool
+  | [] => false
+  | (_, v) :: rest => unknownDeclarationIn v || unknownDeclarationFields rest
+
+private def unknownDeclarationItems : List Json.Value → Bool
+  | [] => false
+  | v :: rest => unknownDeclarationIn v || unknownDeclarationItems rest
+
+end
+
 /-- The refusal namer: a pure diagnostic on the failure path, walking
-only the envelope's shell. It never decides admission — that is
-`Ast.ofEnvelope`'s job alone — so there is exactly one decoder behind
+the envelope's shell and — for the declaration allowlist — the
+representation it wraps. It never decides admission; that is
+`Ast.ofEnvelope`'s job alone, so there is exactly one decoder behind
 the door and the refusal name cannot disagree with it. -/
 private def refusalOf : Json.Value → IngestRefusal
   | .obj [("revision", .nat r), ("value", d)] =>
     if r = schemaRevision then
       match d with
-      | .obj [("references", .obj refs), ("representation", _)] =>
-        if refs.isEmpty then .notASchema else .nonEmptyReferences
+      | .obj [("references", .obj refs), ("representation", rep)] =>
+        if !refs.isEmpty then .nonEmptyReferences
+        else if unknownDeclarationIn rep then .unknownDeclaration
+        else .notASchema
       | _ => .notASchema
     else .wrongRevision
   | _ => .notASchema
@@ -193,5 +256,32 @@ theorem ingestLegacy_toJson {a : Ast} (ha : a.WF) :
   unfold ingestLegacy
   rw [canonValue_of_canonical _ (toJson_canonical a ha), ofJson_toJson]
   simp [(Ast.wf_iff a).mpr ha]
+
+/-! ## The declaration allowlist at the door — worked, at elaboration
+
+The two facts the theorems above state in general, run on the general
+declaration code so the door's behaviour is visible in the source:
+an admitted declaration goes in and comes back with the same payload
+bytes, and an id outside the registry is refused BY NAME. -/
+
+/-- `Schema.Option(Schema.String)` as a code — an admitted arity-1
+declaration over an admitted element. -/
+private def optionOfString : Ast := .decl .option .null [.str]
+
+-- An admitted declaration ingests to itself: same canonical bytes out.
+#guard (match ingest optionOfString.envelope with
+        | .ok a => a.payload == optionOfString.payload
+        | .error _ => false)
+
+-- An id outside the registry is refused by name, not silently carried.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Declaration"), ("checks", .arr []),
+              ("representation", .obj [
+                ("id", .str "vendor/x/Widget"), ("payload", .null)]),
+              ("typeParameters", .arr [])])])]) with
+        | .error .unknownDeclaration => true
+        | _ => false)
 
 end Cas.Schema

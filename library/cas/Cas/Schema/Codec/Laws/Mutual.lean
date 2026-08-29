@@ -134,6 +134,7 @@ private theorem roundtrip_all :
       exact False.elim
         (hstruct fs (encodeFields fs x) rfl (by simpa only [encode] using hv))
     | ref t => exact False.elim (href t rfl)
+    | decl _ _ _ => exact x.elim
   case case15 =>
     intro hnd hwf x hv
     cases x
