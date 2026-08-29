@@ -20,6 +20,16 @@ run = ["bun x tsgo --noEmit", "bun x vitest run", "bun bin/main.ts gate"]
 description = "The differential-testing suite alone (T1 contract, T2 ledger, T3 metamorphic, T4 property, T5 gate+adequacy, T6 reproducibility, T7 portability)"
 run = "bun x vitest run"
 
+# The ONE tier that runs on a clean checkout: both its inputs are
+# committed (`library/effects/test/generated/VectorPrograms.ts` and
+# `VectorProgramLifts.json`, emitted together by `lake exe emitprograms`
+# under the byte gate in `check:cas`). Every other tier reaches for the
+# fixture corpus in gitignored `.staging`, which is why the lane has not
+# graduated; this one is not blocked by that.
+[tasks.roundtrip]
+description = "T12 — PProg → emitted TypeScript → recognized → the document Lean emitted, byte for byte"
+run = "bun x vitest run test/T12-roundtrip.test.ts"
+
 [tasks.census]
 description = "Wild linearizability census over the corpus manifest's wild-effect projects"
 run = "bun bin/main.ts census"
