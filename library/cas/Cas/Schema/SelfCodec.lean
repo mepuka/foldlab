@@ -769,4 +769,27 @@ theorem envelope_inj {a b : Ast} (h : a.envelope = b.envelope) :
   injection ha with ha
   exact ha.symm
 
+/-! ### Named open obligation — decoder soundness for `RepNormal`
+
+`Ast.ofRepresentationJson` has no `.lit .null` arm — the only `.lit`
+it can answer comes from `litOfRepresentationJson`, which has no null
+spelling — so its image is contained in `RepNormal`:
+
+    ofRepresentationJson_repNormal :
+      ∀ {v : Json.Value} {a : Ast},
+        Ast.ofRepresentationJson v = some a → a.RepNormal
+
+With that and `ofRepresentationJson_toRepresentationJson'`, `RepNormal`
+is exactly the subset the revision-1 projection is a bijection onto.
+It is NOT proved here. Lean 4.33 generates no functional-induction
+principle for a mutually recursive definition (`fun_induction` reports
+"No functional induction theorem ... or function is mutually
+recursive"), so the proof wants either a hand-written mutual recursion
+mirroring all nine decoder arms or a restructuring of the decoder into
+a non-mutual shape — a Slice-C-sized change to a frozen statement, not
+a proof edit. Nothing in this module or in `Cas.Schema.ingest` depends
+on it: the exactness laws take `RepNormal` as an explicit hypothesis
+(`ingest_envelope'`, `ofEnvelope_envelope'`) and hold unconditionally
+in their `repNorm` form. -/
+
 end Cas.Schema
