@@ -52,6 +52,13 @@ def Status.isRefused : Status S A → Bool
   | .refused _ => true
   | _ => false
 
+/-- Still suspended — the only status a fuelled run reports that says
+nothing about the program. The word gate's precondition is that this is
+`false`. -/
+def Status.isRunning : Status S A → Bool
+  | .running _ => true
+  | _ => false
+
 section Interp
 
 variable (H : Bytes → Addr32)

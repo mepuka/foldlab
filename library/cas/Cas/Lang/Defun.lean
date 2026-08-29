@@ -43,6 +43,12 @@ Proved below:
   plus one closing step (the final `pure`, or the refusal vis).
 - `runP_preserves_wf` — the direct interpreter preserves word
   admission (L7, inherited through the agreement).
+- `runPFrom_halts` / `runP_halts` — the direct interpreter always
+  reports a halted status, which is what makes it a gate.
+- `ObsEq_embed_of_runP` — the word gate READ as a stratum-3 equality:
+  tables whose direct runs agree at every word denote observationally
+  equal programs. R5's observation and R14's `ObsEq` are one thing,
+  through the R10 bridge.
 - (ROLLED BACK, see below) `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
   round trips over the shared byte primitives (`nat32`, `readChunk`).
 - (ROLLED BACK, see below) `decodeLine_encodeLine` — the code-point round trip:
@@ -66,11 +72,42 @@ namespace Cas.Lang
 
 open Cas.Grammar (schemeVersion)
 
-/-- Wire tag of a step (code-point) node — reserved registry row 14. -/
+/-- Wire tag of a step (code-point) node — `REGISTRY.md` row 14
+(`step`, 0x0E, RESERVED). -/
 def stepWireTag : UInt8 := 14
 
-/-- Wire tag of a table (continuation) node — reserved registry row 15. -/
+/-- Wire tag of a table (continuation) node — `REGISTRY.md` row 15
+(`cont`, 0x0F, RESERVED). -/
 def contWireTag : UInt8 := 15
+
+/-! ### The reconciliation debt, made machine-visible
+
+Rows 14 and 15 are spelled here as bare `UInt8` defs, OUTSIDE
+`Cas.Grammar.Ty`'s registry, and deliberately so: growing `Ty` is F3's
+own slice (a measured five-file amplification — the inductive, the two
+tag functions, the round trip, and every exhaustive match downstream),
+so the rows stay reserved rather than ratified early. That leaves a
+debt, and the guards below are its machine-visible half.
+
+The first two pin the literals against `REGISTRY.md`'s rows. The second
+two pin the RESERVATION itself: `Ty.ofTag` must still refuse both tags,
+so the day the grammar grill ratifies rows 14/15 into `Ty`, this file's
+build goes red and this is the site that has to follow. The debt cannot
+be paid silently in either direction. -/
+
+-- `REGISTRY.md` row 14 — `step`, tag 0x0E.
+#guard stepWireTag == 14
+
+-- `REGISTRY.md` row 15 — `cont`, tag 0x0F.
+#guard contWireTag == 15
+
+-- Row 14 is RESERVED, not ratified: `Ty.ofTag` refuses it. This guard
+-- goes red exactly when the row enters `Ty`, and the definitions here
+-- must then be replaced by the sort.
+#guard (Cas.Grammar.Ty.ofTag stepWireTag).isNone
+
+-- Row 15 is RESERVED, not ratified — same contract as row 14.
+#guard (Cas.Grammar.Ty.ofTag contWireTag).isNone
 
 /-- A positional operand: a literal address, or the i-th earlier
 answer. No binders — the Reynolds defunctionalization keeps every code
@@ -280,6 +317,60 @@ theorem runP_preserves_wf (p : PProg) {w : Word}
     (hw : Word.wf w = true) : Word.wf (runP H p w).2 = true := by
   rw [← runP_embed_agree]
   exact run_preserves_wf H _ _ hw
+
+/-- The direct interpreter always halts, from any answer history: it
+walks a finite table and every clause reports `done` or `refused`. -/
+theorem runPFrom_halts (env : List Addr32) (p : PProg) (w : Word) :
+    (runPFrom H env p w).1.isRunning = false := by
+  induction p generalizing env w with
+  | nil => cases hg : env.getLast? <;> simp [runPFrom, hg, Status.isRunning]
+  | cons line rest ih =>
+    cases line with
+    | put v t payload refs =>
+      cases hr : resolveRefs env refs with
+      | none => simp [runPFrom, hr, Status.isRunning]
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error r => simp only [runPFrom, hr, hp]; rfl
+        | ok aw =>
+          obtain ⟨a, w'⟩ := aw
+          simp only [runPFrom, hr, hp]
+          exact ih _ _
+    | load src =>
+      cases hs : src.resolve env with
+      | none => simp [runPFrom, hs, Status.isRunning]
+      | some a =>
+        cases hf : Word.find w a with
+        | none => simp only [runPFrom, hs, hf]; rfl
+        | some n =>
+          simp only [runPFrom, hs, hf]
+          exact ih _ _
+
+/-- `runP` reports a HALTED status, always — which is what makes it a
+gate rather than an approximation. -/
+theorem runP_halts (p : PProg) (w : Word) :
+    (runP H p w).1.isRunning = false := runPFrom_halts H [] p w
+
+/-- THE WORD GATE, as a stratum-3 equality: two tables whose DIRECT
+runs agree at every starting word denote observationally equal
+programs. `runP` is what the emitter's gate executes, at the exact fuel
+`p.length + 1`; `ObsEq` is R14's stratum-3 equation over `interpretRef`.
+This corollary — the bridge (`run_interpretRef_agree`) applied through
+`runP_embed_agree` — is what makes R5's word observation and that
+equation ONE thing rather than two claims that resemble each other.
+
+Note what the hypothesis compares and the conclusion does not: `runP`
+agreement includes the refusal WORD, `ObsEq` does not carry it. The
+gate therefore decides `ObsEq` by checking something strictly finer;
+the implication runs only in this direction, and `ObsEq.run_refused`
+(`Representation.lean`) is the exact statement of the shortfall. -/
+theorem ObsEq_embed_of_runP {p q : PProg}
+    (h : ∀ w : Word, runP H p w = runP H q w) :
+    ObsEq H (embed p) (embed q) :=
+  ObsEq.of_run H fun w =>
+    ⟨p.length + 1, q.length + 1,
+      by rw [runP_embed_agree, runP_embed_agree, h w],
+      by rw [runP_embed_agree]; exact runP_halts H p w⟩
 
 end Interp
 

@@ -1,11 +1,11 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 194,
-    "Core": 250,
+    "Codec": 200,
+    "Core": 256,
     "Grammar": 46,
-    "IR": 84,
-    "Lang": 135,
+    "IR": 90,
+    "Lang": 142,
     "Lift": 37,
     "Schema": 458,
     "Values": 364,
@@ -13,29 +13,29 @@
   },
   "axiomCensus": {
     "Classical.choice": 188,
-    "Quot.sound": 304,
-    "propext": 414
+    "Quot.sound": 306,
+    "propext": 420
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 115,
+    "Cas.Addr32": 121,
     "Cas.Binding": 35,
     "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 35,
     "Cas.Lang.Handler": 15,
-    "Cas.Lang.Prog": 68,
-    "Cas.Lang.Refusal": 13,
-    "Cas.Lang.Sig": 41,
-    "Cas.Lang.Status": 33,
+    "Cas.Lang.Prog": 71,
+    "Cas.Lang.Refusal": 14,
+    "Cas.Lang.Sig": 42,
+    "Cas.Lang.Status": 40,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
     "Cas.Schema.Ast": 284,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
-    "Cas.Word": 62
+    "Cas.Word": 68
   },
-  "declarations": 1307,
-  "documented": 637,
+  "declarations": 1314,
+  "documented": 644,
   "library": "Cas",
   "modules": [
     {
@@ -2662,10 +2662,19 @@
       ]
     },
     {
-      "declarations": 40,
-      "documented": 32,
+      "declarations": 43,
+      "documented": 35,
       "module": "Cas.Lang.Defun",
       "surface": [
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.ObsEq_embed_of_runP",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {p q : Cas.Lang.PProg}, (∀ (w : Cas.Word), Cas.Lang.runP H p w = Cas.Lang.runP H q w) → Cas.Lang.ObsEq H (Cas.Lang.embed p) (Cas.Lang.embed q)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
         {
           "documented": true,
           "kind": "inductive",
@@ -2921,8 +2930,26 @@
           "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Lang.runPFrom_halts",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), (Cas.Lang.runPFrom H env p w).fst.isRunning = false",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Lang.runP_embed_agree",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), Cas.Lang.run H (List.length p + 1) (Cas.Lang.embed p) w = Cas.Lang.runP H p w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runP_halts",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), (Cas.Lang.runP H p w).fst.isRunning = false",
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
@@ -3101,8 +3128,8 @@
       ]
     },
     {
-      "declarations": 19,
-      "documented": 13,
+      "declarations": 20,
+      "documented": 14,
       "module": "Cas.Lang.Interp",
       "surface": [
         {
@@ -3180,6 +3207,14 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Lang.Status.isRefused",
+          "signature": "{S : Cas.Lang.Sig} → {A : Type} → Cas.Lang.Status S A → Bool",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Lang.Sig", "Cas.Lang.Status"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Status.isRunning",
           "signature": "{S : Cas.Lang.Sig} → {A : Type} → Cas.Lang.Status S A → Bool",
           "touches": ["Lang"]
         },
@@ -3471,8 +3506,8 @@
       ]
     },
     {
-      "declarations": 12,
-      "documented": 8,
+      "declarations": 15,
+      "documented": 11,
       "module": "Cas.Lang.Representation",
       "surface": [
         {
@@ -3491,6 +3526,33 @@
           "name": "Cas.Lang.ObsEq.of_eq",
           "signature": "∀ {A : Type} (H : Cas.Bytes → Cas.Addr32) {p q : Cas.Lang.Prog Cas.Lang.CasSig A}, p = q → Cas.Lang.ObsEq H p q",
           "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.ObsEq.of_run",
+          "signature": "∀ {A : Type} (H : Cas.Bytes → Cas.Addr32) {p q : Cas.Lang.Prog Cas.Lang.CasSig A}, (∀ (w : Cas.Word), ∃ fp fq, Cas.Lang.run H fp p w = Cas.Lang.run H fq q w ∧ (Cas.Lang.run H fp p w).fst.isRunning = false) → Cas.Lang.ObsEq H p q",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.ObsEq.run_done",
+          "signature": "∀ {A : Type} (H : Cas.Bytes → Cas.Addr32) {p q : Cas.Lang.Prog Cas.Lang.CasSig A}, Cas.Lang.ObsEq H p q → ∀ {fuel : Nat} {w w' : Cas.Word} {a : A}, Cas.Lang.run H fuel p w = (Cas.Lang.Status.done a, w') → ∃ g, Cas.Lang.run H g q w = (Cas.Lang.Status.done a, w')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.ObsEq.run_refused",
+          "signature": "∀ {A : Type} (H : Cas.Bytes → Cas.Addr32) {p q : Cas.Lang.Prog Cas.Lang.CasSig A}, Cas.Lang.ObsEq H p q → ∀ {fuel : Nat} {w w' : Cas.Word} {r : Cas.Lang.Refusal}, Cas.Lang.run H fuel p w = (Cas.Lang.Status.refused r, w') → ∃ g w'', Cas.Lang.run H g q w = (Cas.Lang.Status.refused r, w'')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
           "axioms": ["Quot.sound"],
@@ -10485,10 +10547,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 669,
+    "def": 670,
     "inductive": 34,
     "instance": 59,
     "structure": 36,
-    "theorem": 506
+    "theorem": 512
   }
 }

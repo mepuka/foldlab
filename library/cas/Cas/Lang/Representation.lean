@@ -137,4 +137,74 @@ def ObsEq (H : Bytes → Addr32) (p q : Prog CasSig A) : Prop :=
 theorem ObsEq.of_eq (H : Bytes → Addr32) {p q : Prog CasSig A}
     (hpq : p = q) : ObsEq H p q := fun w => by rw [hpq]
 
+/-! ### `ObsEq` decided by the run — the R5 gate and stratum 3 are one
+
+`ObsEq` is stated over `interpretRef`, but nothing in the estate
+executes `interpretRef`: the gates run `run` (and, on the
+defunctionalized fragment, `runP`). The bridge (`Handler.lean`,
+`run_interpretRef_agree`) is what closes that gap, and these three
+corollaries are the closure — the licence to read a run-gate verdict as
+a stratum-3 equality, and the exact statement of what the gate can and
+cannot see.
+
+The asymmetry the bridge's triage found survives here, and is the point
+of the third statement: `ObsEq` transfers a `done` outcome with its
+word, but a `refused` outcome with only its refusal. Two observationally
+equal programs may leave DIFFERENT partial words when they refuse, and
+`ObsEq` — being an equation in `Except Refusal (A × Word)` — cannot
+say otherwise. A gate that compared refusal words would be deciding
+something strictly finer than the estate's chosen observation. -/
+
+/-- The run gate decides `ObsEq`: if for every starting word the two
+programs have halted runs that agree — same status, same word, at
+whatever fuel each needs — the programs are observationally equal. This
+is the direction the gate uses. -/
+theorem ObsEq.of_run (H : Bytes → Addr32) {p q : Prog CasSig A}
+    (h : ∀ w : Word, ∃ fp fq : Nat,
+      run H fp p w = run H fq q w ∧ (run H fp p w).1.isRunning = false) :
+    ObsEq H p q := by
+  intro w
+  obtain ⟨fp, fq, heq, hhalt⟩ := h w
+  cases hp : run H fp p w with
+  | mk st w' =>
+    have hq : run H fq q w = (st, w') := by rw [← heq, hp]
+    rw [hp] at hhalt
+    cases st with
+    | done a =>
+      rw [interpretRef_of_run_done H fp hp, interpretRef_of_run_done H fq hq]
+    | refused r =>
+      rw [interpretRef_of_run_refused H fp hp,
+        interpretRef_of_run_refused H fq hq]
+    | running rest => simp [Status.isRunning] at hhalt
+
+/-- What `ObsEq` gives back on success: the whole outcome, value and
+word, realized at some fuel on the other program. -/
+theorem ObsEq.run_done (H : Bytes → Addr32) {p q : Prog CasSig A}
+    (h : ObsEq H p q) {fuel : Nat} {w w' : Word} {a : A}
+    (hp : run H fuel p w = (.done a, w')) :
+    ∃ g, run H g q w = (.done a, w') := by
+  obtain ⟨g, hg⟩ := run_of_interpretRef H q w
+  refine ⟨g, ?_⟩
+  have hi : interpretRef H q w = .ok (a, w') := by
+    rw [← h w]; exact interpretRef_of_run_done H fuel hp
+  have := hg g (Nat.le_refl g)
+  rw [hi] at this
+  exact this
+
+/-- What `ObsEq` gives back on refusal, and no more: the refusal, at
+some fuel, leaving SOME word. The partial words the two runs leave are
+unconstrained — `interpretRef`'s error branch does not carry a word, so
+this is the whole of what the observation says. -/
+theorem ObsEq.run_refused (H : Bytes → Addr32) {p q : Prog CasSig A}
+    (h : ObsEq H p q) {fuel : Nat} {w w' : Word} {r : Refusal}
+    (hp : run H fuel p w = (.refused r, w')) :
+    ∃ g w'', run H g q w = (.refused r, w'') := by
+  obtain ⟨g, hg⟩ := run_of_interpretRef H q w
+  have hi : interpretRef H q w = .error r := by
+    rw [← h w]; exact interpretRef_of_run_refused H fuel hp
+  have := hg g (Nat.le_refl g)
+  rw [hi] at this
+  obtain ⟨w'', hw''⟩ := this
+  exact ⟨g, w'', hw''⟩
+
 end Cas.Lang
