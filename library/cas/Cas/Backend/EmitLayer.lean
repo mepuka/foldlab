@@ -113,14 +113,31 @@ private def dedup : List ServiceRef → List ServiceRef
     let tail := dedup rest
     if hasKey tail s then tail else s :: tail
 
-private def normalize (xs : List ServiceRef) : List ServiceRef :=
+/-- The canonical spelling of a service SET: deduplicated by key, then
+sorted by key. The residual fold has always used it; it is public
+because the AUTHORING side needs the same function.
+
+**CANON-1.** A system node's address is a function of the written term,
+list order included, so `[a, b]` and `[b, a]` are two addresses for one
+service set — and since the residual fold normalizes anyway, the two
+emit identical TypeScript and answer identical Contexts. That is a
+cache-hit defeater, not an untidiness: a plan keyed by address misses
+on a term that means exactly what the hit meant. The fix is to spell
+service sets canonically where they are AUTHORED, so the stored term is
+already canonical; see `tools/EmitLayers.lean`. -/
+def canonServices (xs : List ServiceRef) : List ServiceRef :=
   (dedup xs).mergeSort fun a b => decide (a.key ≤ b.key)
+
+/-- Whether a list is already spelled canonically — the authoring-side
+check, decided on keys because `ServiceRef` carries no `BEq`. -/
+def isCanonServices (xs : List ServiceRef) : Bool :=
+  xs.map (·.key) == (canonServices xs).map (·.key)
 
 private def without (xs ys : List ServiceRef) : List ServiceRef :=
   xs.filter fun x => !hasKey ys x
 
 private def residual (provides requires : List ServiceRef) : Residual :=
-  { provides := normalize provides, requires := normalize requires }
+  { provides := canonServices provides, requires := canonServices requires }
 
 /-- One resolved binding: its address, its exported name, its
 residual. Built children-first, so a lookup never recurses. -/

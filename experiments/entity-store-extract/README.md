@@ -1,8 +1,11 @@
 # entity-store-extract — Stage 1 extractor
 
-Promoted from `.staging/e2/extract/` on 2026-08-25 (declared transformation; working
-label pending ruling R-1). TOOLS.md admission rows remain DRAFTS in REPORT.md §1
-awaiting the operator ruling (C4).
+Promoted from `.staging/e2/extract/` on 2026-08-25 (declared transformation). Ruling
+R-1 is DISCHARGED — the context is named Entity Store, home `docs/entity-store/`
+([RULINGS.md, R-1](../../docs/entity-store/RULINGS.md), 2026-08-25) — and both C4
+admission rows have LANDED in `docs/lab-core/TOOLS.md`: the TypeScript compiler API
+row (`:26`) and the lean4-tree-sitter row (`:31`, admitted 2026-08-28). REPORT.md §1
+is now a record of what was drafted, not a queue.
 
 The extractor over the pinned Effect source. Start with REPORT.md; the generator
 contract is INVENTORY-SCHEMA.md; EXT/ACC/FIX specs are in SPECS.md.

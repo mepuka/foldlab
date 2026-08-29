@@ -302,3 +302,90 @@ That split is the whole tooling. No dashboard, no new format, one field and two 
 > **Estimated: ~20 TOML declarations, ~5 lines of Lean in `Gate.lean`, ~15 lines on EL1. Zero new abstraction. Zero new sorts. No registry row. Rides EL1, which is already the commissioned first tool of the bootstrap lane.**
 
 **What I would not commission now:** `BuildSig`, the SSH `ChildProcessSpawner`, any `Derivation` kind, and anything that serves `cas-http/0`. Every one of them is *correct* — the mapping table says the estate is one described value away from having Nix's model with a better trust story — but they are downstream of G6-a landing and of BS1 proving the measurement discipline. The directive says "may fold into the G6/server-infra lane"; **this folds into it, and the fold is: G6-a lands the described-kind shape, BS1 lands the incrementality and the telemetry, and only then does a build step become a described value using the shape G6-a proved.** A build system minted before either is scope creep with a Nix citation attached.
+
+---
+
+## Corrections — 2026-08-29
+
+Appended after the adversarial audit
+(`.staging/operational-structure/BUILD-MODELING-AUDIT.md`, operator-ratified).
+The body above stands as written; nothing in it has been silently
+rewritten. Each entry names the line it corrects.
+
+### CORRECTION 1 — `:204-208` is FALSE, and the falsity is load-bearing
+
+The sentence, verbatim, as it still reads at `:208`:
+
+> "A build plan is then `Prog BuildSig` — straight-line, L-A, already
+> ratified (sorts 14/15), already store-resident, already
+> encodable/decodable (`encodeProg`/`decodeProg`)."
+
+The audit's correction (§3A, and §5 item 1, which lists this sentence
+first among the statements that are false as written):
+
+> **`PProg` and its whole apparatus are `CasSig`-specific.** `PProg` is
+> not polymorphic in the signature. `PLine` (`Defun.lean:162-166`)
+> carries `put (version tag : UInt8) (payload : Bytes) (refs : …)` and
+> `load` — `CasE`'s two operations, spelled concretely. `embedFrom`
+> lands in `Prog CasSig Addr32` (`:197`). `encodeProg`/`decodeProg`
+> encode `PLine`s at tags 14/15. **`Prog BuildSig` inherits nothing
+> from `Defun.lean`: it is an L-P term over a NEW signature, with no
+> envelope, and `Fragments.lean:150-155` says L-P admits no static
+> analysis at all.** The sentence inverts the tower.
+
+The technical reason underneath, which the body never states: **`build`
+breaks hash-determined dataflow.** `PLine.answer H env` is total because
+a put's answer is `H (encodeNode n)` — a function of the operation's own
+argument (`putWord_answer`). `BuildSig.build (recipe) (inputs) :
+Address` has no such function: the address of a built artifact is not a
+digest of the recipe. `PProg.answersFrom` would return `[]` at a build
+line, `runPFrom_done_answers` would not extend, and the whole
+envelope/sandwich apparatus stops there.
+
+**Consequence for the reader of §4:** the "**Zero new sorts, zero `Ty`
+change, zero registry row**" claim at `:208` survives as a claim about
+*sorts*, and does NOT survive as a claim that the build lane is free.
+The audit's §3A names three honest routes in ascending cost —
+declared-output steps (Nix's fixed-output derivation; hash-determination
+restored, L-A survives, no trace store), floating-output steps summed as
+`CasSig ⊕ₛ BuildSig` and oracled in `handleLlm`'s shape (envelope lost
+for the summed program, trace store required), and a `build` arm on
+`PLine` (the expensive one). Route 1 or 2 is the decision; the body's
+sentence made it look like no decision at all.
+
+### CORRECTION 2 — ask 4 is ANSWERED
+
+Ruling ask 4 (`:281`) asked whether the described build step lands as a
+`cas_struct` sibling of `RunParams` or as an arm of G6-a's `SystemNode`
+union, and recommended deferring until G6-a landed. **G6-a has landed**
+(`library/cas/Cas/Schema/System.lean`, `cas_union SystemNode`), so the
+deferral is spent and the shape answers:
+
+> **An arm on `SystemNode`, not a sibling signature.**
+> (Audit §6 ask 3, accepted.) `System.lean`'s own "How this kind grows"
+> section already names the described BUILD STEP as the first candidate
+> arm and states the growth law — *by an ARM, on the Exchange
+> precedent; never by a sibling carrier and never by a `Ty` row.*
+
+The prose at `:210` that says the question "should be decided *after*
+G6-a lands, not before" is correct and is now discharged, not pending.
+
+### CORRECTION 3 — ask 5 is RULED
+
+Ruling ask 5 (`:282`) asked that the certificate be ruled explicitly.
+**Ruled as recommended, accepted:**
+
+> **The content address IS the certificate for a remote build's output.
+> No signing plane is added.** Every estate object sits in Nix's
+> `isContentAddressed()` bypass branch, and R5's word is a checkable
+> observation rather than an asserted one.
+
+`System.lean:78-80` already carries this ruling in the kind's own prose
+("…can recompute it, and no separate signing plane is wanted or added").
+The ask is answered by the landed text, not owed by it.
+
+### Standing
+
+Asks 1, 2, 3, 6, 7, 8, and 9 are untouched by this correction and remain
+open as written. Slice BS1 (§9) is unaffected: it declares `sources` and
+`outputs` to the runner and touches none of the modeling above.

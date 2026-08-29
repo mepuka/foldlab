@@ -18,6 +18,7 @@ run = [
   "mise run gen:backend-mcp",
   "mise run gen:backend-materialize",
   "mise run gen:effects-materialize",
+  "mise run gen:effects:research",
   "mise run gen:lift-manifest",
   "mise run gen:grammar-manifest",
   "mise run gen:cas-surface",

@@ -62,7 +62,7 @@ set selectable. Either one, and this task joins `check`.
 **While it stands:** run `mise run check:extract-twin` by hand after any change
 to `src/extract.ts`, to the twin's walk, or to the pins. Nothing else runs it.
 
-Stage 1's *single*-instrument gates — pin verification, the four-way
+Stage 1's *single*-instrument gates — pin verification, the five-way
 enumeration agreement, byte-determinism — are in the chain as
 `mise run check:extract`, and run from a clean checkout off the vendored
 sources in `../vendor/effect-src`. The exception costs the cross-instrument

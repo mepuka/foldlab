@@ -364,6 +364,21 @@
       "id": "effect-tsgo",
       "repository": "https://github.com/Effect-TS/tsgo",
       "requiredBefore": "diagnostic-or-compilation-claims"
+    },
+    {
+      "id": "lean4-tree-sitter",
+      "repository": "https://github.com/predictable-machines/lean4-tree-sitter",
+      "requiredBefore": "source-extraction-or-compilation"
+    },
+    {
+      "id": "tree-sitter",
+      "repository": "https://github.com/tree-sitter/tree-sitter",
+      "requiredBefore": "source-extraction-or-compilation"
+    },
+    {
+      "id": "tree-sitter-typescript",
+      "repository": "https://github.com/tree-sitter/tree-sitter-typescript",
+      "requiredBefore": "source-extraction-or-compilation"
     }
   ]
 }

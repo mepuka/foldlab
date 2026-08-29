@@ -18,7 +18,7 @@ download. [implemented; tamper test green]
 checker, no program construction, no lib resolution. Facts requiring resolution enter
 only through the two declared name tables, echoed in the output. [implemented]
 
-**EXT-3 (enumerations).** Four independent enumerations, census §7 item 6: (A) the
+**EXT-3 (enumerations).** Five independent enumerations, census §7 item 6: (A) the
 `AST` union alias members; (B) the `makeGuard` call-site tags; (C) the Base-extending
 class declarations with their `_tag` literals; (D) the `Representation` union alias;
 (E) the `RepresentationUnion` runtime array. Agreement required: A = C-names (21),

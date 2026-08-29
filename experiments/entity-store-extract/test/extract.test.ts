@@ -2,7 +2,7 @@
  * Extractor gate tests — staged, pre-grade.
  *
  * The extractor is the one trusted component (KICKOFF §12), so these tests are its
- * self-checks made executable: pin verification, the four-way enumeration agreement,
+ * self-checks made executable: pin verification, the five-way enumeration agreement,
  * the 23-tag count trap, and byte-identical determinism across runs.
  */
 

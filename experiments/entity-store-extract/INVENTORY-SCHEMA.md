@@ -56,7 +56,7 @@ Extensions, each with its reason:
 |---|---|
 | `source` block with git blob SHA-1s | the inventory is meaningless without its pin; blob SHA-1 is the ONLY digest used (the lock's bytes/sha256 are known-wrong, CRLF defect) |
 | `extractor` block incl. `nameTables` | the name tables are trusted inputs; echoing them makes the trust surface inspectable in the artifact itself |
-| `counts` | the four-way cross-check result, recorded so consumers can re-assert without re-parsing |
+| `counts` | the five-way cross-check result, recorded so consumers can re-assert without re-parsing |
 | `unionIndex` | variants are SORTED by name for determinism; the union alias's source order is a fact of the pin and must survive the sort |
 | `baseFields` separated | base fields are shared by all 21; repeating them per-variant would invite drift between copies |
 | `ctorParams` | census §7 item 4: arity/ordering/defaults are constructor facts, not property facts |
@@ -94,7 +94,7 @@ the seven owed provenance pins land (KICKOFF §17).
 
 ```
 bun run src/extract.ts            # reads the src-cache, verifies pins, writes inventory.json
-bun test                          # gates: pins, four-way agreement, count trap, determinism, drift
+bun test                          # gates: pins, five-way agreement, count trap, determinism, drift
 ```
 
 One command, byte-stable output, drift caught by the committed-copy test (and later by

@@ -15,7 +15,8 @@ const hex = (s: string): Uint8Array =>
   Uint8Array.from({ length: s.length / 2 }, (_, i) =>
     Number.parseInt(s.slice(i * 2, i * 2 + 2), 16))
 
-/** The table performs one put.
+/** One opaque value node — the smallest program.
+ * The table performs one put.
  * It names no literal address.
  * Put 0 writes a value node with a payload of 10 bytes and no references.
  * No line reads another line's answer, so the dataflow is closed. */
@@ -25,7 +26,8 @@ export const valueSingle = (store: CasStoreShape) =>
     return [a0]
   })
 
-/** The table performs six puts.
+/** A two-leaf blob: chunks, leaves, parent, manifest.
+ * The table performs six puts.
  * It names no literal address.
  * Put 0 writes a chunk node with a payload of 16 bytes and no references.
  * Put 1 writes a tree node with a payload of 8 bytes and one reference, expecting a chunk.
@@ -49,7 +51,8 @@ export const blobTwoLeaves = (store: CasStoreShape) =>
     return [a0, a1, a2, a3, a4, a5]
   })
 
-/** The table performs four puts.
+/** A named file over a one-chunk blob.
+ * The table performs four puts.
  * It names no literal address.
  * Put 0 writes a chunk node with a payload of 16 bytes and no references.
  * Put 1 writes a tree node with a payload of 8 bytes and one reference, expecting a chunk.
@@ -68,7 +71,8 @@ export const fileReadme = (store: CasStoreShape) =>
     return [a0, a1, a2, a3]
   })
 
-/** The table performs eleven puts.
+/** A journal: genesis and two entries over saved files.
+ * The table performs eleven puts.
  * It names no literal address.
  * Put 0 writes a chunk node with a payload of 31 bytes and no references.
  * Put 1 writes a tree node with a payload of 8 bytes and one reference, expecting a chunk.
@@ -106,7 +110,8 @@ export const journalTwoEntries = (store: CasStoreShape) =>
     return [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10]
   })
 
-/** The table performs five puts.
+/** Two leaves over one shared chunk — the duplicate put replays as a dedup.
+ * The table performs five puts.
  * It names no literal address.
  * Put 0 writes a chunk node with a payload of 16 bytes and no references.
  * Put 1 writes a tree node with a payload of 8 bytes and one reference, expecting a chunk.
@@ -127,7 +132,8 @@ export const sharedChunk = (store: CasStoreShape) =>
     return [a0, a1, a2, a3, a4]
   })
 
-/** The table performs one put.
+/** The lean4-tree-sitter pin commit as a git node — a provenance pin as store content.
+ * The table performs one put.
  * It names no literal address.
  * Put 0 writes a git node with a payload of 1199 bytes and no references.
  * No line reads another line's answer, so the dataflow is closed. */
@@ -137,7 +143,8 @@ export const gitPinCommit = (store: CasStoreShape) =>
     return [a0]
   })
 
-/** The table performs one put.
+/** The vector format's own canonical schema as a schema node.
+ * The table performs one put.
  * It names no literal address.
  * Put 0 writes a schema node with a payload of 2539 bytes and no references.
  * No line reads another line's answer, so the dataflow is closed. */
