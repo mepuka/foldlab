@@ -1,19 +1,24 @@
 /**
  * The declaration registry, TypeScript side — the door's allowlist and
- * its Lean twin.
+ * what its rows buy.
  *
- * `CanonicalSchema.DeclarationRegistry` is the hand mirror of
- * `Cas.Schema.DeclarationId` (`library/cas/Cas/Schema/Declarations.lean`).
- * The first statement below reads the Lean file and compares the two
- * tables row for row, so drift on either side is a red suite rather than
- * an asymmetry someone notices later; the rest exercise what the rows
- * buy — revival of a stored Date/URL/Option through Effect's OWN
- * revivers, and refusal, by the same name the Lean door uses
- * (`IngestRefusal.unknownDeclaration`), of an id no row admits.
+ * `CanonicalSchema.DeclarationRegistry` is no longer a hand mirror of
+ * `Cas.Schema.DeclarationId`: its id, arity and payload columns are
+ * GENERATED into `src/cas/generated/SchemaAdmission.ts` by
+ * `lake exe emitgate`, and `lake exe emitgate --check` (in
+ * `mise run check:cas`) is the drift tripwire. This suite used to scrape
+ * the Lean source with a regex to compare the two tables; a byte gate
+ * says the same thing without a reader that has to be taught the Lean
+ * grammar, so the scraper is gone.
+ *
+ * What is left is what the rows BUY — revival of a stored Date/URL/Option
+ * through Effect's OWN revivers, and refusal, by the same name the Lean
+ * door uses (`IngestRefusal.unknownDeclaration`), of an id no row admits.
  *
  * The three Effect rows are adopted pending operator ratification
- * (SCHEMA-MATERIALIZATION.md ruling-queue item 7). Each is one row here,
- * one reviver there, and one entry in `admittedRows` below.
+ * (SCHEMA-MATERIALIZATION.md ruling-queue item 7). Each is one row in
+ * Lean, one reviver in `CanonicalSchema`, and one entry in
+ * `admittedRows` below.
  */
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer, Option, Schema, SchemaRepresentation } from "effect"
@@ -22,7 +27,6 @@ import { CasStore } from "../src/cas/Store.ts"
 import { canonicalJson } from "../src/cas/Value.ts"
 import { deterministicAddress } from "./fixtures/address.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
-import { readFixtureString } from "./fixtures/read.ts"
 
 const CS = Cas.CanonicalSchema
 const layer = Layer.mergeAll(
@@ -41,55 +45,6 @@ const admittedRows: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["effect/schema/Option", Schema.Option(Schema.String)],
 ]
 
-/** The body of one Lean `def <name> : ... → ...` block. */
-const leanBody = (source: string, header: string): string => {
-  const start = source.indexOf(header)
-  expect(`${header} present`).toBe(start < 0 ? `${header} missing` : `${header} present`)
-  const body = source.slice(start + header.length)
-  const end = body.indexOf("\n\n")
-  return body.slice(0, end < 0 ? undefined : end)
-}
-
-/** The match arms of one Lean `def <name> : ... → ...` block, as
- * `[constructor, right-hand side]` pairs in source order. Deliberately
- * a dumb reader: it must break loudly if the Lean table stops being a
- * flat table. */
-const leanArms = (
-  source: string,
-  header: string,
-): ReadonlyArray<readonly [string, string]> =>
-  leanBody(source, header).split("\n").flatMap((line) => {
-    const arm = /^\s*\|\s*\.(\w+)\s*=>\s*(.+?)\s*$/.exec(line)
-    return arm === null ? [] : [[arm[1]!, arm[2]!] as const]
-  })
-
-/** The two-argument arms of the payload gate, as
- * `[row, payload constructor, right-hand side]` triples. The payload
- * column is a CONSTANT DUPLICATED across the two runtimes — the door's
- * wf gate reads it on the TypeScript side and `Ast.wf` reads it on the
- * Lean side — so it gets the same treatment the wire and arity columns
- * already get. */
-const leanPayloadArms = (
-  source: string,
-): ReadonlyArray<readonly [string, string, string]> =>
-  leanBody(source, "def DeclarationId.payloadWf : DeclarationId → DeclPayload → Bool")
-    .split("\n").flatMap((line) => {
-      // The payload constructor may bind a variable (`.nat t`), so the
-      // binder is matched and discarded rather than tripping the reader.
-      const arm = /^\s*\|\s*\.(\w+),\s*\.(\w+)(?:\s+\w+)*\s*=>\s*(.+?)\s*$/.exec(line)
-      return arm === null ? [] : [[arm[1]!, arm[2]!, arm[3]!] as const]
-    })
-
-/** The Lean payload constructor, as the TypeScript column spells it. */
-const payloadColumn = (constructor: string): string => {
-  const column: Record<string, string> = { nat: "byte", null: "null" }
-  const named = column[constructor]
-  expect(`${constructor} has a column`).toBe(
-    named === undefined ? `${constructor} has no column` : `${constructor} has a column`,
-  )
-  return named!
-}
-
 /** Admit one document's canonical payload bytes as a schema node and
  * read the identity back through the front door. */
 const throughTheStore = (identity: Schema.Top) =>
@@ -97,51 +52,6 @@ const throughTheStore = (identity: Schema.Top) =>
     const id = yield* CS.put(identity)
     return yield* CS.get(id)
   })
-
-it.effect("the TypeScript declaration registry mirrors Declarations.lean row for row", () =>
-  Effect.gen(function* () {
-    const source = yield* readFixtureString(
-      "../cas/Cas/Schema/Declarations.lean",
-    ).pipe(Effect.orDie)
-    const wires = leanArms(source, "def DeclarationId.wire : DeclarationId → String")
-    const arities = leanArms(source, "def DeclarationId.arity : DeclarationId → Nat")
-    const payloads = leanPayloadArms(source)
-    const lean = wires.map(([constructor, wire], index) => {
-      const arity = arities[index]
-      expect(`${constructor} arity row`).toBe(
-        arity === undefined || arity[0] !== constructor
-          ? `${constructor} arity row out of order`
-          : `${constructor} arity row`,
-      )
-      const payload = payloads[index]
-      expect(`${constructor} payload row`).toBe(
-        payload === undefined || payload[0] !== constructor
-          ? `${constructor} payload row out of order`
-          : `${constructor} payload row`,
-      )
-      return {
-        arity: Number(arity![1]),
-        id: JSON.parse(wire) as string,
-        payload: payloadColumn(payload![1]),
-      }
-    })
-    // Row for row, order for order, wire for wire, arity for arity,
-    // payload discipline for payload discipline.
-    expect(
-      CS.DeclarationRegistry.map(({ arity, id, payload }) => ({ arity, id, payload })),
-    ).toEqual(lean)
-
-    // The payload gate is EXACTLY these arms: the Lean table's only
-    // other arm is the catch-all, so no id admits a payload the
-    // TypeScript column does not name. And the one non-null column
-    // really is the kind-tag bound the TypeScript gate checks.
-    expect(leanBody(
-      source,
-      "def DeclarationId.payloadWf : DeclarationId → DeclPayload → Bool",
-    )).toContain("| _, _ => false")
-    expect(payloads.find(([, constructor]) => constructor === "nat")?.[2])
-      .toBe("decide (t < 256)")
-  }).pipe(Effect.provide(layerDiskFs)))
 
 it("the reviver set is the declaration registry, row for row", () => {
   // ONE LIST: the declaration arm of `Revivers` is derived from the

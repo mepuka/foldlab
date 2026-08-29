@@ -154,7 +154,7 @@ export const Clauses: ReadonlyArray<Clause> = [
   {
     clause: "propertyOrder",
     refusal: "illFormed",
-    detail: "{path} declares {it} out of order: struct field names are in strict ascending order, which is what makes the canonical spelling unique and forbids a duplicate name",
+    detail: "{path} declares {it} after {keys}: struct field names are in strict ascending order, which is what makes the canonical spelling unique and forbids a duplicate name",
   },
   {
     clause: "declarationShape",

@@ -319,7 +319,7 @@ def clauses : List Clause := [
   { clause := "propertyName", refusal := .notASchema,
     detail := "{path}.name is not a string name (symbol keys have no reconstructable identity)" },
   { clause := "propertyOrder", refusal := .illFormed,
-    detail := "{path} declares {it} out of order: struct field names are in strict ascending order, which is what makes the canonical spelling unique and forbids a duplicate name" },
+    detail := "{path} declares {it} after {keys}: struct field names are in strict ascending order, which is what makes the canonical spelling unique and forbids a duplicate name" },
   { clause := "declarationShape", refusal := .notASchema,
     detail := "{path}.representation does not spell a declaration identity: the admitted subset writes {keys}" },
   { clause := "unknownDeclaration", refusal := .unknownDeclaration,

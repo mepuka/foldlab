@@ -428,7 +428,14 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     own five refusal names, and is checked name-for-name against the
     corpus. The allowlist is now ONE list: `DeclarationRegistry` rows
     carry their own reviver and payload discipline, and `Revivers`'
-    declaration arm is derived from them. Two findings ride along —
+    declaration arm is derived from them. **The gate mechanism is now
+    GENERATED** (2026-08-29): `admitDocument` is an interpreter over
+    `Cas/Backend/Admission.lean`'s table — node tags, key lists, the
+    admitted check spelling, the literal and enum value types, the
+    union modes, the declaration columns, the safe-integer bound and
+    every clause's refusal name — emitted by `lake exe emitgate` under a
+    byte gate in `check:cas`, so the door's shape is typed once, in
+    Lean. Two findings ride along —
     item 20 below, and this: ruling 3 predicts a value-plane Integer
     disagreement and there is none, because `Schema.isInt` runs
     `Number.isSafeInteger` (`Schema.ts:8227`), the bound `SafeInt`
