@@ -18,6 +18,14 @@ globs = ["Cas.Backend.+"]
 name = "CasExamples"
 srcDir = "examples"
 
+# The shared gate driver every tool root imports: fixtures in,
+# emit/--check/--json out. Declared as a library so the exe roots can
+# import it; it is not a default target because the exes that drive it
+# are what `check:cas` builds.
+[[lean_lib]]
+name = "Gate"
+srcDir = "tools"
+
 # The vector emitter: `lake exe vectors` regenerates the committed
 # conformance fixtures under vectors/; `--check` is the byte-identity
 # gate.

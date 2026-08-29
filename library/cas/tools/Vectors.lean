@@ -1,6 +1,7 @@
 import Cas
 import Cas.Vectors.Schema
 import Cas.Vectors.Registry
+import Gate
 
 /-!
 # The vector emitter — `lake exe vectors`
@@ -80,41 +81,19 @@ def checkedRegistry : IO VectorRegistry := do
   let schemaVector ← schemaVectorCandidate
   orThrow (VectorRegistry.check (candidates ++ [schemaVector]))
 
-def emitOne (v : CheckedConformanceVector) : IO Unit := do
-  IO.FS.writeFile (pathOf v) v.document
-  IO.println s!"wrote {v.fileName} ({v.bindingCount} bindings)"
-
-def checkOne (v : CheckedConformanceVector) : IO Unit := do
-  let expected := v.document
-  let actual ← try IO.FS.readFile (pathOf v)
-    catch _ => throw (IO.userError s!"vector {v.name}: fixture missing — run `lake exe vectors`")
-  unless actual == expected do
-    throw (IO.userError s!"vector {v.name}: fixture differs from regeneration — run `lake exe vectors`")
-  IO.println s!"ok {v.fileName} ({v.bindingCount} bindings)"
-
 def indexPath : System.FilePath := outDir / "index.json"
 
-def emit : IO Unit := do
+/-- The registry rendered as the driver's fixtures: one document per
+admitted vector, then the tracking manifest. Admission runs here — a
+vector that does not admit fails before a byte is written. -/
+def fixtures : IO (List Gate.Fixture) := do
   let registry ← checkedRegistry
-  IO.FS.createDirAll outDir
-  for v in registry.vectors do emitOne v
-  IO.FS.writeFile indexPath (← orThrow (indexDocument registry))
-  IO.println s!"wrote index.json ({registry.length} vectors)"
-
-def check : IO Unit := do
-  let registry ← checkedRegistry
-  for v in registry.vectors do checkOne v
-  let expected ← orThrow (indexDocument registry)
-  let actual ← try IO.FS.readFile indexPath
-    catch _ => throw (IO.userError "index.json missing — run `lake exe vectors`")
-  unless actual == expected do
-    throw (IO.userError "index.json differs from regeneration — run `lake exe vectors`")
-  IO.println s!"ok index.json ({registry.length} vectors)"
+  let index ← orThrow (indexDocument registry)
+  return registry.vectors.map (fun v =>
+      ({ path := pathOf v, content := v.document,
+         label := s!"{v.bindingCount} bindings" } : Gate.Fixture)) ++
+    [⟨indexPath, index, s!"{registry.length} vectors"⟩]
 
 end VectorsMain
 
-def main (args : List String) : IO Unit :=
-  match args with
-  | [] => VectorsMain.emit
-  | ["--check"] => VectorsMain.check
-  | _ => throw (IO.userError "usage: lake exe vectors [--check]")
+def main := Gate.main "lake exe vectors" VectorsMain.fixtures

@@ -1,6 +1,7 @@
 import Cas
 import Cas.Schema.Annotation
 import Cas.Schema.Notation
+import Gate
 
 /-!
 # The disagreement vector — `lake exe verdicts`
@@ -610,26 +611,13 @@ def orThrow : Except String α → IO α
   | .ok a => pure a
   | .error e => throw (IO.userError e)
 
-def emit : IO Unit := do
+/-- The corpus rendered as the driver's single fixture. The emitter's
+own refusals (value triples on a refused code, or on a code Lean holds
+no values of) fire here, before any byte is written. -/
+def fixtures : IO (List Gate.Fixture) := do
   let text ← orThrow document
-  IO.FS.createDirAll outDir
-  IO.FS.writeFile outPath text
-  IO.println s!"wrote {outPath} ({corpus.length} cases)"
-
-def check : IO Unit := do
-  let expected ← orThrow document
-  let actual ← try IO.FS.readFile outPath
-    catch _ => throw (IO.userError
-      s!"{outPath} missing — run `lake exe verdicts`")
-  unless actual == expected do
-    throw (IO.userError
-      s!"{outPath} differs from regeneration — run `lake exe verdicts`")
-  IO.println s!"ok {outPath} ({corpus.length} cases)"
+  return [⟨outPath, text, s!"{corpus.length} cases"⟩]
 
 end VerdictsMain
 
-def main (args : List String) : IO Unit :=
-  match args with
-  | [] => VerdictsMain.emit
-  | ["--check"] => VerdictsMain.check
-  | _ => throw (IO.userError "usage: lake exe verdicts [--check]")
+def main := Gate.main "lake exe verdicts" VerdictsMain.fixtures

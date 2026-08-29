@@ -1,5 +1,6 @@
 import Lean
 import Cas.Values.Json
+import Gate
 
 /-!
 # The report lane — `lake exe surface`
@@ -192,25 +193,20 @@ def document (modules : Array (Name × Array Row)) : String :=
     ("carrierCensus", .obj carrierCensus),
     ("modules", .arr (modules.toList.map moduleJson))]) ++ "\n"
 
-def buildDocument : IO String := do
+def buildModules : IO (Array (Name × Array Row)) := do
   initSearchPath (← findSysroot)
   let env ← importModules #[{module := `Cas}] {} (loadExts := true)
   let ctx : Core.Context := { fileName := "<surface>", fileMap := default }
   let (modules, _) ← (collect env).toIO ctx { env }
-  return document modules
+  return modules
 
-unsafe def main (args : List String) : IO Unit := do
+/-- The ledger as the driver's single fixture. The environment walk
+runs HERE — inside the action the driver forces only after arguments
+parse — so a typo'd flag never pays for the whole import. -/
+unsafe def fixtures : IO (List Gate.Fixture) := do
   enableInitializersExecution
-  let doc ← buildDocument
-  match args with
-  | [] =>
-    IO.FS.createDirAll "surface"
-    IO.FS.writeFile outPath doc
-    IO.println s!"wrote {outPath} ({doc.toUTF8.size} bytes)"
-  | ["--check"] =>
-    let actual ← try IO.FS.readFile outPath
-      catch _ => throw (IO.userError s!"{outPath} missing — run `lake exe surface`")
-    unless actual == doc do
-      throw (IO.userError s!"{outPath} differs from regeneration — run `lake exe surface`")
-    IO.println s!"ok {outPath}"
-  | _ => throw (IO.userError "usage: lake exe surface [--check]")
+  let modules ← buildModules
+  let declarations := modules.foldl (fun n m => n + m.2.size) 0
+  return [⟨outPath, document modules, s!"{declarations} declarations"⟩]
+
+unsafe def main := Gate.main "lake exe surface" fixtures

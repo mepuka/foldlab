@@ -2,6 +2,7 @@ import Cas
 import Cas.Vectors.Schema
 import Cas.Schema.Annotation
 import Cas.Schema.Notation
+import Gate
 
 /-!
 # The schema emitter — `lake exe schemas`
@@ -156,39 +157,16 @@ def indexDocument : String :=
     ("schemas", .arr rows)
   ]) ++ "\n"
 
-def emit : IO Unit := do
-  IO.FS.createDirAll outDir
-  for (name, ast) in registry do
-    IO.FS.writeFile (pathOf name) ast.payload
-    IO.println s!"wrote {name}.json ({ast.payload.toUTF8.size} bytes)"
-  IO.FS.writeFile indexPath indexDocument
-  IO.FS.writeFile addressesPath addressesDocument
-  IO.println s!"wrote index.json + addresses.json ({registry.length} schemas)"
-
-def checkOne (name : String) (ast : Ast) : IO Unit := do
-  let expected := ast.payload
-  let actual ← try IO.FS.readFile (pathOf name)
-    catch _ => throw (IO.userError s!"schema {name}: fixture missing — run `lake exe schemas`")
-  unless actual == expected do
-    throw (IO.userError s!"schema {name}: fixture differs from regeneration — run `lake exe schemas`")
-  IO.println s!"ok {name}.json"
-
-def check : IO Unit := do
-  for (name, ast) in registry do checkOne name ast
-  let actual ← try IO.FS.readFile indexPath
-    catch _ => throw (IO.userError "index.json missing — run `lake exe schemas`")
-  unless actual == indexDocument do
-    throw (IO.userError "index.json differs from regeneration — run `lake exe schemas`")
-  let actualAddrs ← try IO.FS.readFile addressesPath
-    catch _ => throw (IO.userError "addresses.json missing — run `lake exe schemas`")
-  unless actualAddrs == addressesDocument do
-    throw (IO.userError "addresses.json differs from regeneration — run `lake exe schemas`")
-  IO.println s!"ok index.json + addresses.json ({registry.length} schemas)"
+/-- The registry rendered as the driver's fixtures: one payload file
+per pinned code — the file's bytes ARE the schema-node payload — then
+the tracking manifest and the store-address file. -/
+def fixtures : IO (List Gate.Fixture) :=
+  return registry.map (fun (name, ast) =>
+      ({ path := pathOf name, content := ast.payload,
+         label := "canonical payload" } : Gate.Fixture)) ++
+    [⟨indexPath, indexDocument, s!"{registry.length} schemas"⟩,
+     ⟨addressesPath, addressesDocument, s!"{registry.length} addresses"⟩]
 
 end SchemasMain
 
-def main (args : List String) : IO Unit :=
-  match args with
-  | [] => SchemasMain.emit
-  | ["--check"] => SchemasMain.check
-  | _ => throw (IO.userError "usage: lake exe schemas [--check]")
+def main := Gate.main "lake exe schemas" SchemasMain.fixtures
