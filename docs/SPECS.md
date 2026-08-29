@@ -238,3 +238,13 @@ records the 2026-08-29 session rulings that cut across specs.
     and system self-awareness. *Why: the word is already the trace;
     self-awareness is the police lane applied to the running
     estate.*
+21. **The front end — semantics, aesthetics, architecture**
+    (2026-08-29 late night, CRITICAL): nearing time. Four questions
+    commissioned to design: local-first + browser-based operations;
+    serving projections of the harness for seamless local browser
+    access; seamless BRING-YOUR-OWN-AGENT integrations (Claude Code,
+    Codex, pi dev, opencode, VSCode); and what the language gives for
+    CONSUMER-READY no-nonsense agent setup. *Why: the substrate is
+    the product; the front end is its projection — and the views
+    pillar (VISION.md, Paper/Linear) was deferred behind substrate
+    completeness, which tonight's stack has substantially closed.*
