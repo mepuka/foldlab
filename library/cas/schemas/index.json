@@ -20,6 +20,11 @@
       "byteLength": 710,
       "file": "literal-pin.json",
       "name": "literal-pin"
+    },
+    {
+      "byteLength": 563,
+      "file": "annotation.json",
+      "name": "annotation"
     }
   ]
 }

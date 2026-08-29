@@ -1,5 +1,6 @@
 import Cas
 import Cas.Vectors.Schema
+import Cas.Schema.Annotation
 import Cas.Schema.Notation
 
 /-!
@@ -12,9 +13,10 @@ schema-node payload — the cross-runtime pin surface), plus the
 
 The registry rows are the described wire codes already in service
 (the conformance-vector document and index), one notation-authored
-sample covering every deriving-reachable constructor, and one
+sample covering every deriving-reachable constructor, one
 hand-composed literal pin covering the `Literal` spellings the
-deriving handler does not reach. The TypeScript side asserts
+deriving handler does not reach, and the sidecar annotation kind
+(`Cas.Schema.Annotation`, stipulation S2). The TypeScript side asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -50,7 +52,8 @@ def registry : List (String × Ast) := [
   ("vector-document", Described.code (α := Cas.Vectors.Wire.VectorDocument)),
   ("vector-index", Described.code (α := Cas.Vectors.Wire.VectorIndex)),
   ("pin-sample", PinSample.schemaCode),
-  ("literal-pin", literalPin)
+  ("literal-pin", literalPin),
+  ("annotation", Annotation.schemaCode)
 ]
 
 /-! ## Emission -/

@@ -230,6 +230,7 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `vector-index Schema.Struct({ "digest": Schema.Literal("sha256-scheme0"), "schemaVersion": Schema.Literal(1), "vectors": Schema.Array(Schema.Struct({ "bindings": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "description": Schema.String, "file": Schema.String, "name": Schema.String, "root": Schema.String })) })`,
         `pin-sample Schema.Struct({ "count": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "flag": Schema.Boolean, "items": Schema.Array(Schema.String), "label": Schema.String, "note": Schema.optionalKey(Schema.String), "root": Cas.CanonicalSchema.ref(9), "unit": Schema.Null })`,
         `literal-pin Schema.Struct({ "a": Schema.Null, "b": Schema.Literal(true), "c": Schema.optionalKey(Schema.Literal(-7)), "d": Schema.Literal("pinned") })`,
+        `annotation Schema.Struct({ "key": Schema.String, "subject": Cas.CanonicalSchema.ref(83), "value": Schema.String })`,
         `ref-root Cas.CanonicalSchema.ref(83)`,
       ])
 
@@ -239,6 +240,7 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `vector-index { readonly "digest": "sha256-scheme0", readonly "schemaVersion": 1, readonly "vectors": ReadonlyArray<{ readonly "bindings": number, readonly "description": string, readonly "file": string, readonly "name": string, readonly "root": string }> }`,
         `pin-sample { readonly "count": number, readonly "flag": boolean, readonly "items": ReadonlyArray<string>, readonly "label": string, readonly "note"?: string, readonly "root": Cas.ReferenceSentinel, readonly "unit": null }`,
         `literal-pin { readonly "a": null, readonly "b": true, readonly "c"?: -7, readonly "d": "pinned" }`,
+        `annotation { readonly "key": string, readonly "subject": Cas.ReferenceSentinel, readonly "value": string }`,
         `ref-root Cas.ReferenceSentinel`,
       ])
 

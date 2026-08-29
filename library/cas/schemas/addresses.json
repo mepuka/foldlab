@@ -17,6 +17,10 @@
     {
       "address": "5461f66ed3a0eeade4cd058d438d24c86c32b28ce1756b4af8297434103f0c04",
       "name": "literal-pin"
+    },
+    {
+      "address": "11b64dec4388090a2153faf414b9105f586b0e64e3a00ea4ae13d4b84b3152f7",
+      "name": "annotation"
     }
   ]
 }

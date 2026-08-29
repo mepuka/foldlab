@@ -135,7 +135,9 @@ export * as Architecture from "./cas/Architecture.ts"
 export * as CanonicalSchema from "./cas/CanonicalSchema.ts"
 
 // The persistent annotation namespace: string keys under `foldlab/cas/`,
-// attached to the encoded side and read the way Effect resolves them.
+// attached to the encoded side and read the way Effect resolves them —
+// and the sidecar annotation kind, whose subject is a typed reference to
+// the schema node it annotates.
 export * as Annotations from "./cas/Annotations.ts"
 
 // The registered replay surface: the Lean-emitted conformance vector

@@ -11,7 +11,7 @@
 import { Schema } from "effect"
 import { Cas } from "../../src/index.ts"
 
-const { CanonicalSchema, ConformanceVector } = Cas
+const { Annotations, CanonicalSchema, ConformanceVector } = Cas
 
 /** Lean `SchemasMain.PinSample`, hand-mirrored in Effect Schema. */
 export const pinSample = Schema.Struct({
@@ -32,10 +32,17 @@ export const literalPin = Schema.Struct({
   d: Schema.Literal("pinned"),
 })
 
-/** The registry, name-for-name with `library/cas/tools/Schemas.lean`. */
+/** The registry, name-for-name with `library/cas/tools/Schemas.lean`.
+ *
+ * `annotation` mirrors Lean `Cas.Schema.Annotation` through the library's
+ * own hand-written kind rather than a second copy of it: the sidecar
+ * annotation kind is a public surface, so the surface itself is what the
+ * Lean bytes are held to. It is hand-written like every other row, and
+ * like every other row it is never derived from the fixtures. */
 export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["vector-document", ConformanceVector.vectorSchema],
   ["vector-index", ConformanceVector.indexSchema],
   ["pin-sample", pinSample],
   ["literal-pin", literalPin],
+  ["annotation", Annotations.Annotation],
 ] as const
