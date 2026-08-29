@@ -1,0 +1,380 @@
+{
+  "closing": ["Rows 1 and 11–13 were previously marked \"illustrative\"; ruling 2 ratifies all seven data sorts into core. Consumer extension (profiles, the GrammarSpec registration pattern) is a named follow-up, not retrofitted here; a new tag enters only through the grill with a real consumer.", "Rows 14 and 15 carry a reconciliation debt on purpose: they are used by Cas/Lang/Defun.lean but are NOT Ty constructors, because growing Ty is F3's own slice (a measured five-file amplification). The debt is machine-visible rather than prose-only — Defun.lean guards both literals against this table AND guards that Ty.ofTag still refuses both tags, so ratifying either row into Ty turns that build red and names the site that must follow."],
+  "envelope": {
+    "fields": [
+      {
+        "bytes": 1,
+        "encoding": "u8",
+        "meaning": "the scheme-version byte — scheme 0 for every row here",
+        "minBytes": 1,
+        "name": "version"
+      },
+      {
+        "bytes": 1,
+        "encoding": "u8",
+        "meaning": "the sort's wire kind tag: the row this manifest gives it",
+        "minBytes": 1,
+        "name": "tag"
+      },
+      {
+        "encoding": "framed-u32",
+        "meaning": "the sort's payload bytes, self-delimiting",
+        "minBytes": 4,
+        "name": "payload"
+      },
+      {
+        "bytes": 4,
+        "encoding": "be-u32",
+        "meaning": "how many typed references follow",
+        "minBytes": 4,
+        "name": "refCount"
+      },
+      {
+        "encoding": "opaque",
+        "meaning": "refCount reference records, in order",
+        "minBytes": 0,
+        "name": "refs"
+      }
+    ],
+    "meaning": "Every node is written as version ++ tag ++ frame(payload) ++ nat32(refCount) ++ refs and its content address is the digest of exactly those bytes. The version and tag bytes lead so that the separation theorems can quantify over them; the payload is framed rather than trailing, so the reference count is reachable without knowing a sort. Each reference record is one expected-tag byte followed by a 32-byte address.",
+    "refRecordBytes": 33
+  },
+  "grammar": "cas-grammar",
+  "manifestVersion": 0,
+  "preamble": ["GENERATED — projection of Cas.Grammar.manifestV0 by lake exe emitgrammar; do not edit. The layouts below are read off the encoders in Cas/Grammar/Tree.lean through a witness term per form, so this document cannot drift from them.", "The wire kind tags of the grammar's sorts (Cas/Grammar/Sorts.lean, Ty.wireTag/Ty.ofTag). Ratified by the grammar grill (2026-08-28, rulings 2 and 3; recorded in library/effects/IMPLEMENTATION-PLAN.md §14). Tags 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; references type-check at tag granularity, so a row here is a contract on every wire."],
+  "scheme": 0,
+  "sorts": [
+    {
+      "exemplar": "value-single",
+      "forms": [
+        {
+          "fields": [
+            {
+              "encoding": "opaque",
+              "meaning": "the value's bytes; nothing in the grammar reads them",
+              "minBytes": 0,
+              "name": "payload"
+            }
+          ],
+          "meaning": "An opaque value payload.",
+          "name": "value",
+          "payloadMinBytes": 0,
+          "refs": []
+        }
+      ],
+      "name": "value",
+      "notes": "Opaque value payload. A leaf: no references.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 1,
+      "tagHex": "0x01"
+    },
+    {
+      "exemplar": "blob-two-leaves",
+      "forms": [
+        {
+          "fields": [
+            {
+              "encoding": "opaque",
+              "meaning": "the chunk's bytes",
+              "minBytes": 0,
+              "name": "bytes"
+            }
+          ],
+          "meaning": "Position-free chunk data.",
+          "name": "chunk",
+          "payloadMinBytes": 0,
+          "refs": []
+        }
+      ],
+      "name": "chunk",
+      "notes": "Position-free chunk data (profile blob kind). The chunk carries no index: position lives in the tree leaf that names it, which is what lets one chunk be shared by two leaves.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 8,
+      "tagHex": "0x08"
+    },
+    {
+      "exemplar": "blob-two-leaves",
+      "forms": [
+        {
+          "fields": [
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "the leaf's absolute chunk index within the blob",
+              "minBytes": 4,
+              "name": "index"
+            },
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "the declared byte length of the chunk",
+              "minBytes": 4,
+              "name": "length"
+            }
+          ],
+          "meaning": "A blob leaf: a positioned pointer at one chunk.",
+          "name": "leaf",
+          "payloadBytes": 8,
+          "payloadMinBytes": 8,
+          "refs": [
+            {
+              "expects": "chunk",
+              "expectsTag": 8,
+              "expectsTagHex": "0x08",
+              "meaning": "the chunk this leaf positions",
+              "name": "data"
+            }
+          ]
+        },
+        {
+          "fields": [],
+          "meaning": "A blob interior node: two ordered subtrees, no payload.",
+          "name": "parent",
+          "payloadBytes": 0,
+          "payloadMinBytes": 0,
+          "refs": [
+            {
+              "expects": "tree",
+              "expectsTag": 9,
+              "expectsTagHex": "0x09",
+              "meaning": "the earlier subtree",
+              "name": "left"
+            },
+            {
+              "expects": "tree",
+              "expectsTag": 9,
+              "expectsTagHex": "0x09",
+              "meaning": "the later subtree",
+              "name": "right"
+            }
+          ]
+        }
+      ],
+      "name": "tree",
+      "notes": "Blob leaf and interior node share one sort and one tag — references type-check at tag granularity, so a tree edge accepts either. The forms are told apart by the payload: eight bytes for a leaf, none for an interior node.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 9,
+      "tagHex": "0x09"
+    },
+    {
+      "exemplar": "blob-two-leaves",
+      "forms": [
+        {
+          "fields": [
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "the chunking recipe id (1 = fixed-size chunks)",
+              "minBytes": 4,
+              "name": "recipe"
+            },
+            {
+              "bytes": 8,
+              "encoding": "be-u64",
+              "meaning": "the blob's total byte length",
+              "minBytes": 8,
+              "name": "totalBytes"
+            },
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "how many leaves the tree carries",
+              "minBytes": 4,
+              "name": "leafCount"
+            }
+          ],
+          "meaning": "The recipe-1 blob manifest.",
+          "name": "manifest",
+          "payloadBytes": 16,
+          "payloadMinBytes": 16,
+          "refs": [
+            {
+              "expects": "tree",
+              "expectsTag": 9,
+              "expectsTagHex": "0x09",
+              "meaning": "the blob tree this manifest heads",
+              "name": "root"
+            }
+          ]
+        }
+      ],
+      "name": "manifest",
+      "notes": "Recipe-1 blob manifest (profile blob kind). Sixteen payload bytes in this order: recipe, total, leaf count — the total is the only 64-bit field in the grammar.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 10,
+      "tagHex": "0x0A"
+    },
+    {
+      "exemplar": "file-readme",
+      "forms": [
+        {
+          "fields": [
+            {
+              "encoding": "framed-u32",
+              "meaning": "the file name, UTF-8, under 2^16 bytes",
+              "minBytes": 4,
+              "name": "name"
+            },
+            {
+              "encoding": "framed-u32",
+              "meaning": "the media type, UTF-8, under 2^16 bytes",
+              "minBytes": 4,
+              "name": "mediaType"
+            }
+          ],
+          "meaning": "A named file over a blob manifest.",
+          "name": "file",
+          "payloadMinBytes": 8,
+          "refs": [
+            {
+              "expects": "manifest",
+              "expectsTag": 10,
+              "expectsTagHex": "0x0A",
+              "meaning": "the blob manifest holding the file's bytes",
+              "name": "content"
+            }
+          ]
+        }
+      ],
+      "name": "file",
+      "notes": "Named file over a blob manifest. Both payload fields are framed, so the payload is self-delimiting; each is bounded under 2^16 bytes so the framed pair stays inside one node payload bound.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 11,
+      "tagHex": "0x0B"
+    },
+    {
+      "exemplar": "journal-two-entries",
+      "forms": [
+        {
+          "fields": [],
+          "meaning": "The journal's first entry: no note, no edges.",
+          "name": "genesis",
+          "payloadBytes": 0,
+          "payloadMinBytes": 0,
+          "refs": []
+        },
+        {
+          "fields": [
+            {
+              "encoding": "opaque",
+              "meaning": "the entry's note bytes, uninterpreted",
+              "minBytes": 0,
+              "name": "note"
+            }
+          ],
+          "meaning": "One journal entry over a file, linked to its predecessor.",
+          "name": "entry",
+          "payloadMinBytes": 0,
+          "refs": [
+            {
+              "expects": "file",
+              "expectsTag": 11,
+              "expectsTagHex": "0x0B",
+              "meaning": "the file this entry records",
+              "name": "item"
+            },
+            {
+              "expects": "entry",
+              "expectsTag": 12,
+              "expectsTagHex": "0x0C",
+              "meaning": "the entry before it",
+              "name": "prev"
+            }
+          ]
+        }
+      ],
+      "name": "entry",
+      "notes": "Journal entry or genesis. The sort does not fix its reference list: the codec constrains a reference's expected tag, never the arity, and the agent language writes a three-edge entry (context, value, entry) over this same tag. A reader dispatches on what it finds, not on this row.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 12,
+      "tagHex": "0x0C"
+    },
+    {
+      "exemplar": null,
+      "forms": [],
+      "name": "context",
+      "notes": "Context node: typed edges, no payload. A ratified tag with NO grammar form — Cas/Grammar/Tree.lean has no context constructor, so nothing in the grammar writes this sort's layout. It is elaborated at the node layer by consumers (CasExamples.AgentStep.contextNode): empty payload, one typed edge per folded item, the edge tags read off whatever was loaded. Giving context a grammar form is its own slice.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 13,
+      "tagHex": "0x0D"
+    },
+    {
+      "exemplar": null,
+      "forms": [],
+      "name": "step",
+      "notes": "F3 defunctionalized code point. Spelled as the bare def Cas.Lang.stepWireTag, outside Ty, and pinned against this row by #guard in Cas/Lang/Defun.lean.",
+      "reserved": true,
+      "status": "RESERVED",
+      "tag": 14,
+      "tagHex": "0x0E"
+    },
+    {
+      "exemplar": null,
+      "forms": [],
+      "name": "cont",
+      "notes": "F3 continuation. Spelled as the bare def Cas.Lang.contWireTag, outside Ty, and pinned against this row by #guard in Cas/Lang/Defun.lean.",
+      "reserved": true,
+      "status": "RESERVED",
+      "tag": 15,
+      "tagHex": "0x0F"
+    },
+    {
+      "exemplar": "git-pin-commit",
+      "forms": [
+        {
+          "fields": [
+            {
+              "encoding": "opaque",
+              "meaning": "the git loose-object preimage: the type word, a space, the decimal byte length, a NUL, then the object's content",
+              "minBytes": 0,
+              "name": "object"
+            }
+          ],
+          "meaning": "A git object as content.",
+          "name": "git",
+          "payloadMinBytes": 0,
+          "refs": []
+        }
+      ],
+      "name": "git",
+      "notes": "The estate's VERSIONING primitive (drafted 2026-08-29; awaiting ratification). A git object enters the store as content: the payload IS the loose-object preimage — \"<type> <length>\\0\" ++ content — so sha1(payload) is the object's git id while the node's own address is the digest of its canonical pre-image. One node, two identities, neither declared in a field and both derivable by any host from the bytes alone. That dual identity is what makes the sort a versioning primitive rather than an import format: a commit admitted this way carries its git-side name with it, so pinning a dependency by revision and pinning it by content address name the same bytes, and the estate can hold a version without leaving the store. The exemplar is the git-pin-commit vector — the lean4-tree-sitter pin commit as one node, its payload's SHA-1 the commit id it names. References are empty in v0: git's internal SHA-1 edges (a commit's tree and parents, a tree's entries) stay inside the payload rather than becoming typed CAS edges, exactly as the schema sort's $defs graph does. Promoting them is the named follow-up, and is what would turn a pinned object into a walkable history.",
+      "reserved": false,
+      "status": "RATIFIED core",
+      "tag": 71,
+      "tagHex": "0x47"
+    },
+    {
+      "exemplar": "schema-vector-document",
+      "forms": [
+        {
+          "fields": [
+            {
+              "encoding": "opaque",
+              "meaning": "the schema's canonical bytes, opaque at this layer",
+              "minBytes": 0,
+              "name": "bytes"
+            }
+          ],
+          "meaning": "A canonical schema as content.",
+          "name": "schema",
+          "payloadMinBytes": 0,
+          "refs": []
+        }
+      ],
+      "name": "schema",
+      "notes": "Payload = the canonical JSON envelope of Effect's persistent SchemaRepresentation document; references remain empty. Revision 0's tagged projection is read-compatible. The cross-runtime byte pin is gated; the revision-1 byte theorem remains pending. Typed schema-to-schema edges ($defs as real CAS references) are the named follow-up.",
+      "reserved": false,
+      "status": "RATIFIED (opaque-payload revision 1)",
+      "tag": 83,
+      "tagHex": "0x53"
+    }
+  ],
+  "title": "Kind-tag registry — scheme 0"
+}

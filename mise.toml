@@ -16,6 +16,7 @@ run = [
   "mise run gen:backend-materialize",
   "mise run gen:effects-materialize",
   "mise run gen:lift-manifest",
+  "mise run gen:grammar-manifest",
   "mise run gen:cas-surface",
   "mise run gen:ledger",
 ]
@@ -92,6 +93,11 @@ description = "Regenerate the effect-lift rule manifest (JSON + Markdown project
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitlift"
 
+[tasks."gen:grammar-manifest"]
+description = "Regenerate the data grammar's sort table (JSON for the front ends, REGISTRY.md for humans) from the Lean grammar manifest (authority: Cas.Grammar.manifestV0)"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitgrammar"
+
 [tasks."gen:backend-materialize"]
 description = "Regenerate the estate-native materialized modules (P6's second register) from the committed schema payloads"
 dir = "{{config_root}}/library/cas"
@@ -108,7 +114,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -121,6 +127,7 @@ run = [
   "lake exe materialize --check",
   "lake exe mcpspec --check",
   "lake exe emitlift --check",
+  "lake exe emitgrammar --check",
   "lake exe surface --check",
 ]
 

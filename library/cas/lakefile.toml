@@ -106,6 +106,17 @@ name = "emitlift"
 srcDir = "tools"
 root = "EmitLift"
 
+# The grammar-manifest emitter: `lake exe emitgrammar` regenerates the
+# data grammar's sort table — wire tags, payload layouts, reference
+# discipline — as the JSON the front ends consume at the target the tool
+# bakes in (a positional path overrides it) and as `REGISTRY.md`, the
+# human kind-tag registry, in place; `--check` is the byte-identity gate
+# over both.
+[[lean_exe]]
+name = "emitgrammar"
+srcDir = "tools"
+root = "EmitGrammar"
+
 # The estate-native materializer: `lake exe materialize` reads the
 # committed schema payloads back through the ingestion door and prints
 # each one as a provenance-stamped TypeScript module under the effects

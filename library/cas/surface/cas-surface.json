@@ -2,40 +2,40 @@
   "areaCensus": {
     "Architecture": 34,
     "Codec": 227,
-    "Core": 273,
-    "Grammar": 46,
+    "Core": 274,
+    "Grammar": 119,
     "IR": 102,
     "Lang": 169,
     "Lift": 37,
     "Schema": 458,
-    "Values": 364,
+    "Values": 371,
     "Vectors": 65
   },
   "axiomCensus": {
     "Classical.choice": 188,
-    "Quot.sound": 320,
-    "propext": 445
+    "Quot.sound": 321,
+    "propext": 448
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
     "Cas.Addr32": 137,
     "Cas.Binding": 40,
-    "Cas.Grammar.Tree": 26,
-    "Cas.Grammar.Ty": 35,
+    "Cas.Grammar.Tree": 27,
+    "Cas.Grammar.Ty": 39,
     "Cas.Lang.Handler": 17,
     "Cas.Lang.Prog": 71,
     "Cas.Lang.Refusal": 18,
     "Cas.Lang.Sig": 42,
     "Cas.Lang.Status": 41,
     "Cas.Lang.interpret": 6,
-    "Cas.Node": 71,
+    "Cas.Node": 72,
     "Cas.Schema.Ast": 284,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
     "Cas.Word": 77
   },
-  "declarations": 1345,
-  "documented": 675,
+  "declarations": 1432,
+  "documented": 697,
   "library": "Cas",
   "modules": [
     {
@@ -1956,6 +1956,619 @@
           "name": "Cas.Store.set_same",
           "signature": "∀ (σ : Cas.Store) (a : Cas.Addr32) (n : Cas.Node), σ.set a n a = some n",
           "touches": ["Core"]
+        }
+      ]
+    },
+    {
+      "declarations": 87,
+      "documented": 22,
+      "module": "Cas.Grammar.Manifest",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Envelope",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Envelope.fields",
+          "signature": "Cas.Grammar.Envelope → List Cas.Grammar.Field",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Envelope.meaning",
+          "signature": "Cas.Grammar.Envelope → Cas.Grammar.Prose",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Envelope.refRecordBytes",
+          "signature": "Cas.Grammar.Envelope → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Envelope.toValue",
+          "signature": "Cas.Grammar.Envelope → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Field",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Field.enc",
+          "signature": "Cas.Grammar.Field → Cas.Grammar.FieldEnc",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Field.meaning",
+          "signature": "Cas.Grammar.Field → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Field.name",
+          "signature": "Cas.Grammar.Field → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Field.toValue",
+          "signature": "Cas.Grammar.Field → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Grammar.FieldEnc",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.all",
+          "signature": "List Cas.Grammar.FieldEnc",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Grammar.FieldEnc.all_complete",
+          "signature": "∀ (e : Cas.Grammar.FieldEnc), e ∈ Cas.Grammar.FieldEnc.all",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.bytes",
+          "signature": "Cas.Grammar.FieldEnc → Option Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.ctorElim",
+          "signature": "{motive : Cas.Grammar.FieldEnc → Sort u} → (ctorIdx : Nat) → (t : Cas.Grammar.FieldEnc) → ctorIdx = t.ctorIdx → Cas.Grammar.FieldEnc.ctorElimType ctorIdx → motive t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.ctorElimType",
+          "signature": "{motive : Cas.Grammar.FieldEnc → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.meaning",
+          "signature": "Cas.Grammar.FieldEnc → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.minBytes",
+          "signature": "Cas.Grammar.FieldEnc → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Grammar.FieldEnc.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Grammar.FieldEnc), Cas.Grammar.FieldEnc.ofNat x.ctorIdx = x",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.FieldEnc.wire",
+          "signature": "Cas.Grammar.FieldEnc → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Form",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.fields",
+          "signature": "Cas.Grammar.Form → List Cas.Grammar.Field",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.meaning",
+          "signature": "Cas.Grammar.Form → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.name",
+          "signature": "Cas.Grammar.Form → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.node",
+          "signature": "Cas.Grammar.Form → Cas.Node",
+          "touches": ["Core", "Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.payloadBytes",
+          "signature": "Cas.Grammar.Form → Option Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.payloadMinBytes",
+          "signature": "Cas.Grammar.Form → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.slots",
+          "signature": "Cas.Grammar.Form → List Cas.Grammar.Slot",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.toValue",
+          "signature": "Cas.Grammar.Form → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "carriers": ["Cas.Grammar.Tree", "Cas.Grammar.Ty"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Form.witness",
+          "signature": "Cas.Grammar.Form → (t : Cas.Grammar.Ty) × Cas.Grammar.Tree t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Inline.plain",
+          "signature": "Cas.Values.Markdown.Inline → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Manifest",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.closing",
+          "signature": "Cas.Grammar.Manifest → List Cas.Grammar.Prose",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.envelope",
+          "signature": "Cas.Grammar.Manifest → Cas.Grammar.Envelope",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.grammar",
+          "signature": "Cas.Grammar.Manifest → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.ids",
+          "signature": "Cas.Grammar.Manifest → List Cas.Grammar.RowId",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.manifestVersion",
+          "signature": "Cas.Grammar.Manifest → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.preamble",
+          "signature": "Cas.Grammar.Manifest → List Cas.Grammar.Prose",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.rows",
+          "signature": "Cas.Grammar.Manifest → List Cas.Grammar.Row",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.scheme",
+          "signature": "Cas.Grammar.Manifest → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.title",
+          "signature": "Cas.Grammar.Manifest → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.toMarkdown",
+          "signature": "Cas.Grammar.Manifest → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Manifest.toValue",
+          "signature": "Cas.Grammar.Manifest → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Prose",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Prose.plain",
+          "signature": "Cas.Grammar.Prose → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Row",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.exemplar",
+          "signature": "Cas.Grammar.Row → Option String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.forms",
+          "signature": "Cas.Grammar.Row → List Cas.Grammar.Form",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.id",
+          "signature": "Cas.Grammar.Row → Cas.Grammar.RowId",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.name",
+          "signature": "Cas.Grammar.Row → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.notes",
+          "signature": "Cas.Grammar.Row → Cas.Grammar.Prose",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.status",
+          "signature": "Cas.Grammar.Row → Cas.Grammar.Status",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Row.toValue",
+          "signature": "Cas.Grammar.Row → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Grammar.RowId",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.RowId.ctorElim",
+          "signature": "{motive : Cas.Grammar.RowId → Sort u} → (ctorIdx : Nat) → (t : Cas.Grammar.RowId) → ctorIdx = t.ctorIdx → Cas.Grammar.RowId.ctorElimType ctorIdx → motive t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.RowId.ctorElimType",
+          "signature": "{motive : Cas.Grammar.RowId → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.RowId.wireTag",
+          "signature": "Cas.Grammar.RowId → UInt8",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Grammar.Slot",
+          "signature": "Type"
+        },
+        {
+          "carriers": ["Cas.Grammar.Ty"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Slot.expects",
+          "signature": "Cas.Grammar.Slot → Cas.Grammar.Ty",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Slot.meaning",
+          "signature": "Cas.Grammar.Slot → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Slot.name",
+          "signature": "Cas.Grammar.Slot → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Slot.toValue",
+          "signature": "Cas.Grammar.Slot → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Grammar.Status",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Status.all",
+          "signature": "List Cas.Grammar.Status",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Status.all_complete",
+          "signature": "∀ (s : Cas.Grammar.Status), s ∈ Cas.Grammar.Status.all",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Status.ctorElim",
+          "signature": "{motive : Cas.Grammar.Status → Sort u} → (ctorIdx : Nat) → (t : Cas.Grammar.Status) → ctorIdx = t.ctorIdx → Cas.Grammar.Status.ctorElimType ctorIdx → motive t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Status.ctorElimType",
+          "signature": "{motive : Cas.Grammar.Status → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Status.isReserved",
+          "signature": "Cas.Grammar.Status → Bool",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Status.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Grammar.Status), Cas.Grammar.Status.ofNat x.ctorIdx = x",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Status.wire",
+          "signature": "Cas.Grammar.Status → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "carriers": ["Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Ty.sortName",
+          "signature": "Cas.Grammar.Ty → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.document",
+          "signature": "String"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.envelopeV0",
+          "signature": "Cas.Grammar.Envelope",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.hexTag",
+          "signature": "UInt8 → String"
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instDecidableEqFieldEnc",
+          "signature": "DecidableEq Cas.Grammar.FieldEnc",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instDecidableEqRowId",
+          "signature": "DecidableEq Cas.Grammar.RowId",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instDecidableEqRowId.decEq",
+          "signature": "(x x_1 : Cas.Grammar.RowId) → Decidable (x = x_1)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instDecidableEqStatus",
+          "signature": "DecidableEq Cas.Grammar.Status",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instReprFieldEnc",
+          "signature": "Repr Cas.Grammar.FieldEnc",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.instReprFieldEnc.repr",
+          "signature": "Cas.Grammar.FieldEnc → Nat → Std.Format",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instReprRowId",
+          "signature": "Repr Cas.Grammar.RowId",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.instReprRowId.repr",
+          "signature": "Cas.Grammar.RowId → Nat → Std.Format",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Grammar.instReprStatus",
+          "signature": "Repr Cas.Grammar.Status",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.instReprStatus.repr",
+          "signature": "Cas.Grammar.Status → Nat → Std.Format",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.manifestV0",
+          "signature": "Cas.Grammar.Manifest",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.manifestV0_rows_complete",
+          "signature": "∀ (t : Cas.Grammar.Ty), Cas.Grammar.RowId.sort t ∈ Cas.Grammar.manifestV0.ids",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.registry",
+          "signature": "String"
         }
       ]
     },
@@ -10812,10 +11425,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 676,
-    "inductive": 34,
-    "instance": 59,
-    "structure": 36,
-    "theorem": 537
+    "def": 742,
+    "inductive": 37,
+    "instance": 66,
+    "structure": 42,
+    "theorem": 542
   }
 }

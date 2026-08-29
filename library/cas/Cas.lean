@@ -77,8 +77,11 @@ abstraction, lowest first, and imported above in that order.
 - **`Grammar/` — layer 2, the data grammar.** Sorts with wire tags,
   the indexed `Tree` family elaborating onto `Node` through the real
   codec, the content address as a fold under abstract `H`, `flatten`
-  with its Level-1 admission law (L2–L4), and the term-level surface
-  syntax.
+  with its Level-1 admission law (L2–L4), the term-level surface
+  syntax, and the grammar manifest — the sort table as first-order
+  data, every form carrying a `Tree` witness its layout is read off,
+  emitted by the `emitgrammar` executable as the front ends' JSON and
+  as `REGISTRY.md`.
 - **`Lang/` — layer 3, the program grammar.** Effect signatures as
   values composing by sum, `Prog` as the free monad of continuations,
   the store language and the LLM extension (`infer`), one-step
