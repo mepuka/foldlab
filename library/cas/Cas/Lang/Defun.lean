@@ -49,21 +49,40 @@ Proved below:
   tables whose direct runs agree at every word denote observationally
   equal programs. R5's observation and R14's `ObsEq` are one thing,
   through the R10 bridge.
-- (ROLLED BACK, see below) `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
+- `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
   round trips over the shared byte primitives (`nat32`, `readChunk`).
-- (ROLLED BACK, see below) `decodeLine_encodeLine` — the code-point round trip:
-  `decodeLine (encodeLine l) = some l` for well-formed lines.
+  UN-PARKED 2026-08-29: rolled back on 2026-08-28 for kernel-memory
+  exhaustion, restored by staging the proofs against abstract byte
+  strings (see the staging note above `readPIn_zero`).
+- `decodeLine_encodeLine` — the code-point round trip:
+  `decodeLine (encodeLine l) = some l` for well-formed lines. UN-PARKED
+  2026-08-29 by the same decomposition; this is the theorem whose
+  monolithic proof caused the OOM-killed builds.
 - `encodeProg_wf` — the encoded table ADMITS as a word
   (`Word.wf (encodeProg H p) = true`) for EVERY address function `H`,
   hash-lattice Level 0: line nodes carry no references and the table
   node's references resolve against the line bindings laid down first.
 
+- `readPIn_exact`, `readPRef_exact`, `readLine_exact`, `decodeLine_exact`
+  — EXACTNESS (owed item, discharged 2026-08-29): the decoder accepts
+  nothing outside the encoder's image, in the style of the codec's
+  `readFrame_exact`. A successful read proves its input was an encoding
+  AND proves the well-formedness the forward direction demands.
+
+- `decodeProg` / `decodeProg_encodeProg` — THE TABLE-LEVEL DECODER
+  (owed item, discharged 2026-08-29): `Word → Option PProg`, reading the
+  word `encodeProg` laid down back to exactly the table. Two premises,
+  both triaged at the decoder's section note: `hwf` (the encodability
+  condition the line round trip already carries) and `hsep` (the address
+  function separates the table's lines — NECESSARY, not convenient, and
+  strictly weaker than `Function.Injective H`).
+- `runP_decodeProg_encodeProg`, `ObsEq_decodeProg_encodeProg` — THE
+  CAPABILITY ROUND TRIP: a table stored as content and recovered from
+  that content runs identically, and denotes an observationally equal
+  program. The program IS content, as one theorem.
+
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
-- exactness of `readLine` (the decoder accepts nothing outside the
-  encoder's image), in the style of the codec's `readFrame_exact`;
-- the table-level decoder `Word → Option PProg` with its round trip
-  against `encodeProg` (recovering the program from content);
 - registry rows for wire tags 14/15 land with the registry agent; the
   literals here mirror that reservation.
 -/
@@ -397,10 +416,47 @@ def readPIn : Bytes → Option (PIn × Bytes)
       | none => none
     else none
 
--- ROLLED BACK (C4, 2026-08-28): `readPIn_encodePIn` is unproven post-merge
--- (elaboration failures; original proof parked in
--- .staging/parser-experiments/defun-held-proofs.lean.txt). Un-ratified
--- machinery rolls back, never ships sorried in the graded tree.
+/-! ### The operand round trip, staged
+
+The 2026-08-28 rollback died of ONE cause, and `NodeCodec.lean` had
+already measured it: "two-stage proofs check instantly; three-stage
+exhausts the kernel". The parked proofs rewrote the byte primitives
+straight into the CONCRETE encoding term under a nested `match` motive,
+so every stage multiplied the motive the kernel re-checked.
+
+The cure is the same one the node codec uses: each `match` scrutinee is
+discharged against an ABSTRACT byte string in its own lemma, and the
+concrete encoding meets the reader only at the final `exact`. The
+motives stay one stage wide and the kernel never sees the composition. -/
+
+/-- The reader's literal-address arm, at an abstract tail. -/
+theorem readPIn_zero (r : Bytes) :
+    readPIn (0 :: r) =
+      match readChunk 32 r with
+      | some (c, rest') =>
+        if h : c.length = 32 then some (PIn.lit ⟨c, h⟩, rest') else none
+      | none => none := rfl
+
+/-- The reader's answer-index arm, at an abstract tail. -/
+theorem readPIn_one (r : Bytes) :
+    readPIn (1 :: r) =
+      match readNat32 r with
+      | some (i, rest') => some (PIn.ans i, rest')
+      | none => none := rfl
+
+/-- OPERAND ROUND TRIP (un-parked): the operand reader recovers a
+well-formed operand and consumes exactly its encoding. -/
+theorem readPIn_encodePIn (x : PIn) (h : x.WF) (rest : Bytes) :
+    readPIn (encodePIn x ++ rest) = some (x, rest) := by
+  cases x with
+  | lit a =>
+    show readPIn (0 :: (a.val ++ rest)) = _
+    rw [readPIn_zero, readChunk_append rest a.property]
+    dsimp only
+    rw [dif_pos a.property]
+  | ans i =>
+    show readPIn (1 :: (nat32 i ++ rest)) = _
+    rw [readPIn_one, readNat32_nat32 i h rest]
 
 /-- Encode one typed operand reference: the expected kind tag byte,
 then the operand. -/
@@ -414,8 +470,17 @@ def readPRef : Bytes → Option ((UInt8 × PIn) × Bytes)
     | some (i, rest') => some ((t, i), rest')
     | none => none
 
--- ROLLED BACK (C4, 2026-08-28): `readPRef_encodePRef` cites the rolled-back
--- `readPIn_encodePIn`; parked in the same file.
+/-- TYPED-REF ROUND TRIP (un-parked): the kind tag passes through and the
+operand round trip carries the rest. -/
+theorem readPRef_encodePRef (r : UInt8 × PIn) (h : r.2.WF) (rest : Bytes) :
+    readPRef (encodePRef r ++ rest) = some (r, rest) := by
+  obtain ⟨t, i⟩ := r
+  show readPRef (t :: (encodePIn i ++ rest)) = _
+  rw [show readPRef (t :: (encodePIn i ++ rest))
+      = match readPIn (encodePIn i ++ rest) with
+        | some (x, rest') => some ((t, x), rest')
+        | none => none from rfl,
+    readPIn_encodePIn i h rest]
 
 /-- `readN` under a membership-relative round trip: the counted-
 sequence reader recovers a list whose ELEMENTS satisfy the reader's
@@ -484,11 +549,253 @@ def encodeLine (l : PLine) : Node :=
 def decodeLine (n : Node) : Option PLine :=
   if n.tag = stepWireTag then readLine n.payload else none
 
--- ROLLED BACK (C4, 2026-08-28): `decodeLine_encodeLine` — the code-point
--- round-trip law — is unproven post-merge: its original proof exhausts
--- KERNEL memory (the cause of this morning's OOM-killed builds). Parked in
--- .staging/parser-experiments/defun-held-proofs.lean.txt; repair through
--- the llm-proof-loop lane, then restore all three together.
+/-! ### The code-point round trip, staged
+
+This is the theorem whose monolithic proof exhausted kernel memory on
+2026-08-28. `readLine`'s put arm is a FOUR-stage nested match (frame,
+count, counted refs, trailing-empty), and the parked proof drove all
+four stages simultaneously through the concrete encoding term in one
+`simp only`. Per `NodeCodec.lean`'s measured determination that is the
+shape that does not check.
+
+The two lemmas below are the decomposition: each takes its stage
+scrutinees as HYPOTHESES over abstract byte strings, so the match
+motives are one stage wide and mention no encoding at all. The concrete
+encoding is supplied once, at the call site, as three already-proved
+byte-primitive facts. -/
+
+/-- The line reader's put arm, driven by its three stage results over an
+abstract body. -/
+theorem readLine_put_of (v t : UInt8) {body payload r1 r2 : Bytes}
+    {cnt : Nat} {refs : List (UInt8 × PIn)}
+    (h1 : readFrame body = some (payload, r1))
+    (h2 : readNat32 r1 = some (cnt, r2))
+    (h3 : readN readPRef cnt r2 = some (refs, [])) :
+    readLine (0 :: v :: t :: body) = some (.put v t payload refs) := by
+  rw [show readLine (0 :: v :: t :: body)
+      = match readFrame body with
+        | some (payload, r1) =>
+          match readNat32 r1 with
+          | some (cnt, r2) =>
+            match readN readPRef cnt r2 with
+            | some (refs, []) => some (PLine.put v t payload refs)
+            | _ => none
+          | none => none
+        | none => none from rfl, h1]
+  dsimp only
+  rw [h2]
+  dsimp only
+  rw [h3]
+
+/-- The line reader's load arm, driven by its one stage result over an
+abstract body. -/
+theorem readLine_load_of {r : Bytes} {src : PIn}
+    (h : readPIn r = some (src, [])) :
+    readLine (1 :: r) = some (.load src) := by
+  rw [show readLine (1 :: r)
+      = match readPIn r with
+        | some (src, []) => some (PLine.load src)
+        | _ => none from rfl, h]
+
+/-- CODE-POINT ROUND TRIP (un-parked): a well-formed line, encoded as a
+step node, decodes back to itself. -/
+theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
+    decodeLine (encodeLine l) = some l := by
+  rw [show decodeLine (encodeLine l) = readLine (encodeLineBody l) from
+    if_pos rfl]
+  cases l with
+  | put v t payload refs =>
+    obtain ⟨hpay, hcnt, hrefs⟩ := h
+    have h3 : readN readPRef refs.length ((refs.map encodePRef).flatten)
+        = some (refs, []) := by
+      have := readN_encode_of
+        (fun a ha rest => readPRef_encodePRef a ha rest) refs hrefs []
+      simpa using this
+    exact readLine_put_of v t
+      (readFrame_frame payload hpay _)
+      (readNat32_nat32 refs.length hcnt _) h3
+  | load src =>
+    have h1 : readPIn (encodePIn src) = some (src, []) := by
+      have := readPIn_encodePIn src h []
+      simpa using this
+    exact readLine_load_of h1
+
+/-! ### Exactness — the decoder accepts nothing outside the image
+
+The second direction, in the style of the codec's `readFrame_exact` and
+`parseNode_exact`: a successful read PROVES its input was an encoding,
+and proves the well-formedness the forward direction demands. Together
+with the round trips above this is what "one byte representation per
+code point" means for the step sort.
+
+`readN_exact_of` is the exactness dual of `readN_encode_of` and is
+carried for the same reason: the codec's `readN_exact` recovers the
+splitting but drops the per-element property, and a line's admission
+condition quantifies over its operand references. -/
+
+/-- `readN` under a membership-relative exactness: the counted reader
+recovers the splitting, the count, AND the reader's per-element
+property. The dual of `readN_encode_of`. -/
+theorem readN_exact_of {α : Type} {p : Bytes → Option (α × Bytes)}
+    {e : α → Bytes} {P : α → Prop}
+    (hp : ∀ b a rest, p b = some (a, rest) → b = e a ++ rest ∧ P a) :
+    ∀ (n : Nat) (b : Bytes) (as : List α) (rest : Bytes),
+      readN p n b = some (as, rest) →
+      b = (as.map e).flatten ++ rest ∧ as.length = n ∧ ∀ a ∈ as, P a := by
+  intro n
+  induction n with
+  | zero =>
+    intro b as rest h
+    simp only [readN, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨has, hrest⟩ := h
+    subst has; subst hrest
+    simp
+  | succ k ih =>
+    intro b as rest h
+    unfold readN at h
+    split at h
+    next a b' hpb =>
+      split at h
+      next as' b'' hrn =>
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨has, hrest⟩ := h
+        obtain ⟨hb', hlen, hall⟩ := ih b' as' b'' hrn
+        obtain ⟨hb, hPa⟩ := hp b a b' hpb
+        subst has; subst hrest
+        refine ⟨by rw [hb, hb']; simp [List.append_assoc], by simp [hlen], ?_⟩
+        intro x hx
+        rcases List.mem_cons.mp hx with rfl | hx
+        · exact hPa
+        · exact hall x hx
+      next => simp at h
+    next => simp at h
+
+/-- Operand exactness: a successful operand read proves its input was an
+operand encoding, and proves the operand well-formed. -/
+theorem readPIn_exact {b : Bytes} {x : PIn} {rest : Bytes}
+    (h : readPIn b = some (x, rest)) : b = encodePIn x ++ rest ∧ x.WF := by
+  match b with
+  | [] => simp [readPIn] at h
+  | c :: r =>
+    by_cases h0 : c = 0
+    · subst h0
+      rw [readPIn_zero] at h
+      split at h
+      next cc rr hc =>
+        split at h
+        next hlen =>
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hx, hrest⟩ := h
+          subst hx; subst hrest
+          exact ⟨by rw [(readChunk_exact hc).1]; rfl, trivial⟩
+        next => simp at h
+      next => simp at h
+    · by_cases h1 : c = 1
+      · subst h1
+        rw [readPIn_one] at h
+        split at h
+        next i rr hi =>
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hx, hrest⟩ := h
+          subst hx; subst hrest
+          obtain ⟨hb, hlt⟩ := readNat32_some _ _ _ hi
+          exact ⟨by rw [hb]; rfl, hlt⟩
+        next => simp at h
+      · rw [show readPIn (c :: r) = none from by
+          simp only [readPIn, if_neg h0, if_neg h1]] at h
+        simp at h
+
+/-- Typed-reference exactness. -/
+theorem readPRef_exact {b : Bytes} {r : UInt8 × PIn} {rest : Bytes}
+    (h : readPRef b = some (r, rest)) :
+    b = encodePRef r ++ rest ∧ r.2.WF := by
+  match b with
+  | [] => simp [readPRef] at h
+  | t :: rr =>
+    rw [show readPRef (t :: rr)
+        = match readPIn rr with
+          | some (x, rest') => some ((t, x), rest')
+          | none => none from rfl] at h
+    split at h
+    next x rest' hx =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hr, hrest⟩ := h
+      subst hr; subst hrest
+      obtain ⟨hb, hwf⟩ := readPIn_exact hx
+      exact ⟨by rw [hb]; rfl, hwf⟩
+    next => simp at h
+
+/-- READLINE EXACTNESS (owed item, discharged): a successful line read
+proves its input was a line encoding, and proves the line well-formed.
+The decoder's image is exactly the encoder's. -/
+theorem readLine_exact {b : Bytes} {l : PLine} (h : readLine b = some l) :
+    b = encodeLineBody l ∧ l.WF := by
+  match b with
+  | [] => simp [readLine] at h
+  | c :: r =>
+    by_cases h0 : c = 0
+    · subst h0
+      match r with
+      | [] => simp [readLine] at h
+      | [_] => simp [readLine] at h
+      | v :: t :: body =>
+        rw [show readLine (0 :: v :: t :: body)
+            = match readFrame body with
+              | some (payload, r1) =>
+                match readNat32 r1 with
+                | some (cnt, r2) =>
+                  match readN readPRef cnt r2 with
+                  | some (refs, []) => some (PLine.put v t payload refs)
+                  | _ => none
+                | none => none
+              | none => none from rfl] at h
+        split at h
+        next payload r1 hf =>
+          split at h
+          next cnt r2 hn =>
+            split at h
+            next refs hrn =>
+              simp only [Option.some.injEq] at h
+              subst h
+              obtain ⟨hb1, hplen⟩ := readFrame_exact hf
+              obtain ⟨hb2, hclt⟩ := readNat32_some _ _ _ hn
+              obtain ⟨hb3, hlen, hall⟩ :=
+                readN_exact_of (fun _b _a _rest hh => readPRef_exact hh)
+                  cnt r2 refs [] hrn
+              subst hlen
+              refine ⟨?_, ?_, ?_, hall⟩
+              · rw [hb1, hb2, hb3]
+                simp [encodeLineBody]
+              · exact hplen
+              · omega
+            next => simp at h
+          next => simp at h
+        next => simp at h
+    · by_cases h1 : c = 1
+      · subst h1
+        rw [show readLine (1 :: r)
+            = match readPIn r with
+              | some (src, []) => some (PLine.load src)
+              | _ => none from rfl] at h
+        split at h
+        next src hs =>
+          simp only [Option.some.injEq] at h
+          subst h
+          obtain ⟨hb, hwf⟩ := readPIn_exact hs
+          exact ⟨by rw [hb]; simp [encodeLineBody], hwf⟩
+        next => simp at h
+      · rw [show readLine (c :: r) = none from by
+          simp only [readLine, if_neg h0, if_neg h1]] at h
+        simp at h
+
+/-- Step-node exactness, lifted to the node: `decodeLine` accepts only
+step nodes carrying a line encoding. -/
+theorem decodeLine_exact {n : Node} {l : PLine} (h : decodeLine n = some l) :
+    n.tag = stepWireTag ∧ n.payload = encodeLineBody l ∧ l.WF := by
+  unfold decodeLine at h
+  split at h
+  next ht => exact ⟨ht, (readLine_exact h).1, (readLine_exact h).2⟩
+  next => simp at h
 
 /-! ## The table as a word — the program IS content -/
 
@@ -555,5 +862,176 @@ theorem encodeProg_wf (H : Bytes → Addr32) (p : PProg) :
       rw [← hnode]
       rfl
     exact Word.resolvesIn_iff.mpr ⟨m, hf, htag⟩
+
+/-! ## The table-level decoder — the program recovered from content
+
+The missing direction of the applicative capability. `encodeProg` lays a
+table down as a word; `decodeProg` reads one back. The word's LAST
+binding is the table node (that is how `encodeProg` builds it), its
+references name the step nodes in program order, and each one resolves
+through `Word.find` and decodes through `decodeLine`.
+
+### The premise, triaged
+
+`encodeProg_wf` needs no premise on `H` at all — admission is Level 0.
+RECOVERY is not, and the reason is worth stating plainly rather than
+importing `Function.Injective H` out of habit:
+
+    hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l'
+
+— the address function SEPARATES the table's lines. This premise is not
+a convenience of the proof; it is NECESSARY, and the `example` below
+`decodeProg_encodeProg` CHECKS that rather than asserting it: under a
+degenerate `H` two distinct lines share an address, `encodeProg` lays
+down two bindings there, both of the table node's references name it,
+and `Word.find` answers the FIRST for both — so the recovered table
+repeats one line where `p` had two. Note what the witness also shows:
+the word still ADMITS. The store has not malfunctioned; it has
+deduplicated, which is content-addressing working as designed, and no
+decoder can undo it.
+
+It is stated at the table's lines rather than as `Function.Injective H`
+deliberately, per CAS-003: it is strictly weaker (it constrains `H` only
+on the finitely many preimages this table actually lays down, and is
+vacuous for tables of fewer than two lines), and it is exactly where the
+obligation bites. `Function.Injective H` discharges it, but nothing here
+needs the full strength.
+
+`hwf : ∀ l ∈ p, l.WF` is the other premise, and it is the same admission
+condition `decodeLine_encodeLine` already carries — a line whose fields
+overflow their wire scalars was never encodable. -/
+
+/-- Recover a table from a word: the last binding must be a table node,
+and each of its references must resolve to a decodable step node. -/
+def decodeProg (w : Word) : Option PProg :=
+  match w.getLast? with
+  | some b =>
+    if b.node.tag = contWireTag then
+      b.node.refs.mapM fun r => (Word.find w r.addr).bind decodeLine
+    else none
+  | none => none
+
+/-- Under separation, each line's binding is what `find` answers at that
+line's address within the step-node prefix. -/
+theorem find_lineAddr (H : Bytes → Addr32) :
+    ∀ p : PProg,
+      (∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') →
+      ∀ l ∈ p,
+        Word.find (p.map fun l => Binding.mk (lineAddr H l) (encodeLine l))
+          (lineAddr H l) = some (encodeLine l) := by
+  intro p
+  induction p with
+  | nil => intro _ l hl; simp at hl
+  | cons a rest ih =>
+    intro hsep l hl
+    by_cases hae : lineAddr H l = lineAddr H a
+    · have hla : l = a := hsep l hl a List.mem_cons_self hae
+      subst hla
+      simp [Word.find]
+    · have hlr : l ∈ rest := by
+        rcases List.mem_cons.mp hl with rfl | hm
+        · exact absurd rfl hae
+        · exact hm
+      simp only [List.map_cons, Word.find, if_neg hae]
+      exact ih (fun x hx y hy =>
+        hsep x (List.mem_cons_of_mem a hx) y (List.mem_cons_of_mem a hy)) l hlr
+
+/-- The same lookup inside the whole encoded word: the step bindings come
+first, so the table binding appended after them cannot shadow one. -/
+theorem find_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') :
+    ∀ l ∈ p,
+      Word.find (encodeProg H p) (lineAddr H l) = some (encodeLine l) :=
+  fun l hl => Word.find_append_of_some _ (find_lineAddr H p hsep l hl)
+
+/-- The table node's reference list, read elementwise, is the table. -/
+theorem mapM_lineRefs (H : Bytes → Addr32) (f : Ref → Option PLine) :
+    ∀ p : PProg, (∀ l ∈ p, f ⟨stepWireTag, lineAddr H l⟩ = some l) →
+      (p.map fun l => (⟨stepWireTag, lineAddr H l⟩ : Ref)).mapM f = some p := by
+  intro p
+  induction p with
+  | nil => intro _; rfl
+  | cons a rest ih =>
+    intro h
+    simp only [List.map_cons, List.mapM_cons, h a List.mem_cons_self,
+      ih (fun x hx => h x (List.mem_cons_of_mem a hx))]
+    rfl
+
+/-- THE PROGRAM IS RECOVERABLE FROM CONTENT (owed item, discharged): the
+word `encodeProg` lays down reads back to exactly the table it encoded.
+Both premises are triaged in the section note above — `hwf` is the
+encodability condition `decodeLine_encodeLine` already carries, and
+`hsep` is NECESSARY, not convenient. -/
+theorem decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') :
+    decodeProg (encodeProg H p) = some p := by
+  have hlast : (encodeProg H p).getLast?
+      = some (Binding.mk (H (encodeNode (tableNode H p))) (tableNode H p)) :=
+    List.getLast?_concat
+  rw [show decodeProg (encodeProg H p)
+      = (if (tableNode H p).tag = contWireTag then
+          (tableNode H p).refs.mapM fun r =>
+            (Word.find (encodeProg H p) r.addr).bind decodeLine
+        else none) from by rw [decodeProg, hlast],
+    if_pos (show (tableNode H p).tag = contWireTag from rfl)]
+  exact mapM_lineRefs H _ p fun l hl => by
+    rw [find_encodeProg H p hsep l hl, Option.bind_some,
+      decodeLine_encodeLine l (hwf l hl)]
+
+/-- Why `hsep` cannot be dropped, in the style of `Address.lean`'s
+Level-2 witness: under a degenerate address function two DISTINCT lines
+share an address, so the table node names that one address twice,
+`Word.find` answers the first binding both times, and recovery returns
+one line where the program had two. Every line here is well-formed and
+the word still admits (`encodeProg_wf` needs no premise) — what fails is
+recovery alone. The separation premise is NECESSARY, not a convenience
+of the proof. -/
+example :
+    ∃ (H : Bytes → Addr32) (p : PProg),
+      (∀ l ∈ p, l.WF) ∧
+        Word.wf (encodeProg H p) = true ∧
+        decodeProg (encodeProg H p) ≠ some p :=
+  ⟨fun _ => ⟨List.replicate 32 0, by simp⟩,
+    [.load (.ans 0), .load (.ans 1)],
+    by
+      intro l hl
+      rcases List.mem_cons.mp hl with rfl | hl
+      · show (0 : Nat) < 4294967296; omega
+      · rcases List.mem_cons.mp hl with rfl | hl
+        · show (1 : Nat) < 4294967296; omega
+        · simp at hl,
+    encodeProg_wf _ _,
+    by decide⟩
+
+/-! ## The capability round trip — a stored program runs identically
+
+The sentence the product vision speaks, as one theorem: a table put into
+the store and recovered from it is the same program, so it computes the
+same thing. `decodeProg_encodeProg` composed with the direct
+interpreter — cheap, because the recovery is an EQUALITY of tables, not
+a simulation between them. -/
+
+/-- THE CAPABILITY ROUND TRIP: a table stored as content and recovered
+from that content runs identically — same status, same final word, at
+every starting word. -/
+theorem runP_decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l')
+    {q : PProg} (hq : decodeProg (encodeProg H p) = some q) (w : Word) :
+    runP H q w = runP H p w := by
+  rw [decodeProg_encodeProg H p hwf hsep] at hq
+  exact congrArg (fun r => runP H r w) (Option.some.inj hq).symm
+
+/-- The same statement at stratum 3: a stored-and-recovered table denotes
+an OBSERVATIONALLY EQUAL program. R14's equation, reached through the
+word gate — the program is content, and the content is the program. -/
+theorem ObsEq_decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l')
+    {q : PProg} (hq : decodeProg (encodeProg H p) = some q) :
+    ObsEq H (embed q) (embed p) :=
+  ObsEq_embed_of_runP H fun w =>
+    runP_decodeProg_encodeProg H p hwf hsep hq w
 
 end Cas.Lang
