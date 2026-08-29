@@ -2,9 +2,11 @@
  * Total sans-io verified-streaming decoder mirrored from
  * Effects/Merkle/Decoder.lean.
  */
-import { Equal } from "effect"
+import { Equal, Result } from "effect"
 import type { Bytes } from "./merkleChunk.ts"
-import { pow2Below, root, type HP } from "./merkleTree.ts"
+import { generateStream } from "./merkleGraph.ts"
+import type { GenerateStreamInput, Range } from "./merkleGraph.ts"
+import { pow2Below, type HP } from "./merkleTree.ts"
 
 export type DInput<A> =
   | { readonly _tag: "ParentNode"; readonly left: A; readonly right: A }
@@ -153,47 +155,34 @@ export const drun = <A>(
 }
 
 /** Model-side pre-order stream generator, including range skip tokens. */
-export const genStream = <A>(
-  P: HP<A>,
-  lo: number,
-  hi: number,
-  base: number,
-  chunks: ReadonlyArray<Bytes>,
-): ReadonlyArray<DInput<A>> => {
-  if (base + chunks.length <= lo || hi <= base) return [{ _tag: "SkipNode" }]
-  if (chunks.length <= 1) {
-    return [{
-      _tag: "ChunkNode",
-      bytes: chunks.length === 0 ? [] : chunks[0]!,
-    }]
-  }
-  const split = pow2Below(chunks.length)
-  const left = chunks.slice(0, split)
-  const right = chunks.slice(split)
-  return [
-    {
-      _tag: "ParentNode",
-      left: root(P, base, left),
-      right: root(P, base + split, right),
-    },
-    ...genStream(P, lo, hi, base, left),
-    ...genStream(P, lo, hi, base + split, right),
-  ]
+export type GenStreamInput<A> = GenerateStreamInput<A>
+
+export const genStream = <A>(input: GenStreamInput<A>): ReadonlyArray<DInput<A>> => {
+  return Result.getOrThrow(generateStream(input))
 }
 
-export const rangedEmissions = (
-  lo: number,
-  hi: number,
-  base: number,
-  chunks: ReadonlyArray<Bytes>,
-): ReadonlyArray<readonly [index: number, bytes: Bytes]> => {
-  if (base + chunks.length <= lo || hi <= base) return []
+export interface RangedEmissionsInput {
+  readonly range: Range
+  readonly base: number
+  readonly chunks: ReadonlyArray<Bytes>
+}
+
+export const rangedEmissions = ({
+  range,
+  base,
+  chunks,
+}: RangedEmissionsInput): ReadonlyArray<readonly [index: number, bytes: Bytes]> => {
+  if (base + chunks.length <= range.lo || range.hi <= base) return []
   if (chunks.length <= 1) {
     return [[base, chunks.length === 0 ? [] : chunks[0]!]]
   }
   const split = pow2Below(chunks.length)
   return [
-    ...rangedEmissions(lo, hi, base, chunks.slice(0, split)),
-    ...rangedEmissions(lo, hi, base + split, chunks.slice(split)),
+    ...rangedEmissions({ range, base, chunks: chunks.slice(0, split) }),
+    ...rangedEmissions({
+      range,
+      base: base + split,
+      chunks: chunks.slice(split),
+    }),
   ]
 }

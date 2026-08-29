@@ -10,6 +10,7 @@ import Cas.Core.Canonical
 import Cas.Core.Canonicalize
 import Cas.Core.Admission
 import Cas.Values.Json
+import Cas.Values.Markdown
 import Cas.Values.Refs
 import Cas.Values.Canonicalize
 import Cas.Codec.Hex
@@ -17,6 +18,7 @@ import Cas.Schema.Schema
 import Cas.IR.Word
 import Cas.Grammar.Grammar
 import Cas.Lang.Lang
+import Cas.Lift.Manifest
 import Cas.Vectors.Vectors
 import Cas.Architecture
 
@@ -57,6 +59,12 @@ abstraction, lowest first, and imported above in that order.
   grammar term as a store program with `putTree_correct` (F1): the run
   computes exactly the elaboration's address and store, deduplicating
   shared subterms through `put`'s duplicate outcome (F2).
+- **`Lift/` — the read face.** The effect-lift lane's first-order
+  data: the closed refusal taxonomy with its spectrum (`Taxonomy`)
+  and the v0 rule manifest (`Manifest`) — the R11 interchange
+  document both recognition engines consume, emitted by the
+  `emitlift` executable. Reading never mints identity (the direction
+  law); the lane's engines and gates live with the TypeScript twin.
 - **`Vectors/` — the registered replay surface.** Checked names,
   non-empty words, runtime-admitted vectors, unique-name registries,
   and named wire records. `Cas.Vectors.Schema` derives their canonical

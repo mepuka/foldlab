@@ -5,7 +5,8 @@
  * handling, interruption, and layer scoping silently.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { join, relative } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const forbidden =
   /\bEffect\.(runSync|runSyncExit|runPromise|runPromiseExit|runFork|runCallback)\b|\brunMain\b|\bunsafeRun\w*\b/
@@ -15,6 +16,10 @@ const forbidden =
  * suite-structure seam is allowlisted. */
 const forbiddenFs = /from\s+"node:fs(\/promises)?"/
 const fsAllowlist = ["test/conformance/suiteIndex.ts"]
+const packageRoot = fileURLToPath(new URL("..", import.meta.url))
+
+const packageRelative = (file: string): string =>
+  relative(packageRoot, file).replaceAll("\\", "/")
 
 const walk = (dir: string): Array<string> =>
   readdirSync(dir).flatMap((name) => {
@@ -25,18 +30,24 @@ const walk = (dir: string): Array<string> =>
   })
 
 const hits: Array<string> = []
-for (const file of walk(join(import.meta.dirname ?? ".", "..", "src"))) {
+for (const file of walk(join(packageRoot, "src"))) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/)
   lines.forEach((line, index) => {
-    if (forbidden.test(line)) hits.push(`${file}:${index + 1}: ${line.trim()}`)
-    if (forbiddenFs.test(line)) hits.push(`${file}:${index + 1}: node:fs is banned — ${line.trim()}`)
+    if (forbidden.test(line)) {
+      hits.push(`${packageRelative(file)}:${index + 1}: ${line.trim()}`)
+    }
+    if (forbiddenFs.test(line)) {
+      hits.push(`${packageRelative(file)}:${index + 1}: node:fs is banned — ${line.trim()}`)
+    }
   })
 }
-for (const file of walk(join(import.meta.dirname ?? ".", "..", "test"))) {
-  if (fsAllowlist.some((allowed) => file.endsWith(allowed))) continue
+for (const file of walk(join(packageRoot, "test"))) {
+  if (fsAllowlist.includes(packageRelative(file))) continue
   const lines = readFileSync(file, "utf8").split(/\r?\n/)
   lines.forEach((line, index) => {
-    if (forbiddenFs.test(line)) hits.push(`${file}:${index + 1}: node:fs is banned — ${line.trim()}`)
+    if (forbiddenFs.test(line)) {
+      hits.push(`${packageRelative(file)}:${index + 1}: node:fs is banned — ${line.trim()}`)
+    }
   })
 }
 

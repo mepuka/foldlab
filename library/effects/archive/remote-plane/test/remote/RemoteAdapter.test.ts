@@ -38,7 +38,11 @@ import {
   type CasAddress,
 } from "../../src/cas/Store.ts"
 import { CasTransfer } from "../../src/cas/Transfer.ts"
-import { makeRemoteAdapter, type RemoteAdapter } from "../../src/internal/remote.ts"
+import {
+  makeRemoteAdapter,
+  type RemoteAdapter,
+  type TaggedTranscriptDecision,
+} from "../../src/internal/remote.ts"
 import { encodeCapabilityDocument } from "../../src/internal/remoteControl.ts"
 import {
   classifyTransportFailure,
@@ -138,7 +142,7 @@ const normalizeInput = (
 }
 
 const normalizeDecision = (
-  tagged: import("../../src/internal/remoteMachine.ts").TaggedDecision<ContentId, Uint8Array>,
+  tagged: TaggedTranscriptDecision,
 ) => {
   const decision = tagged.decision
   if (decision._tag === "Issued") {
@@ -153,7 +157,7 @@ const normalizeDecision = (
       return { op: tagged.op, decision: { _tag: "Issued" as const, command: {
         _tag: "Upload" as const,
         key: keyBytes(command.key),
-        bytes: Array.from(command.bytes),
+        byteLength: command.byteLength,
       } } }
     }
     if (command._tag === "FindMissing") {
@@ -299,9 +303,44 @@ it.effect("remote snapshots retain a bounded decision tail and dropped count", (
     expect(snapshot.decisions).toHaveLength(3)
     expect(snapshot.droppedDecisions).toBeGreaterThan(0)
     expect(snapshot.decisions.at(-1)?.op).toBe(6)
+    const upload = snapshot.decisions.find((entry) =>
+      entry.decision._tag === "Issued"
+      && entry.decision.command._tag === "Upload")
+    expect(upload).toBeDefined()
+    if (upload?.decision._tag === "Issued"
+      && upload.decision.command._tag === "Upload") {
+      expect(upload.decision.command.byteLength).toBeGreaterThan(0)
+      expect("bytes" in upload.decision.command).toBe(false)
+    }
     yield* awaitPeerSocketsReleased(endpoint)
     expect(endpoint.observe().openSockets).toBe(0)
   }).pipe(Effect.provide(TestCrypto))))
+
+it.effect("encoded key-list budget rejects before transport and clears in-flight state", () =>
+  Effect.gen(function* () {
+    const underlying = scriptedTransport([])
+    let controlCalls = 0
+    const transport: RemoteCasTransport = {
+      issue: (operationId, attempt, request) => {
+        if (request.command._tag !== "ProbeCapabilities") controlCalls += 1
+        return underlying.issue(operationId, attempt, request)
+      },
+    }
+    const remoteConfig = config("http://127.0.0.1:1", { maxEncodedBytes: 35 })
+    const address = yield* makeSha256Address
+    const adapter = yield* makeRemoteAdapter(remoteConfig, transport, address)
+    const error = yield* adapter.transfer.missing([
+      ContentId.make("12".repeat(32)),
+    ]).pipe(Effect.flip)
+    expect(error).toMatchObject({
+      _tag: "CasRemoteError/Budget",
+      stage: "encoded",
+      observed: 36,
+      bound: 35,
+    })
+    expect(controlCalls).toBe(0)
+    expect((yield* adapter.snapshot).inFlightSize).toBe(0)
+  }).pipe(Effect.provide(TestCrypto)))
 
 it.effect("RMT-002 rejects a declared oversize before any response body is read or admitted", () =>
   Effect.scoped(Effect.gen(function* () {
@@ -1557,6 +1596,20 @@ layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => 
       const expectedFirstOp = expectedDecisions[0]?.op ?? 0
       const observedFirstOp = observed.decisions[0]?.op ?? expectedFirstOp
       const operationIdOffset = observedFirstOp - expectedFirstOp
+      const redactedExpectedDecisions = expectedDecisions.map((tagged) =>
+        tagged.decision._tag === "Issued" && tagged.decision.command._tag === "Upload"
+          ? {
+            op: tagged.op,
+            decision: {
+              _tag: "Issued" as const,
+              command: {
+                _tag: "Upload" as const,
+                key: tagged.decision.command.key,
+                byteLength: tagged.decision.command.bytes.length,
+              },
+            },
+          }
+          : tagged)
       expect({
         scenario: scenario.name,
         decisions: observed.decisions.map((tagged) => {
@@ -1574,7 +1627,7 @@ layer(remoteStepLayer(step))("remote adapter differential mirror lane", (it) => 
         },
       }).toEqual({
         scenario: scenario.name,
-        decisions: expectedDecisions,
+        decisions: redactedExpectedDecisions,
         state: {
           cacheSize: HashSet.size(expectedState.cache),
           confirmedSize: HashSet.size(expectedState.confirmed),

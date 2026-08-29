@@ -58,8 +58,9 @@ import {
   type MInput,
   type MachineState,
   type MResult,
+  type RDecision,
   type StepOut,
-  type TaggedDecision,
+  type Command,
 } from "./remoteMachine.ts"
 import type {
   CompletionWitness,
@@ -71,13 +72,26 @@ import type {
 import {
   decodeCapabilityDocument,
   decodePresenceDocument,
-  encodeKeyListDocument,
+  keyListDocumentEncodedLength,
 } from "./remoteControl.ts"
 import { bytesEqual } from "./bytes.ts"
 import { makeRemoteHttp } from "./remoteHttp.ts"
 
+type TranscriptCommand =
+  | Exclude<Command<ContentId, Uint8Array>, { readonly _tag: "Upload" }>
+  | { readonly _tag: "Upload"; readonly key: ContentId; readonly byteLength: number }
+
+type TranscriptDecision =
+  | Exclude<RDecision<ContentId, Uint8Array>, { readonly _tag: "Issued" }>
+  | { readonly _tag: "Issued"; readonly command: TranscriptCommand }
+
+export interface TaggedTranscriptDecision {
+  readonly op: number
+  readonly decision: TranscriptDecision
+}
+
 interface DecisionTranscript {
-  readonly buffer: Array<TaggedDecision<ContentId, Uint8Array> | undefined>
+  readonly buffer: Array<TaggedTranscriptDecision | undefined>
   head: number
   length: number
   dropped: number
@@ -102,7 +116,7 @@ const wrapRemoteFailure = (error: CasError | CasRemoteError): CasError => {
 }
 
 export interface RemoteMachineSnapshot {
-  readonly decisions: ReadonlyArray<TaggedDecision<ContentId, Uint8Array>>
+  readonly decisions: ReadonlyArray<TaggedTranscriptDecision>
   readonly droppedDecisions: number
   readonly cacheSize: number
   readonly confirmedSize: number
@@ -211,7 +225,7 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
   const runtime = yield* SynchronizedRef.make<MachineRuntime>({
     machine: initialMachineState(),
     transcript: {
-      buffer: Array.from<TaggedDecision<ContentId, Uint8Array> | undefined>({
+      buffer: Array.from<TaggedTranscriptDecision | undefined>({
         length: decisionCapacity,
       }),
       head: 0,
@@ -357,13 +371,31 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
       }, current.machine, input)
       const transcript = current.transcript
       for (const decision of output.decisions) {
+        const transcriptDecision: TaggedTranscriptDecision = decision.decision._tag === "Issued"
+          ? decision.decision.command._tag === "Upload"
+            ? {
+              op: decision.op,
+              decision: {
+                _tag: "Issued",
+                command: {
+                  _tag: "Upload",
+                  key: decision.decision.command.key,
+                  byteLength: decision.decision.command.bytes.length,
+                },
+              },
+            }
+            : {
+              op: decision.op,
+              decision: { _tag: "Issued", command: decision.decision.command },
+            }
+          : { op: decision.op, decision: decision.decision }
         if (decisionCapacity === 0) {
           transcript.dropped += 1
         } else if (transcript.length < decisionCapacity) {
-          transcript.buffer[(transcript.head + transcript.length) % decisionCapacity] = decision
+          transcript.buffer[(transcript.head + transcript.length) % decisionCapacity] = transcriptDecision
           transcript.length += 1
         } else {
-          transcript.buffer[transcript.head] = decision
+          transcript.buffer[transcript.head] = transcriptDecision
           transcript.head = (transcript.head + 1) % decisionCapacity
           transcript.dropped += 1
         }
@@ -388,11 +420,11 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
     const receivedRef = yield* Ref.make(0)
     const command = issue.command
     const preparedSentBytes = issue._tag === "Publish"
-      ? encodeKeyListDocument(issue.closure).length
+      ? Option.getOrThrow(keyListDocumentEncodedLength(issue.closure.length))
       : command._tag === "Upload"
       ? command.bytes.length
       : command._tag === "FindMissing"
-      ? encodeKeyListDocument(command.keys).length
+      ? Option.getOrThrow(keyListDocumentEncodedLength(command.keys.length))
       : 0
     const exchangeLoop = Effect.fn("RemoteAdapter.consumeExchange.loop")(function* () {
     const scope = yield* Effect.scope
@@ -861,6 +893,7 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
       const node = yield* CasNodeInput.makeEffect(input).pipe(
         Effect.mapError((issue) => new StoreFailure({
           reason: `Invalid CAS node input: ${String(issue)}`,
+          cause: issue,
         })),
       )
       if (node.kind.version !== CasSchemeVersion) return yield* new UnknownKind(node.kind)
@@ -1088,6 +1121,11 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
       if (command === undefined || command._tag !== "FindMissing") {
         return yield* Effect.die(new Error("commanded find-missing emitted no batch command"))
       }
+      const encodedLength = Option.getOrThrow(keyListDocumentEncodedLength(command.keys.length))
+      if (encodedLength > config.maxEncodedBytes) {
+        yield* clearInFlight(opId, { _tag: "Interrupted" }, config.maxDecodedBytes)
+        return yield* remoteBudget(opId, "encoded", encodedLength, config.maxEncodedBytes)
+      }
       const exchange = yield* consumeExchange(opId, 1, {
         _tag: "Command",
         command,
@@ -1157,6 +1195,11 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
       const command = requested.commands[0]?.command
       if (command === undefined || command._tag !== "PublishRoot") {
         return yield* Effect.die(new Error("commanded publish emitted no publish command"))
+      }
+      const encodedLength = Option.getOrThrow(keyListDocumentEncodedLength(closure.length))
+      if (encodedLength > config.maxEncodedBytes) {
+        yield* clearInFlight(opId, { _tag: "Interrupted" }, config.maxEncodedBytes)
+        return yield* remoteBudget(opId, "encoded", encodedLength, config.maxEncodedBytes)
       }
       const exchange = yield* consumeExchange(opId, 1, {
         _tag: "Publish",
@@ -1456,7 +1499,7 @@ export const makeRemoteAdapter = Effect.fn("RemoteAdapter.make")(function* (
   const snapshot = SynchronizedRef.modify(runtime, (
     current,
   ): readonly [RemoteMachineSnapshot, MachineRuntime] => {
-    const decisions: Array<TaggedDecision<ContentId, Uint8Array>> = []
+    const decisions: Array<TaggedTranscriptDecision> = []
     for (let offset = 0; offset < current.transcript.length; offset += 1) {
       const decision = current.transcript.buffer[
         (current.transcript.head + offset) % decisionCapacity

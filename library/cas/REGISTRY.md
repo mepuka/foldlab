@@ -19,7 +19,7 @@ on every wire.
 | 13        | 0x0D      | `context`  | RATIFIED core | Context node: typed edges, no payload |
 | 14        | 0x0E      | `step`     | RESERVED | F3 defunctionalized code point (in flight, separate actor) |
 | 15        | 0x0F      | `cont`     | RESERVED | F3 continuation (in flight, separate actor) |
-| 83        | 0x53      | `schema`   | RATIFIED (opaque-payload v0) | Payload = the schema's canonical bytes from the schema plane; refs empty in v0. The payload-is-rendering law arrives with the schema commission's Lean Ast codec; typed schema-to-schema edges ($defs as real CAS references) are the named follow-up |
+| 83        | 0x53      | `schema`   | RATIFIED (opaque-payload revision 1) | Payload = the canonical JSON envelope of Effect's persistent `SchemaRepresentation` document; refs remain empty. Revision 0's tagged projection is read-compatible. The cross-runtime byte pin is gated; the revision-1 byte theorem remains pending. Typed schema-to-schema edges ($defs as real CAS references) are the named follow-up |
 
 Rows 1 and 11–13 were previously marked "illustrative"; ruling 2
 ratifies all seven data sorts into core. Consumer extension (profiles,

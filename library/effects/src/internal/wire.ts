@@ -24,6 +24,7 @@ export interface CasPresence {
 const Byte = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xff }))
 const CapabilityDocumentBytes = Schema.Array(Byte).check(Schema.isLengthBetween(8, 8))
 const ByteArray = Schema.Array(Byte)
+const MaxUint32 = 0xffff_ffff
 
 const readUint32 = (bytes: ReadonlyArray<number>, offset: number): number =>
   (bytes[offset] ?? 0) * 0x1000000
@@ -94,11 +95,22 @@ export const decodeCapabilityResult = (
     : { _tag: "Rejected" }
 }
 
+/** Calculate the exact key-list wire length without allocating the document. */
+export const keyListDocumentEncodedLength = (
+  count: number,
+): Option.Option<number> => Number.isSafeInteger(count) && count >= 0 && count <= MaxUint32
+  ? Option.some(4 + count * 32)
+  : Option.none()
+
 /** Encode an order-preserving collection of 32-byte content identifiers. */
 export const encodeKeyListDocument = (
   keys: ReadonlyArray<ContentIdType>,
 ): Uint8Array => {
-  const bytes = new Uint8Array(4 + keys.length * 32)
+  // JavaScript arrays cannot exceed uint32 length; retain the total helper
+  // here so allocation and accounting share exactly one framing equation.
+  const bytes = new Uint8Array(Option.getOrThrow(
+    keyListDocumentEncodedLength(keys.length),
+  ))
   writeUint32(bytes, 0, keys.length)
   let offset = 4
   for (const key of keys) {

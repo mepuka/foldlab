@@ -11,6 +11,7 @@ run = [
   "mise run gen:backend-wire",
   "mise run gen:backend-programs",
   "mise run gen:backend-mcp",
+  "mise run gen:lift-manifest",
   "mise run gen:cas-surface",
   "mise run gen:ledger",
 ]
@@ -60,7 +61,7 @@ run = "lake exe schemas"
 [tasks."gen:backend-wire"]
 description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
 dir = "{{config_root}}/library/cas"
-run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorAst.ts"
+run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorSchema.ts"
 
 [tasks."gen:backend-programs"]
 description = "Regenerate the straight-line Effect programs of the registered grammar terms"
@@ -72,21 +73,27 @@ description = "Regenerate the versioned CAS MCP tool manifest from the signature
 dir = "{{config_root}}/library/cas"
 run = "lake exe mcpspec"
 
+[tasks."gen:lift-manifest"]
+description = "Regenerate the effect-lift rule manifest (JSON + Markdown projections) from the Lean lift data (authority: Cas.Lift.manifestV0)"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitlift ../effects/src/cas/generated/lift/manifest.json"
+
 [tasks."gen:cas-surface"]
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
 dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, program, MCP-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, program, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
   "lake exe schemas --check",
-  "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorAst.ts",
+  "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorSchema.ts",
   "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
   "lake exe mcpspec --check",
+  "lake exe emitlift --check ../effects/src/cas/generated/lift/manifest.json",
   "lake exe surface --check",
 ]
 

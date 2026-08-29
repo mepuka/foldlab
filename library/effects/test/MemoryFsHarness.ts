@@ -4,7 +4,7 @@
  * platform reach anywhere. State lives behind `Ref`, so every
  * operation is an ordinary effectful service call. It enforces what a
  * real filesystem enforces (writes need their parent directory;
- * renames need their source), so a backend that skipped
+ * hard links need their source and never overwrite), so a backend that skipped
  * `makeDirectory` fails here too.
  */
 import { Effect, FileSystem, PlatformError, Ref } from "effect"
@@ -12,6 +12,14 @@ import { Effect, FileSystem, PlatformError, Ref } from "effect"
 const notFound = (method: string, path: string) =>
   PlatformError.systemError({
     _tag: "NotFound",
+    method,
+    module: "FileSystem",
+    pathOrDescriptor: path,
+  })
+
+const alreadyExists = (method: string, path: string) =>
+  PlatformError.systemError({
+    _tag: "AlreadyExists",
     method,
     module: "FileSystem",
     pathOrDescriptor: path,
@@ -113,6 +121,18 @@ export const makeMemoryFs: Effect.Effect<MemoryFs> = Effect.gen(function* () {
       Effect.all([Ref.get(files), Ref.get(directories)]).pipe(
         Effect.map(([held, present]) => held.has(path) || present.has(path)),
       ),
+    link: (fromPath, toPath) => Ref.modify(files, (held) => {
+      const source = held.get(fromPath)
+      if (source === undefined) return ["missing" as const, held]
+      if (held.has(toPath)) return ["exists" as const, held]
+      return ["linked" as const, new Map(held).set(toPath, source)]
+    }).pipe(
+      Effect.flatMap((result) => result === "linked"
+        ? Effect.void
+        : Effect.fail(result === "missing"
+            ? notFound("link", fromPath)
+            : alreadyExists("link", toPath))),
+    ),
     makeDirectory: (path, options) =>
       Ref.update(directories, withDirectories(path, options?.recursive ?? false)),
     makeTempFile,

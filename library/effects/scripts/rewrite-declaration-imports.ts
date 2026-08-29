@@ -1,7 +1,9 @@
 import { readdir, readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { relative } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const outputRoot = new URL("../dist/", import.meta.url)
+const outputRootPath = fileURLToPath(outputRoot)
 const relativeTypeScriptSpecifier = /(["'])(\.\.?\/[^"'\r\n]+)\.ts\1/g
 
 const declarationFiles = async (directory: URL): Promise<ReadonlyArray<URL>> => {
@@ -25,7 +27,8 @@ for (const file of files) {
   )
   if (rewritten !== source) await writeFile(file, rewritten)
   if (relativeTypeScriptSpecifier.test(rewritten)) {
-    throw new Error(`unrewritten TypeScript declaration specifier in ${join("dist", file.pathname)}`)
+    const emitted = relative(outputRootPath, fileURLToPath(file)).replaceAll("\\", "/")
+    throw new Error(`unrewritten TypeScript declaration specifier in dist/${emitted}`)
   }
   relativeTypeScriptSpecifier.lastIndex = 0
 }

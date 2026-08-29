@@ -1333,19 +1333,18 @@ state is in the tree and its gates.
    re-aimed as the carrier-adequacy record (admission map per AST variant).
    Standing law of the plane: no canonical construct's identity lives in a
    function.
-8. **The canonical schema v0, both directions.** `src/cas/CanonicalSchema.ts`
-   (`Cas.CanonicalSchema`): the AST
-   (`Null/Boolean/Integer/String/Literal/Array/Struct/Ref`) is itself an
-   Effect Schema codec — the plane's specific encoding; the annotation API
-   (`foldlab/cas/canonical`) lets any Effect Schema declare the canonical
-   schema it carries, with bytes ALWAYS derived on read, never stored;
-   `fromAst` runs the generative direction — the AST compiles to its fully
-   typed runtime carrier (`TypeOf` type-level interpreter,
-   `Match.tagsExhaustive` compiler, tag-pinned reference codec
-   `refWithTag`), self-carrying by construction, with reference edges
-   admission-checked at the store. Deferred to the schema commission:
-   `union`, `mu`/`var`, references carrying their target schema's address,
-   automatic derivation from the 21-variant AST, and the Lean twin.
+8. **The canonical schema revision 1, both directions.**
+   `src/cas/CanonicalSchema.ts` (`Cas.CanonicalSchema`) uses Effect's native
+   `SchemaAST.AST` and persistent `SchemaRepresentation.Document`; TypeScript
+   defines no parallel AST algebra. The annotation API snapshots a strict,
+   recursively frozen representation, with bytes ALWAYS derived on read,
+   never stored. `fromAst` snapshots through the native representation and
+   revives a runtime carrier; the package declaration reviver restores
+   tag-pinned `refWithTag` value-plane semantics, so reference edges remain
+   admission-checked by the store. Revision 0's tagged document is a strict
+   read-compatibility path only. Deferred to the schema commission:
+   references carrying their target schema's address and schema-to-schema
+   edges as real CAS references.
 9. **The two-minute rule** (operator-ordered lane law,
    `library/cas/AGENTS.md`): a stalled proof stops after two minutes and
    consults standard literature, prior art, and the skills — never grinds.
@@ -1383,7 +1382,7 @@ registry; a tracking manifest):
   SHA-256 — byte-identical to the Lean digest.
 - mise wiring: `check:cas` now runs `lake --wfail build` + `lake exe
   vectors --check`; `gen:cas-vectors` regenerates; `gen` includes it.
-- **Described addendum (same day):** the vector format is itself a
+- **Described addendum (same day, revised to schema revision 1):** the vector format is itself a
   described tree. Lean: `vectorAst`/`indexAst` are canonical schema
   codes (strictly sorted, literal codes pin the digest-scheme and
   format-version values), the document is `Schema.encode` of the
@@ -1391,11 +1390,12 @@ registry; a tracking manifest):
   validation is DERIVED — `decode_json`/`validates_json`/`json_exact`
   are instances of the universe's one-time forward and exactness
   theorems at the vector code. The refactor reproduced every committed
-  fixture byte-for-byte (`--check` passed unregenerated). TS:
-  `ConformanceVector.vectorAst`/`indexAst` mirror the codes through
-  the CanonicalSchema constructors and the wire schemas carry them via
-  the annotation API (carrier/identity split). Asserting the schema
-  bytes agree across runtimes (the canonical-schema pin) was BLOCKED
+  fixture byte-for-byte (`--check` passed unregenerated). TS now consumes
+  generated `vectorSchema`/`indexSchema` values made solely from Effect's
+  native constructors, and the richer wire schemas carry those native
+  persistent representations via the annotation API (carrier/identity
+  split). Asserting the schema bytes agree across runtimes (the
+  canonical-schema pin) was BLOCKED
   on the schema commission's Lean Ast codec — **UNBLOCKED and LANDED
   2026-08-28**: `Cas.Schema.SelfCodec` (the codes' JSON projection,
   envelope, and canonical payload), the `cas_struct` authoring
@@ -1406,13 +1406,15 @@ registry; a tracking manifest):
   `CanonicalSchema.payloadOf` answers the Lean-emitted bytes for every
   registered code (the vector document/index codes among them — the
   hand-mirror tripwire is now byte-armed). Same day, the byte-level
-  rendering theorem LANDED kernel-checked
+  revision-0 rendering theorem LANDED kernel-checked
   (`Cas/Schema/Codec/Laws/Render.lean`, `Values/Json.lean`,
   `SelfCodec.lean`): `encode_canonical` + `renderCompact_encode`
   prove the encode image is canonically spelled and the canonical
-  rendering performs no reordering on it; `payload_renderPlain` binds
-  schema payloads the same way; `ofJson_toJson`/`toJson_inj` give the
-  self-codec a proved round trip (one code per payload value).
+  rendering performs no reordering on it; the renamed
+  `legacyEnvelope_renderPlain` binds legacy schema payloads the same way;
+  `ofJson_toJson`/`toJson_inj` give that self-codec a proved round trip (one
+  code per payload value). Revision 1's independent Lean/TypeScript byte pin
+  is green; its corresponding byte theorem remains pending.
   Remaining open direction, named precisely: injectivity of the
   canonical rendering itself (bytes determine the canonical value —
   a verified-parser development).

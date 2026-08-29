@@ -1,0 +1,264 @@
+{
+  "_provenance": "Seeded from differential-testing-spec.md §3, run 2026-08-28 on the Windows host from this package's committed lockfile. `observed` records the PRE-RULING behaviour that made each row evidence; `expect` is the ruled outcome both engines must now produce.",
+  "baseline": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+  "rows": [
+    {
+      "id": "W1",
+      "class": "witness",
+      "axis": "payload form",
+      "varied": "payload: hex(`ff`) (template literal)",
+      "ruling": "R1",
+      "status": "ruled",
+      "observed": { "ck": "lifted, payloadHex:\"ff\"", "oxc": "refusal E-ARG-DYNAMIC" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(`ff`), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "payload argument is not a plain string literal" }
+    },
+    {
+      "id": "W2",
+      "class": "witness",
+      "axis": "chain form",
+      "varied": "yield* store?.put(...)",
+      "ruling": "R2",
+      "status": "ruled",
+      "observed": { "ck": "lifted", "oxc": "refusal E-YIELD-POSITION \"yield* of a non-call\"" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store?.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-STMT-SHAPE", "detail": "optional chain in the spine" }
+    },
+    {
+      "id": "W2b",
+      "class": "witness",
+      "axis": "chain form",
+      "varied": "yield* store!.put(...) (non-null assertion)",
+      "ruling": "R2",
+      "status": "ruled",
+      "observed": { "ck": "not separately observed pre-ruling", "oxc": "not separately observed pre-ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store!.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-STMT-SHAPE", "detail": "optional chain in the spine" }
+    },
+    {
+      "id": "W3",
+      "class": "witness",
+      "axis": "import form",
+      "varied": "the only effect import is inside a comment",
+      "ruling": "R3",
+      "status": "ruled",
+      "observed": { "ck": "lifted (regex scan sees it)", "oxc": "silent (no ImportDeclaration)" },
+      "source": "// import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "silent" }
+    },
+    {
+      "id": "W3b",
+      "class": "witness",
+      "axis": "import form",
+      "varied": "the only effect import text is inside a string literal",
+      "ruling": "R3",
+      "status": "ruled",
+      "observed": { "ck": "not separately observed pre-ruling", "oxc": "not separately observed pre-ruling" },
+      "source": "const doc = \"import * as Effect from 'effect/Effect';\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "silent" }
+    },
+    {
+      "id": "W4",
+      "class": "witness",
+      "axis": "candidate depth",
+      "varied": ".gen spine nested 65 literals deep (past the manifest bound)",
+      "ruling": "R4",
+      "status": "ruled",
+      "observed": { "ck": "refusal E-SPINE-ESCAPE", "oxc": "silent (containsGen depth-40 cutoff)" },
+      "generated": { "kind": "nested-array-spine", "depth": 65 },
+      "expect": { "kind": "silent" }
+    },
+    {
+      "id": "W4b",
+      "class": "witness",
+      "axis": "candidate depth",
+      "varied": ".gen spine nested exactly at the manifest bound",
+      "ruling": "R4",
+      "status": "ruled",
+      "observed": { "ck": "boundary probe, minted with the ruling", "oxc": "boundary probe, minted with the ruling" },
+      "generated": { "kind": "nested-array-spine", "depth": 64 },
+      "expect": { "kind": "refusal", "code": "E-SPINE-ESCAPE", "detail": "body is not a call" }
+    },
+    {
+      "id": "W5",
+      "class": "witness",
+      "axis": "chain form",
+      "varied": "yield* (store).put(...) (parenthesized receiver)",
+      "ruling": "R5",
+      "status": "ruled",
+      "observed": { "ck": "refusal E-STMT-SHAPE \"unrecognizable callee\"", "oxc": "lifted (parser strips parentheses)" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* (store).put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "lifted" }
+    },
+    {
+      "id": "G1",
+      "class": "contract gap",
+      "axis": "literal domain",
+      "varied": "tag: 1.5",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "lifted, tag:1.5", "oxc": "lifted, tag:1.5" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1.5 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "tag is not canonical decimal" }
+    },
+    {
+      "id": "G2",
+      "class": "contract gap",
+      "axis": "payload domain",
+      "varied": "hex(\"zz\")",
+      "ruling": "R7",
+      "status": "ruled",
+      "observed": { "ck": "lifted, payloadHex:\"zz\"", "oxc": "lifted, payloadHex:\"zz\"" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"zz\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "payload hex is not lowercase even-length" }
+    },
+    {
+      "id": "G2b",
+      "class": "contract gap",
+      "axis": "payload domain",
+      "varied": "hex(\"FF\") (uppercase)",
+      "ruling": "R7",
+      "status": "ruled",
+      "observed": { "ck": "not separately observed pre-ruling", "oxc": "not separately observed pre-ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"FF\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "payload hex is not lowercase even-length" }
+    },
+    {
+      "id": "G2c",
+      "class": "contract gap",
+      "axis": "payload domain",
+      "varied": "hex(\"f\") (odd length)",
+      "ruling": "R7",
+      "status": "ruled",
+      "observed": { "ck": "not separately observed pre-ruling", "oxc": "not separately observed pre-ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"f\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "payload hex is not lowercase even-length" }
+    },
+    {
+      "id": "G2d",
+      "class": "contract gap",
+      "axis": "payload domain",
+      "varied": "hex(\"\") (empty, admissible)",
+      "ruling": "R7",
+      "status": "ruled",
+      "observed": { "ck": "not separately observed pre-ruling", "oxc": "not separately observed pre-ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "lifted" }
+    },
+    {
+      "id": "A1",
+      "class": "agree-via-normalization",
+      "axis": "numeric form",
+      "varied": "version: 1_000",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "lifted, 1000", "oxc": "lifted, 1000" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 1_000, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "version is not canonical decimal" }
+    },
+    {
+      "id": "A2",
+      "class": "agree-via-normalization",
+      "axis": "numeric form",
+      "varied": "version: 0x1f",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "lifted, 31", "oxc": "lifted, 31" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0x1f, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "version is not canonical decimal" }
+    },
+    {
+      "id": "A3",
+      "class": "contract gap",
+      "axis": "numeric form",
+      "varied": "version: 4294967296 (2^32, past natBits)",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "boundary probe, minted with the ruling", "oxc": "boundary probe, minted with the ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 4294967296, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "version does not fit 32 bits" }
+    },
+    {
+      "id": "A4",
+      "class": "contract gap",
+      "axis": "numeric form",
+      "varied": "version: 4294967295 (2^32-1, the last admissible value)",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "boundary probe, minted with the ruling", "oxc": "boundary probe, minted with the ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 4294967295, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "lifted" }
+    },
+    {
+      "id": "A5",
+      "class": "contract gap",
+      "axis": "numeric form",
+      "varied": "version: -1 (unary minus is a distinct AST node)",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "boundary probe, minted with the ruling", "oxc": "boundary probe, minted with the ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: -1, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "version is not a numeric literal" }
+    },
+    {
+      "id": "A6",
+      "class": "contract gap",
+      "axis": "numeric form",
+      "varied": "version: 01 (leading zero)",
+      "ruling": "R6",
+      "status": "ruled",
+      "observed": { "ck": "boundary probe, minted with the ruling", "oxc": "boundary probe, minted with the ruling" },
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 1e2, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "refusal", "code": "E-ARG-DYNAMIC", "detail": "version is not canonical decimal" }
+    },
+    {
+      "id": "M1",
+      "class": "form probe",
+      "axis": "declaration order",
+      "varied": "two candidate declarations in one file",
+      "ruling": "R10",
+      "status": "ruled",
+      "observed": { "ck": "minted with the suite", "oxc": "minted with the suite" },
+      "note": "Added 2026-08-28 because the T5 adequacy check found the `reorder-verdicts` mutant surviving: no corpus input carried more than one verdict, so reversing a verdict list was a no-op and R10's ordered equality was untested.",
+      "source": "import * as Effect from \"effect/Effect\";\nexport const first = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"aa\"), refs: [] });\n  return [a];\n});\nexport const second = (store) => Effect.gen(function* () {\n  const b = yield* store.put({ kind: { version: 0, tag: 2 }, payload: hex(\"bb\"), refs: [] });\n  return [b];\n});\n",
+      "expect": { "kind": "multi", "count": 2, "kinds": ["lifted", "lifted"] }
+    },
+    {
+      "id": "W6",
+      "class": "witness",
+      "axis": "numeric form",
+      "varied": "version: 0_1 (separator in a legacy-octal-shaped literal)",
+      "ruling": "R12",
+      "status": "ruled",
+      "observed": {
+        "ck": "refusal E-ARG-DYNAMIC \"version is not canonical decimal\" — TypeScript's parser is error-tolerant and still yielded a tree",
+        "oxc": "silent — oxc-parser reports a hard parse error (\"Invalid characters after number\")"
+      },
+      "note": "Found 2026-08-28 by T4(b) on the numeric/leading-zero axis, after the rulings landed. The disagreement was NOT about the numeric domain (R6 settles that) but about what an engine owes when its PARSER refuses the source. RULED the same day: it does not refuse. A source the parser rejects is a NON-CANDIDATE, and a non-candidate is silent — the same shape R4 gives an over-deep spine. A refusal is a claim about a program, and an unparseable source is not a program to make claims about. Both legs now enforce this at their own parse boundary, each asking its OWN parser: ck checks parseDiagnostics, the oxc surface checks parseSync errors, and the oxlint surface never runs a rule over a file it could not parse. Boundary evidence: of the numeric forms, `0_1` alone is a parse error for BOTH parsers — 1_000, 0x1f, 1.5 and 1n all parse cleanly and stay R6 refusals; and none of the 265 fixtures carries a parse diagnostic, so the gate is untouched.",
+      "source": "import * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0_1, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": { "kind": "silent" }
+    },
+    {
+      "id": "TG1",
+      "class": "contract gap",
+      "axis": "import form",
+      "varied": "import type * as Effect (type-only, erased at compile time)",
+      "ruling": null,
+      "status": "open",
+      "observed": {
+        "ck": "lifted — a clean instruction document",
+        "oxc": "lifted — byte-identical to ck"
+      },
+      "note": "Both engines AGREE, and the agreement is the defect: a type-only import is erased, so at runtime `Effect.gen` is a ReferenceError and the recognized program cannot execute. The hoover leg hands the Lean execute leg instructions for a program that does not run. R3 declared this admissible ('import type bindings still count -- the recognizer is syntax-only and type-blind, symmetric on both legs'), but declaring a deviation does not discharge it. The gate cannot see this: two type-blind engines agreeing proves only that they read syntax the same way, and N-version agreement is worth nothing against a fault in the shared blind spot.",
+      "oracle": {
+        "found": "2026-08-28, exploring oxc-transform@0.147.0 per operator direction",
+        "mechanism": "transformSync(file, src, { typescript: { onlyRemoveTypeImports: true } }) -- the verbatimModuleSyntax semantics. An import that does not appear in the emitted code does not exist at runtime.",
+        "evidence": "Under onlyRemoveTypeImports:true the erasure is exact and PER-SPECIFIER: `import type * as Effect` and `import type { gen }` are erased; `import { type gen, pipe }` keeps `pipe` and drops `gen`; value imports survive even when unused or used only in type position. Under the default (false) elision is USAGE-dependent -- `import { gen }` vanishes merely because the body calls `Effect.gen` -- which would make the oracle depend on the candidate it is judging.",
+        "seam": "transformSync is synchronous, so this fits `recognize : SourceText -> Verdict[]` with no change to the engine seam.",
+        "scope": "Closes IMPORT SURVIVAL only. It still cannot tell that `store` is a Store, or that `hex` is the pinned helper -- Rule 7 stays disabled and every lift still carries helperUnpinned: true."
+      },
+      "source": "import type * as Effect from \"effect/Effect\";\nexport const p = (store) => Effect.gen(function* () {\n  const a = yield* store.put({ kind: { version: 0, tag: 1 }, payload: hex(\"ff\"), refs: [] });\n  return [a];\n});\n",
+      "expect": null
+    }
+  ]
+}

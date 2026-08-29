@@ -21,7 +21,17 @@
  * This is a runtime projection contract only. It makes no canonicality or
  * equivalence claim about the independent Lean printer.
  */
-import { cast, Effect, Predicate, Result, Schema, SchemaGetter, SchemaIssue } from "effect"
+import {
+  cast,
+  Effect,
+  Option,
+  Predicate,
+  Result,
+  Schema,
+  SchemaGetter,
+  SchemaIssue,
+  SchemaRepresentation,
+} from "effect"
 import {
   Byte,
   CasNodeInput,
@@ -70,6 +80,16 @@ export const Revision = Schema.Int.check(
 )
 export type Revision = typeof Revision.Type
 
+const ProjectionEnvelope = Schema.Struct({
+  revision: Revision,
+  value: Schema.Json,
+})
+
+export interface DecodedEnvelope {
+  readonly revision: Revision
+  readonly value: Schema.Json
+}
+
 export interface ValueOptions<A> {
   readonly kindTag: Byte
   readonly revision: Revision
@@ -88,9 +108,6 @@ export interface CasValue<A> {
 
 const utf8Encoder = new TextEncoder()
 const utf8Decoder = new TextDecoder("utf-8", { fatal: true })
-
-const isJsonObject = (value: Schema.Json): value is Schema.JsonObject =>
-  Predicate.isObject(value) && !Array.isArray(value)
 
 const projectionFailure = (
   direction: "encode" | "decode",
@@ -182,36 +199,48 @@ const payloadFor = (
 
 /** Decode and re-verify one canonical `{revision, value}` envelope —
  * shared with the schema plane; not part of the front door. */
+export const decodedVersionedEnvelope = (
+  payload: Uint8Array,
+  id: ContentIdType,
+): Effect.Effect<DecodedEnvelope, ProjectionCodecFailure> =>
+  Effect.try({
+    try: () => {
+      const text = utf8Decoder.decode(payload)
+      const parsed: unknown = JSON.parse(text)
+      const canonical = utf8Encoder.encode(canonicalJson(parsed))
+      if (!bytesEqual(canonical, payload)) {
+        throw new TypeError("Projection payload is not canonical JSON")
+      }
+      return parsed
+    },
+    catch: (issue) => projectionFailure("decode", String(issue), id),
+  }).pipe(
+    Effect.flatMap((parsed) =>
+      Schema.decodeUnknownEffect(ProjectionEnvelope, {
+        onExcessProperty: "error",
+      })(parsed).pipe(
+        Effect.mapError((issue) =>
+          projectionFailure("decode", String(issue), id)
+        ),
+      )
+    ),
+  )
+
+/** Decode and re-verify one canonical envelope at an expected revision. */
 export const decodedEnvelope = (
   payload: Uint8Array,
   revision: number,
   id: ContentIdType,
 ): Effect.Effect<Schema.Json, ProjectionCodecFailure> =>
-  Effect.try({
-    try: () => {
-      const text = utf8Decoder.decode(payload)
-      // The one unparsed boundary: JSON.parse's output is exactly the
-      // closed JSON union, canonicality re-checked on the next line.
-      const parsed = JSON.parse(text) as Schema.Json
-      const canonical = utf8Encoder.encode(canonicalJson(parsed))
-      if (!bytesEqual(canonical, payload)) {
-        throw new TypeError("Projection payload is not canonical JSON")
-      }
-      if (
-        !isJsonObject(parsed)
-        || Object.keys(parsed).length !== 2
-        || !("revision" in parsed)
-        || !("value" in parsed)
-      ) {
-        throw new TypeError("Projection payload must be the exact revision/value envelope")
-      }
-      if (parsed["revision"] !== revision) {
-        throw new TypeError(`Projection revision does not match ${revision}`)
-      }
-      return parsed["value"]
-    },
-    catch: (issue) => projectionFailure("decode", String(issue), id),
-  })
+  decodedVersionedEnvelope(payload, id).pipe(
+    Effect.flatMap((envelope) => envelope.revision === revision
+      ? Effect.succeed(envelope.value)
+      : Effect.fail(projectionFailure(
+          "decode",
+          `Projection revision does not match ${revision}`,
+          id,
+        ))),
+  )
 
 const makeRoot = <A>(id: ContentIdType): Root<A> => cast(id)
 
@@ -220,6 +249,38 @@ const sentinelSchema = Schema.Struct({
   [RefSentinelKey]: Schema.Struct({ id: ContentId, tag: Byte }),
 })
 
+/** Stable Effect Schema persistence identity for a typed CAS reference. */
+export const ReferenceRepresentationId = "foldlab/cas/ref"
+
+const strictOptions = {
+  onExcessProperty: "error",
+} satisfies import("effect/SchemaAST").ParseOptions
+
+/** The encoded reference declaration used by canonical schema identity. */
+export const referenceRepresentation = (
+  expectedTag: Byte,
+): Schema.declare<typeof sentinelSchema.Type> =>
+  Schema.declare<typeof sentinelSchema.Type>(
+    (candidate): candidate is typeof sentinelSchema.Type =>
+      Option.isSome(
+        Schema.decodeUnknownOption(sentinelSchema, strictOptions)(candidate),
+      ),
+    {
+      representation: {
+        id: ReferenceRepresentationId,
+        payload: expectedTag,
+      },
+    },
+  )
+
+/** Reconstruct the encoded reference declaration from persisted identity. */
+export const referenceRepresentationReviver =
+  SchemaRepresentation.makeDeclarationReviver(
+    ReferenceRepresentationId,
+    Byte,
+    ({ payload }) => refWithTag(Byte.make(payload)),
+  )
+
 /** The one reference-codec law: sentinel on the wire, `Root` in the
  * value, the expected kind tag stamped at encode and demanded at
  * decode. The tag arrives as a thunk so both entry points below share
@@ -227,7 +288,7 @@ const sentinelSchema = Schema.Struct({
 const refCodec = <B>(
   expectedTag: () => Byte,
 ): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
-  sentinelSchema.pipe(Schema.decodeTo(
+  Schema.suspend(() => referenceRepresentation(expectedTag())).pipe(Schema.decodeTo(
     Schema.declare<Root<B>>(
       (candidate): candidate is Root<B> => Predicate.isString(candidate),
     ),
