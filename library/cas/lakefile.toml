@@ -117,6 +117,16 @@ name = "emitgrammar"
 srcDir = "tools"
 root = "EmitGrammar"
 
+# The admission-map emitter: `lake exe admissionmap` regenerates the
+# ACC-1 carrier-adequacy table under conformance/ from
+# `Cas.Schema.admissionMapV0`, checking en route that every variant of
+# the committed inventory has exactly one row; `--check` is the
+# byte-identity gate.
+[[lean_exe]]
+name = "admissionmap"
+srcDir = "tools"
+root = "AdmissionMap"
+
 # The estate-native materializer: `lake exe materialize` reads the
 # committed schema payloads back through the ingestion door and prints
 # each one as a provenance-stamped TypeScript module under the effects

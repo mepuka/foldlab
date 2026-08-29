@@ -9,6 +9,7 @@ import Cas.Schema.PayloadInj
 import Cas.Schema.Ingest
 import Cas.Schema.Basis
 import Cas.Schema.Projection
+import Cas.Schema.AdmissionMap
 
 /-!
 # The schema plane — layer above the values, root of the hierarchy

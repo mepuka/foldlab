@@ -7,8 +7,8 @@
     "IR": 133,
     "Lang": 244,
     "Lift": 37,
-    "Schema": 490,
-    "Values": 416,
+    "Schema": 526,
+    "Values": 417,
     "Vectors": 65
   },
   "axiomCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 51,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 93,
-    "Cas.Schema.Ast": 309,
+    "Cas.Schema.Ast": 310,
     "Cas.Schema.Described": 26,
     "Cas.Schema.El": 35,
     "Cas.Word": 107
   },
-  "declarations": 1571,
-  "documented": 796,
+  "declarations": 1612,
+  "documented": 821,
   "library": "Cas",
   "modules": [
     {
@@ -5890,6 +5890,297 @@
           "name": "Cas.Lift.spectrum",
           "signature": "Cas.Lift.RefusalCode → Cas.Lift.SpectrumClass",
           "touches": ["Lift"]
+        }
+      ]
+    },
+    {
+      "declarations": 41,
+      "documented": 25,
+      "module": "Cas.Schema.AdmissionMap",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Schema.AdmissionMap",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.admittedNames",
+          "signature": "Cas.Schema.AdmissionMap → List String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.admittedRows",
+          "signature": "Cas.Schema.AdmissionMap → List Cas.Schema.AdmissionRow",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.astNames",
+          "signature": "Cas.Schema.AdmissionMap → List String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.carrier",
+          "signature": "Cas.Schema.AdmissionMap → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.count",
+          "signature": "Cas.Schema.AdmissionMap → String → Nat",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.mapVersion",
+          "signature": "Cas.Schema.AdmissionMap → Nat",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.reasonsUsed",
+          "signature": "Cas.Schema.AdmissionMap → List Cas.Schema.AdmissionReason",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.rows",
+          "signature": "Cas.Schema.AdmissionMap → List Cas.Schema.AdmissionRow",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.source",
+          "signature": "Cas.Schema.AdmissionMap → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.toValue",
+          "signature": "Cas.Schema.AdmissionMap → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionMap.unadmittedRows",
+          "signature": "Cas.Schema.AdmissionMap → List Cas.Schema.AdmissionRow",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Schema.AdmissionReason",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionReason.all",
+          "signature": "List Cas.Schema.AdmissionReason",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionReason.ctorElim",
+          "signature": "{motive : Cas.Schema.AdmissionReason → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.AdmissionReason) → ctorIdx = t.ctorIdx → Cas.Schema.AdmissionReason.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionReason.ctorElimType",
+          "signature": "{motive : Cas.Schema.AdmissionReason → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionReason.means",
+          "signature": "Cas.Schema.AdmissionReason → String",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.AdmissionReason.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Schema.AdmissionReason), Cas.Schema.AdmissionReason.ofNat x.ctorIdx = x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionReason.wire",
+          "signature": "Cas.Schema.AdmissionReason → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Schema.AdmissionRow",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.carrier",
+          "signature": "Cas.Schema.AdmissionRow → Option String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.inAst",
+          "signature": "Cas.Schema.AdmissionRow → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.reason",
+          "signature": "Cas.Schema.AdmissionRow → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.variant",
+          "signature": "Cas.Schema.AdmissionRow → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.verdict",
+          "signature": "Cas.Schema.AdmissionRow → Cas.Schema.AdmissionVerdict",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionRow.witness",
+          "signature": "Cas.Schema.AdmissionRow → Option Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Schema.AdmissionVerdict",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionVerdict.code",
+          "signature": "Cas.Schema.AdmissionVerdict → Option Cas.Schema.AdmissionReason",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionVerdict.ctorElim",
+          "signature": "{motive : Cas.Schema.AdmissionVerdict → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.AdmissionVerdict) → ctorIdx = t.ctorIdx → Cas.Schema.AdmissionVerdict.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionVerdict.ctorElimType",
+          "signature": "{motive : Cas.Schema.AdmissionVerdict → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionVerdict.isAdmitted",
+          "signature": "Cas.Schema.AdmissionVerdict → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.AdmissionVerdict.word",
+          "signature": "Cas.Schema.AdmissionVerdict → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.admissionDocument",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.admissionMapV0",
+          "signature": "Cas.Schema.AdmissionMap",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqAdmissionReason",
+          "signature": "DecidableEq Cas.Schema.AdmissionReason",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqAdmissionVerdict",
+          "signature": "DecidableEq Cas.Schema.AdmissionVerdict",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqAdmissionVerdict.decEq",
+          "signature": "(x x_1 : Cas.Schema.AdmissionVerdict) → Decidable (x = x_1)",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instReprAdmissionReason",
+          "signature": "Repr Cas.Schema.AdmissionReason",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.instReprAdmissionReason.repr",
+          "signature": "Cas.Schema.AdmissionReason → Nat → Std.Format",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instReprAdmissionVerdict",
+          "signature": "Repr Cas.Schema.AdmissionVerdict",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.instReprAdmissionVerdict.repr",
+          "signature": "Cas.Schema.AdmissionVerdict → Nat → Std.Format",
+          "touches": ["Schema"]
         }
       ]
     },
@@ -12558,10 +12849,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 789,
-    "inductive": 40,
-    "instance": 71,
-    "structure": 44,
-    "theorem": 624
+    "def": 820,
+    "inductive": 42,
+    "instance": 76,
+    "structure": 46,
+    "theorem": 625
   }
 }

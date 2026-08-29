@@ -9,6 +9,7 @@ run = [
   "mise run gen:cas-vectors",
   "mise run gen:cas-schemas",
   "mise run gen:cas-verdicts",
+  "mise run gen:cas-admission-map",
   "mise run gen:backend-wire",
   "mise run gen:backend-gate",
   "mise run gen:backend-programs",
@@ -68,6 +69,11 @@ description = "Regenerate the two-doors conformance corpus (code/value/verdict t
 dir = "{{config_root}}/library/cas"
 run = "lake exe verdicts"
 
+[tasks."gen:cas-admission-map"]
+description = "Regenerate the ACC-1 carrier-adequacy table (every Representation variant's admission verdict) from Cas.Schema.admissionMapV0"
+dir = "{{config_root}}/library/cas"
+run = "lake exe admissionmap"
+
 [tasks."gen:backend-wire"]
 description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
 dir = "{{config_root}}/library/cas"
@@ -114,13 +120,14 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
   "lake exe schemas --check",
   "lake exe verdicts --check",
+  "lake exe admissionmap --check",
   "lake exe emitwire --check",
   "lake exe emitgate --check",
   "lake exe emitprograms --check",
