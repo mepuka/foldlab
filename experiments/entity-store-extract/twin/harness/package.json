@@ -6,6 +6,6 @@
     "check": "bun run harness.ts"
   },
   "dependencies": {
-    "effect": "4.0.0-rc.111"
+    "effect": "4.0.0-rc.112"
   }
 }
