@@ -389,6 +389,12 @@
       "state": "parked"
     },
     {
+      "excerpt": "…ll, and nothing more. The cross-runtime obligation belongs with the mirror, whenever a consumer asks for one.",
+      "keyword": "obligation",
+      "module": "Cas.Schema.System",
+      "state": "obligation"
+    },
+    {
       "excerpt": "…all, which answers one value. The three sub-obligations this module named, and where each landed: 1. **`escapeCom…",
       "keyword": "sub-obligation",
       "module": "Cas.Values.JsonInj",

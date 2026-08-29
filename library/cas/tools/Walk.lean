@@ -46,9 +46,13 @@ def libraryImports : Array Import := #[
   {module := `Cas},
   {module := `Cas.Backend.Admission},
   {module := `Cas.Backend.EmitAst},
+  {module := `Cas.Backend.EmitLayer},
   {module := `Cas.Backend.EmitProg},
   {module := `Cas.Backend.Mcp},
-  {module := `Cas.Backend.Target}]
+  {module := `Cas.Backend.ProgProse},
+  {module := `Cas.Backend.Target},
+  {module := `Cas.Schema.Exchange},
+  {module := `Cas.Schema.System}]
 
 def generatedSuffixes : List String := [
   "casesOn", "ctorIdx", "rec", "recOn", "brecOn", "binductionOn",
