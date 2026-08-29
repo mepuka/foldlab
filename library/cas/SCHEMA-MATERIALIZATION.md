@@ -525,6 +525,15 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     emitter in the Gate discipline deriving the table from the Lean
     definitions closes it; queued as wiring, not a ruling.
 
+29. **The node-document put register is owed**: `cas put` ships as
+    bytes+tag (a strict subset, refs always empty — minting nothing),
+    but IMPLEMENTATION-PLAN's CLI grill ruled put's input to be the
+    described canonical node document; a node with links still cannot
+    be spelled from the shell. Recorded in the verb's docstring.
+30. **The `--json` second register is owed on every verb** (CLI grill
+    round 2 ruling 2): only `show` has one; init/status/ls and the
+    three new verbs match the existing state, not the ruling.
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
