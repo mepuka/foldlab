@@ -31,14 +31,22 @@ requires authorization.
 
 ## Iterate under a budget
 
-1. Retrieve exact-project declarations: local `rg`, hover, `#check`/`#print`, project search, then
-   approved remote search for recall.
-2. Send one goal with its local context, exact relevant declaration types, and current diagnostics.
-3. Apply one definition/lemma/hole-sized change. Fix syntax, then type/elaboration, then tactic/goal,
+1. Retrieve exact-project declarations: the surface ledger first
+   (`library/cas/surface/cas-surface.json`, `jq`-queryable), local `rg`, hover, `#check`/`#print`,
+   project search, then approved remote search for recall. Never generate what the corpus holds.
+2. Run the deterministic ladder before model reasoning: `rfl`, `decide` where decidable and small,
+   the house simp sets, `omega`, `exact?`/`apply?`.
+3. Send one goal with its local context, exact relevant declaration types, and current diagnostics.
+4. Apply one definition/lemma/hole-sized change. Fix syntax, then type/elaboration, then tactic/goal,
    then linter issues. Stop adding tactics after an error.
-4. Re-check immediately. Keep accepted Lean source, not the model's explanation.
-5. Bound attempts, time, tokens, candidate branches, and remote queries. On exhaustion, return the
-   smallest failing goal and evidence instead of weakening the task.
+5. Re-check immediately. Keep accepted Lean source, not the model's explanation.
+6. On early failures, triage the statement before retrying the proof — counterexample hunt and
+   formalization critique per [decomposition loop](references/decomposition-loop.md); a suspicious
+   statement routes to the statement-change handoff, never to more tactics.
+7. Bound attempts, time, tokens, candidate branches, and remote queries. A proof body past ~30 lines
+   is a decomposition signal. On exhaustion, DECOMPOSE per
+   [decomposition loop](references/decomposition-loop.md); only when decomposition itself exhausts,
+   return the smallest failing goal and evidence instead of weakening the task.
 
 Temporary holes may exist only in the obligation ledger while attacking another hard branch. They
 never survive completion and never enter semantic definitions as a workaround.
