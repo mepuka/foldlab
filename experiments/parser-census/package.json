@@ -1,0 +1,19 @@
+{
+  "name": "parser-census",
+  "private": true,
+  "description": "The parser-construct census instrument: capture / tally / gate over the labelled corpus, composed from the lift-harness's two admitted recognition legs (typescript@5.9.2 and the oxc chassis).",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.112",
+    "effect": "4.0.0-rc.112",
+    "typescript": "5.9.2"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "bun-types": "1.4.0",
+    "oxc-parser": "0.147.0",
+    "vitest": "4.1.11"
+  }
+}
