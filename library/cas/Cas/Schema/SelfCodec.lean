@@ -6,8 +6,10 @@ import Cas.Values.Json
 
 The named third increment of the schema plane: the codes' own JSON
 projection, the schema-node envelope, and the canonical payload — the
-Lean twin of the TypeScript side's `CanonicalSchema.payloadOf`
-(`{"revision":0,"value":<ast>}` under the canonical compact rendering).
+Lean twin of the TypeScript side's `CanonicalSchema.payloadOf`.
+Revision 1 stores Effect's native persistent `SchemaRepresentation`
+document. Revision 0's tagged projection remains below as the strict
+compatibility decoder for already-addressed schema nodes.
 This is the cross-runtime pin surface: the same code must yield the
 same payload bytes in both runtimes, and `lake exe schemas --check`
 holds the committed fixtures to it.
@@ -25,7 +27,10 @@ Lean carrier of the TypeScript `SchemaKindTag`). -/
 def schemaKindTag : UInt8 := 0x53
 
 /-- The schema-node envelope revision (TS `CanonicalSchema.Revision`). -/
-def schemaRevision : Nat := 0
+def schemaRevision : Nat := 1
+
+/-- The retired tagged-projection revision, retained for read compatibility. -/
+def legacySchemaRevision : Nat := 0
 
 /-- A pinned literal as a JSON value. -/
 def LitVal.toJson : LitVal → Json.Value
@@ -36,10 +41,9 @@ def LitVal.toJson : LitVal → Json.Value
 
 mutual
 
-/-- The tagged JSON projection of a code — field-for-field the encoded
-form of the TypeScript `AstSchema` union (`_tag` discriminated; struct
-fields as a name-keyed record of `{optional, schema}`). Key order here
-is immaterial: the canonical rendering sorts at render time. -/
+/-- The retired revision-0 tagged JSON projection of a code (`_tag`
+discriminated; struct fields as a name-keyed record of `{optional, schema}`).
+Key order here is immaterial: the canonical rendering sorts at render time. -/
 def Ast.toJson : Ast → Json.Value
   | .null => .obj [("_tag", .str "Null")]
   | .bool => .obj [("_tag", .str "Boolean")]
@@ -58,9 +62,96 @@ def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
 
 end
 
-/-- The schema-node envelope as a JSON value. -/
+/-! ## Effect Schema's persistent representation
+
+The project-owned `Ast` remains the denotation (I-004). This projection
+is the exact native Effect v4 `SchemaRepresentation.toJson` image of the
+generated Effect Schema for the supported closed fragment. TypeScript
+therefore consumes Effect's AST and representation directly; it does not
+define a second schema-code algebra.
+-/
+
+private def keywordRepresentation (tag : String) : Json.Value :=
+  .obj [("_tag", .str tag), ("checks", .arr [])]
+
+private def intCheck : Json.Value :=
+  .obj [
+    ("_tag", .str "Filter"),
+    ("aborted", .bool false),
+    ("annotations", .obj [
+      ("arbitrary", .obj [
+        ("constraint", .obj [("integer", .bool true)])]),
+      ("expected", .str "an integer")]),
+    ("representation", .obj [
+      ("id", .str "effect/schema/isInt"),
+      ("payload", .null)])]
+
+mutual
+
+/-- Effect's native persistent representation of one schema code. -/
+def Ast.toRepresentationJson : Ast → Json.Value
+  | .null => keywordRepresentation "Null"
+  | .bool => keywordRepresentation "Boolean"
+  | .int => .obj [
+      ("_tag", .str "Number"),
+      ("checks", .arr [intCheck])]
+  | .str => keywordRepresentation "String"
+  | .lit .null => keywordRepresentation "Null"
+  | .lit (.bool b) => .obj [
+      ("_tag", .str "Literal"),
+      ("checks", .arr []),
+      ("literal", .obj [("type", .str "boolean"), ("value", .bool b)])]
+  | .lit (.int i) => .obj [
+      ("_tag", .str "Literal"),
+      ("checks", .arr []),
+      ("literal", .obj [("type", .str "number"), ("value", .int i.val)])]
+  | .lit (.str s) => .obj [
+      ("_tag", .str "Literal"),
+      ("checks", .arr []),
+      ("literal", .obj [("type", .str "string"), ("value", .str s)])]
+  | .arr a => .obj [
+      ("_tag", .str "Arrays"),
+      ("checks", .arr []),
+      ("elements", .arr []),
+      ("rest", .arr [a.toRepresentationJson])]
+  | .struct fs => .obj [
+      ("_tag", .str "Objects"),
+      ("checks", .arr []),
+      ("indexSignatures", .arr []),
+      ("propertySignatures", .arr (fieldsToRepresentationJson fs))]
+  | .ref tag => .obj [
+      ("_tag", .str "Declaration"),
+      ("checks", .arr []),
+      ("representation", .obj [
+        ("id", .str "foldlab/cas/ref"),
+        ("payload", .nat tag.toNat)]),
+      ("typeParameters", .arr [])]
+
+/-- Effect property-signature representations, preserving canonical field order. -/
+def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Value
+  | [] => []
+  | (name, opt, a) :: fs =>
+    .obj [
+      ("isMutable", .bool false),
+      ("isOptional", .bool opt),
+      ("name", .obj [("type", .str "string"), ("value", .str name)]),
+      ("type", a.toRepresentationJson)] :: fieldsToRepresentationJson fs
+
+end
+
+/-- Effect's single-root persistent representation document. -/
+def Ast.representationDocument (a : Ast) : Json.Value :=
+  .obj [
+    ("references", .obj []),
+    ("representation", a.toRepresentationJson)]
+
+/-- The retired revision-0 envelope, retained as a decoder pin. -/
+def Ast.legacyEnvelope (a : Ast) : Json.Value :=
+  .obj [("revision", .nat legacySchemaRevision), ("value", a.toJson)]
+
+/-- The revision-1 schema-node envelope. -/
 def Ast.envelope (a : Ast) : Json.Value :=
-  .obj [("revision", .nat schemaRevision), ("value", a.toJson)]
+  .obj [("revision", .nat schemaRevision), ("value", a.representationDocument)]
 
 /-- THE canonical payload: the compact canonical rendering of the
 envelope — byte-for-byte the TypeScript `CanonicalSchema.payloadOf`. -/
@@ -76,7 +167,7 @@ end Cas.Schema
 
 namespace Cas.Schema
 
-/-! ## The projection's laws — canonical spelling, decode, round trip
+/-! ## The revision-0 projection's laws — canonical spelling, decode, round trip
 
 The self-codec inherits the plane's discipline: under `WF` the
 projection is canonically spelled (so `payload` hides no sort —
@@ -161,9 +252,10 @@ theorem fieldsToJson_canonical :
 
 end
 
-/-- The envelope of a well-formed code is canonical
+/-- The retired envelope of a well-formed code is canonical
 (`"revision" < "value"`). -/
-theorem envelope_canonical {a : Ast} (ha : a.WF) : a.envelope.Canonical := by
+theorem legacyEnvelope_canonical {a : Ast} (ha : a.WF) :
+    a.legacyEnvelope.Canonical := by
   refine ⟨?_, trivial, toJson_canonical a ha, trivial⟩
   refine List.Pairwise.cons (fun b hb => ?_) (List.pairwise_singleton _ _)
   simp only [List.mem_singleton] at hb
@@ -171,11 +263,10 @@ theorem envelope_canonical {a : Ast} (ha : a.WF) : a.envelope.Canonical := by
   show ("revision" : String) < "value"
   decide
 
-/-- The byte binding for schema payloads: no reordering stands between
-a well-formed code and its canonical bytes. -/
-theorem payload_renderPlain {a : Ast} (ha : a.WF) :
-    a.payload = Json.renderPlain a.envelope :=
-  Json.renderCompact_eq_renderPlain _ (envelope_canonical ha)
+/-- The revision-0 byte binding retained for compatibility auditing. -/
+theorem legacyEnvelope_renderPlain {a : Ast} (ha : a.WF) :
+    Json.renderCompact a.legacyEnvelope = Json.renderPlain a.legacyEnvelope :=
+  Json.renderCompact_eq_renderPlain _ (legacyEnvelope_canonical ha)
 
 /-! ## The strict decoder and the round trip -/
 

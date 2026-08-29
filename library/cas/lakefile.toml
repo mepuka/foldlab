@@ -59,3 +59,11 @@ name = "surface"
 srcDir = "tools"
 root = "Surface"
 supportInterpreter = true
+
+# The lift-manifest emitter: `lake exe emitlift <path>` regenerates the
+# effect-lift lane's rule manifest (the R11 interchange document the
+# recognition engines consume); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitlift"
+srcDir = "tools"
+root = "EmitLift"

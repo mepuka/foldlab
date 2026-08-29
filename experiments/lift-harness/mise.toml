@@ -2,14 +2,28 @@
 # mise.toml (which CI runs) is untouched. On promotion these graduate
 # as `check:harness` / `census:harness`.
 
+# TYPECHECKER: tsgo (@typescript/native-preview, TS7). Operator ruling
+# 2026-08-28 — TS7 is the official target, superseding the tsc 5.x line.
+#
+# The `typescript@5.9.2` dependency STAYS, and is not a leftover: the ck
+# engine parses with the classic compiler API (`ts.createSourceFile` on an
+# in-memory string, syntax-only, no checker). TS7 exposes no standalone
+# string-to-AST parse — its `createSourceFile` is a factory over statements
+# already parsed, and every real parse goes through the project/program API
+# against files on disk. Migrating the ENGINE is therefore a rearchitecture,
+# not a swap; the TYPECHECKER moves today. See TOOLS.md for both pins.
 [tasks.check]
-description = "Strict typecheck + the multi-parser agreement gate (ck vs oxc on the 265 by-construction fixtures)"
-run = ["bun x tsc --noEmit", "bun src/cli.ts gate"]
+description = "Strict typecheck + the differential suite (T1-T7) + the multi-parser agreement gate"
+run = ["bun x tsgo --noEmit", "bun x vitest run", "bun bin/main.ts gate"]
+
+[tasks.test]
+description = "The differential-testing suite alone (T1 contract, T2 ledger, T3 metamorphic, T4 property, T5 gate+adequacy, T6 reproducibility, T7 portability)"
+run = "bun x vitest run"
 
 [tasks.census]
 description = "Wild linearizability census over the corpus manifest's wild-effect projects"
-run = "bun src/cli.ts census"
+run = "bun bin/main.ts census"
 
 [tasks.lift]
 description = "Lift a file with the ck engine (canonical-JSON verdicts to stdout): mise run lift -- <file>"
-run = "bun src/cli.ts lift"
+run = "bun bin/main.ts lift"

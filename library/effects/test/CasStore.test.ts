@@ -8,13 +8,18 @@ import {
   type CasError,
 } from "../src/cas/Node.ts"
 import {
+  makeMemoryBackend,
+} from "../src/cas/Backend.ts"
+import {
   CasStore,
   decodeCasNode,
   encodeCasNode,
   layerMemoryWith,
+  makeCasStoreOver,
   type CasAddress,
 } from "../src/cas/Store.ts"
 import { assertFamilyRows, ManifestModel } from "./conformance/harness.ts"
+import { deterministicAddress } from "./fixtures/address.ts"
 
 const Bytes = Schema.Array(Byte)
 const AddressBytes = Bytes.check(Schema.isLengthBetween(32, 32))
@@ -285,3 +290,85 @@ it.effect("the M2 in-memory adapter loads an immutable admitted node", () => {
     expect(Array.from(second.payload)).toEqual([7, 8, 9])
   }).pipe(Effect.provide(layerMemoryWith(stableAddress)))
 })
+
+it.effect("admission verifies every resident reference before trusting its tag", () =>
+  Effect.gen(function* () {
+    const parent = (id: ContentId, expectedTag: number) => CasNodeInput.make({
+      kind: { version: 0, tag: 90 },
+      payload: new Uint8Array(0),
+      refs: [{ id, expectedTag }],
+    })
+    const child = (payload: ReadonlyArray<number>, tag: number) => CasNodeInput.make({
+      kind: { version: 0, tag },
+      payload: Uint8Array.from(payload),
+      refs: [],
+    })
+
+    const run = (prepare: (
+      address: CasAddress,
+      putRaw: (id: ContentId, bytes: Uint8Array) => Effect.Effect<void, StoreFailure>,
+    ) => Effect.Effect<
+      { readonly id: ContentId; readonly expectedTag: number },
+      StoreFailure
+    >) =>
+      Effect.gen(function* () {
+        const address = deterministicAddress()
+        const backend = makeMemoryBackend()
+        const prepared = yield* prepare(
+          address,
+          (id, bytes) => backend.writer.putBytes(id, bytes).pipe(
+            Effect.mapError((error) => new StoreFailure({ reason: error.reason })),
+          ),
+        )
+        const store = makeCasStoreOver(address, backend.reader, backend.writer)
+        return yield* store.put(parent(prepared.id, prepared.expectedTag)).pipe(Effect.flip)
+      })
+
+    const missing = yield* run((_address, _putRaw) => Effect.succeed({
+      id: ContentId.make("a1".repeat(32)),
+      expectedTag: 7,
+    }))
+    expect(missing._tag).toBe("CasError/DanglingReference")
+
+    const nonCanonical = yield* run((_address, putRaw) => Effect.gen(function* () {
+      const id = ContentId.make("a2".repeat(32))
+      yield* putRaw(id, Uint8Array.of(0xff))
+      return { id, expectedTag: 7 }
+    }))
+    expect(nonCanonical._tag).toBe("CasError/NonCanonicalBytes")
+
+    const addressMismatch = yield* run((address, putRaw) => Effect.gen(function* () {
+      const bytes = encodeCasNode(child([1], 7))
+      const actual = yield* address.digest(bytes)
+      const id = actual === ContentId.make("a3".repeat(32))
+        ? ContentId.make("a4".repeat(32))
+        : ContentId.make("a3".repeat(32))
+      yield* putRaw(id, bytes)
+      return { id, expectedTag: 7 }
+    }))
+    expect(addressMismatch._tag).toBe("CasError/AddressMismatch")
+
+    const unknownKind = yield* run((address, putRaw) => Effect.gen(function* () {
+      const bytes = encodeCasNode(CasNodeInput.make({
+        kind: { version: 1, tag: 7 },
+        payload: new Uint8Array(0),
+        refs: [],
+      }))
+      const id = yield* address.digest(bytes)
+      yield* putRaw(id, bytes)
+      return { id, expectedTag: 7 }
+    }))
+    expect(unknownKind._tag).toBe("CasError/UnknownKind")
+
+    const wrongKind = yield* run((address, putRaw) => Effect.gen(function* () {
+      const bytes = encodeCasNode(child([2], 7))
+      const id = yield* address.digest(bytes)
+      yield* putRaw(id, bytes)
+      return { id, expectedTag: 8 }
+    }))
+    expect(wrongKind).toMatchObject({
+      _tag: "CasError/WrongKindReference",
+      actualTag: 7,
+      expectedTag: 8,
+    })
+  }))

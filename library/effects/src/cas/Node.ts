@@ -87,7 +87,10 @@ export class ContentNotFound extends Schema.TaggedError<ContentNotFound>()(
 
 export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
   "CasError/StoreFailure",
-  { reason: Schema.String },
+  {
+    reason: Schema.String,
+    cause: Schema.optionalKey(Schema.Defect()),
+  },
 ) {}
 
 /** A remote-backed store retains the typed remote cause without widening the

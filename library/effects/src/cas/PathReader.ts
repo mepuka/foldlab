@@ -47,6 +47,7 @@ export const makePathReader = (readPath: ReadPath): ByteReaderShape => {
     return yield* readPath(objectRelativePath(id)).pipe(
       Effect.mapError((error) => new BackendFailure({
         reason: `path read failed at ${error.path}: ${error.reason}`,
+        cause: error,
       })),
     )
   })

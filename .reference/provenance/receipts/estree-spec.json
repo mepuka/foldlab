@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-source-receipt",
+  "id": "estree",
+  "resolvedOn": "2026-08-28",
+  "repository": {
+    "host": "github.com",
+    "owner": "estree",
+    "name": "estree",
+    "canonicalUrl": "https://github.com/estree/estree",
+    "fetchUrl": "https://github.com/estree/estree.git"
+  },
+  "revision": {
+    "kind": "commit",
+    "algorithm": "sha1",
+    "digest": "875bf70440a8870c4a663865a7a41300cf1add55",
+    "url": "https://github.com/estree/estree/commit/875bf70440a8870c4a663865a7a41300cf1add55"
+  },
+  "rootTree": {
+    "algorithm": "sha1",
+    "digest": "a61bd75dd7a22575eeb761c97b6d9ff8cdc8d2b2"
+  },
+  "role": "Normative reference for the ESTree AST shape the oxc recognition leg is measured against.",
+  "trustStatement": "Specification text only. It fixes what STANDARD ESTree is; it makes no claim about what any parser emits. Every deviation from it is an observation about the parser, recorded by the deviation audit, never a defect in the spec.",
+  "tooling": {
+    "client": "git version 2.55.0.windows.2"
+  },
+  "derived": {
+    "path": "experiments/lift-harness/test/estree-standard.json",
+    "how": "interface names extracted from es5/es2015-es2026 spec markdown"
+  }
+}

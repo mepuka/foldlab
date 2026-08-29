@@ -3,19 +3,19 @@
   "kindTag": 83,
   "schemas": [
     {
-      "address": "d2ea192d76dafe3d90680abc6a99649d8f1356028d7f9d3f8248f9e0f4a7901d",
+      "address": "cf674c2dfdbd3582661e2f96a026969d31956880a8912f7c1ddd1bb613ad968c",
       "name": "vector-document"
     },
     {
-      "address": "a3a0c2d32f91d05f5643f0772e37c4b02c4d5175dd170f7a4715f3c9d4c0a746",
+      "address": "a5445fde1908dedd1f115104b3853c8fe4146ecac58a0105009c2fb9fafb31f1",
       "name": "vector-index"
     },
     {
-      "address": "b870f32cfd3324e146357c51ded51a09b80310b2d4f008ef7d97971282407221",
+      "address": "0ee1758ef14781a52a56e9e2d7951555d5af19a9eb7cb9238808ed39d782219e",
       "name": "pin-sample"
     },
     {
-      "address": "641b38779e025af7c0de241d59994c34e3275d20d3af5e4109b0bb31d70a2331",
+      "address": "5461f66ed3a0eeade4cd058d438d24c86c32b28ce1756b4af8297434103f0c04",
       "name": "literal-pin"
     }
   ]

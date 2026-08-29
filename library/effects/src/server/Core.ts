@@ -12,17 +12,20 @@
  */
 import { Context, Effect, Layer, Option } from "effect"
 import {
+  BackendFailure,
   ByteReader,
   ByteWriter,
   RootStore,
-  type BackendFailure,
 } from "../cas/Backend.ts"
 import type { ContentId } from "../cas/Node.ts"
-import { AddressScheme, type CasAddress } from "../cas/Store.ts"
+import {
+  AddressScheme,
+  verifyNodeBytes,
+  type CasAddress,
+} from "../cas/Store.ts"
 import {
   canonicalNode,
   judgeAdmission,
-  kindTagOfCanonical,
   type AdmissionFacts,
 } from "../internal/admission.ts"
 import {
@@ -76,7 +79,17 @@ export const makeCasServerCore = (
     const refTags: Array<Option.Option<number>> = []
     for (const ref of refs) {
       const resident = yield* reader.loadBytes(ref.id)
-      refTags.push(Option.map(resident, kindTagOfCanonical))
+      if (Option.isNone(resident)) {
+        refTags.push(Option.none())
+      } else {
+        const verified = yield* verifyNodeBytes(address, ref.id, resident.value).pipe(
+          Effect.mapError((error) => new BackendFailure({
+            reason: `Referenced content ${ref.id} failed verification: ${error._tag}`,
+            cause: error,
+          })),
+        )
+        refTags.push(Option.some(verified.kind.tag))
+      }
     }
     const resident = yield* reader.loadBytes(id)
     const facts: AdmissionFacts = { refTags, resident }
@@ -106,7 +119,10 @@ export const makeCasServerCore = (
       Effect.asSome,
       Effect.orElseSucceed(() => Option.none<ContentId>()),
     )
-    if (Option.isNone(actual) || actual.value !== id) {
+    if (Option.isNone(actual)) {
+      return CasOutcome.BackendUnavailable()
+    }
+    if (actual.value !== id) {
       return CasOutcome.DigestMismatch()
     }
     const decoded = canonicalNode(bytes)

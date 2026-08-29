@@ -9,7 +9,15 @@
  * the pipeline decide → serve → render. A future wire plane extends
  * the enums and the tables — it never reshapes the pipeline.
  */
-import { Data, Match, Option, pipe, Redacted } from "effect"
+import {
+  Data,
+  Match,
+  Option,
+  pipe,
+  Redacted,
+  Schema,
+  SchemaGetter,
+} from "effect"
 import { HttpServerResponse } from "effect/unstable/http"
 import { ContentId } from "../cas/Node.ts"
 import type { AdmissionVerdict } from "../internal/admission.ts"
@@ -175,8 +183,16 @@ const authorized = (
 const refused = (refusal: WireRefusal): WireDecision =>
   WireDecision.Refused({ refusal })
 
-const casPath = /^\/cas\/([0-9a-f]{64})$/u
-const rootsPath = /^\/roots\/([0-9a-f]{64})$/u
+const resourcePath = (prefix: "cas" | "roots") =>
+  Schema.String.check(
+    Schema.isPattern(new RegExp(`^/${prefix}/[0-9a-f]{64}$(?![\\s\\S])`, "u")),
+  ).pipe(Schema.decodeTo(ContentId, {
+    decode: SchemaGetter.transform((path) => path.slice(prefix.length + 2)),
+    encode: SchemaGetter.transform((id) => `/${prefix}/${id}`),
+  }))
+
+const CasResourcePath = resourcePath("cas")
+const RootResourcePath = resourcePath("roots")
 
 /** The wire law: one total pure function from gathered facts to a
  * refusal or an authenticated, authorized, fully decoded operation.
@@ -222,10 +238,10 @@ export const decide = (
     })
   }
 
-  const root = rootsPath.exec(facts.path)?.[1]
-  if (root !== undefined) {
+  const root = Schema.decodeOption(RootResourcePath)(facts.path)
+  if (Option.isSome(root)) {
     if (facts.method === "GET") {
-      return accept(CasRequest.ReadRoot({ root: ContentId.make(root) }))
+      return accept(CasRequest.ReadRoot({ root: root.value }))
     }
     if (facts.method !== "PUT") return refused(WireRefusal.MethodNotAllowed())
     if (facts.contentType !== octetStream) {
@@ -235,14 +251,14 @@ export const decide = (
       onNone: () => refused(WireRefusal.MalformedBody()),
       onSome: (closure) => accept(CasRequest.PublishRoot({
         closure,
-        root: ContentId.make(root),
+        root: root.value,
       })),
     })
   }
 
-  const node = casPath.exec(facts.path)?.[1]
-  if (node !== undefined) {
-    const id = ContentId.make(node)
+  const node = Schema.decodeOption(CasResourcePath)(facts.path)
+  if (Option.isSome(node)) {
+    const id = node.value
     if (facts.method === "GET") return accept(CasRequest.LoadNode({ id }))
     if (facts.method === "PUT") {
       if (facts.contentType !== octetStream) {

@@ -6,11 +6,17 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer, Redacted } from "effect"
 import { createHash } from "node:crypto"
-import { layerMemoryBackend } from "../../src/cas/Backend.ts"
-import { CasNodeInput, ContentId } from "../../src/cas/Node.ts"
+import {
+  ByteReader,
+  ByteWriter,
+  layerMemoryBackend,
+  makeMemoryBackend,
+  RootStore,
+} from "../../src/cas/Backend.ts"
+import { CasNodeInput, ContentId, StoreFailure } from "../../src/cas/Node.ts"
 import { encodeCasNode, layerAddressSha256Live } from "../../src/cas/Store.ts"
 import { encodeKeyListDocument } from "../../src/internal/remoteControl.ts"
-import { CasServerCore } from "../../src/server/Core.ts"
+import { CasServerCore, makeCasServerCore } from "../../src/server/Core.ts"
 import {
   CasOutcome,
   CasRequest,
@@ -19,6 +25,7 @@ import {
   type CasServerPolicy,
   type WireFacts,
 } from "../../src/server/Protocol.ts"
+import { deterministicAddress } from "../fixtures/address.ts"
 
 const digest = (bytes: Uint8Array): string =>
   createHash("sha256").update(bytes).digest("hex")
@@ -215,3 +222,102 @@ it.effect("the semantic core round-trips a graph with no transport at all", () =
     // The decoded key-list codec and the core agree on the wire body.
     expect(encodeKeyListDocument([childId]).length).toBe(36)
   }).pipe(Effect.provide(coreLayer)))
+
+it.effect("digest infrastructure failure is unavailable while a real mismatch remains conflict", () =>
+  Effect.gen(function* () {
+    const backend = makeMemoryBackend()
+    const makeCore = (address: Parameters<typeof makeCasServerCore>[1]) =>
+      makeCasServerCore(openPolicy, address).pipe(
+        Effect.provideService(ByteReader, backend.reader),
+        Effect.provideService(ByteWriter, backend.writer),
+        Effect.provideService(RootStore, backend.roots),
+      )
+    const bytes = encodeCasNode(CasNodeInput.make({
+      kind: { version: 0, tag: 7 },
+      payload: Uint8Array.of(1),
+      refs: [],
+    }))
+    const requested = ContentId.make("71".repeat(32))
+    const principal = Principal.Anonymous()
+
+    const failedCore = yield* makeCore({
+      digest: () => Effect.fail(new StoreFailure({ reason: "digest offline" })),
+    })
+    expect(yield* failedCore.serve(
+      principal,
+      CasRequest.UploadNode({ id: requested, bytes }),
+    )).toEqual(CasOutcome.BackendUnavailable())
+
+    const mismatchCore = yield* makeCore({
+      digest: () => Effect.succeed(ContentId.make("72".repeat(32))),
+    })
+    expect(yield* mismatchCore.serve(
+      principal,
+      CasRequest.UploadNode({ id: requested, bytes }),
+    )).toEqual(CasOutcome.DigestMismatch())
+  }))
+
+it.effect("server admission treats corrupt references as unavailable but preserves safe verdicts", () =>
+  Effect.gen(function* () {
+    const principal = Principal.Anonymous()
+    const run = (
+      resident: "missing" | "noncanonical" | "mismatch" | "unknown" | "wrong-kind",
+    ) => Effect.gen(function* () {
+      const address = deterministicAddress()
+      const backend = makeMemoryBackend()
+      let refId = ContentId.make("81".repeat(32))
+      let expectedTag = 7
+      if (resident === "noncanonical") {
+        yield* backend.writer.putBytes(refId, Uint8Array.of(0xff))
+      } else if (resident === "mismatch") {
+        const childBytes = encodeCasNode(CasNodeInput.make({
+          kind: { version: 0, tag: 7 },
+          payload: Uint8Array.of(2),
+          refs: [],
+        }))
+        yield* address.digest(childBytes)
+        yield* backend.writer.putBytes(refId, childBytes)
+      } else if (resident === "unknown") {
+        const childBytes = encodeCasNode(CasNodeInput.make({
+          kind: { version: 1, tag: 7 },
+          payload: new Uint8Array(0),
+          refs: [],
+        }))
+        refId = yield* address.digest(childBytes)
+        yield* backend.writer.putBytes(refId, childBytes)
+      } else if (resident === "wrong-kind") {
+        const childBytes = encodeCasNode(CasNodeInput.make({
+          kind: { version: 0, tag: 7 },
+          payload: Uint8Array.of(3),
+          refs: [],
+        }))
+        refId = yield* address.digest(childBytes)
+        expectedTag = 8
+        yield* backend.writer.putBytes(refId, childBytes)
+      }
+
+      const parentBytes = encodeCasNode(CasNodeInput.make({
+        kind: { version: 0, tag: 9 },
+        payload: new Uint8Array(0),
+        refs: [{ id: refId, expectedTag }],
+      }))
+      const parentId = yield* address.digest(parentBytes)
+      const core = yield* makeCasServerCore(openPolicy, address).pipe(
+        Effect.provideService(ByteReader, backend.reader),
+        Effect.provideService(ByteWriter, backend.writer),
+        Effect.provideService(RootStore, backend.roots),
+      )
+      return yield* core.serve(
+        principal,
+        CasRequest.UploadNode({ id: parentId, bytes: parentBytes }),
+      )
+    })
+
+    expect(yield* run("missing"))
+      .toEqual(CasOutcome.AdmissionRefused({ verdict: "DanglingReference" }))
+    expect(yield* run("wrong-kind"))
+      .toEqual(CasOutcome.AdmissionRefused({ verdict: "WrongKindReference" }))
+    for (const corrupt of ["noncanonical", "mismatch", "unknown"] as const) {
+      expect(yield* run(corrupt)).toEqual(CasOutcome.BackendUnavailable())
+    }
+  }))

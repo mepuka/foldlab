@@ -5,17 +5,19 @@
  */
 import { expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer } from "effect"
-import { objectRelativePath } from "../src/cas/Backend.ts"
-import { closure, verify } from "../src/cas/Graph.ts"
+import { ByteReader, makeMemoryBackend, objectRelativePath } from "../src/cas/Backend.ts"
+import { closure, verify, verifyWith } from "../src/cas/Graph.ts"
 import { CasNodeInput, ContentId } from "../src/cas/Node.ts"
 import { PathReadError, layerPathReader, type ReadPath } from "../src/cas/PathReader.ts"
 import {
   CasStore,
+  encodeCasNode,
   layerAddressSha256Live,
   layerFile,
   layerMemoryLive,
 } from "../src/cas/Store.ts"
 import { makeMemoryFs, type MemoryFs } from "./MemoryFsHarness.ts"
+import { deterministicAddress } from "./fixtures/address.ts"
 
 const node = (
   payload: ReadonlyArray<number>,
@@ -116,4 +118,35 @@ it.effect("verify audits an untrusted host: hidden and corrupted nodes refuse ty
       Effect.flip,
     )
     expect(refused._tag).toBe("CasError/AddressMismatch")
+  }))
+
+it.effect("verify checks a shared child's expected tag on every incoming edge", () =>
+  Effect.gen(function* () {
+    const address = deterministicAddress()
+    const backend = makeMemoryBackend()
+    const admitRaw = (value: CasNodeInput) => Effect.gen(function* () {
+      const bytes = encodeCasNode(value)
+      const id = yield* address.digest(bytes)
+      yield* backend.writer.putBytes(id, bytes)
+      return id
+    })
+
+    const child = yield* admitRaw(node([1], 91))
+    const left = yield* admitRaw(node([2], 92, [{ expectedTag: 91, id: child }]))
+    const right = yield* admitRaw(node([3], 92, [{ expectedTag: 90, id: child }]))
+    const root = yield* admitRaw(node([4], 93, [
+      { expectedTag: 92, id: left },
+      { expectedTag: 92, id: right },
+    ]))
+
+    const error = yield* verifyWith(address)(root).pipe(
+      Effect.provideService(ByteReader, backend.reader),
+      Effect.flip,
+    )
+    expect(error).toMatchObject({
+      _tag: "CasError/WrongKindReference",
+      ref: child,
+      expectedTag: 90,
+      actualTag: 91,
+    })
   }))

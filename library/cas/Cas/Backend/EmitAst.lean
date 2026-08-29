@@ -2,9 +2,9 @@ import Cas.Backend.Ts
 import Cas.Schema.SelfCodec
 
 /-!
-# Lowering canonical schema codes to constructor expressions
+# Lowering canonical schema codes to Effect Schema expressions
 
-`Ast → Ts.Expr` over the `CanonicalSchema` constructor surface, with
+`Ast → Ts.Expr` over Effect's native `Schema` constructor surface, with
 structural sharing against an environment of already-emitted names: a
 subterm equal to an earlier named code renders as that name — the
 factored form a careful hand would write, derived mechanically.
@@ -36,7 +36,9 @@ end
 
 instance : BEq Ast := ⟨astBeq⟩
 
-private def cs (name : String) : Expr := .ident ("CanonicalSchema." ++ name)
+private def schema (name : String) : Expr := .ident ("Schema." ++ name)
+private def canonicalSchema (name : String) : Expr :=
+  .ident ("CanonicalSchema." ++ name)
 
 def litExpr : LitVal → Expr
   | .null => .jsNull
@@ -55,18 +57,19 @@ where
     | some (name, _) => .ident name
     | none =>
       match a with
-      | .null => cs "nullAst"
-      | .bool => cs "booleanAst"
-      | .int => cs "integerAst"
-      | .str => cs "stringAst"
-      | .lit v => .call (cs "literal") [litExpr v]
-      | .arr item => .call (cs "array") [go false item]
+      | .null => schema "Null"
+      | .bool => schema "Boolean"
+      | .int => schema "Int"
+      | .str => schema "String"
+      | .lit .null => schema "Null"
+      | .lit v => .call (schema "Literal") [litExpr v]
+      | .arr item => .call (schema "Array") [go false item]
       | .struct fields =>
-        .call (cs "struct")
-          [.objectML (fields.map fun (name, opt, schema) =>
+        .call (schema "Struct")
+          [.objectML (fields.map fun (name, opt, code) =>
             (name,
-              .call (cs (if opt then "optionalField" else "field"))
-                [go false schema]))]
-      | .ref tag => .call (cs "ref") [.int tag.toNat]
+              if opt then .call (schema "optionalKey") [go false code]
+              else go false code))]
+      | .ref tag => .call (canonicalSchema "ref") [.int tag.toNat]
 
 end Cas.Backend
