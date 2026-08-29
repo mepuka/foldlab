@@ -88,7 +88,13 @@ abstraction, lowest first, and imported above in that order.
   interpretation that CALLS the admission judgment (L5–L7), and the
   grammar term as a store program with `putTree_correct` (F1): the run
   computes exactly the elaboration's address and store, deduplicating
-  shared subterms through `put`'s duplicate outcome (F2).
+  shared subterms through `put`'s duplicate outcome (F2). `Fragments` is
+  doc-only: the FRAGMENT TOWER, the interop reference model — the ladder
+  `PProg ⊂ the guarded table ⊂ Prog` ordered by expressive power, each
+  rung with its static-analysis status, store encoding, handler set, and
+  agreement theorems by name, and what another effect system may assume
+  when it consumes one. It is orthogonal to `Tower`, which is the
+  vertical SERVICE tower.
 - **`Lift/` — the read face.** The effect-lift lane's first-order
   data: the closed refusal taxonomy with its spectrum (`Taxonomy`)
   and the v0 rule manifest (`Manifest`) — the R11 interchange
@@ -116,6 +122,11 @@ exactness lemmas beneath it), and
 `runP_decodeProg_encodeProg`/`ObsEq_decodeProg_encodeProg` say a table
 recovered from its own content runs identically and denotes an
 observationally equal program — the program IS content, as a theorem.
+The table's STATIC ANALYSIS landed with it: `PProg.envelope` reads the
+reachable address set, the put shapes and the answer-index dataflow off
+the table alone, and the sandwich bounds every run inside it — with the
+two places the bound is not tight (the suffix after a first refusal, and
+`put`'s duplicate outcome) exhibited rather than asserted.
 What is still owed there is registry, not proof: wire tags 14 and 15
 (`step`, `cont`) remain RESERVED rows spelled outside `Ty`, pinned to
 `REGISTRY.md` by `#guard`, and ratifying either into `Ty` is its own

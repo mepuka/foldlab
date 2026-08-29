@@ -9,6 +9,7 @@ import Cas.Lang.Representation
 import Cas.Lang.Roots
 import Cas.Lang.TreeProg
 import Cas.Lang.Defun
+import Cas.Lang.Fragments
 
 /-!
 # The program grammar — layer 3 of the language
@@ -29,4 +30,13 @@ subterms (F2); `Auth` is authenticated computation as a handler pair —
 re-interprets the same program against a claimed proof word holding no
 store, and `verify_load_or_collision` is the one-operation
 ideal-or-collision disjunct at hash-lattice Level 0.
+
+`Fragments` carries no definitions: it is the FRAGMENT TOWER, the
+interop reference model — the ladder `PProg ⊂ the guarded table ⊂ Prog`
+ordered by expressive power, each rung with its static-analysis status,
+store encoding, handler set, and agreement theorems by name, plus what
+another effect system may assume when it consumes one. Read it before
+coding against a CAS program. Do not confuse it with `Tower`, which is
+the orthogonal SERVICE tower (a handler implemented as a program over a
+lower signature).
 -/
