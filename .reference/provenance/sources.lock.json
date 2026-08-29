@@ -7,6 +7,8 @@
     {
       "id": "effect",
       "kind": "git",
+      "role": "stage-1-source-extraction-pin",
+      "note": "This row pins the BYTES the Stage-1 entity-store inventory is a function of, not the estate's runtime dependency. experiments/entity-store-extract/src/contract.ts (PIN, SURFACE_PINS) and experiments/entity-store-extract/vendor/effect-src cite these gitBlob digests directly, so the row must not move when the npm dependency moves. As of 2026-08-29 the estate's runtime effect dependency is 4.0.0-rc.112 and is recorded separately as the `effect-runtime` row: the extraction pin and the runtime version are now DECOUPLED. Re-pinning this row is a re-extraction decision (the inventory must be regenerated and re-gated with it), never a dependency-bump side effect.",
       "repository": {
         "host": "github.com",
         "owner": "Effect-TS",
@@ -251,6 +253,51 @@
             "digest": "0e32b42fbc8901ae75419fbd2999bf5c96b40e4bb54cc42c4fc2ec778cc641f0"
           },
           "bytes": 212712
+        }
+      ]
+    },
+    {
+      "id": "effect-runtime",
+      "kind": "git",
+      "role": "runtime-dependency-correspondence",
+      "note": "AGENTS.md dependency law: the `effect` npm version and the provenance source pin must name each other. This row is that correspondence for the version the estate actually RESOLVES at runtime — library/effects, experiments/lift-harness, experiments/parser-census, and experiments/entity-store-extract/twin/harness all pin effect@4.0.0-rc.112 (Wave 1, docs/SPECS.md decision 23). Commit determined 2026-08-29 from the upstream tag `effect@4.0.0-rc.112`, and verified by reading packages/effect/package.json at that commit (version field reads 4.0.0-rc.112). No per-file source surface is pinned here: this row records WHICH SOURCE the shipped dependency corresponds to, not bytes any gate re-derives. The Stage-1 extraction pin is the separate `effect` row and remains at 4.0.0-rc.111 by design.",
+      "repository": {
+        "host": "github.com",
+        "owner": "Effect-TS",
+        "name": "effect",
+        "canonicalUrl": "https://github.com/Effect-TS/effect",
+        "fetchUrl": "https://github.com/Effect-TS/effect.git"
+      },
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "2600f62f4532026928454dcea8d1c48557b3f942",
+        "url": "https://github.com/Effect-TS/effect/commit/2600f62f4532026928454dcea8d1c48557b3f942",
+        "tag": "effect@4.0.0-rc.112"
+      },
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "648a01b9c249448716e1a9474f511b17898f9d93"
+      },
+      "package": {
+        "path": "packages/effect",
+        "name": "effect",
+        "version": "4.0.0-rc.112",
+        "license": "MIT"
+      },
+      "artifacts": [
+        {
+          "path": "packages/effect/package.json",
+          "role": "package-identity-and-exports",
+          "gitBlob": {
+            "algorithm": "sha1",
+            "digest": "21bcb291edeb58f450b7b2422190b310b8b3e199"
+          },
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "dc95b36e28fc60fa06810e2e4def5b941808d4685e05d2289c525212d534e5eb"
+          },
+          "bytes": 4331
         }
       ]
     },

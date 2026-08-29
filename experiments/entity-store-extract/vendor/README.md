@@ -18,6 +18,12 @@ digests, and the other four files of the cache — is
 `.reference/provenance/sources.lock.json`. Nothing new is pinned here: these two rows
 already existed in the lock and in `src/extract.ts` `PIN`.
 
+Since 2026-08-29 this source pin and the estate's runtime `effect` dependency are
+DECOUPLED: the runtime moved to `effect@4.0.0-rc.112` (lock row `effect-runtime`,
+commit `2600f62f4532026928454dcea8d1c48557b3f942`) while these vendored bytes — and the
+inventory that is a function of them — stay at `rc.111` / `0dd7825e`, so a dependency
+bump alone never moves this table.
+
 ## Why the digest check is still load-bearing
 
 Vendoring moves the bytes; it does not move the trust. `src/extract.ts` recomputes the

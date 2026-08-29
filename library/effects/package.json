@@ -34,13 +34,13 @@
     "prepare": "effect-tsgo patch --typescript --oxlint"
   },
   "dependencies": {
-    "@effect/sql-sqlite-bun": "4.0.0-rc.111",
-    "effect": "4.0.0-rc.111"
+    "@effect/sql-sqlite-bun": "4.0.0-rc.112",
+    "effect": "4.0.0-rc.112"
   },
   "devDependencies": {
-    "@effect/platform-bun": "4.0.0-rc.111",
+    "@effect/platform-bun": "4.0.0-rc.112",
     "@effect/tsgo": "0.38.0",
-    "@effect/vitest": "4.0.0-rc.111",
+    "@effect/vitest": "4.0.0-rc.112",
     "@types/bun": "1.4.0",
     "effect-oxlint": "0.3.3",
     "oxlint": "1.80.0",
@@ -51,7 +51,8 @@
   },
   "foldlab": {
     "effectProvenance": {
-      "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+      "commit": "2600f62f4532026928454dcea8d1c48557b3f942",
+      "lockRow": "effect-runtime",
       "lock": "../../.reference/provenance/sources.lock.json"
     }
   }
