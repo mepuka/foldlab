@@ -18,9 +18,10 @@
  * line an agent reads afterwards names the address that came back —
  * which is the whole outcome of the call, not a description of it.
  */
-import { Effect } from "effect"
+import { Cause, Effect, Exit, Metric, Option, Semaphore } from "effect"
 import { Cas } from "../../src/index.ts"
 import { casErrorMessage, toBinding } from "../cli/render.ts"
+import * as Telemetry from "./telemetry.ts"
 import { casToolkit, Refused } from "./tools.ts"
 
 /** A store refusal in the tools' register: the library's clause tag,
@@ -50,12 +51,14 @@ const unresolved = (instruction: number, source: number, answered: number): Refu
       } it — a reference names an EARLIER answer by index`,
   })
 
-/** The one `ServePolicy` number that means the same thing on every
- * transport: a cap on the payload of a node this host will admit.
+/** The `ServePolicy` numbers that mean the same thing on every
+ * transport: a cap on the payload of a node this host will admit, and
+ * a bound on how many store-touching calls run at once.
  * `bin/mcp/server.ts` documents why the rest of the policy does not
  * reach here. */
 export interface NodeLimits {
   readonly maxNodeBytes: number
+  readonly maxInFlight: number
 }
 
 /** The cap, refused by the host rather than by the store — the store
@@ -81,108 +84,167 @@ const withinLimit = (
  * handlers the MCP registration asks for; the store services stay
  * ordinary requirements, satisfied once at the composition where every
  * other host choice is made. The limits arrive as an argument rather
- * than a service, because they are one number read from one config
+ * than a service, because they are two numbers read from one config
  * file at one composition — nothing below needs a seam for them.
+ *
+ * ## The admission gate (BS-1)
+ *
+ * `RpcServer` forks one fiber per request and defaults its concurrency
+ * to `"unbounded"`; `McpServer` passes no option, so there is no knob
+ * upstream to reach for. The bound lands here instead, as one
+ * `Semaphore` sized from `ServePolicy.maxInFlight` and shared by every
+ * store-touching handler. A call past the bound WAITS — it is never
+ * refused and never dropped, because a bound that answered differently
+ * would be a second refusal register on a host whose refusals are all
+ * the store's.
+ *
+ * The gate is deliberately not on `initialize` or `tools/list`: those
+ * touch no store, and a saturated store must not make the host look
+ * dead to a client asking what it serves.
+ *
+ * `Toolkit.toLayer` takes an Effect producing the handlers, which is
+ * what lets the semaphore be made once, at layer build, and closed
+ * over by all five.
  */
 export const layerHandlers = (limits: NodeLimits) =>
-  casToolkit.toLayer(casToolkit.of({
-  cas_put: (node) =>
-    Effect.gen(function* () {
-      const store = yield* Cas.Store
-      yield* withinLimit(node.payload, limits)
-      const address = yield* store.put(Cas.ConformanceVector.toNodeInput(node)).pipe(
-        Effect.mapError(refuse),
-      )
-      yield* Effect.logInfo("admitted").pipe(
-        Effect.annotateLogs({
-          address,
-          tag: node.tag,
-          version: node.version,
-          payloadBytes: node.payload.length,
-          refs: node.refs.length,
-        }),
-      )
-      return { address }
-    }).pipe(Effect.annotateLogs({ tool: "cas_put" })),
+  casToolkit.toLayer(Semaphore.make(limits.maxInFlight).pipe(Effect.map((gate) => {
+    // The gauge's value, held where the gate holds it. A gauge is set,
+    // not incremented, so the host counts its own in-flight calls and
+    // reports the number — the one figure that says whether the
+    // per-request growth the audit measured is running away.
+    let live = 0
+    const mark = (delta: number): Effect.Effect<void> =>
+      Effect.suspend(() => {
+        live += delta
+        return Metric.update(Telemetry.inflight, live)
+      })
 
-  cas_load: ({ address }) =>
-    Effect.gen(function* () {
-      const loader = yield* Cas.Loader
-      const node = yield* loader.load(address).pipe(Effect.mapError(refuse))
-      yield* Effect.logInfo("loaded").pipe(
-        Effect.annotateLogs({
-          address,
-          tag: node.kind.tag,
-          version: node.kind.version,
-          payloadBytes: node.payload.length,
-          refs: node.refs.length,
-        }),
-      )
-      // The reply is the ONE node document — the same projection
-      // `cas show --json` renders, so the two surfaces cannot drift.
-      return toBinding(address, node).node
-    }).pipe(Effect.annotateLogs({ tool: "cas_load" })),
+    /** One store-touching call, bounded and counted. Every outcome is
+     * attributed: a success, a typed refusal (also counted under its
+     * own clause, so `cas.host.refused` and the `Refused` reply agree),
+     * and anything else — a defect or an interrupt — as `failed`. */
+    const served = <A, R>(
+      tool: string,
+      self: Effect.Effect<A, Refused, R>,
+    ): Effect.Effect<A, Refused, R> =>
+      gate.withPermits(1)(
+        mark(1).pipe(
+          Effect.andThen(self),
+          Effect.onExit((exit) =>
+            mark(-1).pipe(Effect.andThen(
+              Exit.isSuccess(exit)
+                ? Telemetry.countCall(tool, "ok")
+                : Option.match(Cause.findErrorOption(exit.cause), {
+                  onNone: () => Telemetry.countCall(tool, "failed"),
+                  onSome: (failure) =>
+                    Telemetry.countCall(tool, "refused").pipe(
+                      Effect.andThen(Telemetry.countRefusal(failure.clause)),
+                    ),
+                }),
+            ))
+          ),
+        ),
+      ).pipe(Effect.annotateLogs({ tool }))
 
-  cas_run: ({ instructions }) =>
-    Effect.gen(function* () {
-      const store = yield* Cas.Store
-      // The word, in admission order. A self-contained program starts
-      // from the empty word: the document carries every instruction it
-      // depends on, and an index that reaches past what has been
-      // answered is refused rather than resolved against store state.
-      const word: Array<Cas.ContentId> = []
-      for (const [index, instruction] of instructions.entries()) {
-        const refs: Array<Cas.Reference> = []
-        for (const reference of instruction.refs) {
-          const answered = word[reference.source]
-          if (answered === undefined) {
-            return yield* unresolved(index, reference.source, word.length)
+    return casToolkit.of({
+      cas_put: (node) =>
+        served("cas_put", Effect.gen(function* () {
+          const store = yield* Cas.Store
+          yield* withinLimit(node.payload, limits)
+          const address = yield* store.put(Cas.ConformanceVector.toNodeInput(node)).pipe(
+            Effect.mapError(refuse),
+          )
+          yield* Effect.logInfo("admitted").pipe(
+            Effect.annotateLogs({
+              address,
+              tag: node.tag,
+              version: node.version,
+              payloadBytes: node.payload.length,
+              refs: node.refs.length,
+            }),
+          )
+          return { address }
+        })),
+
+      cas_load: ({ address }) =>
+        served("cas_load", Effect.gen(function* () {
+          const loader = yield* Cas.Loader
+          const node = yield* loader.load(address).pipe(Effect.mapError(refuse))
+          yield* Effect.logInfo("loaded").pipe(
+            Effect.annotateLogs({
+              address,
+              tag: node.kind.tag,
+              version: node.kind.version,
+              payloadBytes: node.payload.length,
+              refs: node.refs.length,
+            }),
+          )
+          // The reply is the ONE node document — the same projection
+          // `cas show --json` renders, so the two surfaces cannot drift.
+          return toBinding(address, node).node
+        })),
+
+      cas_run: ({ instructions }) =>
+        served("cas_run", Effect.gen(function* () {
+          const store = yield* Cas.Store
+          // The word, in admission order. A self-contained program starts
+          // from the empty word: the document carries every instruction it
+          // depends on, and an index that reaches past what has been
+          // answered is refused rather than resolved against store state.
+          const word: Array<Cas.ContentId> = []
+          for (const [index, instruction] of instructions.entries()) {
+            const refs: Array<Cas.Reference> = []
+            for (const reference of instruction.refs) {
+              const answered = word[reference.source]
+              if (answered === undefined) {
+                return yield* unresolved(index, reference.source, word.length)
+              }
+              refs.push({ id: answered, expectedTag: reference.expectedTag })
+            }
+            yield* withinLimit(instruction.payloadHex, limits)
+            const address = yield* store.put(Cas.NodeInput.make({
+              kind: { version: instruction.version, tag: instruction.tag },
+              payload: instruction.payloadHex,
+              refs,
+            })).pipe(Effect.mapError(refuse))
+            word.push(address)
+            yield* Effect.logDebug("instruction admitted").pipe(
+              Effect.annotateLogs({ instruction: index, address }),
+            )
           }
-          refs.push({ id: answered, expectedTag: reference.expectedTag })
-        }
-        yield* withinLimit(instruction.payloadHex, limits)
-        const address = yield* store.put(Cas.NodeInput.make({
-          kind: { version: instruction.version, tag: instruction.tag },
-          payload: instruction.payloadHex,
-          refs,
-        })).pipe(Effect.mapError(refuse))
-        word.push(address)
-        yield* Effect.logDebug("instruction admitted").pipe(
-          Effect.annotateLogs({ instruction: index, address }),
-        )
-      }
-      yield* Effect.logInfo("ran").pipe(
-        Effect.annotateLogs({ instructions: instructions.length, word: word.join(",") }),
-      )
-      return { word: word.map((address) => ({ address })) }
-    }).pipe(Effect.annotateLogs({ tool: "cas_run" })),
+          yield* Effect.logInfo("ran").pipe(
+            Effect.annotateLogs({ instructions: instructions.length, word: word.join(",") }),
+          )
+          return { word: word.map((address) => ({ address })) }
+        })),
 
-  cas_publish_root: ({ address }) =>
-    Effect.gen(function* () {
-      const loader = yield* Cas.Loader
-      // Load before publishing, fail-closed — publication claims an
-      // address is an entry point, so an address that will not load is
-      // refused here instead of becoming a root `cas ls` has to report
-      // as broken.
-      const node = yield* loader.load(address).pipe(Effect.mapError(refuse))
-      const roots = yield* Cas.RootStore
-      yield* roots.publish(address).pipe(Effect.mapError(refuseBackend))
-      yield* Effect.logInfo("published").pipe(
-        Effect.annotateLogs({ address, tag: node.kind.tag }),
-      )
-      return {}
-    }).pipe(Effect.annotateLogs({ tool: "cas_publish_root" })),
+      cas_publish_root: ({ address }) =>
+        served("cas_publish_root", Effect.gen(function* () {
+          const loader = yield* Cas.Loader
+          // Load before publishing, fail-closed — publication claims an
+          // address is an entry point, so an address that will not load is
+          // refused here instead of becoming a root `cas ls` has to report
+          // as broken.
+          const node = yield* loader.load(address).pipe(Effect.mapError(refuse))
+          const roots = yield* Cas.RootStore
+          yield* roots.publish(address).pipe(Effect.mapError(refuseBackend))
+          yield* Effect.logInfo("published").pipe(
+            Effect.annotateLogs({ address, tag: node.kind.tag }),
+          )
+          return {}
+        })),
 
-  cas_list_roots: () =>
-    Effect.gen(function* () {
-      const roots = yield* Cas.RootStore
-      const published = yield* roots.list.pipe(Effect.mapError(refuseBackend))
-      // The seam leaves order unspecified; the reply does not, for the
-      // same reason `cas ls` sorts.
-      const sorted = published.toSorted()
-      yield* Effect.logInfo("listed roots").pipe(
-        Effect.annotateLogs({ roots: sorted.length }),
-      )
-      return { roots: sorted }
-    }).pipe(Effect.annotateLogs({ tool: "cas_list_roots" })),
-  }))
+      cas_list_roots: () =>
+        served("cas_list_roots", Effect.gen(function* () {
+          const roots = yield* Cas.RootStore
+          const published = yield* roots.list.pipe(Effect.mapError(refuseBackend))
+          // The seam leaves order unspecified; the reply does not, for the
+          // same reason `cas ls` sorts.
+          const sorted = published.toSorted()
+          yield* Effect.logInfo("listed roots").pipe(
+            Effect.annotateLogs({ roots: sorted.length }),
+          )
+          return { roots: sorted }
+        })),
+    })
+  })))

@@ -42,9 +42,15 @@
  * It was written for cas-http/0 and describes a wire; stdio is not
  * one. Rather than pretend, each field is ruled explicitly:
  *
- * - `maxNodeBytes` — HONORED. A cap on the payload of an admitted node
- *   is transport-independent, so it is enforced on `cas_put` and on
- *   every instruction of `cas_run`, refused with its own clause.
+ * - `maxNodeBytes` — HONORED, and CLAMPED. A cap on the payload of an
+ *   admitted node is transport-independent, so it is enforced on
+ *   `cas_put` and on every instruction of `cas_run`, refused with its
+ *   own clause. It is also clamped under the transport's own frame
+ *   cap — see "The frame cap" below.
+ * - `maxInFlight` — HONORED. A bound on how many store-touching calls
+ *   run at once, applied as one semaphore in `handlers.ts`. Work is
+ *   work on every transport, so like `maxNodeBytes` it means the same
+ *   thing here as it would on a wire.
  * - `port` — NOT APPLICABLE. stdio binds nothing. Reported at startup
  *   as ignored, so the number in the config never reads as a promise.
  * - `maxBatchKeys` — NOT APPLICABLE. It caps a cas-http/0 batch READ,
@@ -58,8 +64,33 @@
  *   policy says reads require a credential therefore does not get
  *   served over stdio at all — serving it anyway would answer reads
  *   the store's own configuration says to gate.
+ *
+ * ## The frame cap (BS-1, ruling R1(b))
+ *
+ * The NDJSON framing under `McpServer.layerStdio` refuses a line over
+ * 16 MiB by THROWING `MaxBufferSizeExceeded` inside the transport's
+ * own stream. The throw is sandboxed, logged, and retried — and the
+ * client is never answered. An oversized request is not refused, it is
+ * LOST, and a client without a timeout waits for it forever. The knob
+ * is not reachable from here: `mcpStdioSerialization` builds its
+ * NDJSON parser with no options, so the 16 MiB default stands.
+ *
+ * What IS reachable is the order the two caps fire in. A payload
+ * crosses the wire as HEX — two characters per byte — so a node of
+ * `maxNodeBytes` bytes occupies `2 × maxNodeBytes` characters plus the
+ * document around it. Keep `2 × maxNodeBytes + slack` under 16 MiB and
+ * this host's own `mcp/NodeTooLarge` always fires first, which turns a
+ * silent loss into a typed refusal carrying its clause. A policy that
+ * asks for more than that is CLAMPED to the largest cap that keeps the
+ * property, and says so at WARN, because a store that cannot be served
+ * within its own configured cap is still better served than lost.
+ *
+ * One honest limit on the claim: the discipline is per NODE, not per
+ * FRAME. A `cas_run` carrying many within-cap instructions can still
+ * build a frame over 16 MiB, and that frame is still lost. Bounding a
+ * run's total size is a different limit and is not minted here.
  */
-import { Effect, FileSystem, Layer, Logger, Path, Schema } from "effect"
+import { Duration, Effect, FileSystem, Layer, Logger, Path, Schema } from "effect"
 import { McpProtocol, McpServer } from "effect/unstable/ai"
 import { defaultServePolicy, type ServePolicy } from "../cli/store.ts"
 import { layerHandlers } from "./handlers.ts"
@@ -70,6 +101,7 @@ import {
   manifestPath,
   readManifest,
 } from "./manifest.ts"
+import { heartbeatInterval, layerHeartbeat } from "./telemetry.ts"
 import { casToolkit, servedTools } from "./tools.ts"
 
 /** What the client sees at `initialize`. The version is the package's,
@@ -108,23 +140,67 @@ export class CredentialedPolicyUnservable
   }
 }
 
+/** The transport's own frame cap: `RpcSerialization`'s NDJSON default,
+ * which `McpServer.layerStdio` builds with no options and this host
+ * therefore cannot configure. Restated here as the number the clamp is
+ * computed against, and asserted against the transport by
+ * `test/McpBackpressure.test.ts`. */
+export const transportFrameBytes = 16 * 1024 * 1024
+
+/** What a node's document costs around its payload: the JSON-RPC
+ * envelope, the tool name, the version/tag/refs fields, and the
+ * quoting. Sixty-four kilobytes is far more than any of it and leaves
+ * the arithmetic obviously safe rather than exactly tight. */
+export const frameSlackBytes = 64 * 1024
+
+/** The largest `maxNodeBytes` for which this host's own cap still
+ * fires before the transport's. A payload crosses as hex, so a byte of
+ * node costs two characters of frame. */
+export const maxServableNodeBytes: number = Math.floor(
+  (transportFrameBytes - frameSlackBytes) / 2,
+)
+
+/** The limits the handlers enforce, after the policy has been ruled. */
+export interface HostLimits {
+  readonly maxNodeBytes: number
+  readonly maxInFlight: number
+}
+
 /**
  * The policy, read and ruled. Answers the limits the handlers enforce;
  * refuses outright when the policy asks for something stdio cannot
- * give; says out loud, once, which numbers it is ignoring.
+ * give; clamps the one number that could otherwise let the transport
+ * lose a request instead of refusing it; says out loud, once, which
+ * numbers it is ignoring and which caps are actually in force.
  */
 export const applyServePolicy = (
   policy: ServePolicy,
-): Effect.Effect<{ readonly maxNodeBytes: number }, CredentialedPolicyUnservable> =>
+): Effect.Effect<HostLimits, CredentialedPolicyUnservable> =>
   Effect.gen(function* () {
     if (!policy.anonymousReads) {
       return yield* new CredentialedPolicyUnservable(
         policy.credentialEnv === undefined ? {} : { credentialEnv: policy.credentialEnv },
       )
     }
+    const maxNodeBytes = Math.min(policy.maxNodeBytes, maxServableNodeBytes)
+    if (maxNodeBytes !== policy.maxNodeBytes) {
+      yield* Effect.logWarning("maxNodeBytes clamped under the transport frame cap").pipe(
+        Effect.annotateLogs({
+          configured: policy.maxNodeBytes,
+          effective: maxNodeBytes,
+          frameBytes: transportFrameBytes,
+          reason:
+            "a payload crosses as hex, so 2 x maxNodeBytes + slack must stay under the frame cap — above it the transport loses the request instead of refusing it",
+        }),
+      )
+    }
     yield* Effect.logInfo("serve policy applied").pipe(
       Effect.annotateLogs({
-        honored: `maxNodeBytes=${policy.maxNodeBytes}`,
+        // The caps actually in force, as numbers, at every startup:
+        // the whole point of the clamp is that a reader can see which
+        // refusal a client will get, and from which cap.
+        honored: `maxNodeBytes=${maxNodeBytes} maxInFlight=${policy.maxInFlight}`,
+        frameCap: `${transportFrameBytes} bytes, slack ${frameSlackBytes}`,
         // Named, not silently dropped: a number in the config that
         // this transport does not use is a false affordance unless
         // the host says so every time it starts.
@@ -132,7 +208,7 @@ export const applyServePolicy = (
         reason: "stdio binds no port and serves no batch read",
       }),
     )
-    return { maxNodeBytes: policy.maxNodeBytes }
+    return { maxNodeBytes, maxInFlight: policy.maxInFlight }
   })
 
 /**
@@ -165,9 +241,13 @@ export const gateOnManifest: Effect.Effect<
  * `bin/cli/commands.ts` provides them from the resolved store, exactly
  * as it does for every other verb.
  */
-export const layerServeStdio = (limits: { readonly maxNodeBytes: number }) =>
+export const layerServeStdio = (limits: HostLimits) =>
   McpServer.toolkit(casToolkit).pipe(
     Layer.provide(layerHandlers(limits)),
+    // The heartbeat starts with the host and is interrupted with it.
+    // It is merged rather than provided because it answers nothing —
+    // it is the one fiber whose OUTPUT is the absence of its output.
+    Layer.provideMerge(layerHeartbeat),
     Layer.provideMerge(McpServer.layerStdio({
       ...serverIdentity,
       protocols: [
@@ -199,6 +279,9 @@ export const layerServe = (policy: ServePolicy) =>
         transport: "stdio",
         server: serverIdentity.name,
         version: serverIdentity.version,
+        // Announced so a reader knows what silence means: a gap wider
+        // than this in the heartbeat stream is the host stalled.
+        heartbeatMs: Duration.toMillis(heartbeatInterval),
       }),
     )
     return layerServeStdio(limits)

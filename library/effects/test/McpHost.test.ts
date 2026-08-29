@@ -73,7 +73,10 @@ const session = (requests: ReadonlyArray<unknown>) =>
 
     const server = yield* Effect.forkChild(
       Effect.never.pipe(
-        Effect.provide(layerServeStdio({ maxNodeBytes: defaultServePolicy.maxNodeBytes })),
+        Effect.provide(layerServeStdio({
+          maxNodeBytes: defaultServePolicy.maxNodeBytes,
+          maxInFlight: defaultServePolicy.maxInFlight,
+        })),
         Effect.provide(layerStdio),
       ),
     )

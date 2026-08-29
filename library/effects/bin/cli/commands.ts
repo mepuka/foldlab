@@ -146,7 +146,7 @@ const serveLine = (config: Option.Option<StoreConfig>): string => {
   }
   const serve = config.value.serve
   const reads = serve.anonymousReads ? "anonymous reads" : "credential required"
-  return `serve      port ${serve.port} · maxBatchKeys ${serve.maxBatchKeys} · maxNodeBytes ${serve.maxNodeBytes} · ${reads}`
+  return `serve      port ${serve.port} · maxBatchKeys ${serve.maxBatchKeys} · maxNodeBytes ${serve.maxNodeBytes} · maxInFlight ${serve.maxInFlight} · ${reads}`
 }
 
 /** What backing this store up means when the config names no target.
