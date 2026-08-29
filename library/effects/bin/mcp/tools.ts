@@ -3,14 +3,16 @@
  *
  * Two spellings sit beside each other in this file on purpose:
  *
- * - the MIRROR (`code`), a literal transcription of the canonical
- *   schema code `Cas/Backend/Mcp.lean` emits for that tool. It is the
- *   drift tripwire — `manifest.ts` compares it, byte for byte through
- *   the canonical printer, against the generated document at boot —
- *   and it is the same discipline `ConformanceVector.ts` already runs
- *   against the vector emitter: a hand-mirror that is checked, never a
- *   second authority. Editing a mirror to make a boot gate pass is the
- *   defect the gate exists to catch.
+ * - the SERVED TABLE (`servedTools`), the names, self-descriptions,
+ *   and canonical schema codes `Cas/Backend/Mcp.lean` emits. It is not
+ *   written here at all: `lake exe mcpspec` renders the same
+ *   `Cas.Backend.Mcp.tools` list twice — once as
+ *   `mcp/cas-tools.json`, once as the typed constant this module
+ *   imports — so the table this host serves and the document it is
+ *   gated against are two projections of one value. `manifest.ts`
+ *   still compares them, byte for byte through the canonical printer,
+ *   at boot; that gate is now defence in depth rather than the only
+ *   thing standing between the host and a typo.
  *
  * - the CARRIER (`parameters`/`success`), the Effect Schema the
  *   handler actually decodes and encodes through. It is the estate's
@@ -22,81 +24,28 @@
  *   which string — hex, `Schema.Uint8ArrayFromHex`, the one spelling
  *   the vectors, `cas show --json`, and the wire already share.
  *
- * The mirror keeps the host honest about WHAT is served; the carrier
- * is HOW it is served. Neither is authoritative over the Lean estate.
+ * The served table says WHAT is served; the carrier is HOW. Neither is
+ * authoritative over the Lean estate.
+ *
+ * ## OWED — the `Ast → Schema` door
+ *
+ * The carriers below are still held to the codes by REVIEW, not by a
+ * gate: nothing mechanically checks that `RunDocument` is the schema
+ * `RunParams.schemaCode` describes. Closing that needs a door the
+ * estate does not have — a total lowering from a canonical code to an
+ * Effect Schema (or from a Schema back to a code) — and it is not
+ * built here. `McpCarrier.test.ts` adds the honest check the present
+ * pieces allow: every carrier round-trips the wire documents the
+ * handlers actually see.
  */
 import { Schema } from "effect"
 import { Tool, Toolkit } from "effect/unstable/ai"
 import { Cas } from "../../src/index.ts"
-import type { ServedTool, ToolCode, ToolCodeField, ToolCodeFields } from "./manifest.ts"
-
-/* ── the mirrored codes ──────────────────────────────────────────── */
-
-/** A struct field of the revision-0 tagged projection: every field the
- * manifest spells is required, so `optional` is always false. */
-const field = (schema: ToolCode): ToolCodeField => ({ optional: false, schema })
-
-const struct = (fields: ToolCodeFields): ToolCode => ({ _tag: "Struct", fields })
-
-const array = (item: ToolCode): ToolCode => ({ _tag: "Array", item })
-
-const stringCode: ToolCode = { _tag: "String" }
-const integerCode: ToolCode = { _tag: "Integer" }
-
-/** `Mcp.lean`'s `addressDoc`. */
-const addressDoc = struct({ address: field(stringCode) })
-
-/** `Mcp.lean`'s `emptyDoc`. */
-const emptyDoc = struct({})
-
-/** `Mcp.lean`'s `rootsDoc`. */
-const rootsDoc = struct({ roots: field(array(stringCode)) })
-
-/** `Mcp.lean`'s `nodeDoc` — the conformance-vector wire node, which is
- * the ONE node document across vectors, replay, and MCP. */
-const nodeDoc = struct({
-  payload: field(stringCode),
-  refs: field(array(struct({
-    expectedTag: field(integerCode),
-    id: field(stringCode),
-  }))),
-  tag: field(integerCode),
-  version: field(integerCode),
-})
-
-/** `Mcp.lean`'s `RunParams.schemaCode`. */
-const runParamsDoc = struct({
-  instructions: field(array(struct({
-    payloadHex: field(stringCode),
-    refs: field(array(struct({
-      expectedTag: field(integerCode),
-      source: field(integerCode),
-    }))),
-    tag: field(integerCode),
-    version: field(integerCode),
-  }))),
-})
-
-/** `Mcp.lean`'s `RunResult.schemaCode`. */
-const runResultDoc = struct({
-  word: field(array(struct({ address: field(stringCode) }))),
-})
-
-/* ── the mirrored descriptions ───────────────────────────────────── */
-
-/** Transcribed from `Mcp.lean`'s `tools`. A tool teaches by use, and
- * what it says about itself is the estate's sentence, not the host's —
- * so these are compared at boot like the codes are. */
-const description = {
-  put:
-    "Admit one node; the reply is its content address. Admission is the only gate: well-formedness, reference presence, and kind agreement are checked, duplicates are inert, collisions refuse.",
-  load:
-    "Load the node at an address, fail-closed: the frame is parsed exactly and the kind is answered as stored.",
-  run:
-    "Run a straight-line program: instructions in admission order, references naming earlier answers by index. The reply is the word — the run's history, byte-decidable evidence.",
-  publishRoot: "Publish an address as a root.",
-  listRoots: "List the published roots.",
-}
+import {
+  McpToolCodes,
+  McpToolDescriptions,
+} from "../../src/cas/generated/McpToolCodes.ts"
+import type { ServedTool } from "./manifest.ts"
 
 /* ── the carrier schemas ─────────────────────────────────────────── */
 
@@ -175,7 +124,7 @@ export class Refused extends Schema.TaggedError<Refused>()(
 /* ── the tools ───────────────────────────────────────────────────── */
 
 export const casPut = Tool.make("cas_put", {
-  description: description.put,
+  description: McpToolDescriptions.cas_put,
   parameters: Cas.ConformanceVector.VectorNode,
   success: AddressDocument,
   failure: Refused,
@@ -190,7 +139,7 @@ export const casPut = Tool.make("cas_put", {
   .annotate(Tool.OpenWorld, false)
 
 export const casLoad = Tool.make("cas_load", {
-  description: description.load,
+  description: McpToolDescriptions.cas_load,
   parameters: AddressDocument,
   success: Cas.ConformanceVector.VectorNode,
   failure: Refused,
@@ -202,7 +151,7 @@ export const casLoad = Tool.make("cas_load", {
   .annotate(Tool.OpenWorld, false)
 
 export const casRun = Tool.make("cas_run", {
-  description: description.run,
+  description: McpToolDescriptions.cas_run,
   parameters: RunDocument,
   success: WordDocument,
   failure: Refused,
@@ -214,7 +163,7 @@ export const casRun = Tool.make("cas_run", {
   .annotate(Tool.OpenWorld, false)
 
 export const casPublishRoot = Tool.make("cas_publish_root", {
-  description: description.publishRoot,
+  description: McpToolDescriptions.cas_publish_root,
   parameters: AddressDocument,
   success: EmptyDocument,
   failure: Refused,
@@ -228,7 +177,7 @@ export const casPublishRoot = Tool.make("cas_publish_root", {
   .annotate(Tool.OpenWorld, false)
 
 export const casListRoots = Tool.make("cas_list_roots", {
-  description: description.listRoots,
+  description: McpToolDescriptions.cas_list_roots,
   parameters: EmptyDocument,
   success: RootsDocument,
   failure: Refused,
@@ -246,10 +195,11 @@ export const casListRoots = Tool.make("cas_list_roots", {
  *
  * When `SystemNode` + `EmitLayer` land, the verb is ONE row in
  * `Mcp.lean:298-319` plus a `manifestVersion` bump, and on this side:
- * one `Tool.make` below, one entry in `servedTools`, one handler in
- * `handlers.ts`, and `implementedManifestVersion` follows the bump.
- * The manifest row is Lean's to emit — nothing in this package may add
- * it, and the boot gate refuses a host that tries.
+ * one `Tool.make` below, one handler in `handlers.ts`, and
+ * `implementedManifestVersion` following the bump. The served row
+ * arrives by regenerating — `lake exe mcpspec` emits it into
+ * `McpToolCodes.ts` — so nothing in this package writes it, and the
+ * boot gate refuses a host that serves a tool the manifest lacks.
  *
  * ## SEAM — the CODE REGISTER (operator ruling, 2026-08-29)
  *
@@ -302,21 +252,10 @@ export const casToolkit = Toolkit.make(
  * The served table in the manifest's vocabulary — what the boot gate
  * compares. The order is the manifest's order, and it is part of what
  * is compared.
+ *
+ * It IS the emitted table, re-exported under the name the host and its
+ * gate already use. What this module still owns is the join above:
+ * that `cas_run`'s row is served by `RunDocument` and not by some
+ * other carrier. The row itself is no longer anyone's transcription.
  */
-export const servedTools: ReadonlyArray<ServedTool> = [
-  { name: "cas_put", description: description.put, params: nodeDoc, result: addressDoc },
-  { name: "cas_load", description: description.load, params: addressDoc, result: nodeDoc },
-  { name: "cas_run", description: description.run, params: runParamsDoc, result: runResultDoc },
-  {
-    name: "cas_publish_root",
-    description: description.publishRoot,
-    params: addressDoc,
-    result: emptyDoc,
-  },
-  {
-    name: "cas_list_roots",
-    description: description.listRoots,
-    params: emptyDoc,
-    result: rootsDoc,
-  },
-]
+export const servedTools: ReadonlyArray<ServedTool> = McpToolCodes

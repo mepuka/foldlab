@@ -104,7 +104,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe emitlayers"
 
 [tasks."gen:backend-mcp"]
-description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
+description = "Regenerate the versioned CAS MCP tool manifest from the signatures, and the typed TypeScript tool table the Effect host serves"
 dir = "{{config_root}}/library/cas"
 run = "lake exe mcpspec"
 

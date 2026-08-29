@@ -1,7 +1,7 @@
 /**
  * The tool manifest as the CONTRACT — the host's boot-time gate.
  *
- * `library/cas/mcp/cas-tools.json` is emitted by `lake exe emitmcp`
+ * `library/cas/mcp/cas-tools.json` is emitted by `lake exe mcpspec`
  * from `Cas/Backend/Mcp.lean` and byte-gated in `check:cas`. Semantics
  * flow FROM the Lean estate, so the manifest — not this package — is
  * the authority on which tools exist, what each is called, what it
@@ -23,34 +23,34 @@
  * and it makes key order in the emitted file immaterial, which is the
  * emitter's own claim (`SelfCodec.lean`: "Key order here is immaterial:
  * the canonical rendering sorts at render time").
+ *
+ * WHAT THE GATE NOW COMPARES. Both sides are generated: the JSON
+ * document and the served table (`src/cas/generated/McpToolCodes.ts`)
+ * are two renderings of the one `Cas.Backend.Mcp.tools` list, emitted
+ * by the same run of `lake exe mcpspec`. The gate is therefore
+ * trivially green, and it stays as defence in depth — a red one means
+ * the two renderings in `tools/EmitMcp.lean` have forked, or the
+ * committed artifacts came from different runs, both of which are
+ * facts worth refusing a boot over.
  */
 import { Effect, FileSystem, Path, Schema } from "effect"
 import { canonicalJson } from "../../src/cas/Value.ts"
+import type { McpToolCode, McpToolRow } from "../../src/cas/generated/McpToolCodes.ts"
 
 /**
  * A canonical schema code in the revision-0 tagged projection, as far
  * as the emitted manifest currently spells one. This is a TYPE, not a
  * decoder: nothing here reads a code, so the type exists only to give
- * the mirrors in `tools.ts` a shape to be written against. A manifest
- * carrying a code outside it still compares exactly, because the
- * comparison is over the canonical printer and not over this union.
+ * the served table a shape to be checked against. A manifest carrying
+ * a code outside it still compares exactly, because the comparison is
+ * over the canonical printer and not over this union.
+ *
+ * It is not written here. `lake exe mcpspec` emits it beside the rows
+ * it types, from the same `Cas.Backend.Mcp` value the JSON manifest
+ * comes from, so the fragment this host is written against widens when
+ * the estate's codes do and never before.
  */
-export type ToolCode =
-  | { readonly _tag: "Null" | "Boolean" | "Integer" | "String" }
-  | { readonly _tag: "Array"; readonly item: ToolCode }
-  | { readonly _tag: "Struct"; readonly fields: ToolCodeFields }
-
-/** A struct code's fields: the name-keyed record `fieldsToJson`
- * builds, each entry an optionality flag beside the field's own code. */
-export interface ToolCodeFields {
-  readonly [name: string]: ToolCodeField
-}
-
-/** One entry of that record. */
-export interface ToolCodeField {
-  readonly optional: boolean
-  readonly schema: ToolCode
-}
+export type ToolCode = McpToolCode
 
 /**
  * One manifest row. `params` and `result` are canonical schema codes —
@@ -98,7 +98,7 @@ export class ManifestUnavailable extends Schema.TaggedError<ManifestUnavailable>
     return [
       `the tool manifest could not be read at ${this.path}`,
       `  ${this.reason}`,
-      "  it is generated: run `lake exe emitmcp` in library/cas",
+      "  it is generated: run `lake exe mcpspec` in library/cas",
     ].join("\n")
   }
 }
@@ -156,17 +156,14 @@ export const readManifest = (
 
 /** One row of the table this host actually serves, in the manifest's
  * own vocabulary — a name, what the tool says about itself, and the
- * two canonical schema codes. */
-export interface ServedTool {
-  readonly name: string
-  readonly description: string
-  readonly params: ToolCode
-  readonly result: ToolCode
-}
+ * two canonical schema codes. This IS the emitted row type: the served
+ * table is the generated one, so the shape it is checked against is
+ * the shape the emitter declared. */
+export type ServedTool = McpToolRow
 
 /** A code as the bytes it is compared by. Both sides are plain JSON —
- * one side came out of `JSON.parse`, the other is a literal in
- * `tools.ts` — so the canonical printer's own refusals (cycles, exotic
+ * one side came out of `JSON.parse`, the other is a literal in the
+ * generated `McpToolCodes.ts` — so the printer's own refusals (cycles, exotic
  * prototypes, symbol keys) are unreachable here by construction, and
  * nothing catches for them. */
 const renderCode = (code: unknown): string => canonicalJson(code)

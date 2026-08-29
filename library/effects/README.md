@@ -171,7 +171,7 @@ against whichever store the usual resolution order finds.
 
 The tool table is not this package's. It is read at startup from
 `library/cas/mcp/cas-tools.json` — the versioned, self-describing
-manifest `lake exe emitmcp` generates from `Cas/Backend/Mcp.lean` — and
+manifest `lake exe mcpspec` generates from `Cas/Backend/Mcp.lean` — and
 compared against the table the host serves, name for name, description
 for description, canonical schema code for canonical schema code. A
 host that would answer `tools/list` with anything else refuses to start.
