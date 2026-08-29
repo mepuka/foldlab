@@ -32,6 +32,9 @@ import {
   SchemaIssue,
   SchemaRepresentation,
 } from "effect"
+// Type-only: the arbitrary hooks are handed their own `fc`, so nothing
+// test-shaped enters the library's runtime graph.
+import type * as FastCheck from "effect/testing/FastCheck"
 import {
   Byte,
   CasNodeInput,
@@ -249,6 +252,11 @@ const sentinelSchema = Schema.Struct({
   [RefSentinelKey]: Schema.Struct({ id: ContentId, tag: Byte }),
 })
 
+/** The decoded shape of an encoded typed reference: the sentinel a
+ * `foldlab/cas/ref` declaration admits, before marker assignment. Named
+ * because generated code has to spell it. */
+export type ReferenceSentinel = typeof sentinelSchema.Type
+
 /** Stable Effect Schema persistence identity for a typed CAS reference. */
 export const ReferenceRepresentationId = "foldlab/cas/ref"
 
@@ -256,12 +264,32 @@ const strictOptions = {
   onExcessProperty: "error",
 } satisfies import("effect/SchemaAST").ParseOptions
 
-/** The encoded reference declaration used by canonical schema identity. */
+/** The one import generated code needs to name the estate's own reference
+ * constructor. The package exports a single entry point, so both the
+ * constructor and the sentinel type are reached through `Cas`. */
+const referenceImportDeclaration = `import { Cas } from "@foldlab/cas"`
+
+/** Lowercase hex, the alphabet `ContentId` admits. */
+const hexDigits = [..."0123456789abcdef"]
+
+/** An address-shaped generator: 64 lowercase hex digits, the exact shape
+ * `ContentId` checks. Written against the hook's own `fc` so no test-only
+ * module is pulled into the library's runtime graph. */
+const arbitraryContentId = (fc: typeof FastCheck): FastCheck.Arbitrary<ContentIdType> =>
+  fc.array(fc.constantFrom(...hexDigits), { maxLength: 64, minLength: 64 })
+    .map((digits) => ContentId.make(digits.join("")))
+
+/** The encoded reference declaration used by canonical schema identity.
+ *
+ * It ships the whole declaration contract, so a foldlab reference is
+ * indistinguishable from a built-in across persistence (`representation`),
+ * revival (`referenceRepresentationReviver`), code generation (`toCode`),
+ * and instance generation (`toArbitrary`). */
 export const referenceRepresentation = (
   expectedTag: Byte,
-): Schema.declare<typeof sentinelSchema.Type> =>
-  Schema.declare<typeof sentinelSchema.Type>(
-    (candidate): candidate is typeof sentinelSchema.Type =>
+): Schema.declare<ReferenceSentinel> =>
+  Schema.declare<ReferenceSentinel>(
+    (candidate): candidate is ReferenceSentinel =>
       Option.isSome(
         Schema.decodeUnknownOption(sentinelSchema, strictOptions)(candidate),
       ),
@@ -270,6 +298,15 @@ export const referenceRepresentation = (
         id: ReferenceRepresentationId,
         payload: expectedTag,
       },
+      toArbitrary: () => (fc) =>
+        arbitraryContentId(fc).map((id) => ({
+          [RefSentinelKey]: { id, tag: expectedTag },
+        })),
+      toCode: () => ({
+        importDeclarations: [referenceImportDeclaration],
+        runtime: `Cas.CanonicalSchema.ref(${expectedTag})`,
+        Type: "Cas.ReferenceSentinel",
+      }),
     },
   )
 
@@ -283,14 +320,24 @@ export const referenceRepresentationReviver =
 
 /** The one reference-codec law: sentinel on the wire, `Root` in the
  * value, the expected kind tag stamped at encode and demanded at
- * decode. The tag arrives as a thunk so both entry points below share
- * it. */
+ * decode. The encoded side arrives already built, because only the
+ * thunked entry point needs to defer it: `Suspend` is a representation
+ * node of its own, so suspending a tag that is already data would put a
+ * `Suspend` wrapper into the persisted identity and revival would no
+ * longer answer the bytes it was revived from. The tag stays a thunk
+ * because the thunked entry point still needs it lazily. */
 const refCodec = <B>(
+  reference: Schema.Codec<ReferenceSentinel, typeof sentinelSchema.Encoded>,
   expectedTag: () => Byte,
 ): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
-  Schema.suspend(() => referenceRepresentation(expectedTag())).pipe(Schema.decodeTo(
+  reference.pipe(Schema.decodeTo(
     Schema.declare<Root<B>>(
       (candidate): candidate is Root<B> => Predicate.isString(candidate),
+      // The decoded side of a reference is an address. Generation derives
+      // through it rather than throwing on an opaque declaration; the
+      // codec's own encode stamps the expected tag, so a generated root
+      // round-trips.
+      { toArbitrary: () => (fc) => cast(arbitraryContentId(fc)) },
     ),
     {
       decode: SchemaGetter.transformOrFail((sentinel, options) => {
@@ -317,17 +364,21 @@ const refCodec = <B>(
 export const ref = <B>(
   target: () => CasValue<B>,
 ): Schema.Codec<Root<B>, typeof sentinelSchema.Encoded> =>
-  refCodec<B>(() => target().kindTag)
+  refCodec<B>(
+    Schema.suspend(() => referenceRepresentation(target().kindTag)),
+    () => target().kindTag,
+  )
 
 /** A typed-reference field pinned to a kind tag directly — the form a
  * canonical schema's `Ref` compiles to, where the tag is data and no
  * target projection exists yet. The decoded root's value type stays
  * `unknown` until references carry their target schema's address (a
- * schema-commission item). */
+ * schema-commission item). This is also what the reviver rebuilds, so
+ * it lowers back to the bare declaration it was revived from. */
 export const refWithTag = (
   tag: Byte,
 ): Schema.Codec<Root<unknown>, typeof sentinelSchema.Encoded> =>
-  refCodec<unknown>(() => tag)
+  refCodec<unknown>(referenceRepresentation(tag), () => tag)
 
 /** Construct a typed value projection over the in-memory CAS service. */
 export const value = <A>(options: ValueOptions<A>): CasValue<A> => {

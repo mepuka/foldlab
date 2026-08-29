@@ -49,6 +49,30 @@ it("a carrier snapshots a native representation and malformed annotations fail c
   expect(Option.isNone(CS.bytesFor(corrupted))).toBe(true)
 })
 
+it("a pin survives on either side of a check", () => {
+  // `annotate` lands on the LAST CHECK when a carrier has checks, and
+  // Effect resolves annotations from that same slot. A pin attached
+  // after `.check(...)` used to be written into a slot the reader never
+  // looked at, so the carrier silently fell back to its own native
+  // representation.
+  const expected = Encoding.encodeHex(CS.bytesOf(snapshotSchema))
+  const after = Schema.String.check(Schema.isMinLength(2))
+    .pipe(CS.annotate(snapshotSchema))
+  const before = Schema.String.pipe(CS.annotate(snapshotSchema))
+    .check(Schema.isMinLength(2))
+
+  for (const carrier of [after, before]) {
+    expect(Option.getOrThrow(CS.astOf(carrier))._tag).toBe("Objects")
+    expect(Encoding.encodeHex(Option.getOrThrow(CS.bytesFor(carrier))))
+      .toBe(expected)
+  }
+
+  // Fail-closed is unchanged in the check slot too.
+  const corrupted = Schema.String.check(Schema.isMinLength(2))
+    .annotate({ [CS.AnnotationKey]: 42 })
+  expect(Option.isNone(CS.bytesFor(corrupted))).toBe(true)
+})
+
 it.effect("schemas are content: put, address identity, exact frozen get", () =>
   Effect.gen(function* () {
     const id = yield* CS.put(snapshotSchema)

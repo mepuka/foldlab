@@ -134,6 +134,10 @@ export * as Architecture from "./cas/Architecture.ts"
 // annotation API. No schema stands above it.
 export * as CanonicalSchema from "./cas/CanonicalSchema.ts"
 
+// The persistent annotation namespace: string keys under `foldlab/cas/`,
+// attached to the encoded side and read the way Effect resolves them.
+export * as Annotations from "./cas/Annotations.ts"
+
 // The registered replay surface: the Lean-emitted conformance vector
 // as a first-class type, wire schemas hand-mirroring the emitter.
 export * as ConformanceVector from "./cas/ConformanceVector.ts"
@@ -143,6 +147,7 @@ export { ProjectionCodecFailure, ref, value } from "./cas/Value.ts"
 export type {
   CasValue as Value,
   ProjectionError,
+  ReferenceSentinel,
   Root,
   ValueOptions,
 } from "./cas/Value.ts"

@@ -28,6 +28,7 @@ import {
   encodeCasNode,
   type CasAddress,
 } from "./Store.ts"
+import { resolveAnnotation } from "./Annotations.ts"
 import {
   canonicalJson,
   decodedVersionedEnvelope,
@@ -132,17 +133,27 @@ const documentOf = (
 ): SchemaRepresentation.Document =>
   Schema.isSchema(identity) ? representationOf(identity) : snapshotDocument(identity)
 
-/** The frozen native representation carried by a runtime schema. */
+/** The frozen native representation carried by a runtime schema.
+ *
+ * The pin is read through `resolveAnnotation`, not off `ast.annotations`:
+ * `annotate` lands on the last check when the carrier has checks, and
+ * Effect's own resolution reads that slot, so a carrier pinned after a
+ * `.check(...)` would otherwise lose its identity in silence and fall
+ * back to its native representation. */
 export const representationOf = (
   schema: Schema.Top,
 ): SchemaRepresentation.Document => {
-  const carried = Reflect.get(schema.ast.annotations ?? {}, AnnotationKey)
+  const carried = resolveAnnotation(schema.ast, AnnotationKey)
   if (carried === undefined) return nativeDocument(schema)
   const json = Schema.decodeUnknownSync(Schema.Json, strictOptions)(carried)
   return documentFromJson(json)
 }
 
-const revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
+/** The estate's reviver registry: every declaration and check identity a
+ * persisted canonical schema may carry. Built-in check ids are reused
+ * verbatim, so Effect's own revival and code generation apply unchanged;
+ * only `foldlab/cas/ref` is ours. */
+export const Revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
   Schema.isIntReviver,
   Schema.isBetweenReviver,
   Schema.isPatternReviver,
@@ -154,7 +165,9 @@ export const fromRepresentation = (
   document: SchemaRepresentation.Document,
 ): Schema.Top => {
   const snapshot = snapshotDocument(document)
-  return SchemaRepresentation.fromRepresentation(snapshot, { revivers }).annotate({
+  return SchemaRepresentation.fromRepresentation(snapshot, {
+    revivers: Revivers,
+  }).annotate({
     [AnnotationKey]: deepFreeze(SchemaRepresentation.toJson(snapshot)),
   })
 }

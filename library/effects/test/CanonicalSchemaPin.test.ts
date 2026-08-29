@@ -14,45 +14,21 @@
  *
  * Per the ratified harness rulings: the TS codes hand-mirror the Lean
  * registry (the drift tripwire), nothing here writes or repairs a
- * fixture, and a missing fixture is a red suite.
+ * fixture, and a missing fixture is a red suite. The mirrors themselves
+ * live in `test/fixtures/schemaRegistry.ts`, shared with the
+ * materialization gate so a mirror is written once.
  */
 import { expect, it } from "@effect/vitest"
-import { Effect, Layer, Option, Schema } from "effect"
+import { Effect, Layer, Option } from "effect"
 import { Cas } from "../src/index.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
 import { readFixtureBytes, readFixtureString } from "./fixtures/read.ts"
+import { registry } from "./fixtures/schemaRegistry.ts"
 
 const { CanonicalSchema, ConformanceVector, layerMemoryLive } = Cas
 
 const fixtureBytes = (name: string) =>
   readFixtureBytes(`../cas/schemas/${name}.json`).pipe(Effect.orDie)
-
-/** Lean `SchemasMain.PinSample`, hand-mirrored in Effect Schema. */
-const pinSample = Schema.Struct({
-  count: Schema.Int,
-  flag: Schema.Boolean,
-  items: Schema.Array(Schema.String),
-  label: Schema.String,
-  note: Schema.optionalKey(Schema.String),
-  root: CanonicalSchema.ref(9),
-  unit: Schema.Null,
-})
-
-/** Lean `SchemasMain.literalPin`, hand-mirrored in Effect Schema. */
-const literalPin = Schema.Struct({
-  a: Schema.Null,
-  b: Schema.Literal(true),
-  c: Schema.optionalKey(Schema.Literal(-7)),
-  d: Schema.Literal("pinned"),
-})
-
-/** The registry, name-for-name with `library/cas/tools/Schemas.lean`. */
-const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
-  ["vector-document", ConformanceVector.vectorSchema],
-  ["vector-index", ConformanceVector.indexSchema],
-  ["pin-sample", pinSample],
-  ["literal-pin", literalPin],
-] as const
 
 it.effect("every registered code's payload bytes agree across runtimes", () =>
   Effect.gen(function* () {
