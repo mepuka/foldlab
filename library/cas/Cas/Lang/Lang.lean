@@ -28,6 +28,7 @@ exactly the elaboration's address and store, deduplicating shared
 subterms (F2); `Auth` is authenticated computation as a handler pair —
 `proveHandler` records the LOAD trace onto a proof word, `verifyHandler`
 re-interprets the same program against a claimed proof word holding no
+<<<<<<< HEAD
 store, and `verify_load_or_collision` is the one-operation
 ideal-or-collision disjunct at hash-lattice Level 0.
 
@@ -39,4 +40,12 @@ another effect system may assume when it consumes one. Read it before
 coding against a CAS program. Do not confuse it with `Tower`, which is
 the orthogonal SERVICE tower (a handler implemented as a program over a
 lower signature).
+=======
+store, `verify_load_or_collision` is the one-operation
+ideal-or-collision disjunct at hash-lattice Level 0, and
+`whole_run_security` (W-SEC) with `whole_run_correctness` (W-COR)
+lifts the pair to a whole program — still Level 0, with the collision
+exhibited and the verifier's prefix consumption placed outside the
+disjunction per ADSF.
+>>>>>>> worktree-agent-ae019db914108e8a0
 -/

@@ -1,41 +1,41 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 246,
-    "Core": 306,
+    "Codec": 259,
+    "Core": 323,
     "Grammar": 126,
-    "IR": 116,
-    "Lang": 226,
+    "IR": 133,
+    "Lang": 244,
     "Lift": 37,
-    "Schema": 458,
-    "Values": 372,
+    "Schema": 468,
+    "Values": 382,
     "Vectors": 65
   },
   "axiomCensus": {
     "Classical.choice": 190,
-    "Quot.sound": 338,
-    "propext": 474
+    "Quot.sound": 356,
+    "propext": 499
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 168,
-    "Cas.Binding": 43,
+    "Cas.Addr32": 181,
+    "Cas.Binding": 54,
     "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 38,
-    "Cas.Lang.Handler": 17,
-    "Cas.Lang.Prog": 71,
-    "Cas.Lang.Refusal": 25,
+    "Cas.Lang.Handler": 19,
+    "Cas.Lang.Prog": 78,
+    "Cas.Lang.Refusal": 40,
     "Cas.Lang.Sig": 42,
     "Cas.Lang.Status": 51,
-    "Cas.Lang.interpret": 6,
-    "Cas.Node": 80,
-    "Cas.Schema.Ast": 284,
+    "Cas.Lang.interpret": 14,
+    "Cas.Node": 91,
+    "Cas.Schema.Ast": 294,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
-    "Cas.Word": 91
+    "Cas.Word": 107
   },
-  "declarations": 1501,
-  "documented": 747,
+  "declarations": 1530,
+  "documented": 770,
   "library": "Cas",
   "modules": [
     {
@@ -3335,8 +3335,8 @@
       ]
     },
     {
-      "declarations": 12,
-      "documented": 12,
+      "declarations": 31,
+      "documented": 31,
       "module": "Cas.Lang.Auth",
       "surface": [
         {
@@ -3358,6 +3358,15 @@
           "kind": "def",
           "name": "Cas.Lang.VerifyM",
           "signature": "Type → Type"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.handle_step_agree",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {op : Cas.Lang.CasSig.Op} {w πacc w₁ πacc₁ πA πA₁ : Cas.Word} {ansP ansV : Cas.Lang.CasSig.Ans op}, Cas.Lang.HonestWord H w → (Cas.Lang.proveHandler H).handle op (w, πacc) = Except.ok (ansP, w₁, πacc₁) → (Cas.Lang.verifyHandler H).handle op πA = Except.ok (ansV, πA₁) → Cas.Lang.HonestWord H w₁ ∧ ∃ π₀, πA = π₀ ++ πA₁ ∧ (ansV = ansP ∧ Cas.Lang.proofNodes πacc₁ = Cas.Lang.proofNodes πacc ++ Cas.Lang.proofNodes π₀ ∨ ∃ bs bs', bs ≠ bs' ∧ H bs = H bs')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
           "axioms": ["propext"],
@@ -3387,6 +3396,86 @@
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpret_agree_or_collision",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w πacc w' πP πA π' : Cas.Word} {aP aV : A}, Cas.Lang.HonestWord H w → Cas.Lang.interpret (Cas.Lang.proveHandler H) p (w, πacc) = Except.ok (aP, w', πP) → Cas.Lang.interpret (Cas.Lang.verifyHandler H) p πA = Except.ok (aV, π') → ∃ π₀, πA = π₀ ++ π' ∧ (aV = aP ∧ Cas.Lang.proofNodes πP = Cas.Lang.proofNodes πacc ++ Cas.Lang.proofNodes π₀ ∨ ∃ bs bs', bs ≠ bs' ∧ H bs = H bs')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpret_prove_honest",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w πacc w' πP : Cas.Word} {a : A}, Cas.Lang.HonestWord H w → Cas.Lang.interpret (Cas.Lang.proveHandler H) p (w, πacc) = Except.ok (a, w', πP) → Cas.Lang.HonestWord H w'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpret_prove_verify",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w πacc w' πP : Cas.Word} {a : A} (rest : Cas.Word), Cas.Lang.HonestWord H w → Cas.Lang.interpret (Cas.Lang.proveHandler H) p (w, πacc) = Except.ok (a, w', πP) → ∃ πe, πP = πacc ++ πe ∧ Cas.Lang.interpret (Cas.Lang.verifyHandler H) p (πe ++ rest) = Except.ok (a, rest)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Lang.Handler", "Cas.Lang.Refusal", "Cas.Lang.interpret"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpret_pure_state",
+          "signature": "∀ {A σ : Type} (h : Cas.Lang.Handler Cas.Lang.CasSig (StateT σ (Except Cas.Lang.Refusal))) (a : A) (s : σ), Cas.Lang.interpret h (Cas.Lang.Prog.pure a) s = Except.ok (a, s)",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Lang.Handler", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpret_vis_state",
+          "signature": "∀ {A σ : Type} (h : Cas.Lang.Handler Cas.Lang.CasSig (StateT σ (Except Cas.Lang.Refusal))) (op : Cas.Lang.CasSig.Op) (k : Cas.Lang.CasSig.Ans op → Cas.Lang.Prog Cas.Lang.CasSig A) (s : σ),\u000a  Cas.Lang.interpret h (Cas.Lang.Prog.vis op k) s =\u000a    match h.handle op s with\u000a    | Except.ok (ans, s') => Cas.Lang.interpret h (k ans) s'\u000a    | Except.error r => Except.error r",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.proofNodes",
+          "signature": "Cas.Word → List Cas.Node",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.proofNodes_append",
+          "signature": "∀ (π π' : Cas.Word), Cas.Lang.proofNodes (π ++ π') = Cas.Lang.proofNodes π ++ Cas.Lang.proofNodes π'",
+          "touches": ["Core", "IR", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.proofNodes_cons",
+          "signature": "∀ (b : Cas.Binding) (π : Cas.Word), Cas.Lang.proofNodes (b :: π) = b.node :: Cas.Lang.proofNodes π",
+          "touches": ["Core", "IR", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding", "Cas.Node"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.proofNodes_nil",
+          "signature": "Cas.Lang.proofNodes [] = []",
+          "touches": ["Core", "IR", "Lang"]
+        },
+        {
           "carriers": ["Cas.Addr32", "Cas.Lang.Handler"],
           "documented": true,
           "kind": "def",
@@ -3395,12 +3484,39 @@
           "touches": ["Codec", "Core", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.proveHandler_honest",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (op : Cas.Lang.CasSig.Op) {w πacc w' πacc' : Cas.Word} {ans : Cas.Lang.CasSig.Ans op}, Cas.Lang.HonestWord H w → (Cas.Lang.proveHandler H).handle op (w, πacc) = Except.ok (ans, w', πacc') → Cas.Lang.HonestWord H w'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
           "axioms": ["propext"],
           "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Lang.proveHandler_store_agree",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (op : Cas.Lang.CasSig.Op) (w π : Cas.Word), Except.map (fun r => (r.fst, r.snd.fst)) ((Cas.Lang.proveHandler H).handle op (w, π)) = (Cas.Lang.referenceHandler H).handle op w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.prove_load_clause",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {a : Cas.Addr32} {w πacc w' πacc' : Cas.Word} {n : Cas.Node}, (Cas.Lang.proveHandler H).handle (Cas.Lang.CasE.load a) (w, πacc) = Except.ok (n, w', πacc') → w.find a = some n ∧ w' = w ∧ πacc' = πacc ++ [{ address := a, node := n }]",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.prove_put_answer",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {n : Cas.Node} {w πacc w' πacc' : Cas.Word} {a : Cas.Addr32}, (Cas.Lang.proveHandler H).handle (Cas.Lang.CasE.put n) (w, πacc) = Except.ok (a, w', πacc') → ∃ hn, a = Cas.addr H ⟨n, hn⟩ ∧ πacc' = πacc",
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
@@ -3422,6 +3538,15 @@
         },
         {
           "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_handle_prefix",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {op : Cas.Lang.CasSig.Op} {π π' : Cas.Word} {ans : Cas.Lang.CasSig.Ans op}, (Cas.Lang.verifyHandler H).handle op π = Except.ok (ans, π') → ∃ π₀, π = π₀ ++ π'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
           "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
@@ -3436,6 +3561,51 @@
           "kind": "theorem",
           "name": "Cas.Lang.verify_load_or_collision",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {w π rest : Cas.Word} {a : Cas.Addr32} {m n : Cas.Node}, Cas.Lang.HonestWord H w → w.find a = some n → (Cas.Lang.verifyHandler H).handle (Cas.Lang.CasE.load a) π = Except.ok (m, rest) → (∃ dec, π = { address := dec, node := m } :: rest) ∧ (m = n ∨ Cas.encodeNode m ≠ Cas.encodeNode n ∧ H (Cas.encodeNode m) = H (Cas.encodeNode n))",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_put_answer",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {n : Cas.Node} {π π' : Cas.Word} {a : Cas.Addr32}, (Cas.Lang.verifyHandler H).handle (Cas.Lang.CasE.put n) π = Except.ok (a, π') → ∃ hn, a = Cas.addr H ⟨n, hn⟩ ∧ π' = π",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_put_clause",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {n : Cas.Node} (hn : n.WF) (π : Cas.Word), (Cas.Lang.verifyHandler H).handle (Cas.Lang.CasE.put n) π = Except.ok (Cas.addr H ⟨n, hn⟩, π)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_run_prefix",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {πA π' : Cas.Word} {a : A}, Cas.Lang.interpret (Cas.Lang.verifyHandler H) p πA = Except.ok (a, π') → ∃ π₀, πA = π₀ ++ π'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.whole_run_correctness",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w w' πP : Cas.Word} {a : A} (rest : Cas.Word), Cas.Lang.HonestWord H w → Cas.Lang.interpret (Cas.Lang.proveHandler H) p (w, []) = Except.ok (a, w', πP) → Cas.Lang.interpret (Cas.Lang.verifyHandler H) p (πP ++ rest) = Except.ok (a, rest)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.interpret", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.whole_run_security",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w w' πP πA π' : Cas.Word} {aP aV : A}, Cas.Lang.HonestWord H w → Cas.Lang.interpret (Cas.Lang.proveHandler H) p (w, []) = Except.ok (aP, w', πP) → Cas.Lang.interpret (Cas.Lang.verifyHandler H) p πA = Except.ok (aV, π') → ∃ π₀, πA = π₀ ++ π' ∧ (aV = aP ∧ Cas.Lang.proofNodes π₀ = Cas.Lang.proofNodes πP ∨ ∃ bs bs', bs ≠ bs' ∧ H bs = H bs')",
           "touches": ["Codec", "Core", "IR", "Lang"]
         }
       ]
@@ -8522,8 +8692,8 @@
       ]
     },
     {
-      "declarations": 133,
-      "documented": 82,
+      "declarations": 143,
+      "documented": 86,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
         {
@@ -9048,6 +9218,15 @@
           "touches": ["Schema"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofEnvelope_repNormal",
+          "signature": "∀ {v : Cas.Json.Value} {a : Cas.Schema.Ast}, Cas.Schema.Ast.ofEnvelope v = some a → a.RepNormal",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "def",
@@ -9163,6 +9342,15 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationDocument_repNormal",
+          "signature": "∀ {v : Cas.Json.Value} {a : Cas.Schema.Ast}, Cas.Schema.Ast.ofRepresentationDocument v = some a → a.RepNormal",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Schema.ofRepresentationDocument_representationDocument",
           "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofRepresentationDocument a.representationDocument = some a.repNorm",
           "touches": ["Schema"]
@@ -9185,6 +9373,15 @@
           "touches": ["Schema"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationElement_repNorm",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast) (v : Cas.Json.Value), Cas.Schema.ofRepresentationElement v = some e → Cas.Schema.repNormElement e = e",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
@@ -9200,6 +9397,33 @@
           "name": "Cas.Schema.ofRepresentationElements_elementsToRepresentationJson",
           "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.ofRepresentationElements (Cas.Schema.elementsToRepresentationJson es) = some (Cas.Schema.repNormElements es)",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationElements_repNorm",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)) (vs : List Cas.Json.Value), Cas.Schema.ofRepresentationElements vs = some es → Cas.Schema.repNormElements es = es",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationJson_repNorm",
+          "signature": "∀ (a : Cas.Schema.Ast) (v : Cas.Json.Value), Cas.Schema.Ast.ofRepresentationJson v = some a → a.repNorm = a",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationJson_repNormal",
+          "signature": "∀ {v : Cas.Json.Value} {a : Cas.Schema.Ast}, Cas.Schema.Ast.ofRepresentationJson v = some a → a.RepNormal",
+          "touches": ["Schema", "Values"]
         },
         {
           "axioms": ["Quot.sound", "propext"],
@@ -9237,6 +9461,15 @@
           "touches": ["Schema"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationMembers_repNorm",
+          "signature": "∀ (as : List Cas.Schema.Ast) (vs : List Cas.Json.Value), Cas.Schema.ofRepresentationMembers vs = some as → Cas.Schema.repNormMembers as = as",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
@@ -9258,9 +9491,27 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationParams_repNorm",
+          "signature": "∀ (as : List Cas.Schema.Ast) (vs : List Cas.Json.Value), Cas.Schema.ofRepresentationParams vs = some as → Cas.Schema.repNormParams as = as",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
           "name": "Cas.Schema.ofRepresentationProperties_fieldsToRepresentationJson",
           "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.ofRepresentationProperties✝ (Cas.Schema.fieldsToRepresentationJson fs) = some (Cas.Schema.repNormFields fs)",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationProperties_repNorm",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)) (ps : List Cas.Json.Value), Cas.Schema.ofRepresentationProperties✝ ps = some fs → Cas.Schema.repNormFields fs = fs",
+          "touches": ["Schema", "Values"]
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -9268,6 +9519,15 @@
           "kind": "def",
           "name": "Cas.Schema.ofRepresentationRest",
           "signature": "List Cas.Json.Value → Option (Option Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationRest_repNorm",
+          "signature": "∀ (r : Option Cas.Schema.Ast) (vs : List Cas.Json.Value), Cas.Schema.ofRepresentationRest vs = some r → Cas.Schema.repNormRest r = r",
           "touches": ["Schema", "Values"]
         },
         {
@@ -11962,10 +12222,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 773,
+    "def": 774,
     "inductive": 40,
     "instance": 71,
     "structure": 44,
-    "theorem": 570
+    "theorem": 598
   }
 }
