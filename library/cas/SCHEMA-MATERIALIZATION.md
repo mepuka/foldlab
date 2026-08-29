@@ -284,6 +284,17 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     the Lean-owned `EmitAst`/`Ts` printer as `Materialize.source`'s
     counterpart; only the Effect-native register exists on the TS
     side today.
+19. **THE TWO DOORS DISAGREE** (JIT-substrate survey B8,
+    `.staging/schema-materialization/JIT-SUBSTRATE-SURVEY.md`,
+    2026-08-29): a stored schema Lean's `ingest` refuses `illFormed`
+    can still materialize into a live TS validator — the TS door runs
+    no `wf` gate and its reviver allowlist is a different list from
+    `DeclarationId.all`, with unknown ids thrown rather than refused
+    by name. The survey's staged proposal (0-6, blockers-first) fixes
+    it at stages 1-2 (the disagreement-vector conformance gate, then
+    the generated `wf` gate on the TS door under R11). Sequencing of
+    the six stages is the operator's; stages 3+4 are ruling 11's
+    slice.
 
 ## Defect register (found in passing, not part of the plan)
 
