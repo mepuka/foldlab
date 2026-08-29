@@ -58,6 +58,9 @@ import {
   type CasError,
 } from "./Node.ts"
 
+/** The read half of the store law as a plain shape: one operation, stated
+ * over whole nodes rather than bytes. The service below is this shape in
+ * the context; embeddings that hold a backend directly use it as a value. */
 export interface CasLoaderShape {
   /** Load and re-verify a node: recomputed address, canonical decode, known
    * kind. Never renormalizes. */
@@ -72,12 +75,18 @@ export class CasLoader extends Context.Service<CasLoader, CasLoaderShape>()(
   "foldlab/cas/CasLoader",
 ) {}
 
+/** The whole store law: reading, plus the one operation that grows the
+ * store. `put` is where admission is judged, which is why nothing below
+ * this shape is allowed to judge it. */
 export interface CasStoreShape extends CasLoaderShape {
   /** Admit and store a node. Every referenced address must already resolve
    * in the store, at its declared kind. */
   readonly put: (node: CasNodeInput) => Effect.Effect<ContentId, CasError>
 }
 
+/** The store law in the context: admission at put, re-verification at
+ * load, over whichever backend and address scheme the composition
+ * supplies. */
 export class CasStore extends Context.Service<CasStore, CasStoreShape>()(
   "foldlab/cas/CasStore",
 ) {}

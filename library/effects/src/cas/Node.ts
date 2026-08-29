@@ -52,26 +52,42 @@ export type CasNodeInput = typeof CasNodeInput.Type
 
 /** The CAS error family — a DISTINCT typed family from mismatch categories
  * (GR-2 exclusion) with clause-named members (GR-6). */
+
+/** The bytes served at an address do not hash to it. The store recomputes
+ * every address on read, so this is what a corrupt or hostile byte plane
+ * surfaces as — never silently served content. */
 export class AddressMismatch extends Schema.TaggedError<AddressMismatch>()(
   "CasError/AddressMismatch",
   { expected: ContentId, actual: ContentId },
 ) {}
 
+/** The bytes at an address do not decode, or do not re-encode to
+ * themselves. The store never renormalizes on read, so a second spelling
+ * of the same node is refused rather than accepted and rewritten. */
 export class NonCanonicalBytes extends Schema.TaggedError<NonCanonicalBytes>()(
   "CasError/NonCanonicalBytes",
   { id: ContentId },
 ) {}
 
+/** A node's versioned kind is one this runtime does not interpret. At the
+ * current scheme it is the version byte that decides: a tag the registry
+ * has not ratified is still admitted as content. */
 export class UnknownKind extends Schema.TaggedError<UnknownKind>()(
   "CasError/UnknownKind",
   { version: Byte, tag: Byte },
 ) {}
 
+/** A candidate node references an address the store does not hold.
+ * Admission is children-first, so a node never enters ahead of what it
+ * points at. */
 export class DanglingReference extends Schema.TaggedError<DanglingReference>()(
   "CasError/DanglingReference",
   { missing: ContentId },
 ) {}
 
+/** A reference resolves, but to a node of another kind. References type-check
+ * at tag granularity, which is what makes a link a typed edge rather than an
+ * address. */
 export class WrongKindReference extends Schema.TaggedError<WrongKindReference>()(
   "CasError/WrongKindReference",
   { ref: ContentId, expectedTag: Byte, actualTag: Byte },
@@ -84,6 +100,9 @@ export class ContentNotFound extends Schema.TaggedError<ContentNotFound>()(
   { id: ContentId },
 ) {}
 
+/** The store could not answer: a backend that failed, a digest that failed,
+ * an input that is not a node. Distinct from every admission clause on
+ * purpose — nothing here is a verdict about content. */
 export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
   "CasError/StoreFailure",
   {

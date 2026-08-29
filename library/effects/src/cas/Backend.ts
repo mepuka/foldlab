@@ -41,6 +41,9 @@ export class BackendFailure extends Schema.TaggedError<BackendFailure>()(
   },
 ) {}
 
+/** What a backend must answer to be read from: bytes at an address, and
+ * advisory presence in bulk. Nothing above the seam trusts either answer
+ * — every read re-verifies. */
 export interface ByteReaderShape {
   /** The canonical bytes at an address, if admitted. */
   readonly loadBytes: (
@@ -58,6 +61,9 @@ export class ByteReader extends Context.Service<ByteReader, ByteReaderShape>()(
   "foldlab/cas/ByteReader",
 ) {}
 
+/** What a backend must answer to be written to: one join. Admission is
+ * judged above the seam, so this shape has no way to express a verdict
+ * and a backend has no way to weaken one. */
 export interface ByteWriterShape {
   /** Join one admitted node in. Callers admit first; writing identical
    * bytes again is the identity. */
@@ -73,6 +79,9 @@ export class ByteWriter extends Context.Service<ByteWriter, ByteWriterShape>()(
   "foldlab/cas/ByteWriter",
 ) {}
 
+/** The naming plane a backend may also carry: a grow-only set of published
+ * addresses, and its enumeration. A backend that cannot enumerate its keys
+ * simply never provides it — the key-value one does not. */
 export interface RootStoreShape {
   /** Grow the published-roots set. Idempotent. */
   readonly publish: (
