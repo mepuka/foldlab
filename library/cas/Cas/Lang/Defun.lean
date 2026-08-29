@@ -1,5 +1,4 @@
 import Cas.Lang.Interp
-import Cas.Lang.TreeProg
 import Cas.Grammar.Sorts
 
 /-!
@@ -331,7 +330,10 @@ def readPRef : Bytes → Option ((UInt8 × PIn) × Bytes)
 sequence reader recovers a list whose ELEMENTS satisfy the reader's
 premise. The codec's `readN_encode` quantifies its hypothesis over all
 values; the encoding here round-trips only on well-formed operands, so
-the induction is repackaged with the premise carried by membership. -/
+the induction is repackaged with the premise carried by membership.
+Its consumer is the rolled-back round trips parked at
+`.staging/parser-experiments/defun-held-proofs.lean.txt`; it stays so
+their return does not re-prove it. -/
 theorem readN_encode_of {α : Type} {p : Bytes → Option (α × Bytes)}
     {e : α → Bytes} {P : α → Prop}
     (hp : ∀ a, P a → ∀ rest, p (e a ++ rest) = some (a, rest)) :

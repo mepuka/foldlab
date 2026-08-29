@@ -46,30 +46,41 @@ def litExpr : LitVal → Expr
   | .int i => .int i.val
   | .str s => .str s
 
+mutual
+
+/-- Lower one code node; the name environment is consulted at every
+node except the root of the code being emitted. -/
+private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
+    (a : Ast) : Expr :=
+  match (if atRoot then none else env.find? (fun e => astBeq e.2 a)) with
+  | some (name, _) => .ident name
+  | none =>
+    match a with
+    | .null => schema "Null"
+    | .bool => schema "Boolean"
+    | .int => schema "Int"
+    | .str => schema "String"
+    | .lit .null => schema "Null"
+    | .lit v => .call (schema "Literal") [litExpr v]
+    | .arr item => .call (schema "Array") [constructorGo env false item]
+    | .struct fields =>
+      .call (schema "Struct") [.objectML (constructorFields env fields)]
+    | .ref tag => .call (canonicalSchema "ref") [.int tag.toNat]
+
+private def constructorFields (env : List (String × Ast)) :
+    List (String × Bool × Ast) → List (String × Expr)
+  | [] => []
+  | (name, opt, code) :: rest =>
+    (name,
+      if opt then .call (schema "optionalKey") [constructorGo env false code]
+      else constructorGo env false code) :: constructorFields env rest
+
+end
+
 /-- Lower a code, replacing any subterm equal to an earlier named code
 by its name. The name environment is consulted at every node except
 the root of the code being emitted. -/
-partial def constructorExpr (env : List (String × Ast)) : Ast → Expr :=
-  go (atRoot := true)
-where
-  go (atRoot : Bool) (a : Ast) : Expr :=
-    match (if atRoot then none else env.find? (fun e => astBeq e.2 a)) with
-    | some (name, _) => .ident name
-    | none =>
-      match a with
-      | .null => schema "Null"
-      | .bool => schema "Boolean"
-      | .int => schema "Int"
-      | .str => schema "String"
-      | .lit .null => schema "Null"
-      | .lit v => .call (schema "Literal") [litExpr v]
-      | .arr item => .call (schema "Array") [go false item]
-      | .struct fields =>
-        .call (schema "Struct")
-          [.objectML (fields.map fun (name, opt, code) =>
-            (name,
-              if opt then .call (schema "optionalKey") [go false code]
-              else go false code))]
-      | .ref tag => .call (canonicalSchema "ref") [.int tag.toNat]
+def constructorExpr (env : List (String × Ast)) : Ast → Expr :=
+  constructorGo env (atRoot := true)
 
 end Cas.Backend

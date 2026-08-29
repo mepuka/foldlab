@@ -44,7 +44,7 @@ private def putNode (tag : UInt8) (payload : Bytes)
 
 /-- The children-first walk: emits one put per node in `flatten` order
 and answers the node's variable name. -/
-partial def lowerTree : Tree t → StateM (Array Stmt × Nat) String
+def lowerTree : Tree t → StateM (Array Stmt × Nat) String
   | .value p => putNode Ty.value.wireTag p.val []
   | .chunk p => putNode Ty.chunk.wireTag p.val []
   | .leaf i l d => do

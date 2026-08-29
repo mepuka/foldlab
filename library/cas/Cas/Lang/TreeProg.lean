@@ -71,12 +71,6 @@ def _root_.Cas.Grammar.Tree.progK :
 def _root_.Cas.Grammar.Tree.prog (tr : Tree t) : Prog CasSig Addr32 :=
   tr.progK .pure
 
-/-- A step that continues just spends one fuel. -/
-theorem run_step_running {A} {p rest : Prog CasSig A} {w w' : Word}
-    (h : step H p w = (.running rest, w')) (fuel : Nat) :
-    run H (fuel + 1) p w = run H fuel rest w' := by
-  simp only [run, h]
-
 /-- One honest put, packaged: a well-formed node whose references
 resolve either appends fresh or deduplicates — and either way the step
 answers the node's address, the extension is a sublist of the node's

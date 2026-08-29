@@ -1,8 +1,15 @@
 name = "cas"
-defaultTargets = ["Cas", "CasExamples"]
+defaultTargets = ["Cas", "CasBackend", "CasExamples"]
 
 [[lean_lib]]
 name = "Cas"
+
+# The backend modules, elaborated as their own library so `lake build`
+# kernel-checks every one of them — in particular the R8 seed pins in
+# Cas/Backend/Target.lean, which no tools root imports yet.
+[[lean_lib]]
+name = "CasBackend"
+globs = ["Cas.Backend.+"]
 
 # Consumers of the language, not part of it (the Concrete split): the
 # library reflects the language only; examples stay in defaultTargets so

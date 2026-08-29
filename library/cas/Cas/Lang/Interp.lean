@@ -145,6 +145,12 @@ def run (fuel : Nat) (p : Prog CasSig A) (w : Word) :
     | (.running rest, w') => run fuel rest w'
     | halted => halted
 
+/-- A step that continues just spends one fuel. -/
+theorem run_step_running {A} {p rest : Prog CasSig A} {w w' : Word}
+    (h : step H p w = (.running rest, w')) (fuel : Nat) :
+    run H (fuel + 1) p w = run H fuel rest w' := by
+  simp only [run, h]
+
 /-- Ledger L7: running preserves word admission — through the bridge,
 the interpreter cannot un-close a store. -/
 theorem run_preserves_wf (fuel : Nat) (p : Prog CasSig A) {w : Word}

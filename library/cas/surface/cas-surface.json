@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 161,
-    "Values": 165,
+    "Schema": 176,
+    "Values": 184,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 43,
-    "Quot.sound": 128,
-    "propext": 174
+    "Classical.choice": 61,
+    "Quot.sound": 146,
+    "propext": 192
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 79,
+    "Cas.Schema.Ast": 88,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 856,
-  "documented": 332,
+  "declarations": 920,
+  "documented": 369,
   "library": "Cas",
   "modules": [
     {
@@ -3047,8 +3047,8 @@
       ]
     },
     {
-      "declarations": 18,
-      "documented": 12,
+      "declarations": 19,
+      "documented": 13,
       "module": "Cas.Lang.Interp",
       "surface": [
         {
@@ -3152,6 +3152,15 @@
           "kind": "theorem",
           "name": "Cas.Lang.run_preserves_wf",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (fuel : Nat) (p : Cas.Lang.Prog Cas.Lang.CasSig A) {w : Cas.Word}, w.wf = true → (Cas.Lang.run H fuel p w).snd.wf = true",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.run_step_running",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} {p rest : Cas.Lang.Prog Cas.Lang.CasSig A} {w w' : Cas.Word}, Cas.Lang.step H p w = (Cas.Lang.Status.running rest, w') → ∀ (fuel : Nat), Cas.Lang.run H (fuel + 1) p w = Cas.Lang.run H fuel rest w'",
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
@@ -3801,8 +3810,8 @@
       ]
     },
     {
-      "declarations": 7,
-      "documented": 7,
+      "declarations": 6,
+      "documented": 6,
       "module": "Cas.Lang.TreeProg",
       "surface": [
         {
@@ -3847,15 +3856,6 @@
           "name": "Cas.Grammar.Tree.putTree_correct_empty",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32), Function.Injective H → ∀ {t : Cas.Grammar.Ty} (tr : Cas.Grammar.Tree t), ∃ v, List.Sublist v (Cas.Grammar.Tree.flatten H tr) ∧ Cas.Lang.run H (tr.size + 1) tr.prog [] = (Cas.Lang.Status.done (Cas.Grammar.Tree.address H tr), v) ∧ v.toStore = (Cas.Grammar.Tree.flatten H tr).toStore ∧ v.wf = true ∧ Cas.Grammar.Honest H v",
           "touches": ["Codec", "Core", "Grammar", "IR", "Lang"]
-        },
-        {
-          "axioms": ["propext"],
-          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Status", "Cas.Word"],
-          "documented": true,
-          "kind": "theorem",
-          "name": "Cas.Lang.run_step_running",
-          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} {p rest : Cas.Lang.Prog Cas.Lang.CasSig A} {w w' : Cas.Word}, Cas.Lang.step H p w = (Cas.Lang.Status.running rest, w') → ∀ (fuel : Nat), Cas.Lang.run H (fuel + 1) p w = Cas.Lang.run H fuel rest w'",
-          "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
           "axioms": ["Quot.sound", "propext"],
@@ -5399,6 +5399,139 @@
           "kind": "def",
           "name": "Cas.Schema.Foreign.representationOf",
           "signature": "(α : Type u) → (language : Cas.Schema.Foreign.Language) → [inst : Cas.Schema.Described α] → [represented : Cas.Schema.Foreign.RepresentedIn α language] → Cas.Schema.Foreign.TypeRepresentation language",
+          "touches": ["Schema"]
+        }
+      ]
+    },
+    {
+      "declarations": 16,
+      "documented": 7,
+      "module": "Cas.Schema.Ingest",
+      "surface": [
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.wf",
+          "signature": "Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.wf_iff",
+          "signature": "∀ (a : Cas.Schema.Ast), a.wf = true ↔ a.WF",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Schema.IngestRefusal",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.IngestRefusal.ctorElim",
+          "signature": "{motive : Cas.Schema.IngestRefusal → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.IngestRefusal) → ctorIdx = t.ctorIdx → Cas.Schema.IngestRefusal.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.IngestRefusal.ctorElimType",
+          "signature": "{motive : Cas.Schema.IngestRefusal → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.IngestRefusal.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Schema.IngestRefusal), Cas.Schema.IngestRefusal.ofNat x.ctorIdx = x",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ingest",
+          "signature": "Cas.Json.Value → Except Cas.Schema.IngestRefusal Cas.Schema.Ast",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingest_toJson",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Schema.ingest a.toJson = Except.ok a",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingest_wf",
+          "signature": "∀ {v : Cas.Json.Value} {a : Cas.Schema.Ast}, Cas.Schema.ingest v = Except.ok a → a.WF",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqIngestRefusal",
+          "signature": "DecidableEq Cas.Schema.IngestRefusal",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instReprIngestRefusal",
+          "signature": "Repr Cas.Schema.IngestRefusal",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.instReprIngestRefusal.repr",
+          "signature": "Cas.Schema.IngestRefusal → Nat → Std.Format",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.pairwiseNames",
+          "signature": "List (String × Bool × Cas.Schema.Ast) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.pairwiseNames_iff",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.pairwiseNames fs = true ↔ List.Pairwise (fun a b => a.fst < b.fst) fs",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.wfFields",
+          "signature": "List (String × Bool × Cas.Schema.Ast) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.wfFields_iff",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.wfFields fs = true ↔ Cas.Schema.WFFields fs",
           "touches": ["Schema"]
         }
       ]
@@ -7167,10 +7300,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 518,
-    "inductive": 27,
-    "instance": 42,
-    "structure": 35,
-    "theorem": 231
+    "def": 539,
+    "inductive": 28,
+    "instance": 47,
+    "structure": 36,
+    "theorem": 267
   }
 }

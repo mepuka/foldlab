@@ -4,6 +4,7 @@ import Cas.Schema.Codec
 import Cas.Schema.Described
 import Cas.Schema.Foreign
 import Cas.Schema.SelfCodec
+import Cas.Schema.Ingest
 
 /-!
 # The schema plane — layer above the values, root of the hierarchy
@@ -31,15 +32,17 @@ Named increments, in order:
   codes' JSON projection, the schema-node envelope, and the canonical
   payload, cross-pinned byte-for-byte against the TypeScript
   `CanonicalSchema.payloadOf` (`lake exe schemas --check` +
-  `test/CanonicalSchemaPin.test.ts`). The byte-level rendering
-  theorem is PROVED: `encode_canonical`/`renderCompact_encode`
-  (`Codec/Laws/Render.lean`) show the encode image is canonically
-  spelled and the canonical rendering performs no reordering on it,
-  `toJson_canonical`/`payload_renderPlain` bind the schema payload the
-  same way, and `ofJson_toJson`/`toJson_inj` make the projection a
-  proved round trip — one code per payload value. The one direction
-  still open, named precisely: injectivity of the canonical rendering
-  itself (bytes determine the canonical value — the verified-parser
-  argument); until it lands, byte-equality of payloads is evidence
-  through the value plane, not a standalone theorem.
+  `test/CanonicalSchemaPin.test.ts`). What is proved:
+  `encode_canonical`/`renderCompact_encode` (`Codec/Laws/Render.lean`)
+  show the encode image is canonically spelled and the canonical
+  rendering performs no reordering on it, and the RETIRED revision-0
+  projection carries the full discipline —
+  `toJson_canonical`/`legacyEnvelope_canonical`/
+  `legacyEnvelope_renderPlain`, with `ofJson_toJson`/`toJson_inj`
+  making it a proved round trip. The LIVE revision-1 representation
+  (`envelope`/`payload`) carries none of those laws yet; it is held
+  by the byte pin alone, and its canonicality, decoder, round trip,
+  and injectivity are the plane's named open obligations, together
+  with injectivity of the canonical rendering itself (bytes determine
+  the canonical value — the verified-parser argument).
 -/
