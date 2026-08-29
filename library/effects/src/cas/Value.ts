@@ -201,10 +201,13 @@ const payloadFor = (
   })
 
 /** Decode and re-verify one canonical `{revision, value}` envelope —
- * shared with the schema plane; not part of the front door. */
+ * shared with the schema plane; not part of the front door. The address
+ * is the failure's provenance and nothing else, so it is optional: a
+ * caller holding payload bytes whose address is not yet computed still
+ * gets the same decode and the same refusals. */
 export const decodedVersionedEnvelope = (
   payload: Uint8Array,
-  id: ContentIdType,
+  id?: ContentIdType,
 ): Effect.Effect<DecodedEnvelope, ProjectionCodecFailure> =>
   Effect.try({
     try: () => {

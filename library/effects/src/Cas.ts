@@ -134,6 +134,12 @@ export * as Architecture from "./cas/Architecture.ts"
 // annotation API. No schema stands above it.
 export * as CanonicalSchema from "./cas/CanonicalSchema.ts"
 
+// The materializer door: the generative direction of a described
+// schema. A canonical code held as store content, revived, and
+// materialized into either register — a live validator, or rendered
+// TypeScript stamped with the address it was materialized from.
+export * as Materialize from "./cas/Materialize.ts"
+
 // The persistent annotation namespace: string keys under `foldlab/cas/`,
 // attached to the encoded side and read the way Effect resolves them —
 // and the sidecar annotation kind, whose subject is a typed reference to
