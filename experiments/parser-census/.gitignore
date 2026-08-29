@@ -1,0 +1,9 @@
+node_modules/
+
+# The row firehose is host-local and enormous (one line per top-level
+# declaration of a 1.2 GB corpus), and it is derived from bytes that are
+# themselves gitignored. The FOLDS are committed instead — out/histogram.json
+# and out/gate-report.json — because those are the reviewable evidence, and
+# corpus-manifest.json's declCounts because that is the committed artifact
+# the whole lane exists to fill.
+out/*/*.rows.jsonl

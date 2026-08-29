@@ -1,0 +1,48 @@
+# Census tasks — directory-scoped like the lift harness's, so the root
+# mise.toml (which CI runs) is untouched. On promotion these graduate as
+# `census:*` in the root file, which is where the proposal's §9b.1 table
+# already names them.
+#
+# INSTRUMENTS. Both legs are the estate's already-admitted parsers, reached
+# through the lift harness's own engines rather than re-implemented:
+# `typescript@5.9.2` (the admitted Stage-1 extractor pin) and
+# `oxc-parser@0.147.0` (the admitted in-process oxc surface). The census adds
+# one thing of its own — a declaration enumerator — and holds it to the same
+# twin discipline: two independent walks, one shared definition, every
+# disagreement a finding.
+#
+# THE CORPUS IS GITIGNORED AND USUALLY ABSENT. Every task below reports that
+# state and exits 0; `-- --require-corpus` (or naming a `--project`) is how a
+# caller says a census is demanded, and then absence is a failure. See
+# `src/cli.ts` for the rule in full.
+
+[tasks."census:deps"]
+description = "Install the census's pinned deps, and the lift harness's (its two engines are imported from there)"
+run = [
+  "bun install --frozen-lockfile",
+  "bun install --cwd ../lift-harness --frozen-lockfile",
+]
+
+[tasks."census:capture"]
+description = "Run both legs over a labelled slice: mise run census:capture -- --project <id> --slice <label>"
+run = "bun bin/main.ts capture"
+
+[tasks."census:tally"]
+description = "Fold the captured rows into out/histogram.json (codes x strata x counts, spectrum roll-up)"
+run = "bun bin/main.ts tally"
+
+[tasks."census:gate"]
+description = "Twin agreement (declarations AND verdicts), parse disjointness, and pin verification"
+run = "bun bin/main.ts gate"
+
+[tasks."census:manifest"]
+description = "Write the measured declCounts back into corpus-manifest.json (finding-free projects only)"
+run = "bun bin/main.ts manifest"
+
+[tasks.test]
+description = "The instrument's own suite — needs no corpus"
+run = "bun run test"
+
+[tasks.check]
+description = "Strict typecheck + the instrument suite + the census gate"
+run = ["bun x tsgo --noEmit", "bun run test", "bun bin/main.ts gate"]
