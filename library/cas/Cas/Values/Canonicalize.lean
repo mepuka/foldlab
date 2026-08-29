@@ -67,8 +67,13 @@ theorem canonFields_eq_map (fs : List (String × Value)) :
   | nil => rfl
   | cons f rest ih => cases f; simp [canonFields, ih]
 
-/-- Mapping a function that fixes every member is the identity. -/
-private theorem map_eq_self_of_mem {β : Type _} {f : β → β} :
+/-- Mapping a function that fixes every member is the identity.
+
+Public because the reference-bearing twin of this method
+(`Cas.canonR`, `Cas/Values/Refs.lean`) discharges its own idempotence
+with the same two facts. Two carriers, one determination — the
+alternative is a second copy of a proof that is already here. -/
+theorem map_eq_self_of_mem {β : Type _} {f : β → β} :
     ∀ {l : List β}, (∀ a ∈ l, f a = a) → l.map f = l
   | [], _ => rfl
   | x :: xs, h => by
@@ -81,8 +86,10 @@ private theorem le_of_key_lt {a b : String} (h : a < b) : a ≤ b :=
   Std.le_of_not_ge fun hge => hge h
 
 /-- The sort's output is key-ordered — transitivity and totality of the
-string order, discharged once for both pair carriers. -/
-private theorem pairwise_mergeSort_keys {β : Type _}
+string order, discharged once for both pair carriers. Generic in the
+value type on purpose: the same fact serves `Value` fields here and
+`RValue` fields in `Cas/Values/Refs.lean`. -/
+theorem pairwise_mergeSort_keys {β : Type _}
     (l : List (String × β)) :
     ((l.mergeSort fun a b => decide (a.1 ≤ b.1)).Pairwise
       fun a b => decide (a.1 ≤ b.1) = true) := by
