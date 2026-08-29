@@ -880,13 +880,15 @@ importing `Function.Injective H` out of habit:
     hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l'
 
 — the address function SEPARATES the table's lines. This premise is not
-a convenience of the proof; it is NECESSARY. If two distinct lines of
-`p` share an address, `encodeProg` lays down two bindings at that one
-address, both of the table node's references name it, and `Word.find`
-answers the FIRST for both — so the recovered table repeats one line
-where `p` had two, and cannot equal `p`. The store has genuinely lost
-the distinction: deduplication is content-addressing working as
-designed, and no decoder can undo it.
+a convenience of the proof; it is NECESSARY, and the `example` below
+`decodeProg_encodeProg` CHECKS that rather than asserting it: under a
+degenerate `H` two distinct lines share an address, `encodeProg` lays
+down two bindings there, both of the table node's references name it,
+and `Word.find` answers the FIRST for both — so the recovered table
+repeats one line where `p` had two. Note what the witness also shows:
+the word still ADMITS. The store has not malfunctioned; it has
+deduplicated, which is content-addressing working as designed, and no
+decoder can undo it.
 
 It is stated at the table's lines rather than as `Function.Injective H`
 deliberately, per CAS-003: it is strictly weaker (it constrains `H` only
@@ -976,6 +978,31 @@ theorem decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
   exact mapM_lineRefs H _ p fun l hl => by
     rw [find_encodeProg H p hsep l hl, Option.bind_some,
       decodeLine_encodeLine l (hwf l hl)]
+
+/-- Why `hsep` cannot be dropped, in the style of `Address.lean`'s
+Level-2 witness: under a degenerate address function two DISTINCT lines
+share an address, so the table node names that one address twice,
+`Word.find` answers the first binding both times, and recovery returns
+one line where the program had two. Every line here is well-formed and
+the word still admits (`encodeProg_wf` needs no premise) — what fails is
+recovery alone. The separation premise is NECESSARY, not a convenience
+of the proof. -/
+example :
+    ∃ (H : Bytes → Addr32) (p : PProg),
+      (∀ l ∈ p, l.WF) ∧
+        Word.wf (encodeProg H p) = true ∧
+        decodeProg (encodeProg H p) ≠ some p :=
+  ⟨fun _ => ⟨List.replicate 32 0, by simp⟩,
+    [.load (.ans 0), .load (.ans 1)],
+    by
+      intro l hl
+      rcases List.mem_cons.mp hl with rfl | hl
+      · show (0 : Nat) < 4294967296; omega
+      · rcases List.mem_cons.mp hl with rfl | hl
+        · show (1 : Nat) < 4294967296; omega
+        · simp at hl,
+    encodeProg_wf _ _,
+    by decide⟩
 
 /-! ## The capability round trip — a stored program runs identically
 
