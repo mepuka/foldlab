@@ -258,3 +258,16 @@ records the 2026-08-29 session rulings that cut across specs.
     teach others to speak ours" — the component register itself a
     gated manifest, so third-party front ends learn the UI
     vocabulary the way agents learn the tool vocabulary.
+22. **Backend robustness sweep + store-semantics rulings prep**
+    (2026-08-29 night): commissioned. (a) Server robustness audit —
+    event handling, responsiveness, liveness, transport loads
+    without hangs (with telemetry), crash/restart semantics, the
+    custom-daemon question, WASM integrations, and whether the
+    hashing strategy is too centralized (the AddressScheme seam as
+    the abstraction). (b) Ruling prep — front-end projection as a
+    node type (linking tooling and published programs; connects to
+    G6-a's named catalog-kind gap), where published programs go
+    (roots/registry conventions; gated on queue item 23), and the
+    estate-paperwork audit (files, sessions, the ledger's own
+    maintenance law checked against tonight's practice). *Why:
+    "let's stay organized — we've been firing at peak performance."*
