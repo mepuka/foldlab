@@ -146,7 +146,12 @@ it.effect("blob: a multi-chunk blob round-trips verified, every graph node a rea
           expect(`${id} ${yield* fs.exists(path)}`).toBe(`${id} true`)
         }
       }).pipe(Effect.provide(layerDiskBlob(storeRoot)))
-    })))
+    })), 30_000)
+// The multi-chunk round trip is real disk IO twice over (write path,
+// then a fresh verified read composition) and measures ~5.3s on a
+// contended host against vitest's 5s default — a timeout raise on
+// exactly this test, assertions untouched (the entity-store-generate
+// precedent: a gate red for reasons unrelated to what it asserts).
 
 // ---------------------------------------------------------------------------
 // 3. GRAPH — children-first closure and the audit, honest and tampered.
