@@ -9,6 +9,7 @@
       },
       "devDependencies": {
         "@effect/platform-node": "4.0.0-rc.111",
+        "@effect/sql-sqlite-node": "4.0.0-rc.111",
         "@effect/tsgo": "0.38.0",
         "@effect/vitest": "4.0.0-rc.111",
         "@types/bun": "1.4.0",
@@ -25,6 +26,8 @@
     "@effect/platform-node": ["@effect/platform-node@4.0.0-rc.111", "", { "dependencies": { "@effect/platform-node-shared": "^4.0.0-rc.111", "mime": "^4.1.0", "undici": "^8.10.0" }, "peerDependencies": { "effect": "^4.0.0-rc.111", "redis": ">=5.0.0 <7.0.0" } }, "sha512-oy1i7HsOGg/5r+DuBe5+ddmnUhnXmyZFPFPXZCBdO/RQpHK3PIFe1/2UMGxZE+ngDymrSksuQTSgQLF6P+MLqw=="],
 
     "@effect/platform-node-shared": ["@effect/platform-node-shared@4.0.0-rc.112", "", { "dependencies": { "@types/ws": "^8.18.1", "ws": "^8.21.3" }, "peerDependencies": { "effect": "^4.0.0-rc.112" } }, "sha512-ttjz0xKamFN7vL8pNDYVwddJLjZvqKePc05djlz2VcdaKbLsnYbtMnL1rbOfHgEnIUSHGh7FkjaN4DM1Ov81sQ=="],
+
+    "@effect/sql-sqlite-node": ["@effect/sql-sqlite-node@4.0.0-rc.111", "", { "peerDependencies": { "effect": "^4.0.0-rc.111" } }, "sha512-Vba5MdU3EP0seePpem0AsQuvGKoRLAOOlUYqO0j+tr7NPN0YKCl3jTbwporHm4z76qiNleaWqrrpUmec8T/2rw=="],
 
     "@effect/tsgo": ["@effect/tsgo@0.38.0", "", { "optionalDependencies": { "@effect/tsgo-darwin-arm64": "0.38.0", "@effect/tsgo-darwin-x64": "0.38.0", "@effect/tsgo-linux-arm": "0.38.0", "@effect/tsgo-linux-arm64": "0.38.0", "@effect/tsgo-linux-x64": "0.38.0", "@effect/tsgo-win32-arm64": "0.38.0", "@effect/tsgo-win32-x64": "0.38.0" }, "bin": { "effect-tsgo": "dist/effect-tsgo.cjs" } }, "sha512-eazN0kX+WNT1jNjIm/l5esnkpKVfd1wNh2ig0pfaULKuI2PZh0JwjbepDPUr6MWx5cqOiUgwStNf5hGhg2w00g=="],
 

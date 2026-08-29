@@ -6,7 +6,7 @@
  *
  * The shape is three layers: dumb byte-plane seams at the bottom
  * (`ByteReader`/`ByteWriter`/`RootStore`) with interchangeable
- * backends (memory, file, any path-addressed host); the typed-node
+ * backends (memory, file, key-value, any path-addressed host); the typed-node
  * store law over them (admission at put, re-verification at load);
  * and the typed laws above the store — value projections with typed
  * references, verified blob reads, graph closure and audit. The same
@@ -27,7 +27,6 @@ export {
   matchCasError as matchError,
   NodeKind,
   NonCanonicalBytes,
-  RemoteFailure,
   StoreFailure,
   UnknownKind,
   WrongKindReference,
@@ -69,6 +68,14 @@ export {
   storeRootFromFileUrl,
   StoreRoot,
 } from "./cas/FileBackend.ts"
+
+// The key-value backend: the byte plane over any Effect
+// `KeyValueStore` — memory, a directory, or SQL, which is the SQLite
+// and therefore the Litestream route. It provides read and write and
+// never roots: a key-value store carries no key enumeration, so
+// `RootStore.list` cannot be written over it.
+export { layerKvsBackend, makeKvsBackend } from "./cas/KvsBackend.ts"
+export type { KvsBackend } from "./cas/KvsBackend.ts"
 
 // The path-reader backend: a read-only byte plane over any host that
 // serves bytes at a path — a git server's raw endpoint, an object
@@ -142,31 +149,3 @@ export type {
 
 // Verified blob reads and recipe-1 construction.
 export { CasBlob as Blob } from "./cas/Blob.ts"
-
-// Streamed transfer above the store boundary.
-export { CasTransfer as Transfer, oneShot, restartable } from "./cas/Transfer.ts"
-export type {
-  CasPresence as Presence,
-  CasPushReport as PushReport,
-  CasTransferShape as TransferShape,
-  PutStreamOptions,
-  UploadSource,
-} from "./cas/Transfer.ts"
-
-// The remote entry points stay on the front door; the policy,
-// capability, and error machinery lives one level down at
-// `Cas.Remote.*`.
-export { CasRemoteConfig as RemoteConfig, remoteConfig } from "./cas/Remote.ts"
-export type { RemoteConfigOptions } from "./cas/Remote.ts"
-export * as Remote from "./cas/Remote.ts"
-
-/**
- * Build the remote store and transfer views once over one shared adapter.
- * The transport owns the pinned FetchHttpClient realization so manual redirect
- * observation cannot be bypassed. Capability probing is eager by default;
- * `capabilityProbe: "lazy"` defers the probe until a wire-backed operation
- * first needs it — a successful probe is memoized for the layer's life,
- * while a retryable failure re-probes on the next call. Platform Crypto
- * remains a visible layer requirement.
- */
-export { layerRemote } from "./internal/remote.ts"

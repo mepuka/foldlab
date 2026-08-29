@@ -1,12 +1,25 @@
 /** Closed codecs for cas-http/0 control-plane documents. */
 import { Encoding, Equal, Option, Schema } from "effect"
 import { ContentId, type ContentId as ContentIdType } from "../cas/Node.ts"
-import {
-  RemoteCapabilities,
-  type CasPresence,
-  type RemoteCapabilities as RemoteCapabilitiesType,
-} from "../cas/Remote.ts"
 import { decodeValidatedHex } from "./bytes.ts"
+
+const Uint32 = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xffff_ffff }))
+
+/** Canonical server capability document carried by the cas-http/0
+ * control plane. */
+export const RemoteCapabilities = Schema.Struct({
+  maxBatchKeys: Uint32,
+  maxBlobBytes: Uint32,
+})
+export type RemoteCapabilities = typeof RemoteCapabilities.Type
+type RemoteCapabilitiesType = RemoteCapabilities
+
+/** Advisory request-order subsequences from one presence query. */
+export interface CasPresence {
+  readonly present: ReadonlyArray<ContentIdType>
+  readonly missing: ReadonlyArray<ContentIdType>
+  readonly failed: ReadonlyArray<ContentIdType>
+}
 
 const Byte = Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: 0xff }))
 const CapabilityDocumentBytes = Schema.Array(Byte).check(Schema.isLengthBetween(8, 8))

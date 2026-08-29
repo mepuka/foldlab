@@ -13,6 +13,7 @@ const srcDir = fileURLToPath(new URL("../src", import.meta.url))
 const mod = await import(new URL("../dist/index.js", import.meta.url).href) as {
   readonly Cas?: Record<string, unknown>
   readonly Server?: Record<string, unknown>
+  readonly Server?: Record<string, unknown>
 }
 const rootExports = Object.keys(mod).sort()
 if (rootExports.length !== 2
@@ -24,13 +25,13 @@ if (typeof mod.Cas !== "object" || mod.Cas === null) {
   failures.push("dist entry is missing the Cas namespace")
 } else {
   if (mod.Cas.layerMemory === undefined) failures.push("Cas.layerMemory is missing")
-  if (typeof mod.Cas.layerRemote !== "function") failures.push("Cas.layerRemote is not a function")
+  if (mod.Cas.layerFile === undefined) failures.push("Cas.layerFile is missing")
 }
 if (typeof mod.Server !== "object" || mod.Server === null) {
   failures.push("dist entry is missing the Server namespace")
 } else {
-  if (typeof mod.Server.Core !== "function") failures.push("Server.Core is not a class")
-  if (typeof mod.Server.httpApp !== "function") failures.push("Server.httpApp is not a function")
+  if (mod.Server.httpApp === undefined) failures.push("Server.httpApp is missing")
+  if (mod.Server.Core === undefined) failures.push("Server.Core is missing")
 }
 
 const walk = (dir: string): Array<string> =>

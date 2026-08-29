@@ -26,7 +26,7 @@ import {
   encodeCapabilityDocument,
   encodePresenceDocument,
   type PresenceStatus,
-} from "../internal/remoteControl.ts"
+} from "../internal/wire.ts"
 
 export interface CasServerPolicy {
   /** Published as the capability document's `maxBatchKeys`. */

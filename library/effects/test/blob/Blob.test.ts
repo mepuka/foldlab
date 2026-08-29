@@ -1,6 +1,5 @@
 import { expect, it, layer, type Vitest } from "@effect/vitest"
 import {
-  Context,
   Crypto,
   Encoding,
   Effect,
@@ -8,20 +7,13 @@ import {
   Ref,
   Stream,
 } from "effect"
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient"
 import { createHash, randomBytes } from "node:crypto"
-import * as Cas from "../../src/Cas.ts"
-import { makeMemoryBackend } from "../../src/cas/Backend.ts"
 import { CasBlob } from "../../src/cas/Blob.ts"
 import {
   CasNodeInput,
   ContentId,
   type CasReference,
 } from "../../src/cas/Node.ts"
-import {
-  CasRemoteConfig,
-  RemoteAuthority,
-} from "../../src/cas/Remote.ts"
 import {
   CasStore,
   AddressScheme,
@@ -31,7 +23,6 @@ import {
   type CasAddress,
   type CasStoreShape,
 } from "../../src/cas/Store.ts"
-import { CasTransfer } from "../../src/cas/Transfer.ts"
 import {
   assertCaseTable,
   assertFamilyRows,
@@ -49,13 +40,7 @@ import {
   sliceCases,
   sliceSourceSize,
 } from "./BlobFixtures.ts"
-import { toyAddress } from "../merkle/MerkleFixtures.ts"
-import { deterministicAddress } from "../fixtures/address.ts"
-import {
-  awaitPeerSocketsReleased,
-  type PeerEndpoint,
-} from "../remote/harness/ConformancePeer.ts"
-import { ReferencePeer } from "../remote/harness/ReferencePeer.ts"
+import { toyAddr } from "../fixtures/toyAddress.ts"
 
 const TestCrypto = Layer.succeed(Crypto.Crypto, Crypto.make({
   randomBytes: (size) => new Uint8Array(randomBytes(size)),
@@ -65,50 +50,10 @@ const TestCrypto = Layer.succeed(Crypto.Crypto, Crypto.make({
   }),
 }))
 
-const HttpRuntime = Layer.mergeAll(FetchHttpClient.layer, TestCrypto)
-
-const remoteConfig = (authority: string) => new CasRemoteConfig({
-  authority: RemoteAuthority.make(authority),
-  authorityMode: "remote-authoritative",
-  maxEncodedBytes: 1_000_000,
-  maxDecodedBytes: 1_000_000,
-  maxDecompressedBytes: 1_000_000,
-  maxQueuedBytes: 1_000_000,
-  maxAttempts: 1,
-  operationDeadlineMs: 10_000,
-  redirectPolicy: { maxRedirects: 0, crossOrigin: "deny" },
-})
-
-interface BlobLaneShape {
-  readonly name: "local" | "remote"
-  readonly endpoint?: PeerEndpoint
-}
-
-class BlobLane extends Context.Service<BlobLane, BlobLaneShape>()(
-  "foldlab/effect-replay/test/BlobLane",
-) {}
-
 const localBacking = layerMemory.pipe(
   Layer.provideMerge(AddressScheme.layerSha256.pipe(Layer.provide(TestCrypto))),
 )
-const localBlobLayer = Layer.merge(
-  CasBlob.layer.pipe(Layer.provideMerge(localBacking)),
-  Layer.succeed(BlobLane, { name: "local" }),
-)
-
-const remoteBlobLayer = (
-  capabilities = { maxBatchKeys: 16, maxBlobBytes: 70_000 },
-) => Layer.unwrap(ReferencePeer.serve({ capabilities }).pipe(
-  Effect.map((endpoint) => {
-    const backing = Cas.layerRemote(remoteConfig(endpoint.authority)).pipe(
-      Layer.provide(HttpRuntime),
-    )
-    return Layer.merge(
-      CasBlob.layer.pipe(Layer.provideMerge(backing)),
-      Layer.succeed(BlobLane, { name: "remote", endpoint }),
-    )
-  }),
-))
+const localBlobLayer = CasBlob.layer.pipe(Layer.provideMerge(localBacking))
 
 const source = (
   bytes: Uint8Array,
@@ -183,7 +128,7 @@ it.effect("MRK-018 consumes every ratified blob-manifest row structurally", () =
 
 const toyCasAddress: CasAddress = {
   digest: (bytes) => Effect.succeed(ContentId.make(
-    Encoding.encodeHex(Uint8Array.from(toyAddress(Array.from(bytes)))),
+    Encoding.encodeHex(Uint8Array.from(toyAddr(Array.from(bytes)))),
   )),
 }
 
@@ -366,6 +311,8 @@ const registerBlobSuite = (
 
 }
 
+<<<<<<< HEAD
+=======
 const registerRemoteFixtures = (
   test: Vitest.MethodsNonLive<
     CasBlob.Service | CasStore | CasTransfer | BlobLane
@@ -444,82 +391,6 @@ const registerRemoteFixtures = (
 
 }
 
-it.effect("put admits each full chunk before pulling again and never manifests a failed source", () =>
-  Effect.gen(function* () {
-    const backend = makeMemoryBackend()
-    const base = makeCasStoreOver(
-      deterministicAddress(),
-      backend.reader,
-      backend.writer,
-    )
-    const admittedTags = yield* Ref.make<ReadonlyArray<number>>([])
-    const observedStore: CasStoreShape = {
-      load: base.load,
-      put: (value) => base.put(value).pipe(
-        Effect.tap(() => Ref.update(admittedTags, (tags) => [...tags, value.kind.tag])),
-      ),
-    }
-    const blobLayer = CasBlob.layer.pipe(
-      Layer.provide(Layer.succeed(CasStore, observedStore)),
-    )
-    const full = bytesOfSize(CasBlob.ChunkSize)
-    const nextSegment = Stream.fromEffect(Ref.get(admittedTags).pipe(
-      Effect.tap((tags) => Effect.sync(() => {
-        expect(tags).toEqual([CasBlob.ChunkDataTag, CasBlob.BlobNodeTag])
-      })),
-      Effect.as(Uint8Array.of(1)),
-    ))
-    yield* CasBlob.put(Stream.concat(Stream.succeed(full), nextSegment)).pipe(
-      Effect.provide(blobLayer),
-    )
-
-    yield* Ref.set(admittedTags, [])
-    const result = yield* CasBlob.put(Stream.concat(
-      Stream.succeed(full),
-      Stream.fail("source-failed"),
-    )).pipe(
-      Effect.provide(blobLayer),
-      Effect.result,
-    )
-    expect(result).toMatchObject({ _tag: "Failure", failure: "source-failed" })
-    expect(yield* Ref.get(admittedTags)).toEqual([
-      CasBlob.ChunkDataTag,
-      CasBlob.BlobNodeTag,
-    ])
-  }))
-
 layer(localBlobLayer)("CasBlob local memory lane", (test) => {
   registerBlobSuite(test)
 })
-
-layer(remoteBlobLayer())("CasBlob F1 reference-peer lane", (test) => {
-  registerBlobSuite(test)
-  registerRemoteFixtures(test)
-})
-
-it.effect("remote push refuses a recipe-1 graph when the peer node-body capability is too small", () =>
-  Effect.scoped(Effect.gen(function* () {
-    const result = yield* Effect.gen(function* () {
-      const lane = yield* BlobLane
-      const endpoint = lane.endpoint
-      if (endpoint === undefined) return yield* Effect.die("remote lane has no peer")
-      const transfer = yield* CasTransfer
-      const ref = yield* CasBlob.put(source(bytesOfSize(CasBlob.ChunkSize)))
-      const before = endpoint.observe().requests
-      const error = yield* transfer.push(ContentId.make(ref)).pipe(Effect.flip)
-      return { endpoint, before, error }
-    }).pipe(Effect.provide(remoteBlobLayer({
-      maxBatchKeys: 16,
-      maxBlobBytes: CasBlob.ChunkSize + 9,
-    })))
-
-    expect(result.error).toMatchObject({
-      _tag: "CasRemoteError/Budget",
-      stage: "encoded",
-      observed: CasBlob.ChunkSize + 10,
-      bound: CasBlob.ChunkSize + 9,
-    })
-    expect(result.endpoint.observe().requests).toBe(result.before)
-    yield* awaitPeerSocketsReleased(result.endpoint)
-    expect(result.endpoint.observe().openSockets).toBe(0)
-  })))

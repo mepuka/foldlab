@@ -1,8 +1,8 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 184,
-    "Core": 209,
+    "Codec": 188,
+    "Core": 243,
     "Grammar": 46,
     "IR": 78,
     "Lang": 129,
@@ -1521,6 +1521,246 @@
           "kind": "instance",
           "name": "Cas.instCanonicalAdmittedNode",
           "signature": "Cas.Canonical Cas.AdmittedNode",
+          "touches": ["Core"]
+        }
+      ]
+    },
+    {
+      "declarations": 31,
+      "documented": 21,
+      "module": "Cas.Core.Canonicalize",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Canonicalizer",
+          "signature": "Type u → Type u"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.Coherent",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → Cas.Canonicalizer α → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.Complete",
+          "signature": "{α : Type u} → {ω : Type v} → Cas.Canonicalizer α → (α → ω) → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.Equiv",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → α → α → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.IsCanon",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → α → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.Preserves",
+          "signature": "{α : Type u} → {ω : Type v} → Cas.Canonicalizer α → (α → ω) → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.RefinedBy",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → Cas.Canonicalizer α → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.canon",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → α → α",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.canon_idem",
+          "signature": "∀ {α : Type u} (self : Cas.Canonicalizer α) (a : α), self.canon (self.canon a) = self.canon a",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.comp",
+          "signature": "{α : Type u} → (c₂ c₁ : Cas.Canonicalizer α) → c₂.Coherent c₁ → Cas.Canonicalizer α",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.comp_canon",
+          "signature": "∀ {α : Type u} (c₂ c₁ : Cas.Canonicalizer α) (hco : c₂.Coherent c₁) (a : α), (c₂.comp c₁ hco).canon a = c₂.canon (c₁.canon a)",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.comp_preserves",
+          "signature": "∀ {α : Type u} {ω : Type v} {obs : α → ω} (c₂ c₁ : Cas.Canonicalizer α) (hco : c₂.Coherent c₁), c₂.Preserves obs → c₁.Preserves obs → (c₂.comp c₁ hco).Preserves obs",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.eq_obs_of_equiv",
+          "signature": "∀ {α : Type u} {ω : Type v} (c : Cas.Canonicalizer α) {obs : α → ω}, c.Preserves obs → ∀ {a b : α}, c.Equiv a b → obs a = obs b",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.equiv_canon",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) (a : α), c.Equiv a (c.canon a)",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.equiv_refl",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) (a : α), c.Equiv a a",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.equiv_symm",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) {a b : α}, c.Equiv a b → c.Equiv b a",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.equiv_trans",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) {a b d : α}, c.Equiv a b → c.Equiv b d → c.Equiv a d",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.formAddress",
+          "signature": "{α : Type u} → [Cas.Canonical α] → {Addr : Type w} → Cas.Canonicalizer α → (Cas.Bytes → Addr) → α → Addr",
+          "touches": ["Codec", "Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.formAddress_congr",
+          "signature": "∀ {α : Type u} [inst : Cas.Canonical α] {Addr : Type w} (c : Cas.Canonicalizer α) (H : Cas.Bytes → Addr) {a b : α}, c.Equiv a b → c.formAddress H a = c.formAddress H b",
+          "touches": ["Codec", "Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.formAddress_eq_or_collision",
+          "signature": "∀ {α : Type u} [inst : Cas.Canonical α] {Addr : Type w} (c : Cas.Canonicalizer α) (H : Cas.Bytes → Addr) {a b : α}, c.formAddress H a = c.formAddress H b → c.Equiv a b ∨ Cas.Canonical.encode (c.canon a) ≠ Cas.Canonical.encode (c.canon b) ∧ H (Cas.Canonical.encode (c.canon a)) = H (Cas.Canonical.encode (c.canon b))",
+          "touches": ["Codec", "Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.formAddress_inj",
+          "signature": "∀ {α : Type u} [inst : Cas.Canonical α] {Addr : Type w} (c : Cas.Canonicalizer α) (H : Cas.Bytes → Addr), Function.Injective H → ∀ {a b : α}, c.formAddress H a = c.formAddress H b → c.Equiv a b",
+          "touches": ["Codec", "Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Canonicalizer.id",
+          "signature": "{α : Type u} → Cas.Canonicalizer α",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.id_refinedBy",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α), Cas.Canonicalizer.id.RefinedBy c",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "instance",
+          "name": "Cas.Canonicalizer.instDecidableEquivOfDecidableEq",
+          "signature": "{α : Type u} → (c : Cas.Canonicalizer α) → [DecidableEq α] → (a b : α) → Decidable (c.Equiv a b)",
+          "touches": ["Core"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Canonicalizer.instDecidableIsCanonOfDecidableEq",
+          "signature": "{α : Type u} → (c : Cas.Canonicalizer α) → [DecidableEq α] → (a : α) → Decidable (c.IsCanon a)",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.isCanon_canon",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) (a : α), c.IsCanon (c.canon a)",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.isCanon_iff_exists",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α) {a : α}, c.IsCanon a ↔ ∃ b, c.canon b = a",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.refinedBy_comp",
+          "signature": "∀ {α : Type u} (c₂ c₁ : Cas.Canonicalizer α) (hco : c₂.Coherent c₁), c₁.RefinedBy (c₂.comp c₁ hco)",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.refinedBy_refl",
+          "signature": "∀ {α : Type u} (c : Cas.Canonicalizer α), c.RefinedBy c",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Canonicalizer.refinedBy_trans",
+          "signature": "∀ {α : Type u} {c₁ c₂ c₃ : Cas.Canonicalizer α}, c₁.RefinedBy c₂ → c₂.RefinedBy c₃ → c₁.RefinedBy c₃",
+          "touches": ["Core"]
+        },
+        {
+          "documented": true,
+          "kind": "instance",
+          "name": "Cas.Canonicalizer.toSetoid",
+          "signature": "{α : Type u} → Cas.Canonicalizer α → Setoid α",
           "touches": ["Core"]
         }
       ]
@@ -5375,6 +5615,145 @@
           "name": "Cas.Schema.toJson_inj",
           "signature": "∀ {a b : Cas.Schema.Ast}, a.toJson = b.toJson → a = b",
           "touches": ["Schema", "Values"]
+        }
+      ]
+    },
+    {
+      "declarations": 17,
+      "documented": 9,
+      "module": "Cas.Values.Canonicalize",
+      "surface": [
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Json.canonFields",
+          "signature": "List (String × Cas.Json.Value) → List (String × Cas.Json.Value)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.canonFields_eq_map",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)), Cas.Json.canonFields fs = List.map (fun f => (f.fst, Cas.Json.canonValue f.snd)) fs",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonFields_fix",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)) (f : String × Cas.Json.Value), f ∈ Cas.Json.canonFields fs → Cas.Json.canonValue f.snd = f.snd",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.canonFields_of_canonical",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)), Cas.Json.CanonicalFields fs → Cas.Json.canonFields fs = fs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Json.canonItems",
+          "signature": "List Cas.Json.Value → List Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.canonItems_idem",
+          "signature": "∀ (xs : List Cas.Json.Value), Cas.Json.canonItems (Cas.Json.canonItems xs) = Cas.Json.canonItems xs",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.canonItems_of_canonical",
+          "signature": "∀ (xs : List Cas.Json.Value), Cas.Json.CanonicalItems xs → Cas.Json.canonItems xs = xs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.canonJson",
+          "signature": "Cas.Canonicalizer Cas.Json.Value",
+          "touches": ["Core", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonJson_isCanon_of_canonical",
+          "signature": "∀ {v : Cas.Json.Value}, v.Canonical → Cas.Json.canonJson.IsCanon v",
+          "touches": ["Core", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonJson_preserves_renderCompact",
+          "signature": "Cas.Json.canonJson.Preserves Cas.Json.renderCompact",
+          "touches": ["Core", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.canonValue",
+          "signature": "Cas.Json.Value → Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonValue_idem",
+          "signature": "∀ (v : Cas.Json.Value), Cas.Json.canonValue (Cas.Json.canonValue v) = Cas.Json.canonValue v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonValue_of_canonical",
+          "signature": "∀ (v : Cas.Json.Value), v.Canonical → Cas.Json.canonValue v = v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.renderCompactFields_canon",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)), Cas.Json.renderCompactFields (Cas.Json.canonFields fs) = Cas.Json.renderCompactFields fs",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.renderCompactItems_canon",
+          "signature": "∀ (xs : List Cas.Json.Value), Cas.Json.renderCompactItems (Cas.Json.canonItems xs) = Cas.Json.renderCompactItems xs",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderCompact_canonValue",
+          "signature": "∀ (v : Cas.Json.Value), Cas.Json.renderCompact (Cas.Json.canonValue v) = Cas.Json.renderCompact v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderCompact_eq_of_equiv",
+          "signature": "∀ {v w : Cas.Json.Value}, Cas.Json.canonJson.Equiv v w → Cas.Json.renderCompact v = Cas.Json.renderCompact w",
+          "touches": ["Core", "Values"]
         }
       ]
     },

@@ -12,18 +12,23 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "cas": "./bin/cas.ts"
+  },
   "files": [
     "dist",
     "src",
+    "bin",
     "README.md",
     "PROFILE-CAS-HTTP-0.md",
+    "VOCABULARY.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "bun scripts/clean-dist.ts && tsc -p tsconfig.build.json && bun scripts/rewrite-declaration-imports.ts",
     "prepack": "bun run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "lint": "oxlint --config oxlint.config.ts src scratch lint",
+    "lint": "oxlint --config oxlint.config.ts src bin scratch lint",
     "test": "vitest run",
     "prepare": "effect-tsgo patch --typescript --oxlint"
   },
@@ -32,6 +37,7 @@
   },
   "devDependencies": {
     "@effect/platform-node": "4.0.0-rc.111",
+    "@effect/sql-sqlite-node": "4.0.0-rc.111",
     "@effect/tsgo": "0.38.0",
     "@effect/vitest": "4.0.0-rc.111",
     "@types/bun": "1.4.0",

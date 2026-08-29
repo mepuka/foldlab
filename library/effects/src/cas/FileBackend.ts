@@ -168,6 +168,10 @@ export const makeFileBackend = (
 
   const writeFresh = (id: ContentId, target: string, bytes: Uint8Array) => {
     const directory = fanoutDir(id)
+    // The temp file must be the SCOPED variant: the platform realizes a
+    // temp file as a scaffold directory with the file inside, and only
+    // the scope's release removes that scaffold — the unscoped form
+    // leaks one empty directory into the fanout per fresh write.
     return fs.makeDirectory(directory, { recursive: true }).pipe(
       Effect.andThen(Effect.acquireUseRelease(
         fs.makeTempFile({ directory, prefix: "put-" }),

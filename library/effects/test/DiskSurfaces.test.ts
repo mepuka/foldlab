@@ -7,12 +7,10 @@
  * through a composition whose only carrier is the object files under
  * a temp store root.
  *
- * Transfer note: `Cas.Transfer` is constructed only by
- * `Cas.layerRemote(remoteConfig)` over an HTTP transport — the library
- * ships no local store-to-store realization of the service. The
- * transfer lane therefore pushes the way the push law itself does:
- * children-first closure enumeration plus per-node puts, asserting the
- * ids and bytes land identically in the second store.
+ * Transfer note: the library ships no store-to-store transfer
+ * service. The transfer lane therefore pushes the way the push law
+ * itself does: children-first closure enumeration plus per-node puts,
+ * asserting the ids and bytes land identically in the second store.
  */
 import { expect, it } from "@effect/vitest"
 import { cast, Effect, FileSystem, Layer, Schema, Stream } from "effect"
@@ -209,9 +207,8 @@ it.effect("graph: the audit refuses a store whose object bytes were swapped", ()
     })))
 
 // ---------------------------------------------------------------------------
-// 4. TRANSFER — closure-ordered store-to-store push. `Cas.Transfer` is
-// only realized by `layerRemote` over HTTP, so the local push is the
-// same law by hand: children-first enumeration, per-node puts.
+// 4. TRANSFER — closure-ordered store-to-store push, the push law by
+// hand: children-first enumeration, per-node puts.
 
 it.effect("transfer: closure-ordered push carries a graph store-to-store byte-identically", () =>
   withStoreRoot((rootA) =>

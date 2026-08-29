@@ -6,16 +6,10 @@
  * ... })` form below is the house shape for row-driven suites.
  */
 import { expect } from "@effect/vitest"
-import { Context, Effect, Equal, Layer, Schema } from "effect"
+import { Effect, Equal, Schema } from "effect"
 import { layerNodeFs } from "../fixtures/diskFs.ts"
 import { readFixtureString } from "../fixtures/read.ts"
 import { ManifestModel } from "./suiteIndex.ts"
-import type {
-  MInput,
-  MachineState,
-  Params,
-  StepOut,
-} from "../../src/internal/remoteMachine.ts"
 
 /** The committed manifest index lives in the one suite-structure seam
  * (`./suiteIndex.ts`); re-exported so consumers keep one import. */
@@ -197,22 +191,3 @@ export const assertFamilyRed = <
   ).toBeGreaterThan(0)
   return witnesses
 })
-
-export type RemoteKey = ReadonlyArray<number>
-export type RemoteBytes = ReadonlyArray<number>
-
-export interface RemoteStepShape {
-  readonly step: (
-    params: Params<RemoteKey, RemoteBytes>,
-    state: MachineState<RemoteKey, RemoteBytes>,
-    input: MInput<RemoteKey, RemoteBytes>,
-  ) => StepOut<RemoteKey, RemoteBytes>
-}
-
-/** Lane-selected pure remote step used by direction-1 and direction-2 tests. */
-export class RemoteStepSUT extends Context.Service<RemoteStepSUT, RemoteStepShape>()(
-  "foldlab/effect-replay/test/RemoteStepSUT",
-) {}
-
-export const remoteStepLayer = (step: RemoteStepShape["step"]): Layer.Layer<RemoteStepSUT> =>
-  Layer.succeed(RemoteStepSUT, { step })

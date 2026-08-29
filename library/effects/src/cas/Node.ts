@@ -10,7 +10,6 @@
  */
 import { Schema } from "effect"
 import type { Predicate } from "effect"
-import { CasRemoteError, type CasRemoteError as CasRemoteErrorType } from "./Remote.ts"
 
 /** One byte in the version/tag plane. */
 export const Byte = Schema.Int.check(
@@ -93,15 +92,6 @@ export class StoreFailure extends Schema.TaggedError<StoreFailure>()(
   },
 ) {}
 
-/** A remote-backed store retains the typed remote cause without widening the
- * frozen CasStore method signatures beyond the CasError family. */
-export class RemoteFailure extends Schema.TaggedError<RemoteFailure>()(
-  "CasError/RemoteFailure",
-  { cause: Schema.Union([CasRemoteError, DanglingReference]) },
-) {
-  declare readonly cause: CasRemoteErrorType | DanglingReference
-}
-
 export type CasError =
   | AddressMismatch
   | NonCanonicalBytes
@@ -110,7 +100,6 @@ export type CasError =
   | WrongKindReference
   | ContentNotFound
   | StoreFailure
-  | RemoteFailure
 
 interface CasErrorMembers {
   readonly AddressMismatch: AddressMismatch
@@ -120,7 +109,6 @@ interface CasErrorMembers {
   readonly WrongKindReference: WrongKindReference
   readonly ContentNotFound: ContentNotFound
   readonly StoreFailure: StoreFailure
-  readonly RemoteFailure: RemoteFailure
 }
 
 /** The runtime `_tag` of every CAS error member, as typed constants. The
@@ -135,7 +123,6 @@ export const CasErrorTag = {
   WrongKindReference: "CasError/WrongKindReference",
   ContentNotFound: "CasError/ContentNotFound",
   StoreFailure: "CasError/StoreFailure",
-  RemoteFailure: "CasError/RemoteFailure",
 } satisfies { readonly [K in keyof CasErrorMembers]: `CasError/${K}` }
 
 const casErrorClasses = [
@@ -146,7 +133,6 @@ const casErrorClasses = [
   WrongKindReference,
   ContentNotFound,
   StoreFailure,
-  RemoteFailure,
 ]
 
 /** Whether a value is a member of the CAS error union — an instance
@@ -188,8 +174,7 @@ export function matchCasError<A>(cases:
       : error instanceof DanglingReference ? handle(cases.DanglingReference, error)
       : error instanceof WrongKindReference ? handle(cases.WrongKindReference, error)
       : error instanceof ContentNotFound ? handle(cases.ContentNotFound, error)
-      : error instanceof StoreFailure ? handle(cases.StoreFailure, error)
-      : handle(cases.RemoteFailure, error)
+      : handle(cases.StoreFailure, error)
   }
   return (error) =>
     error instanceof AddressMismatch ? cases.AddressMismatch(error)
@@ -198,6 +183,5 @@ export function matchCasError<A>(cases:
     : error instanceof DanglingReference ? cases.DanglingReference(error)
     : error instanceof WrongKindReference ? cases.WrongKindReference(error)
     : error instanceof ContentNotFound ? cases.ContentNotFound(error)
-    : error instanceof StoreFailure ? cases.StoreFailure(error)
-    : cases.RemoteFailure(error)
+    : cases.StoreFailure(error)
 }

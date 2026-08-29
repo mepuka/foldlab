@@ -30,7 +30,7 @@ import {
   Principal,
   type CasRequest,
 } from "../../src/server/Protocol.ts"
-import { toyAddr } from "../remote/MachineFixtures.ts"
+import { toyAddr } from "../fixtures/toyAddress.ts"
 import { assertFamilyRows, ManifestModel } from "../conformance/harness.ts"
 
 const Address = ContentId

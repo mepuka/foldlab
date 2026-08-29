@@ -1501,6 +1501,73 @@ operations of the store language, a session is a program, the
 canonical representation is the word. @effect/cli when built; grill
 before building.
 
+**CLI grill round 1 (operator-ruled 2026-08-29, all as
+recommended):**
+
+1. **Store locate** — git-style, fail-closed: `--store` flag >
+   `CAS_STORE` env > walk-up discovery of a `.cas/` directory > refuse
+   with guidance. `init` is the only creator; `init --bare <dir>`
+   makes the directory itself the store root (the ratified
+   `objects/`+`roots/` layout, servable and committable). Rendered
+   surfaces say "store" for location; "roots" only ever means
+   published addresses.
+2. **`put` input** — the described canonical node document
+   (kind/payload/refs, the vector wire shape), satisfying concrete-
+   syntax ruling 6: elaborate to existing syntax, mint no format.
+   Typed `--schema` put and blob ingestion are separate later verbs.
+3. **`doctor`** — ships in v0: replay the Lean-minted vectors against
+   an ephemeral store of the same backend kind (temp dir /
+   `:memory:`), word equality binding for binding. Never mutates user
+   data. Vectors ship as generated package data.
+
+**Vocabulary law (operator-ratified 2026-08-29, home corrected same
+day):** the user register is pinned in [VOCABULARY.md](VOCABULARY.md)
+— a two-register split (everyday / protocol) under the consumer-gating
+rule: a term enters the everyday register only when a verb needs it.
+`--help` is the ONE surface for commands and vocabulary together —
+they must stay coherent; no vocabulary verb, no startup card.
+Operator principle recorded: vocabulary is semantics, and semantics
+may alter while the grammar (sorts, wire tags, node structure) stays
+fixed — which is why help and vocabulary flow toward store content
+per the CLI rider (help = described documents), with VOCABULARY.md as
+the seed, never a second copy.
+
+**Startup direction (operator-directed 2026-08-29, pre-grill):**
+config/startup semantics must be explicit — @effect/cli's built-in
+wizard for `init`; `cas status` must surface the concrete data
+location (store directory or database file) and the backup/replication
+target as inspectable paths, so where the data lives is always one
+command away. Status law (operator-ruled 2026-08-29): `status` never
+alters anything — read-only by construction; printing is its entire
+effect.
+
+**CLI grill round 2 (operator-ruled 2026-08-29, all as
+recommended):**
+
+1. **Config home** — `config.json` inside the store directory
+   (`.cas/config.json`; `<dir>/config.json` for bare), written by the
+   `init` wizard, printed by `status`. Precedence: flags > env >
+   config file > defaults. The credential is never inline in config;
+   config may name a `credentialFile` path or an env var only, so a
+   store root that is rsynced or pushed never carries a secret.
+2. **Output registers** — every verb has two: the human register by
+   default (even when piped — no TTY magic), and explicit `--json`
+   emitting described canonical documents only (generated-schema
+   shapes, concrete-syntax ruling 6; never ad-hoc dumps). Agents and
+   the wire read the same syntax.
+3. **Backup** — surfacing only, no verb. File backend: the directory
+   is the store (rsync, commit, push). Sqlite: detect Litestream,
+   print target and lag (target named in `config.json` so status can
+   say where backups are supposed to be even when the replicator is
+   down), and warn loudly when the database file is the only copy.
+   Replication configuration stays Litestream's own.
+
+Grill complete for the v0 verb set: `init` (wizard), `status`
+(read-only law), `ls`, `show`, `kinds`, `verify`, `put` (node
+document), `doctor` (ephemeral twin), `serve`. Standing tripwires: no
+run/exec/naming verbs until the F3 decoder and naming-record grill
+land; no transport-adapter claims until the R11 manifest exists.
+
 Owed: provenance
 receipts for the concrete transcription and catalog rows for
 predictable-machines lean4-json-schema and lean4-tree-sitter; CONTEXT

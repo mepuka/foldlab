@@ -14,7 +14,9 @@ compilation and tests observe the runtime implementation; the Lean
 model, conformance ledger, and ratified manifest vectors live under
 their own gates. See [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 and the minted vocabulary in
-[`docs/effect-replay/CONTEXT.md`](../../docs/effect-replay/CONTEXT.md).
+[`docs/effect-replay/CONTEXT.md`](../../docs/effect-replay/CONTEXT.md);
+the user register — the everyday and protocol vocabulary the CLI
+renders — is [`VOCABULARY.md`](VOCABULARY.md).
 
 ## The shape
 
@@ -36,7 +38,8 @@ Three layers, one seam:
               Cas.layerFileBackend    a store root on any FileSystem
               Cas.layerPathReader     read-only, over any host that serves
                                       bytes at a path (supply one function)
-              Cas.layerRemote         the cas-http/0 client adapter
+              Cas.layerKvsBackend     any Effect KeyValueStore (SQL is the
+                                      SQLite and Litestream route)
 ```
 
 Backends are deliberately dumb byte planes — admission and verification
@@ -141,9 +144,7 @@ capabilities, root publish and presence under `/roots/{hex}`, bearer
 authorization with anonymous reads as policy. The request algebra, the
 pure wire-decision law, and the status tables are all data
 (`Server.Request`, `Server.decide`, `Server.renderOutcome`), so a
-deployment topology is a choice of layers and nothing else. The remote
-client (`Cas.layerRemote`, policy under `Cas.Remote.*`) speaks the same
-profile with verified transfer, budgets, and explicit trust policy.
+deployment topology is a choice of layers and nothing else.
 
 ## Runtime surface
 
@@ -151,15 +152,16 @@ profile with verified transfer, budgets, and explicit trust policy.
   `Cas.isCasError`, `Cas.matchError`); the seams and backends above;
   the `Store` service with the scheme-0 canonical codec
   (`Cas.encodeNode`/`Cas.decodeNode`); `value`/`ref` typed projection;
-  `Graph.closure`/`Graph.verify`; verified blob reads under `Cas.Blob`;
-  streamed transfer under `Cas.Transfer`; remote configuration
-  (`Cas.remoteConfig`) with the policy machinery under `Cas.Remote.*`.
+  `Graph.closure`/`Graph.verify`; verified blob reads under `Cas.Blob`.
 - `Server` — `Core` (the semantic core over the seams), `httpApp` (the
   four-step HTTP shell), and the wire law as data.
 
 The record/replay plane (session runtime, pure reducer, replayable
-service kit) is stashed at `archive/replay-plane/` while the library
-focuses on CAS semantics, the DSL, and metaprogramming; its
+service kit) is stashed at `archive/replay-plane/`, and the hand-built
+remote client with its streaming-proof machinery at
+`archive/remote-plane/` — a remote returns as a generated transport
+adapter of the operation manifest, never as bespoke machinery. The
+library focuses on CAS semantics, the DSL, and metaprogramming;
 history-node kind tags stay reserved. The retired dual-lane Lean
 corpus lives at `archive/lean-model-0.3/`; the live Lean type model of
 this library is the Lake package at `library/cas`.

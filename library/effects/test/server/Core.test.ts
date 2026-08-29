@@ -15,8 +15,8 @@ import {
 } from "../../src/cas/Backend.ts"
 import { CasNodeInput, ContentId, StoreFailure } from "../../src/cas/Node.ts"
 import { encodeCasNode, layerAddressSha256Live } from "../../src/cas/Store.ts"
-import { encodeKeyListDocument } from "../../src/internal/remoteControl.ts"
-import { CasServerCore, makeCasServerCore } from "../../src/server/Core.ts"
+import { encodeKeyListDocument } from "../../src/internal/wire.ts"
+import { CasServerCore } from "../../src/server/Core.ts"
 import {
   CasOutcome,
   CasRequest,
