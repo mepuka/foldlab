@@ -1,5 +1,6 @@
 import Cas.Vectors.Registry
 import Cas.Backend.EmitProg
+import Cas.Backend.ProgProse
 import Gate
 
 /-!
@@ -23,25 +24,21 @@ def hexHelper : String :=
   "  Uint8Array.from({ length: s.length / 2 }, (_, i) =>\n" ++
   "    Number.parseInt(s.slice(i * 2, i * 2 + 2), 16))"
 
-abbrev Row := String × String × String × ((t : Ty) × Tree t)
+abbrev Row := String × String × ((t : Ty) × Tree t)
 
-/-- (program name, vector fixture name, doc, term) — the vector
-registry's order. -/
+/-- (program name, vector fixture name, term) — the vector registry's
+order. There is no doc column: a program's description is its effect
+envelope verbalized (`Cas/Backend/ProgProse.lean`), so the docstrings
+below are computed from the same terms the statements are lowered
+from, and the byte gate checks the description rather than
+transcribing it. -/
 def pureRows : List Row := [
-  ("valueSingle", "value-single",
-    "One opaque value node — the smallest program.", ⟨_, helloValue⟩),
-  ("blobTwoLeaves", "blob-two-leaves",
-    "A two-leaf blob: chunks, leaves, parent, manifest.", ⟨_, blobTwoLeaves⟩),
-  ("fileReadme", "file-readme",
-    "A named file over a one-chunk blob.", ⟨_, fileReadme⟩),
-  ("journalTwoEntries", "journal-two-entries",
-    "A journal: genesis and two entries over saved files.", ⟨_, journalTwo⟩),
-  ("sharedChunk", "shared-chunk",
-    "Two leaves over one shared chunk — the duplicate put replays as a dedup.",
-    ⟨_, blobSharedChunk⟩),
-  ("gitPinCommit", "git-pin-commit",
-    "The lean4-tree-sitter pin commit as a git node — a provenance pin as store content.",
-    ⟨_, gitPinCommit⟩)
+  ("valueSingle", "value-single", ⟨_, helloValue⟩),
+  ("blobTwoLeaves", "blob-two-leaves", ⟨_, blobTwoLeaves⟩),
+  ("fileReadme", "file-readme", ⟨_, fileReadme⟩),
+  ("journalTwoEntries", "journal-two-entries", ⟨_, journalTwo⟩),
+  ("sharedChunk", "shared-chunk", ⟨_, blobSharedChunk⟩),
+  ("gitPinCommit", "git-pin-commit", ⟨_, gitPinCommit⟩)
 ]
 
 /-- The schema program needs the payload-bound witness, so it joins
@@ -49,19 +46,18 @@ the registry in `IO` (the vector tool's own pattern). -/
 def schemaRow : IO Row := do
   if small : (Cas.Grammar.utf8 vectorDocumentCode.payload).length < 4294967296 then
     return ("schemaVectorDocument", "schema-vector-document",
-      "The vector format's own canonical schema as a schema node.",
       ⟨_, .schema ⟨Cas.Grammar.utf8 vectorDocumentCode.payload, small⟩⟩)
   else
     throw (IO.userError "schema program: payload exceeds the node byte bound")
 
 def moduleDecls (rows : List Row) : List Decl :=
   .raw hexHelper ::
-  (rows.map fun (name, _, doc, tree) =>
-    .prog (treeProgram [doc] name tree.2)) ++
+  (rows.map fun (name, _, tree) =>
+    .prog (treeProgram tree.2.docLines name tree.2)) ++
   [.const {
     doc := ["Every generated program beside its vector fixture's name."]
     name := "programs"
-    value := .arr (rows.map fun (name, fixture, _, _) =>
+    value := .arr (rows.map fun (name, fixture, _) =>
       .object [("name", .str fixture), ("run", .ident name)])
   }]
 
