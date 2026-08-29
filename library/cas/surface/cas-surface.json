@@ -8,13 +8,13 @@
     "Lang": 129,
     "Lift": 37,
     "Schema": 351,
-    "Values": 307,
+    "Values": 308,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 147,
-    "Quot.sound": 250,
-    "propext": 338
+    "Classical.choice": 148,
+    "Quot.sound": 251,
+    "propext": 339
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -34,8 +34,8 @@
     "Cas.Schema.El": 27,
     "Cas.Word": 56
   },
-  "declarations": 1189,
-  "documented": 564,
+  "declarations": 1190,
+  "documented": 565,
   "library": "Cas",
   "modules": [
     {
@@ -8065,8 +8065,8 @@
       ]
     },
     {
-      "declarations": 38,
-      "documented": 36,
+      "declarations": 39,
+      "documented": 37,
       "module": "Cas.Values.JsonParse",
       "surface": [
         {
@@ -8285,6 +8285,14 @@
           "kind": "theorem",
           "name": "Cas.Json.parse_sound",
           "signature": "∀ {s : String} {v : Cas.Json.Value}, Cas.Json.parse s = some v → Cas.Json.renderPlain v = s ∧ v.NumNormal",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_sound_compact",
+          "signature": "∀ {s : String} {v : Cas.Json.Value}, Cas.Json.parse s = some v → v.Canonical → Cas.Json.renderCompact v = s",
           "touches": ["Values"]
         },
         {
@@ -9491,6 +9499,6 @@
     "inductive": 33,
     "instance": 57,
     "structure": 36,
-    "theorem": 426
+    "theorem": 427
   }
 }

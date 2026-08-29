@@ -1123,6 +1123,17 @@ theorem parse_sound {s : String} {v : Value} (h : parse s = some v) :
     simp
   | some (w, _ :: _) => simp [hp] at h
 
+/-- EXACTNESS at the canonical bytes. The premise is the one thing the
+parser deliberately does not check: it answers objects in the order the
+bytes carry them, so an accepted document is `renderPlain`'s image
+always, and `renderCompact`'s image exactly when the answer is
+canonically spelled. That is the gate's question, and this is where it
+is paid. -/
+theorem parse_sound_compact {s : String} {v : Value} (h : parse s = some v)
+    (hc : v.Canonical) : renderCompact v = s := by
+  rw [renderCompact_eq_renderPlain v hc]
+  exact (parse_sound h).1
+
 /-! ## The acceptance contract, worked at elaboration
 
 `Value` carries no `BEq`, so the answers are compared through the
