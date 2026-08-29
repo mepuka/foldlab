@@ -62,6 +62,15 @@ name = "emitwire"
 srcDir = "tools"
 root = "EmitWire"
 
+# The admission-table emitter: `lake exe emitgate` regenerates the
+# effects package's generated admission table — what the schema door
+# admits, as data — at the target the tool bakes in (a positional path
+# overrides it); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitgate"
+srcDir = "tools"
+root = "EmitGate"
+
 # The program emitter: `lake exe emitprograms` regenerates the
 # straight-line Effect programs of the registered grammar terms at the
 # target the tool bakes in (a positional path overrides it); `--check`

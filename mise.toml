@@ -10,6 +10,7 @@ run = [
   "mise run gen:cas-schemas",
   "mise run gen:cas-verdicts",
   "mise run gen:backend-wire",
+  "mise run gen:backend-gate",
   "mise run gen:backend-programs",
   "mise run gen:backend-mcp",
   "mise run gen:backend-materialize",
@@ -71,6 +72,11 @@ description = "Regenerate the effects package's generated canonical-schema mirro
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitwire"
 
+[tasks."gen:backend-gate"]
+description = "Regenerate the effects package's admission table (what the schema door admits, as data) from the Lean manifest"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitgate"
+
 [tasks."gen:backend-programs"]
 description = "Regenerate the straight-line Effect programs of the registered grammar terms"
 dir = "{{config_root}}/library/cas"
@@ -102,7 +108,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, program, materialization, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -110,6 +116,7 @@ run = [
   "lake exe schemas --check",
   "lake exe verdicts --check",
   "lake exe emitwire --check",
+  "lake exe emitgate --check",
   "lake exe emitprograms --check",
   "lake exe materialize --check",
   "lake exe mcpspec --check",

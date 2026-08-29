@@ -50,11 +50,17 @@ inductive Stmt where
   /-- `return value`. -/
   | ret (value : Expr)
 
-/-- One exported `const` with its doc comment. -/
+/-- One exported `const` with its doc comment. `type` is the optional
+declared type — additive, so an emitter that has no type to declare
+constructs the same three fields it always did. It exists because a
+generated TABLE has to arrive in TypeScript at the type the hand-written
+reader expects (a `Refusal` union, not a widened `string`); inference
+would widen every literal column and push a cast onto the consumer. -/
 structure ConstDecl where
   doc : List String
   name : String
   value : Expr
+  type : Option String := none
 
 /-- An exported straight-line store program:
 `export const name = (store: ParamType) => Effect.gen(function* () { … })`. -/
@@ -89,8 +95,28 @@ namespace Render
 def indentOf (style : Style) (depth : Nat) : String :=
   String.ofList (List.replicate (style.indent * depth) ' ')
 
+/-- String-literal escaping: the delimiter, the escape character, and
+the three control characters a source line cannot hold. Everything else
+— accents, dashes, the whole of the non-ASCII plane — travels verbatim,
+because the emitted file is UTF-8 and so is TypeScript's grammar.
+
+Escaping lives in the PRINTER, not in the emitters: a string that has to
+be pre-escaped by its producer is a string every future producer will
+forget to escape. Nothing already emitted carries a delimiter or a
+backslash, so the house bytes are unchanged. -/
+def escapeString (style : Style) (s : String) : String :=
+  s.foldl (init := "") fun acc c =>
+    acc ++
+      (if c == style.quote then "\\" ++ String.singleton c
+       else if c == '\\' then "\\\\"
+       else if c == '\n' then "\\n"
+       else if c == '\r' then "\\r"
+       else if c == '\t' then "\\t"
+       else String.singleton c)
+
 def quoted (style : Style) (s : String) : String :=
-  String.singleton style.quote ++ s ++ String.singleton style.quote
+  String.singleton style.quote ++ escapeString style s ++
+    String.singleton style.quote
 
 mutual
 
@@ -160,7 +186,8 @@ def docBlock (lines : List String) : String :=
       String.intercalate "\n" (rest.map (" * " ++ ·)) ++ " */\n"
 
 def constDecl (style : Style) (d : ConstDecl) : String :=
-  docBlock d.doc ++ "export const " ++ d.name ++ " = " ++
+  docBlock d.doc ++ "export const " ++ d.name ++
+    (match d.type with | none => "" | some t => ": " ++ t) ++ " = " ++
     expr style 0 d.value ++ "\n"
 
 def stmt (style : Style) (depth : Nat) : Stmt → String
