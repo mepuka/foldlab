@@ -18,13 +18,16 @@ globs = ["Cas.Backend.+"]
 name = "CasExamples"
 srcDir = "examples"
 
-# The shared gate driver every tool root imports: fixtures in,
-# emit/--check/--json out. Declared as a library so the exe roots can
-# import it; it is not a default target because the exes that drive it
-# are what `check:cas` builds.
+# The shared tool substrate every tool root imports: `Gate` is the
+# driver (fixtures in, emit/--check/--json out) and `Walk` is the
+# single environment walk the projections over the compiled library
+# share. Declared as a library so the exe roots can import both; it is
+# not a default target because the exes that drive it are what
+# `check:cas` builds.
 [[lean_lib]]
 name = "Gate"
 srcDir = "tools"
+globs = ["Gate", "Walk"]
 
 # The vector emitter: `lake exe vectors` regenerates the committed
 # conformance fixtures under vectors/; `--check` is the byte-identity
@@ -95,6 +98,17 @@ root = "EmitMcp"
 name = "surface"
 srcDir = "tools"
 root = "Surface"
+supportInterpreter = true
+
+# The obligation ledger: lake exe obligations extracts the named
+# obligations already written in the library's docstrings into
+# surface/cas-obligations.json, with the health counters the estate
+# otherwise remembers; --check is the byte-identity gate and
+# --self-test runs the planted-defect controls.
+[[lean_exe]]
+name = "obligations"
+srcDir = "tools"
+root = "Obligations"
 supportInterpreter = true
 
 # The lift-manifest emitter: `lake exe emitlift` regenerates the
