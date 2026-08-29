@@ -494,6 +494,15 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     the `Cas` library only — `Cas.Backend.*` is invisible to
     retrieval-before-generation. One-line fix in `tools/Surface.lean`'s
     import set when convenient.
+25. **Replay-vocabulary reactivation precedes any `Utterance` slice**
+    (Exchange landing, 2026-08-29, `dbcaa709`): the growth path for
+    role-tagged multi-turn transcripts lands on the dormant
+    effect-replay vocabulary — "Solicited delegation" IS a recorded
+    invoke/outcome pair, "Decision trace" IS an ordered record of
+    turns. The Exchange kind deliberately reused neither. Reactivating
+    that vocabulary for the prose pillar is a ruling to make BEFORE an
+    Utterance slice, not during one.
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
