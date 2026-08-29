@@ -150,6 +150,18 @@ name = "admissionmap"
 srcDir = "tools"
 root = "AdmissionMap"
 
+# The environment ledger: `lake exe envledger` transcribes the
+# configuration plane — mise's tool pins and task graph, every Lake
+# project's `lean-toolchain`, and this package's own `[[lean_exe]]`
+# blocks joined to the task that drives each one and the `--check` line
+# that gates it — into `docs/lab-core/ENVIRONMENT.json`. File reading
+# only, so no `supportInterpreter`; `--check` is the byte-identity gate
+# and `--self-test` plants one defect per grammar rule.
+[[lean_exe]]
+name = "envledger"
+srcDir = "tools"
+root = "EnvLedger"
+
 # The estate-native materializer: `lake exe materialize` reads the
 # committed schema payloads back through the ingestion door and prints
 # each one as a provenance-stamped TypeScript module under the effects
