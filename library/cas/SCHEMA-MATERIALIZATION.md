@@ -543,6 +543,23 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     round 2 ruling 2): only `show` has one; init/status/ls and the
     three new verbs match the existing state, not the ruling.
 
+31. **The Architecture matrix is narrower than the shipped
+    composition**: the SQL roots adapter exists and the kvs row still
+    reads read/write only; the capability matrix is pinned two-sided
+    (TS value + Cas/Architecture.lean + the shared pin), so the row
+    addition is a paired change — owed.
+32. **A9, the outputSchema drop** (salvage dossier, testable on
+    rc.111): Effect's MCP pin emits outputSchema only for
+    object-typed results; a tagged-union reply — the refusal
+    envelope's exact shape — advertises none. Test before the host
+    lane wires result schemas; if confirmed, the envelope may need an
+    object wrapper, which is a Lean-side spelling decision.
+33. **Law-ID-to-test binding** (salvaged from the old era's LAWS.md):
+    the ruling queue records rulings but binds none to enforcing
+    tests; the old-era check-laws gate failed in BOTH directions.
+    Adopting the index is a discipline slice; the salvage carries the
+    working prior art (attic/correctness-gating-laws).
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ty.context` (0x0D) is a RATIFIED tag with no `Tree` constructor:
