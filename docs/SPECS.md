@@ -172,3 +172,19 @@ records the 2026-08-29 session rulings that cut across specs.
     determination that it has **fluent semantics for LOCAL,
     SELF-HOSTED, and CLOUD resource handling**. May fold into the
     G6/server-infra lane.
+15. **Persistable — top of backlog, no bumping** (2026-08-29 night):
+    Effect 4's `Persistable` (PrimaryKey + attached success/error
+    Schemas; serializeExit/deserializeExit/exitSchema) is to be
+    **folded into every one of the estate's TypeScript layers for
+    clean semantics** when the backlog reaches it. The three keying
+    regimes stack: Layer → object reference; Cache → structural
+    Equal/Hash; PersistedCache → PrimaryKey string over a
+    Schema-described request with a serialized Exit stored —
+    structurally the Bazel digest → ActionResult mapping, a
+    content-derived key with backends shipped as layers
+    (Persistence.layerMemory/layerKvs/layerSql/layerSqlMultiTable/
+    layerRedis; KeyValueStore.layerMemory/layerFileSystem/layerSql/
+    layerStorage). *Why: "the language evolves" — Effect already
+    carries the content-keyed regime the estate's semantics need;
+    aligning with it beats minting one.* Relayed to the G6-a
+    SystemNode lane and the build-semantics study on ruling.
