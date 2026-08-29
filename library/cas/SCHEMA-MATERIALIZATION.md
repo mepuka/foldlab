@@ -263,6 +263,19 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
    at caller-chosen tags (suite uses `0x41`); minting an
    `AnnotationKindTag` is plane identity and wants Lean and TS
    counterparts together.
+
+   **SHARPENED by the exchange kind, 2026-08-29** (`Cas/Schema/
+   Exchange.lean`): for the annotation kind the residence tag is
+   genuinely the caller's, because nothing in the code refers to it.
+   The exchange kind is not free that way. Its subject union has an
+   `exchange` arm — the edge a conversation is walked along — and that
+   arm has to name a tag, so `exchangeKindTag = 0x58` is spelled inside
+   the code and is therefore PART OF THE FIXTURE'S ADDRESS. It is
+   unreserved (`Cas.value` accepts it, `ReservedKindTags` does not list
+   it), so today it is a working tag; but a kind whose own references
+   are self-referential cannot leave its tag to callers, and moving it
+   later moves the schema's address. Minting it is the same question as
+   the annotation tag, one degree more forced.
 10. **TS-side declaration rows**: `CanonicalSchema` does not yet admit
     Date/URL/Option-carrying schemas (Lean-root asymmetry; follow-on
     lane, not a defect).

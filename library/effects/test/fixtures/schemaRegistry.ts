@@ -11,7 +11,7 @@
 import { Schema } from "effect"
 import { Cas } from "../../src/index.ts"
 
-const { Annotations, CanonicalSchema, ConformanceVector } = Cas
+const { Annotations, CanonicalSchema, ConformanceVector, Exchanges } = Cas
 
 /** Lean `SchemasMain.PinSample`, hand-mirrored in Effect Schema. */
 export const pinSample = Schema.Struct({
@@ -153,7 +153,13 @@ export const tuplePin = Schema.Struct({
  * own hand-written kind rather than a second copy of it: the sidecar
  * annotation kind is a public surface, so the surface itself is what the
  * Lean bytes are held to. It is hand-written like every other row, and
- * like every other row it is never derived from the fixtures. */
+ * like every other row it is never derived from the fixtures.
+ *
+ * `exchange` mirrors Lean `Cas.Schema.Exchange` the same way, through
+ * `Exchanges.Exchange`. Its subject union is the second row after
+ * `tagged-pin` whose members the deriving handler spells, so the pin
+ * holds the generator's member order and `oneOf` mode inside a struct
+ * field — one level deeper than `tagged-pin` reaches. */
 export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["vector-document", ConformanceVector.vectorSchema],
   ["vector-index", ConformanceVector.indexSchema],
@@ -164,4 +170,5 @@ export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["tagged-pin", taggedPin],
   ["enum-pin", enumPin],
   ["tuple-pin", tuplePin],
+  ["exchange", Exchanges.Exchange],
 ] as const

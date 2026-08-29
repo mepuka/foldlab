@@ -146,6 +146,11 @@ export * as Materialize from "./cas/Materialize.ts"
 // the schema node it annotates.
 export * as Annotations from "./cas/Annotations.ts"
 
+// Interactions as content: the exchange kind, the stored form of a
+// recorded prompt/answer turn at the agent seam (R15), whose subject
+// addresses either a schema node or the exchange before it.
+export * as Exchanges from "./cas/Exchanges.ts"
+
 // The registered replay surface: the Lean-emitted conformance vector
 // as a first-class type, wire schemas hand-mirroring the emitter.
 export * as ConformanceVector from "./cas/ConformanceVector.ts"

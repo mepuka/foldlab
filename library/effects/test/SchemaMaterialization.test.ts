@@ -266,6 +266,15 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `tagged-pin Schema.Union([Schema.Struct({ "_tag": Schema.Literal("move"), "dx": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "dy": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })) }), Schema.Struct({ "_tag": Schema.Literal("say"), "body": Schema.String, "note": Schema.optionalKey(Schema.String) }), Schema.Struct({ "_tag": Schema.Literal("stop") })], { mode: "oneOf" })`,
         `enum-pin Schema.Struct({ "direction": Schema.Enum(_Enum), "level": Schema.Enum(_Enum1), "mixed": Schema.optionalKey(Schema.Enum(_Enum2)) })`,
         `tuple-pin Schema.Struct({ "nested": Schema.optionalKey(Schema.Tuple([Schema.Array(Schema.Tuple([Schema.String])), Schema.Null])), "pair": Schema.Tuple([Schema.String, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]), "plain": Schema.Array(Schema.String), "withOptional": Schema.Tuple([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.optionalKey(Schema.String)]), "withRest": Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]) })`,
+        // The exchange kind carries a derived union INSIDE a struct
+        // field, one level deeper than `tagged-pin` reaches, and it
+        // regenerates faithfully for the same reason: every member is
+        // an Objects, so the literal collapse cannot fire and the
+        // `oneOf` mode survives. Both reference declarations print
+        // through the completed `foldlab/cas/ref` contract, each
+        // carrying the kind tag its arm demands — 88 (`0x58`) for the
+        // exchange arm, 83 (`0x53`) for the schema arm.
+        `exchange Schema.Struct({ "answer": Schema.String, "prompt": Schema.String, "subject": Schema.Union([Schema.Struct({ "_tag": Schema.Literal("exchange"), "address": Cas.CanonicalSchema.ref(88) }), Schema.Struct({ "_tag": Schema.Literal("schema"), "address": Cas.CanonicalSchema.ref(83) })], { mode: "oneOf" }) })`,
         `ref-root Cas.CanonicalSchema.ref(83)`,
       ])
 
@@ -284,6 +293,7 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `tagged-pin { readonly "_tag": "move", readonly "dx": number, readonly "dy": number } | { readonly "_tag": "say", readonly "body": string, readonly "note"?: string } | { readonly "_tag": "stop" }`,
         `enum-pin { readonly "direction": _Enum, readonly "level": _Enum1, readonly "mixed"?: _Enum2 }`,
         `tuple-pin { readonly "nested"?: readonly [ReadonlyArray<readonly [string]>, null], readonly "pair": readonly [string, number], readonly "plain": ReadonlyArray<string>, readonly "withOptional": readonly [number, string?], readonly "withRest": readonly [string, ...Array<number>] }`,
+        `exchange { readonly "answer": string, readonly "prompt": string, readonly "subject": { readonly "_tag": "exchange", readonly "address": Cas.ReferenceSentinel } | { readonly "_tag": "schema", readonly "address": Cas.ReferenceSentinel } }`,
         `ref-root Cas.ReferenceSentinel`,
       ])
 
