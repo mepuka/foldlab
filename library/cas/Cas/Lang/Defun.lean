@@ -1034,4 +1034,882 @@ theorem ObsEq_decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
   ObsEq_embed_of_runP H fun w =>
     runP_decodeProg_encodeProg H p hwf hsep hq w
 
+/-! ## THE EFFECT ENVELOPE — what a table can do, without running it
+
+The applicative-strength half of the fragment tower (`Cas/Lang/Fragments.lean`).
+The envelope is what `possibleOps` names in the selective literature (SAF
+§3.2) and what DESIGN.md §5.5 mints as **effect envelope**: the object a
+GRANT is written against. It is computed from the table ALONE — no word,
+no store, no `H`, no fuel — so every definition below is a plain function
+on first-order data, exactly R14a-P1. Nothing here enters `Prog`.
+
+Three components, per the design's ask:
+
+- **reads** — the literal addresses the table can consult. A `load`'s
+  source is one; so is every reference of a `put`, because admission
+  CONSULTS each reference for presence and kind (`checkRefs`) before it
+  admits anything. Answer-valued operands contribute no literal: their
+  address is not known until the table runs, and the dataflow edge is
+  what accounts for them.
+- **puts** — the put SHAPES, in program order: version, kind tag,
+  payload bytes, and the expected kind tag of each reference. Everything
+  about the admitted node except the reference ADDRESSES, which are the
+  only part the answer history supplies.
+- **dataflow** — the answer-index DAG, edges `(i, j)` reading "line `i`
+  consumes line `j`'s answer". Already implicit in `resolveRefs`; here it
+  is the graph, read off.
+
+### What statement triage changed
+
+Four findings, each of which moved a statement:
+
+1. **DESIGN.md §3.1's table calls L-A's analysis "exact:
+   `over = under = actual`". That is refuted.** A run executes only the
+   prefix before its first refusal, so a table whose first line refuses
+   still has an envelope naming every later put. The first `example`
+   below exhibits it. L-A is over-approximate for exactly the reason
+   every rung is: refusal.
+2. **A SECOND source of over-approximation, at the word, that the design
+   note does not name: `put`'s DUPLICATE outcome.** A put line that
+   executes performs its operation but appends no binding when the node
+   is already stored. So the word projection of the envelope is a
+   `Sublist`, never a prefix, even on runs that never refuse — the
+   second `example` exhibits it. This is F2's deduplication seen from the
+   envelope side, and it is why `runPFrom_puts_sound` concludes
+   `List.Sublist`.
+3. **"Actual" cannot be a trace here without a second spelling of
+   meaning.** `runPFrom` reports a status and a word, not an operation
+   list, and adding an instrumented walk would put the run's meaning in
+   two places (R10). So the sandwich is stated at the two places the run
+   is genuinely OBSERVABLE — the word it leaves (`runPFrom_puts_sound`)
+   and the address a refusal names (`runPFrom_absent_sound`) — plus the
+   per-operand statement that covers every consultation
+   (`PProg.resolve_sound`). No trace semantics is introduced.
+4. **The "answers" half is not run data at all — it is a pure recursion,
+   and saying so is the theorem.** DESIGN.md §2.1's *hash-determined
+   dataflow* claims that, given `H`, a table's whole answer environment
+   is a function of the table. `PProg.answersFrom` computes it with no
+   word and no store, and `runPFrom_done_answers` proves the direct
+   interpreter threads exactly that history. That is what lets the read
+   half say "an earlier answer" without quantifying over runs. Note the
+   honest converse: `answersFrom` is store-free, so it keeps computing
+   past a refusal a store would have raised — it over-approximates in
+   exactly the same place the envelope does, and nowhere else. -/
+
+/-- The operation kind of a code point — the first thing the envelope
+reads off a line. -/
+inductive PKind where
+  | put
+  | load
+  deriving DecidableEq
+
+/-- Which operation a line performs. -/
+def PLine.kind : PLine → PKind
+  | .put .. => .put
+  | .load _ => .load
+
+/-- A line's operand references, in order: a put's reference operands, or
+a load's single source. This is the line's whole dependence on the
+outside world — there is nowhere else for an address to come from. -/
+def PLine.operands : PLine → List PIn
+  | .put _ _ _ refs => refs.map Prod.snd
+  | .load src => [src]
+
+/-- The statically determined shape of a put: everything about the node a
+put line admits that does NOT depend on the answer history — scheme
+version, kind tag, payload bytes, and each reference's expected kind tag.
+What the history supplies is only the reference ADDRESSES. -/
+structure PutShape where
+  version : UInt8
+  tag : UInt8
+  payload : Bytes
+  refKinds : List UInt8
+  deriving DecidableEq
+
+/-- The shape a node exhibits — the run-side projection the put-soundness
+theorem compares the envelope against. -/
+def PutShape.ofNode (n : Node) : PutShape :=
+  ⟨n.version, n.tag, n.payload, n.refs.map Ref.expectedTag⟩
+
+/-- The literal addresses a table can READ: every operand naming an
+address outright, over every line — a load's source, and every reference
+of a put, since admission consults each one. -/
+def PProg.reads (p : PProg) : List Addr32 :=
+  p.flatMap fun l => l.operands.filterMap fun
+    | .lit a => some a
+    | .ans _ => none
+
+/-- The puts a table performs, in program order, by shape. -/
+def PProg.puts (p : PProg) : List PutShape :=
+  p.filterMap fun
+    | .put v t payload refs => some ⟨v, t, payload, refs.map Prod.fst⟩
+    | .load _ => none
+
+/-- The answer-index dataflow from a starting line index. Spelled with an
+explicit index accumulator rather than through `List.zipIdx` so that the
+closure theorem below inducts along the same recursion the table does. -/
+def PProg.dataflowFrom (i : Nat) : PProg → List (Nat × Nat)
+  | [] => []
+  | l :: rest =>
+    (l.operands.filterMap fun
+      | .ans j => some (i, j)
+      | .lit _ => none) ++ PProg.dataflowFrom (i + 1) rest
+
+/-- The answer-index dataflow: an edge `(i, j)` says line `i` consumes
+line `j`'s answer. The dependency DAG, read off the table. -/
+def PProg.dataflow (p : PProg) : List (Nat × Nat) := PProg.dataflowFrom 0 p
+
+/-- THE EFFECT ENVELOPE: what a table can do, computed from the table
+alone. Stratum-1 data — decidable, hashable, addressable — so an envelope
+is itself a thing a grant can be written against and a store can hold. -/
+structure Envelope where
+  reads : List Addr32
+  puts : List PutShape
+  dataflow : List (Nat × Nat)
+  deriving DecidableEq
+
+/-- The envelope of a table. -/
+def PProg.envelope (p : PProg) : Envelope :=
+  ⟨PProg.reads p, PProg.puts p, PProg.dataflow p⟩
+
+/-- How many puts the envelope declares — the count half of the put
+shape. -/
+def Envelope.putCount (e : Envelope) : Nat := e.puts.length
+
+/-- Dataflow closure relative to a starting answer-history length. -/
+def PProg.dataflowClosedFrom (i : Nat) (p : PProg) : Bool :=
+  (PProg.dataflowFrom i p).all fun e => decide (e.2 < e.1)
+
+/-- The dataflow is CLOSED when every edge names a STRICTLY EARLIER line.
+Absolute indexing makes this decidable on the table alone, and
+`runP_no_dangling` proves it is exactly the condition under which no line
+can refuse for a dangling answer index — a refusal class the envelope
+decides without running. -/
+def Envelope.dataflowClosed (e : Envelope) : Bool :=
+  e.dataflow.all fun edge => decide (edge.2 < edge.1)
+
+/-- The envelope's closure predicate is the table's, at history zero. -/
+theorem dataflowClosed_eq (p : PProg) :
+    (PProg.envelope p).dataflowClosed = PProg.dataflowClosedFrom 0 p := rfl
+
+/-! ### Resolution — what the operands can name
+
+The three facts about `PIn.resolve`/`resolveRefs` the sandwich rests on,
+each stated over an abstract history so the theorems above them never
+re-derive the `mapM`. -/
+
+/-- A literal operand resolves to itself, at every history. -/
+theorem PIn.resolve_lit {env : List Addr32} {a b : Addr32}
+    (h : (PIn.lit a).resolve env = some b) : a = b := by
+  simpa [PIn.resolve] using h
+
+/-- An answer operand resolves only inside the history. -/
+theorem PIn.resolve_ans {env : List Addr32} {j : Nat} {a : Addr32}
+    (h : (PIn.ans j).resolve env = some a) : a ∈ env := by
+  simp only [PIn.resolve] at h
+  exact List.mem_of_getElem? h
+
+/-- Resolution changes only the ADDRESSES: the expected kind tags come
+from the table, so an admitted node exhibits exactly the reference kinds
+the envelope declared. -/
+theorem resolveRefs_kinds : ∀ {refs : List (UInt8 × PIn)} {env : List Addr32}
+    {rs : List Ref}, resolveRefs env refs = some rs →
+      rs.map Ref.expectedTag = refs.map Prod.fst := by
+  intro refs
+  induction refs with
+  | nil => intro env rs h; simp [resolveRefs] at h; subst h; rfl
+  | cons r rest ih =>
+    intro env rs h
+    simp only [resolveRefs, List.mapM_cons] at h
+    cases hx : (r.2.resolve env) with
+    | none => simp [hx] at h
+    | some a =>
+      simp only [hx, Option.map_some] at h
+      cases hrest : resolveRefs env rest with
+      | none =>
+        have h0 : (rest.mapM fun q => (q.2.resolve env).map (Ref.mk q.1)) = none := hrest
+        rw [h0] at h; simp at h
+      | some rs' =>
+        have : (rest.mapM fun q => (q.2.resolve env).map (Ref.mk q.1)) = some rs' := hrest
+        simp only [this] at h
+        have hrs : rs = ⟨r.1, a⟩ :: rs' := by simpa using h.symm
+        subst hrs
+        simp [ih hrest]
+
+/-- Every resolved reference came from an operand: the addresses a put
+carries into admission are exactly the resolutions of the operands the
+envelope read off. -/
+theorem resolveRefs_mem : ∀ {refs : List (UInt8 × PIn)} {env : List Addr32}
+    {rs : List Ref}, resolveRefs env refs = some rs → ∀ r ∈ rs,
+      ∃ x ∈ refs.map Prod.snd, x.resolve env = some r.addr := by
+  intro refs
+  induction refs with
+  | nil => intro env rs h r hr; simp [resolveRefs] at h; subst h; simp at hr
+  | cons q rest ih =>
+    intro env rs h r hr
+    simp only [resolveRefs, List.mapM_cons] at h
+    cases hx : (q.2.resolve env) with
+    | none => simp [hx] at h
+    | some a =>
+      simp only [hx, Option.map_some] at h
+      cases hrest : resolveRefs env rest with
+      | none =>
+        have h0 : (rest.mapM fun z => (z.2.resolve env).map (Ref.mk z.1)) = none := hrest
+        rw [h0] at h; simp at h
+      | some rs' =>
+        have hr' : (rest.mapM fun z => (z.2.resolve env).map (Ref.mk z.1)) = some rs' := hrest
+        simp only [hr'] at h
+        have hrs : rs = ⟨q.1, a⟩ :: rs' := by simpa using h.symm
+        subst hrs
+        rcases List.mem_cons.mp hr with rfl | hm
+        · exact ⟨q.2, by simp, hx⟩
+        · obtain ⟨x, hx', hres⟩ := ih hrest r hm
+          exact ⟨x, by simp at hx' ⊢; exact Or.inr hx', hres⟩
+
+/-- A put's reference list resolves whenever each of its operands does. -/
+theorem resolveRefs_isSome : ∀ {refs : List (UInt8 × PIn)} {env : List Addr32},
+    (∀ x ∈ refs.map Prod.snd, (x.resolve env).isSome) →
+      (resolveRefs env refs).isSome := by
+  intro refs
+  induction refs with
+  | nil => intro env _; simp [resolveRefs]
+  | cons q rest ih =>
+    intro env h
+    have hq : (q.2.resolve env).isSome := h q.2 (by simp)
+    have hrest := ih (env := env) fun x hx => h x (by simp at hx ⊢; exact Or.inr hx)
+    cases hx : (q.2.resolve env) with
+    | none => rw [hx] at hq; simp at hq
+    | some a =>
+      cases hy : resolveRefs env rest with
+      | none => rw [hy] at hrest; simp at hrest
+      | some rs =>
+        have hy' : (rest.mapM fun z => (z.2.resolve env).map (Ref.mk z.1)) = some rs := hy
+        simp [resolveRefs, List.mapM_cons, hx, hy']
+
+/-! ### THE SANDWICH (a) — soundness at the operand
+
+`actual ⊆ possible`, stated where every consultation happens: an operand.
+A table cannot name an address it did not either write down (a literal
+the envelope holds) or compute (an entry of the answer history). There is
+no third source, because `PIn` has two constructors. -/
+
+/-- SOUNDNESS, read half, at the operand: every address a line consults
+resolves either to a literal the envelope names among the table's reads,
+or to a member of the answer history the run has built. -/
+theorem PProg.resolve_sound {p : PProg} {l : PLine} (hl : l ∈ p)
+    {x : PIn} (hx : x ∈ l.operands) {env : List Addr32} {a : Addr32}
+    (h : x.resolve env = some a) :
+    a ∈ PProg.reads p ∨ a ∈ env := by
+  cases x with
+  | lit b =>
+    left
+    have : b = a := PIn.resolve_lit h
+    subst this
+    refine List.mem_flatMap.mpr ⟨l, hl, ?_⟩
+    exact List.mem_filterMap.mpr ⟨PIn.lit b, hx, rfl⟩
+  | ans j => exact Or.inr (PIn.resolve_ans h)
+
+/-- The addresses a line consults under a given answer history — the
+line's contribution to the frame condition. -/
+def PLine.touches (env : List Addr32) (l : PLine) : List Addr32 :=
+  l.operands.filterMap (PIn.resolve env)
+
+/-- THE FRAME CONDITION, per line: at whatever history the run is in when
+it reaches a line, everything that line touches lies in the envelope's
+literal reads together with that history. `runPFrom_done_answers` below
+identifies the history itself, so the two theorems together are "this
+program touches only these addresses". -/
+theorem PProg.touches_sound {p : PProg} {l : PLine} (hl : l ∈ p)
+    (env : List Addr32) :
+    ∀ a ∈ PLine.touches env l, a ∈ PProg.reads p ∨ a ∈ env := by
+  intro a ha
+  obtain ⟨x, hx, hres⟩ := List.mem_filterMap.mp ha
+  exact PProg.resolve_sound hl hx hres
+
+/-! ## Hash-determined dataflow — the history is a pure recursion
+
+DESIGN.md §2.1's load-bearing observation, made a definition and then a
+theorem. The answer to a `put` is the content address of the node it
+admits — Level 0, no premise on `H` — and a `load` answers its own
+source. So *given `H`*, a table's whole answer environment is a function
+of the table: no word, no store, no running. This is what the estate has
+instead of the free applicative's "no dependence on earlier results": the
+table DOES depend on earlier results, and is statically analysable anyway
+because addressing is functional. -/
+
+/-- The address a line ANSWERS, given `H` and the history: a put answers
+the content address of the node it admits; a load answers its source. -/
+def PLine.answer (H : Bytes → Addr32) (env : List Addr32) : PLine → Option Addr32
+  | .put v t payload refs =>
+      (resolveRefs env refs).map fun rs => H (encodeNode ⟨v, t, payload, rs⟩)
+  | .load src => src.resolve env
+
+/-- HASH-DETERMINED DATAFLOW: the answer history a table determines from
+`H` alone. A pure recursion on the table — R14a-P1 all the way down. It
+stops at the first line whose operands dangle, and at NOTHING else: being
+store-free it keeps computing past a refusal a store would have raised,
+which is the one place it over-approximates the run. -/
+def PProg.answersFrom (H : Bytes → Addr32) (env : List Addr32) :
+    PProg → List Addr32
+  | [] => []
+  | l :: rest =>
+    match PLine.answer H env l with
+    | some a => a :: PProg.answersFrom H (env ++ [a]) rest
+    | none => []
+
+section Envelope
+
+variable (H : Bytes → Addr32)
+
+/-- Every accepting put answers the CONTENT ADDRESS of the node it
+admits — fresh and duplicate alike (`put_fresh_spec`, `put_duplicate_spec`
+both give `addr H`). This is why the answer history is a function of `H`
+and the table, and of nothing the store contributes. -/
+theorem putWord_answer {n : Node} {w w' : Word} {a : Addr32}
+    (h : putWord H n w = .ok (a, w')) : a = H (encodeNode n) := by
+  unfold putWord referenceHandler at h
+  by_cases hn : n.WF
+  · simp only [dif_pos hn] at h
+    cases hp : _root_.Cas.put H (Word.toStore w) ⟨n, hn⟩ with
+    | error e => rw [hp] at h; simp at h
+    | ok o =>
+      cases o with
+      | fresh b σ' =>
+        rw [hp] at h
+        obtain ⟨hb, _⟩ := Prod.mk.inj (Except.ok.inj h)
+        obtain ⟨_, _, hba, _⟩ := put_fresh_spec hp
+        rw [← hb, hba]
+        rfl
+      | duplicate b =>
+        rw [hp] at h
+        obtain ⟨hb, _⟩ := Prod.mk.inj (Except.ok.inj h)
+        obtain ⟨_, hba, _⟩ := put_duplicate_spec hp
+        rw [← hb, hba]
+        rfl
+      | conflict b m => rw [hp] at h; simp at h
+  · simp only [dif_neg hn] at h; simp at h
+
+/-- A put either APPENDS exactly its own binding or leaves the word
+untouched — the duplicate outcome. The word only ever grows, and only by
+nodes a put line named. -/
+theorem putWord_word {n : Node} {w w' : Word} {a : Addr32}
+    (h : putWord H n w = .ok (a, w')) :
+    w' = w ∨ w' = w ++ [Binding.mk a n] := by
+  unfold putWord referenceHandler at h
+  by_cases hn : n.WF
+  · simp only [dif_pos hn] at h
+    cases hp : _root_.Cas.put H (Word.toStore w) ⟨n, hn⟩ with
+    | error e => rw [hp] at h; simp at h
+    | ok o =>
+      cases o with
+      | fresh b σ' =>
+        rw [hp] at h
+        obtain ⟨hb, hw⟩ := Prod.mk.inj (Except.ok.inj h)
+        subst hb; exact Or.inr hw.symm
+      | duplicate b =>
+        rw [hp] at h
+        exact Or.inl (Prod.mk.inj (Except.ok.inj h)).2.symm
+      | conflict b m => rw [hp] at h; simp at h
+  · simp only [dif_neg hn] at h; simp at h
+
+/-- HASH-DETERMINED DATAFLOW, AS A THEOREM (DESIGN.md §2.1): on a run that
+reports `done`, the answer history the direct interpreter threaded is
+exactly the one the table determines from `H` alone, and the designated
+result is its last entry. The store contributed nothing to the dataflow;
+it only decided whether the run got there.
+
+The line count is the second conclusion, and it is where the gap is
+located from the other side: on a `done` run the envelope is EXACT in
+line count — every line executed, nothing skipped. -/
+theorem runPFrom_done_answers :
+    ∀ (env : List Addr32) (p : PProg) (w : Word) {a : Addr32} {w' : Word},
+      runPFrom H env p w = (.done a, w') →
+        (PProg.answersFrom H env p).length = p.length
+          ∧ (env ++ PProg.answersFrom H env p).getLast? = some a := by
+  intro env p
+  induction p generalizing env with
+  | nil =>
+    intro w a w' h
+    cases hg : env.getLast? with
+    | none => simp [runPFrom, hg] at h
+    | some b =>
+      simp only [runPFrom, hg, Prod.mk.injEq, Status.done.injEq] at h
+      obtain ⟨hb, _⟩ := h
+      subst hb
+      refine ⟨rfl, ?_⟩
+      show (env ++ []).getLast? = some b
+      simpa using hg
+  | cons line rest ih =>
+    intro w a w' h
+    cases line with
+    | put v t payload refs =>
+      cases hr : resolveRefs env refs with
+      | none => simp [runPFrom, hr] at h
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error e => simp [runPFrom, hr, hp] at h
+        | ok aw =>
+          obtain ⟨b, w''⟩ := aw
+          simp only [runPFrom, hr, hp] at h
+          have hb : b = H (encodeNode ⟨v, t, payload, rs⟩) := putWord_answer H hp
+          obtain ⟨hlen, hlast⟩ := ih (env ++ [b]) w'' h
+          refine ⟨?_, ?_⟩
+          · show (PProg.answersFrom H env (PLine.put v t payload refs :: rest)).length = _
+            rw [show PProg.answersFrom H env (PLine.put v t payload refs :: rest)
+                = b :: PProg.answersFrom H (env ++ [b]) rest from by
+              simp only [PProg.answersFrom, PLine.answer, hr, Option.map_some, ← hb]]
+            simp [hlen]
+          · rw [show PProg.answersFrom H env (PLine.put v t payload refs :: rest)
+                = b :: PProg.answersFrom H (env ++ [b]) rest from by
+              simp only [PProg.answersFrom, PLine.answer, hr, Option.map_some, ← hb]]
+            simpa using hlast
+    | load src =>
+      cases hs : src.resolve env with
+      | none => simp [runPFrom, hs] at h
+      | some b =>
+        cases hf : Word.find w b with
+        | none => simp [runPFrom, hs, hf] at h
+        | some n =>
+          simp only [runPFrom, hs, hf] at h
+          obtain ⟨hlen, hlast⟩ := ih (env ++ [b]) w h
+          refine ⟨?_, ?_⟩
+          · rw [show PProg.answersFrom H env (PLine.load src :: rest)
+                = b :: PProg.answersFrom H (env ++ [b]) rest from by
+              simp only [PProg.answersFrom, PLine.answer, hs]]
+            simp [hlen]
+          · rw [show PProg.answersFrom H env (PLine.load src :: rest)
+                = b :: PProg.answersFrom H (env ++ [b]) rest from by
+              simp only [PProg.answersFrom, PLine.answer, hs]]
+            simpa using hlast
+
+/-- THE DATAFLOW EDGE NAMES ITS SOURCE LINE: the history grows by exactly
+one entry per line, in program order, so entry `j` IS line `j`'s answer
+and an operand `ans j` at a later line resolves to it. The envelope's
+edge `(i, j)` is this equation. -/
+theorem PProg.answersFrom_cons_of {l : PLine} {env : List Addr32} {b : Addr32}
+    (h : PLine.answer H env l = some b) (rest : PProg) :
+    PProg.answersFrom H env (l :: rest)
+      = b :: PProg.answersFrom H (env ++ [b]) rest := by
+  simp only [PProg.answersFrom, h]
+
+/-- SOUNDNESS, PUT HALF, WITH ORDER — the byte-observable corollary
+(DESIGN.md §2.5): the run only APPENDS to the word, and the bindings it
+appends carry, IN ORDER, a sublist of the shapes the envelope declared.
+No run of a table from any word admits a node outside the table's
+declared put set.
+
+`Sublist` and not a prefix, for the two reasons triage located and named
+above: a put that answers `duplicate` appends nothing (F2's
+deduplication), and the lines after a refusal never execute. Both are
+exhibited by the closing `example`s. -/
+theorem runPFrom_puts_sound :
+    ∀ (env : List Addr32) (p : PProg) (w : Word),
+      ∃ d : Word, (runPFrom H env p w).2 = w ++ d
+        ∧ List.Sublist (d.map fun b => PutShape.ofNode b.node) (PProg.puts p) := by
+  intro env p
+  induction p generalizing env with
+  | nil =>
+    intro w
+    refine ⟨[], ?_, ?_⟩
+    · cases hg : env.getLast? <;> simp [runPFrom, hg]
+    · simp [PProg.puts]
+  | cons line rest ih =>
+    intro w
+    cases line with
+    | put v t payload refs =>
+      cases hr : resolveRefs env refs with
+      | none => exact ⟨[], by simp [runPFrom, hr], by simp⟩
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error e => exact ⟨[], by simp [runPFrom, hr, hp], by simp⟩
+        | ok aw =>
+          obtain ⟨b, w''⟩ := aw
+          obtain ⟨d, hd, hsub⟩ := ih (env ++ [b]) w''
+          have hputs : PProg.puts (PLine.put v t payload refs :: rest)
+              = ⟨v, t, payload, refs.map Prod.fst⟩ :: PProg.puts rest := rfl
+          rcases putWord_word H hp with hw | hw
+          · refine ⟨d, ?_, ?_⟩
+            · simp only [runPFrom, hr, hp]; rw [hd, hw]
+            · rw [hputs]; exact List.Sublist.cons _ hsub
+          · refine ⟨Binding.mk b ⟨v, t, payload, rs⟩ :: d, ?_, ?_⟩
+            · simp only [runPFrom, hr, hp]; rw [hd, hw]; simp
+            · rw [hputs]
+              simp only [List.map_cons]
+              have hshape : PutShape.ofNode ⟨v, t, payload, rs⟩
+                  = ⟨v, t, payload, refs.map Prod.fst⟩ := by
+                simp [PutShape.ofNode, resolveRefs_kinds hr]
+              show List.Sublist ((PutShape.ofNode ⟨v, t, payload, rs⟩)
+                :: (d.map fun b => PutShape.ofNode b.node)) _
+              rw [hshape]
+              exact List.Sublist.cons_cons _ hsub
+    | load src =>
+      cases hs : src.resolve env with
+      | none => exact ⟨[], by simp [runPFrom, hs], by simp [PProg.puts]⟩
+      | some b =>
+        cases hf : Word.find w b with
+        | none => exact ⟨[], by simp [runPFrom, hs, hf], by simp [PProg.puts]⟩
+        | some n =>
+          obtain ⟨d, hd, hsub⟩ := ih (env ++ [b]) w
+          exact ⟨d, by simp only [runPFrom, hs, hf]; exact hd,
+            by simpa [PProg.puts] using hsub⟩
+
+/-- The same statement at `runP`: the word a table's run leaves extends
+the word it started from by bindings whose shapes the envelope declared,
+in order. -/
+theorem runP_puts_sound (p : PProg) (w : Word) :
+    ∃ d : Word, (runP H p w).2 = w ++ d
+      ∧ List.Sublist (d.map fun b => PutShape.ofNode b.node) (PProg.puts p) :=
+  runPFrom_puts_sound H [] p w
+
+/-! ### The read half, at the observable
+
+The address a refusal NAMES is the run's own report of an address it
+consulted, so it is where `actual ⊆ possible` can be stated against the
+word rather than against a trace. Both refusal clauses that name an
+absent address are covered: a load's `noObject`, and a put reference's
+`dangling`. -/
+
+/-- Reads only grow with the table. -/
+theorem PProg.reads_cons_of_mem {l : PLine} {rest : PProg} {a : Addr32}
+    (h : a ∈ PProg.reads rest) : a ∈ PProg.reads (l :: rest) := by
+  simp only [PProg.reads, List.mem_flatMap] at h ⊢
+  obtain ⟨x, hx, hax⟩ := h
+  exact ⟨x, List.mem_cons_of_mem l hx, hax⟩
+
+/-- A put never refuses with a `failed` reason: its refusal clauses are
+`notWellFormed`, admission's two, and `collision`. -/
+theorem putWord_ne_failed {n : Node} {w : Word} {reason : String} :
+    putWord H n w ≠ .error (.failed reason) := by
+  intro h
+  unfold putWord referenceHandler at h
+  by_cases hn : n.WF
+  · simp only [dif_pos hn] at h
+    cases hp : _root_.Cas.put H (Word.toStore w) ⟨n, hn⟩ with
+    | error e =>
+      rw [hp] at h
+      have he : Refusal.ofAdmission e = Refusal.failed reason := by
+        simpa using Except.error.inj h
+      cases e <;> simp [Refusal.ofAdmission] at he
+    | ok o =>
+      cases o with
+      | fresh b σ' => rw [hp] at h; simp at h
+      | duplicate b => rw [hp] at h; simp at h
+      | conflict b m =>
+        rw [hp] at h
+        exact Refusal.noConfusion (Except.error.inj h)
+  · simp only [dif_neg hn] at h
+    exact Refusal.noConfusion (Except.error.inj h)
+
+/-- The address a refusal names as ABSENT, when it names one: a load that
+found nothing, or a put whose reference dangled. The other clauses
+(`notWellFormed`, `wrongKind`, `collision`, `failed`) report something
+other than an address the run went looking for. -/
+def Refusal.absentAddr : Refusal → Option Addr32
+  | .noObject a => some a
+  | .dangling a => some a
+  | _ => none
+
+/-- A put that refuses for an ABSENT address names one of its OWN
+references — through `checkRefs`'s soundness, not by inspection. -/
+theorem putWord_absent {n : Node} {w : Word} {r : Refusal} {a : Addr32}
+    (h : putWord H n w = .error r) (ha : r.absentAddr = some a) :
+    ∃ q ∈ n.refs, q.addr = a := by
+  unfold putWord referenceHandler at h
+  by_cases hn : n.WF
+  · simp only [dif_pos hn] at h
+    cases hp : _root_.Cas.put H (Word.toStore w) ⟨n, hn⟩ with
+    | error e =>
+      rw [hp] at h
+      have he : Refusal.ofAdmission e = r := Except.error.inj h
+      cases e with
+      | dangling b =>
+        rw [← he] at ha
+        have hb : b = a := by simpa [Refusal.absentAddr, Refusal.ofAdmission] using ha
+        subst hb
+        have hc : _root_.Cas.checkRefs (Word.toStore w) n.refs
+            = Except.error (AdmissionError.dangling b) := put_error_iff.mp hp
+        obtain ⟨t, ht, hta, _⟩ := checkRefs_error_condemns hc
+        exact ⟨t, ht, hta⟩
+      | wrongKind b exp act =>
+        rw [← he] at ha; simp [Refusal.absentAddr, Refusal.ofAdmission] at ha
+    | ok o =>
+      cases o with
+      | fresh b σ' => rw [hp] at h; simp at h
+      | duplicate b => rw [hp] at h; simp at h
+      | conflict b m =>
+        rw [hp] at h
+        have he : Refusal.collision b = r := Except.error.inj h
+        rw [← he] at ha; simp [Refusal.absentAddr] at ha
+  · simp only [dif_neg hn] at h
+    have he : Refusal.notWellFormed = r := Except.error.inj h
+    rw [← he] at ha; simp [Refusal.absentAddr] at ha
+
+/-- SOUNDNESS AT THE OBSERVABLE, READ HALF: whenever a run refuses because
+an address was absent — a load's `noObject` or a put reference's
+`dangling` — the address it names is one the envelope accounts for: an
+enveloped literal read, or an answer the table itself determined. This is
+`actual ⊆ possible` at the reads, decided at the word, with the second
+disjunct supplied by hash-determined dataflow rather than by running. -/
+theorem runPFrom_absent_sound :
+    ∀ (env : List Addr32) (p : PProg) (w : Word) {r : Refusal} {w' : Word}
+      {a : Addr32},
+      runPFrom H env p w = (.refused r, w') → r.absentAddr = some a →
+        a ∈ PProg.reads p ∨ a ∈ env ++ PProg.answersFrom H env p := by
+  intro env p
+  induction p generalizing env with
+  | nil =>
+    intro w r w' a h ha
+    cases hg : env.getLast? with
+    | none =>
+      simp only [runPFrom, hg, Prod.mk.injEq, Status.refused.injEq] at h
+      rw [← h.1] at ha; simp [Refusal.absentAddr] at ha
+    | some b => simp [runPFrom, hg] at h
+  | cons line rest ih =>
+    intro w r w' a h ha
+    cases line with
+    | put v t payload refs =>
+      cases hr : resolveRefs env refs with
+      | none =>
+        simp only [runPFrom, hr, Prod.mk.injEq, Status.refused.injEq] at h
+        rw [← h.1] at ha; simp [Refusal.absentAddr] at ha
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error e =>
+          simp only [runPFrom, hr, hp, Prod.mk.injEq, Status.refused.injEq] at h
+          have her : e = r := h.1
+          subst her
+          obtain ⟨t', ht', hta⟩ := putWord_absent H hp ha
+          obtain ⟨x, hx, hres⟩ := resolveRefs_mem hr t' ht'
+          rw [hta] at hres
+          have hxop : x ∈ (PLine.put v t payload refs).operands := hx
+          rcases PProg.resolve_sound (p := PLine.put v t payload refs :: rest)
+              (l := PLine.put v t payload refs) List.mem_cons_self hxop hres with
+            hmem | hmem
+          · exact Or.inl hmem
+          · exact Or.inr (by simp [hmem])
+        | ok aw =>
+          obtain ⟨b, w''⟩ := aw
+          simp only [runPFrom, hr, hp] at h
+          have hb : b = H (encodeNode ⟨v, t, payload, rs⟩) := putWord_answer H hp
+          have hans : PLine.answer H env (PLine.put v t payload refs) = some b := by
+            simp only [PLine.answer, hr, Option.map_some, ← hb]
+          rw [PProg.answersFrom_cons_of H hans rest]
+          rcases ih (env ++ [b]) w'' h ha with hmem | hmem
+          · exact Or.inl (PProg.reads_cons_of_mem hmem)
+          · right; simpa using hmem
+    | load src =>
+      cases hs : src.resolve env with
+      | none =>
+        simp only [runPFrom, hs, Prod.mk.injEq, Status.refused.injEq] at h
+        rw [← h.1] at ha; simp [Refusal.absentAddr] at ha
+      | some b =>
+        cases hf : Word.find w b with
+        | none =>
+          simp only [runPFrom, hs, hf, Prod.mk.injEq, Status.refused.injEq] at h
+          rw [← h.1] at ha
+          have hba : b = a := by simpa [Refusal.absentAddr] using ha
+          subst hba
+          rcases PProg.resolve_sound (p := PLine.load src :: rest)
+              (l := PLine.load src) List.mem_cons_self
+              (x := src) (by simp [PLine.operands]) hs with hmem | hmem
+          · exact Or.inl hmem
+          · exact Or.inr (by simp [hmem])
+        | some n =>
+          simp only [runPFrom, hs, hf] at h
+          have hans : PLine.answer H env (PLine.load src) = some b := hs
+          rw [PProg.answersFrom_cons_of H hans rest]
+          rcases ih (env ++ [b]) w h ha with hmem | hmem
+          · exact Or.inl (PProg.reads_cons_of_mem hmem)
+          · right; simpa using hmem
+
+/-- The same statement at `runP`, where the history is the table's own. -/
+theorem runP_absent_sound (p : PProg) (w : Word) {r : Refusal} {w' : Word}
+    {a : Addr32} (h : runP H p w = (.refused r, w'))
+    (ha : r.absentAddr = some a) :
+    a ∈ PProg.reads p ∨ a ∈ PProg.answersFrom H [] p := by
+  simpa using runPFrom_absent_sound H [] p w h ha
+
+/-! ### THE SANDWICH (b) — necessity, and where it stops
+
+The lower bound, stated so it is not vacuous. A load line that executes
+CONSULTS its operand: the run's continuation exists only because
+`Word.find` answered at the resolved address, and removing that binding
+changes the outcome to a refusal naming that exact address. There is no
+model of the run in which the address goes untouched, so the envelope's
+read entry for that line is not slack.
+
+Necessity is stated per line rather than per table, and that is the
+honest scope: for a line to be reached the run must not have refused
+earlier, which is precisely the gap named below. `runP_head_load_necessary`
+is the case where no reachability premise is needed. -/
+
+/-- NECESSITY, absent half: a load line whose operand resolves to an
+address the word does not hold refuses, naming that address. -/
+theorem runPFrom_load_absent (env : List Addr32) (src : PIn) (rest : PProg)
+    (w : Word) {a : Addr32} (hres : src.resolve env = some a)
+    (hfind : Word.find w a = none) :
+    runPFrom H env (.load src :: rest) w = (.refused (.noObject a), w) := by
+  simp [runPFrom, hres, hfind]
+
+/-- NECESSITY, present half: and when the word does hold it, the run
+continues with that address in the history. Together with the previous
+theorem: the outcome at a load line is a function of the word AT the
+resolved address, and of nothing else. -/
+theorem runPFrom_load_present (env : List Addr32) (src : PIn) (rest : PProg)
+    (w : Word) {a : Addr32} {n : Node} (hres : src.resolve env = some a)
+    (hfind : Word.find w a = some n) :
+    runPFrom H env (.load src :: rest) w = runPFrom H (env ++ [a]) rest w := by
+  simp [runPFrom, hres, hfind]
+
+/-- NECESSITY at the table, where it holds with no reachability premise:
+a table whose FIRST line loads a literal refuses at every word missing
+that address — and the envelope names it. The lower bound is inhabited. -/
+theorem runP_head_load_necessary (a : Addr32) (rest : PProg) (w : Word)
+    (hfind : Word.find w a = none) :
+    runP H (.load (.lit a) :: rest) w = (.refused (.noObject a), w)
+      ∧ a ∈ PProg.reads (PLine.load (.lit a) :: rest) := by
+  refine ⟨runPFrom_load_absent H [] (.lit a) rest w rfl hfind, ?_⟩
+  simp [PProg.reads, PLine.operands]
+
+/-! ### A refusal class the envelope decides without running
+
+The dataflow component is not decoration: closedness of the DAG — every
+edge naming a strictly earlier line — is decidable on the table alone and
+rules out one whole refusal clause. This is the L-S product argument
+(DESIGN.md §3.2, the LLM row) already available at L-A: admission of a
+PROGRAM decided the way admission of a node is. -/
+
+/-- An operand resolves whenever its index is inside the history. -/
+theorem PIn.resolve_isSome_of {env : List Addr32} {x : PIn}
+    (h : ∀ j, x = PIn.ans j → j < env.length) : (x.resolve env).isSome := by
+  cases x with
+  | lit a => simp [PIn.resolve]
+  | ans j => simp [PIn.resolve, List.getElem?_eq_getElem (h j rfl)]
+
+/-- Closedness at a table's head, split into the head line's obligation
+and the tail's — the shape the run's own induction consumes. -/
+theorem dataflowClosedFrom_cons {i : Nat} {l : PLine} {rest : PProg}
+    (h : PProg.dataflowClosedFrom i (l :: rest) = true) :
+    (∀ j, PIn.ans j ∈ l.operands → j < i)
+      ∧ PProg.dataflowClosedFrom (i + 1) rest = true := by
+  simp only [PProg.dataflowClosedFrom, PProg.dataflowFrom, List.all_append,
+    Bool.and_eq_true] at h
+  refine ⟨fun j hj => ?_, h.2⟩
+  have hm : (i, j) ∈ l.operands.filterMap
+      (fun x => match x with | .ans j => some (i, j) | .lit _ => none) :=
+    List.mem_filterMap.mpr ⟨PIn.ans j, hj, rfl⟩
+  simpa using List.all_eq_true.mp h.1 _ hm
+
+/-- A CLOSED DATAFLOW CANNOT DANGLE, at any word and from any history of
+matching length. The check is a `Bool` on the table; the conclusion is
+about every run. -/
+theorem runPFrom_no_dangling :
+    ∀ (env : List Addr32) (p : PProg) (w : Word),
+      PProg.dataflowClosedFrom env.length p = true →
+        (runPFrom H env p w).1
+          ≠ .refused (.failed "defun: dangling answer index") := by
+  intro env p
+  induction p generalizing env with
+  | nil =>
+    intro w _ hc
+    cases hg : env.getLast? with
+    | none => simp [runPFrom, hg] at hc
+    | some b => simp [runPFrom, hg] at hc
+  | cons line rest ih =>
+    intro w hcl hc
+    obtain ⟨hans, hrest⟩ := dataflowClosedFrom_cons hcl
+    cases line with
+    | put v t payload refs =>
+      have hsome : (resolveRefs env refs).isSome :=
+        resolveRefs_isSome fun x hx =>
+          PIn.resolve_isSome_of fun j hj => hans j (hj ▸ hx)
+      cases hr : resolveRefs env refs with
+      | none => rw [hr] at hsome; simp at hsome
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error e =>
+          rw [show (runPFrom H env (PLine.put v t payload refs :: rest) w).1
+              = Status.refused e from by simp [runPFrom, hr, hp]] at hc
+          have he : e = Refusal.failed "defun: dangling answer index" := by
+            simpa using hc
+          exact putWord_ne_failed H (he ▸ hp)
+        | ok aw =>
+          obtain ⟨b, w''⟩ := aw
+          rw [show (runPFrom H env (PLine.put v t payload refs :: rest) w).1
+              = (runPFrom H (env ++ [b]) rest w'').1 from by
+            simp [runPFrom, hr, hp]] at hc
+          exact ih (env ++ [b]) w'' (by simpa using hrest) hc
+    | load src =>
+      have hsome : (src.resolve env).isSome :=
+        PIn.resolve_isSome_of fun j hj => hans j (by simp [PLine.operands, hj])
+      cases hs : src.resolve env with
+      | none => rw [hs] at hsome; simp at hsome
+      | some b =>
+        cases hf : Word.find w b with
+        | none => rw [runPFrom_load_absent H env src rest w hs hf] at hc; simp at hc
+        | some n =>
+          rw [runPFrom_load_present H env src rest w hs hf] at hc
+          exact ih (env ++ [b]) w (by simpa using hrest) hc
+
+/-- THE ENVELOPE DECIDES A REFUSAL CLASS: a table whose envelope reports a
+closed dataflow never refuses for a dangling answer index, at any word.
+Decided at stratum 1, before anything runs. -/
+theorem runP_no_dangling (p : PProg) (w : Word)
+    (h : (PProg.envelope p).dataflowClosed = true) :
+    (runP H p w).1 ≠ .refused (.failed "defun: dangling answer index") :=
+  runPFrom_no_dangling H [] p w h
+
+/-! ### The envelope of a stored table — the leaves sync mechanically -/
+
+/-- THE STORE CONTENT DETERMINES THE ENVELOPE: a table recovered from the
+word it was laid down as has the same envelope, component for component.
+Composed from `decodeProg_encodeProg`, so it is free — recovery is an
+EQUALITY of tables, not a simulation. With `runP_decodeProg_encodeProg`
+this closes the capability round trip on the analysis side: a stored
+program's grant can be recomputed from the store alone. -/
+theorem envelope_decodeProg_encodeProg (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l')
+    {q : PProg} (hq : decodeProg (encodeProg H p) = some q) :
+    PProg.envelope q = PProg.envelope p := by
+  rw [decodeProg_encodeProg H p hwf hsep] at hq
+  exact congrArg PProg.envelope (Option.some.inj hq).symm
+
+end Envelope
+
+/-! ### THE GAP, LOCATED — the two witnesses
+
+Where `possible` exceeds `actual`, exhibited rather than asserted, in the
+style of `Address.lean`'s Level-2 witness and the `hsep` witness above.
+Between them they are the WHOLE of L-A's over-approximation, and they
+refute DESIGN.md §3.1's "exact: `over = under = actual`" for this rung. -/
+
+/-- GAP 1 — THE REFUSAL SUFFIX. A table whose first line loads an address
+no word holds refuses there; the envelope still declares the put on the
+second line, which never executes and leaves no binding. The lines after
+the first refusal are exactly what the envelope over-approximates. -/
+example :
+    ∃ (H : Bytes → Addr32) (a : Addr32) (p : PProg),
+      runP H p [] = (.refused (.noObject a), [])
+        ∧ (PProg.puts p).length = 1 := by
+  refine ⟨fun _ => ⟨List.replicate 32 0, by simp⟩,
+    ⟨List.replicate 32 0, by simp⟩,
+    [.load (.lit ⟨List.replicate 32 0, by simp⟩), .put 0 0 [] []], rfl, rfl⟩
+
+/-- GAP 2 — `put`'s DUPLICATE OUTCOME, the source DESIGN.md §2 does not
+name. Two identical put lines declare two puts and admit ONE binding, on
+a run that halts without refusing. The store has not lost anything; it
+deduplicated, which is content addressing working as designed (F2). This
+is why `runPFrom_puts_sound` concludes a sublist and not a prefix, and it
+is a gap no amount of refusal analysis would close. -/
+example :
+    ∃ (H : Bytes → Addr32) (p : PProg),
+      (runP H p []).1.isRunning = false
+        ∧ (runP H p []).2.length = 1
+        ∧ (PProg.puts p).length = 2 := by
+  refine ⟨fun _ => ⟨List.replicate 32 0, by simp⟩,
+    [.put 0 0 [] [], .put 0 0 [] []], ?_, ?_, rfl⟩
+  · rfl
+  · rfl
+
 end Cas.Lang
