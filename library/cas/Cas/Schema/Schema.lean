@@ -40,9 +40,26 @@ Named increments, in order:
   `toJson_canonical`/`legacyEnvelope_canonical`/
   `legacyEnvelope_renderPlain`, with `ofJson_toJson`/`toJson_inj`
   making it a proved round trip. The LIVE revision-1 representation
-  (`envelope`/`payload`) carries none of those laws yet; it is held
-  by the byte pin alone, and its canonicality, decoder, round trip,
-  and injectivity are the plane's named open obligations, together
-  with injectivity of the canonical rendering itself (bytes determine
-  the canonical value — the verified-parser argument).
+  now carries the same discipline (Slice B): `toRepresentationJson_-
+  canonical`/`representationDocument_canonical`/`envelope_canonical`
+  hold UNCONDITIONALLY — revision 1 keys every object alphabetically
+  by construction and carries a struct's fields as an array, so `WF`
+  is not a premise — and `payload_renderPlain` is the byte
+  consequence. `Ast.ofRepresentationJson` is the strict decoder, with
+  `ofRepresentationJson_toRepresentationJson`/
+  `toRepresentationJson_inj` the round trip and injectivity, both
+  stated modulo the literal-null collapse (`Ast.repNorm`,
+  `Ast.RepNormal`) — the ONE identification the revision-1 projection
+  makes, which no decoder can undo (register R13). Still open, named
+  precisely: injectivity of the canonical rendering itself (bytes
+  determine the canonical value — the verified-parser argument), and
+  `Ast.ofRepresentationJson`'s image being `RepNormal` (true by
+  inspection — the decoder has no `.lit .null` arm — but not yet
+  proved as a theorem).
+- **Ingestion** — LANDED (Slice B): `Ingest` is the door. `ingest`
+  normalizes, decodes the revision-1 envelope, and gates on `Ast.wf`,
+  with named refusals (`notASchema`/`illFormed`/`wrongRevision`/
+  `nonEmptyReferences`), soundness (`ingest_wf`) and exactness on the
+  canonical image (`ingest_envelope`). `ingestLegacy` keeps the
+  retired revision-0 spelling readable.
 -/

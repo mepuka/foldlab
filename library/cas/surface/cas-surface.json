@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 176,
-    "Values": 184,
+    "Schema": 208,
+    "Values": 199,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 61,
-    "Quot.sound": 146,
-    "propext": 192
+    "Classical.choice": 71,
+    "Quot.sound": 165,
+    "propext": 217
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 88,
+    "Cas.Schema.Ast": 120,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 920,
-  "documented": 369,
+  "declarations": 952,
+  "documented": 395,
   "library": "Cas",
   "modules": [
     {
@@ -5404,8 +5404,8 @@
       ]
     },
     {
-      "declarations": 16,
-      "documented": 7,
+      "declarations": 20,
+      "documented": 11,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -5462,12 +5462,47 @@
           "touches": ["Schema", "Values"]
         },
         {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ingestLegacy",
+          "signature": "Cas.Json.Value → Except Cas.Schema.IngestRefusal Cas.Schema.Ast",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
-          "name": "Cas.Schema.ingest_toJson",
-          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Schema.ingest a.toJson = Except.ok a",
+          "name": "Cas.Schema.ingestLegacy_toJson",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Schema.ingestLegacy a.toJson = Except.ok a",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingestLegacy_wf",
+          "signature": "∀ {v : Cas.Json.Value} {a : Cas.Schema.Ast}, Cas.Schema.ingestLegacy v = Except.ok a → a.WF",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingest_envelope",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Schema.ingest a.envelope = Except.ok a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingest_envelope'",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.RepNormal → Cas.Schema.ingest a.envelope = Except.ok a",
           "touches": ["Schema"]
         },
         {
@@ -5537,10 +5572,18 @@
       ]
     },
     {
-      "declarations": 26,
-      "documented": 21,
+      "declarations": 54,
+      "documented": 43,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.RepNormal",
+          "signature": "Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
         {
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
@@ -5561,7 +5604,31 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.Ast.ofEnvelope",
+          "signature": "Cas.Json.Value → Option Cas.Schema.Ast",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.Ast.ofJson",
+          "signature": "Cas.Json.Value → Option Cas.Schema.Ast",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.ofRepresentationDocument",
+          "signature": "Cas.Json.Value → Option Cas.Schema.Ast",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.ofRepresentationJson",
           "signature": "Cas.Json.Value → Option Cas.Schema.Ast",
           "touches": ["Schema", "Values"]
         },
@@ -5579,6 +5646,41 @@
           "kind": "def",
           "name": "Cas.Schema.Ast.payloadBytes",
           "signature": "Cas.Schema.Ast → ByteArray",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.repNorm",
+          "signature": "Cas.Schema.Ast → Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_idem",
+          "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.repNorm = a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_repNormal",
+          "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.RepNormal",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_wf",
+          "signature": "∀ (a : Cas.Schema.Ast), a.WF → a.repNorm.WF",
           "touches": ["Schema"]
         },
         {
@@ -5636,6 +5738,24 @@
           "touches": ["Schema", "Values"]
         },
         {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.envelope_canonical",
+          "signature": "∀ (a : Cas.Schema.Ast), a.envelope.Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.envelope_inj",
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.envelope = b.envelope → a.repNorm = b.repNorm",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
@@ -5674,6 +5794,24 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Schema.fieldsToRepresentationJson_canonical",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Json.CanonicalItems (Cas.Schema.fieldsToRepresentationJson fs)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.fieldsToRepresentationJson_repNorm",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.fieldsToRepresentationJson (Cas.Schema.repNormFields fs) = Cas.Schema.fieldsToRepresentationJson fs",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Schema.legacyEnvelope_canonical",
           "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.legacyEnvelope.Canonical",
           "touches": ["Schema", "Values"]
@@ -5692,6 +5830,24 @@
           "kind": "def",
           "name": "Cas.Schema.legacySchemaRevision",
           "signature": "Nat"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofEnvelope_envelope",
+          "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofEnvelope a.envelope = some a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofEnvelope_envelope'",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.RepNormal → Cas.Schema.Ast.ofEnvelope a.envelope = some a",
+          "touches": ["Schema"]
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -5718,6 +5874,95 @@
           "name": "Cas.Schema.ofJson_toJson",
           "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofJson a.toJson = some a",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationDocument_representationDocument",
+          "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofRepresentationDocument a.representationDocument = some a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationJson_toRepresentationJson",
+          "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofRepresentationJson a.toRepresentationJson = some a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationJson_toRepresentationJson'",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.RepNormal → Cas.Schema.Ast.ofRepresentationJson a.toRepresentationJson = some a",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationProperties_fieldsToRepresentationJson",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.ofRepresentationProperties✝ (Cas.Schema.fieldsToRepresentationJson fs) = some (Cas.Schema.repNormFields fs)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.payload_renderPlain",
+          "signature": "∀ (a : Cas.Schema.Ast), a.payload = Cas.Json.renderPlain a.envelope",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.repNormFields",
+          "signature": "List (String × Bool × Cas.Schema.Ast) → List (String × Bool × Cas.Schema.Ast)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormFields_idem",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.repNormFields (Cas.Schema.repNormFields fs) = Cas.Schema.repNormFields fs",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormFields_keys",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), List.map (fun f => f.fst) (Cas.Schema.repNormFields fs) = List.map (fun f => f.fst) fs",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormFields_wf",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.WFFields fs → Cas.Schema.WFFields (Cas.Schema.repNormFields fs)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.representationDocument_canonical",
+          "signature": "∀ (a : Cas.Schema.Ast), a.representationDocument.Canonical",
+          "touches": ["Schema", "Values"]
         },
         {
           "documented": true,
@@ -5747,6 +5992,42 @@
           "kind": "theorem",
           "name": "Cas.Schema.toJson_inj",
           "signature": "∀ {a b : Cas.Schema.Ast}, a.toJson = b.toJson → a = b",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.toRepresentationJson_canonical",
+          "signature": "∀ (a : Cas.Schema.Ast), a.toRepresentationJson.Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.toRepresentationJson_inj",
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.toRepresentationJson = b.toRepresentationJson → a.repNorm = b.repNorm",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.toRepresentationJson_inj'",
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.RepNormal → b.RepNormal → a.toRepresentationJson = b.toRepresentationJson → a = b",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.toRepresentationJson_repNorm",
+          "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.toRepresentationJson = a.toRepresentationJson",
           "touches": ["Schema", "Values"]
         }
       ]
@@ -7300,10 +7581,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 539,
+    "def": 546,
     "inductive": 28,
     "instance": 47,
     "structure": 36,
-    "theorem": 267
+    "theorem": 292
   }
 }
