@@ -22,6 +22,7 @@ import {
 import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
 import { Cas } from "../../src/index.ts"
 import {
+  backendOf,
   countObjects,
   initStore,
   InvalidAddress,
@@ -29,6 +30,7 @@ import {
   readConfig,
   StoreLocation,
   type Located,
+  type StoreBackend,
   type StoreConfig,
 } from "./store.ts"
 import {
@@ -74,10 +76,15 @@ const storeFlag = Flag.string("store").pipe(
   ),
 )
 
-const originLabel = {
-  explicit: "file backend",
-  discovered: "file backend, discovered",
-} satisfies Record<Located["origin"], string>
+/** What the store line says about itself: which backend was opened,
+ * and whether the store was named or walked up to. The backend is read
+ * from the config rather than assumed, so the line cannot claim a
+ * layout the store does not have. */
+const backendLabel = (
+  backend: StoreBackend,
+  origin: Located["origin"],
+): string =>
+  origin === "discovered" ? `${backend} backend, discovered` : `${backend} backend`
 
 /** An address off the command line. The refusal is the CLI's own
  * clause, so a mistyped address reads as guidance instead of a schema
@@ -92,6 +99,12 @@ const decodeAddress = (
 /* ── init ────────────────────────────────────────────────────────── */
 
 export const init = Command.make("init", {
+  backend: Flag.choice("backend", ["file", "sqlite"]).pipe(
+    Flag.withDefault("file" as StoreBackend),
+    Flag.withDescription(
+      "where the bytes live: file, a directory of objects; sqlite, one cas.db a litestream replica backs up",
+    ),
+  ),
   bare: Flag.boolean("bare").pipe(
     Flag.withDefault(false),
     Flag.withDescription(
@@ -102,13 +115,18 @@ export const init = Command.make("init", {
     Argument.optional,
     Argument.withDescription("where the store lives (default: the current directory)"),
   ),
-}, ({ bare, directory }) =>
+}, ({ backend, bare, directory }) =>
   Effect.gen(function* () {
     const target = Option.getOrElse(directory, () => ".")
-    const location = yield* initStore(target, bare)
+    const location = yield* initStore(target, bare, backend)
     yield* Console.log(`initialized store  ${location.store}`)
     yield* Console.log(`config             ${location.configPath}`)
-    yield* Console.log("the directory is the store: rsync it, commit it, push it")
+    // What to do with it next is a property of the layout, so the line
+    // states the one that was created — never the file backend's
+    // advice over a live WAL database.
+    yield* Console.log(backend === "file"
+      ? "the directory is the store: rsync it, commit it, push it"
+      : `the database is the store: ${location.store}/cas.db — replicate it with litestream`)
   }).pipe(userFacing)).pipe(Command.withDescription(
     "create a store here — the only verb that ever creates one; add --wizard to be walked through it",
   ))
@@ -124,24 +142,44 @@ const serveLine = (config: Option.Option<StoreConfig>): string => {
   return `serve      port ${serve.port} · maxBatchKeys ${serve.maxBatchKeys} · maxNodeBytes ${serve.maxNodeBytes} · ${reads}`
 }
 
-const backupLine = (config: Option.Option<StoreConfig>): string =>
-  Option.isSome(config) && config.value.backup !== undefined
-    ? `backup     ${config.value.backup.target}`
-    : "backup     the directory is the store — rsync it, commit it, push it"
+/** What backing this store up means when the config names no target.
+ * The advice is the layout's, not one sentence for both: a file store
+ * IS its directory, so copying the directory is a backup; a db-backed
+ * store is a live SQLite file in WAL mode, where a file copy can catch
+ * a torn moment and replication is the answer. */
+const backupLine = (
+  config: Option.Option<StoreConfig>,
+  backend: StoreBackend,
+): string => {
+  if (Option.isSome(config) && config.value.backup !== undefined) {
+    return `backup     ${config.value.backup.target}`
+  }
+  return backend === "file"
+    ? "backup     the directory is the store — rsync it, commit it, push it"
+    : "backup     replicate cas.db with litestream — do not copy or commit a live WAL database"
+}
 
 /** Read-only by law: every step here loads, counts, or lists. */
 const statusProgram = Effect.gen(function* () {
   const location = yield* StoreLocation
   const roots = yield* Cas.RootStore
   const config = yield* readConfig(location)
-  const objects = yield* countObjects(location)
+  const backend = backendOf(config)
   const published = yield* roots.list
-  yield* Console.log(`store      ${location.store}  (${originLabel[location.origin]})`)
+  yield* Console.log(
+    `store      ${location.store}  (${backendLabel(backend, location.origin)})`,
+  )
   yield* Console.log(`config     ${Option.isSome(config) ? location.configPath : "none"}`)
-  yield* Console.log(`objects    ${objects}`)
+  // The object count is a walk of the fanout directories, so it is a
+  // file-backend answer. A db-backed store holds its objects in a
+  // table this verb does not query — and reporting a directory walk's
+  // zero for it would be a false statement, not a missing feature.
+  yield* Console.log(backend === "file"
+    ? `objects    ${yield* countObjects(location)}`
+    : `objects    in ${location.store}/cas.db — status does not count them`)
   yield* Console.log(`roots      ${published.length} published`)
   yield* Console.log(serveLine(config))
-  yield* Console.log(backupLine(config))
+  yield* Console.log(backupLine(config, backend))
 })
 
 export const status = Command.make("status", {

@@ -33,11 +33,11 @@
     "prepare": "effect-tsgo patch --typescript --oxlint"
   },
   "dependencies": {
+    "@effect/sql-sqlite-bun": "4.0.0-rc.111",
     "effect": "4.0.0-rc.111"
   },
   "devDependencies": {
     "@effect/platform-bun": "4.0.0-rc.111",
-    "@effect/sql-sqlite-bun": "4.0.0-rc.111",
     "@effect/tsgo": "0.38.0",
     "@effect/vitest": "4.0.0-rc.111",
     "@types/bun": "1.4.0",

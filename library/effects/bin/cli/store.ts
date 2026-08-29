@@ -11,7 +11,9 @@
  * means published addresses. The store location is host territory —
  * the Lean model deliberately says nothing about paths.
  */
+import { SqliteClient } from "@effect/sql-sqlite-bun"
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
+import * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"
 import { Cas } from "../../src/index.ts"
 
 /** Serve policy as configuration: the numbers the wire's capability
@@ -30,11 +32,24 @@ export type ServePolicy = typeof ServePolicy.Type
  * `status`, overridden by flags and environment: flags > env > config
  * file > defaults. */
 export const StoreConfig = Schema.Struct({
-  backend: Schema.Literal("file"),
+  backend: Schema.Literals(["file", "sqlite"]),
   serve: Schema.optionalKey(ServePolicy),
   backup: Schema.optionalKey(Schema.Struct({ target: Schema.String })),
 })
 export type StoreConfig = typeof StoreConfig.Type
+
+/** Which backend a store is opened with. The config file is where a
+ * store states it, and `init` is what writes it. */
+export type StoreBackend = StoreConfig["backend"]
+
+/** The database file of a db-backed store, beside its config. The
+ * store is still a directory — the layout is one file inside it
+ * instead of two directories. */
+export const casDatabaseName = "cas.db"
+
+/** The object table of a db-backed store, as `test/KvsSqlite.test.ts`
+ * and `scripts/litestream-check.ts` name it. */
+const objectTable = "cas_objects"
 
 export const defaultServePolicy: ServePolicy = ServePolicy.make({
   port: 8080,
@@ -101,16 +116,64 @@ const located = (
   configPath: path.join(store, "config.json"),
 })
 
-/** Whether a directory is a store root: the ratified layout's
- * `objects/` directory is present. */
+/** Read and decode the store's config, absent when the file is not
+ * there. A present-but-invalid config is a typed refusal, never a
+ * silent default. */
+export const readConfig = (
+  location: Located,
+): Effect.Effect<
+  Option.Option<StoreConfig>,
+  Schema.SchemaError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const raw = yield* fs.readFileString(location.configPath).pipe(
+      Effect.asSome,
+      Effect.orElseSucceed(() => Option.none<string>()),
+    )
+    if (Option.isNone(raw)) return Option.none()
+    const decoded = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(StoreConfig))(raw.value)
+    return Option.some(decoded)
+  })
+
+/** Which backend a located store is opened with: what its config says,
+ * and the file backend when there is no config — every store written
+ * before `--backend` existed is a file store. */
+export const backendOf = (config: Option.Option<StoreConfig>): StoreBackend =>
+  Option.match(config, {
+    onNone: () => "file" as const,
+    onSome: (present) => present.backend,
+  })
+
+/** Whether a directory is a store root. Two layouts answer yes: the
+ * ratified file one, whose `objects/` directory is its own witness,
+ * and the db-backed one, which has no directories to point at — its
+ * witness is the config `init` wrote naming the backend, with the
+ * database beside it. A config alone is not a store, and a stray
+ * `cas.db` alone is not either. */
 const isStoreRoot = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
   directory: string,
 ): Effect.Effect<boolean> =>
-  fs.exists(path.join(directory, "objects")).pipe(
-    Effect.orElseSucceed(() => false),
-  )
+  Effect.gen(function* () {
+    const exists = (relative: string): Effect.Effect<boolean> =>
+      fs.exists(path.join(directory, relative)).pipe(
+        Effect.orElseSucceed(() => false),
+      )
+    if (yield* exists("objects")) return true
+    // Discovery must not stop at an undecodable config: walking past
+    // it is what lets the real store above it still be found. The
+    // refusal a malformed config deserves is raised when a verb opens
+    // the store it names, where `readConfig` fails typed.
+    const config = yield* readConfig(located(directory, "discovered", path)).pipe(
+      Effect.provideService(FileSystem.FileSystem, fs),
+      Effect.orElseSucceed(() => Option.none<StoreConfig>()),
+    )
+    if (backendOf(config) !== "sqlite") return false
+    return yield* exists(casDatabaseName)
+  })
 
 const workingDirectory: Effect.Effect<string> = Effect.sync(() => process.cwd())
 
@@ -142,12 +205,66 @@ export const locateStore = (
     return yield* new NoStoreFound({ searchedFrom: start })
   })
 
-/** The store composition at a resolved root: the file backend under
- * the store law, scheme-0 SHA-256 through WebCrypto. The `FileSystem`
- * realization stays a visible requirement, satisfied once at the
- * entry point by the platform layer. */
-export const layerCasAt = (store: string) =>
-  Cas.layerFile(store).pipe(Layer.provideMerge(Cas.layerAddressSha256Live))
+/**
+ * THE db-backed composition, and the only place a database is named.
+ * The library speaks `KeyValueStore` and `SqlClient` and never a
+ * driver (`test/KvsSqlite.test.ts`'s own claim); the CLI is a shipped
+ * binary, so the concrete choice — SQLite on one file, through the Bun
+ * driver — is made here, at the composition, where every other host
+ * choice is already made.
+ *
+ * Two tables in one file: `cas_objects`, the byte plane through the
+ * key-value backend, and `cas_roots`, the naming plane through the
+ * roots adapter over the same client. One file is also the unit
+ * Litestream replicates, so the bytes and the names they name are
+ * backed up together or not at all.
+ *
+ * The client opens the database in WAL mode by default, which is what
+ * Litestream requires; nothing here configures it, and
+ * `test/KvsSqlite.test.ts` asserts it.
+ */
+const layerSqliteCasAt = (store: string): Layer.Layer<
+  | Cas.Store
+  | Cas.Loader
+  | Cas.RootStore
+  | Cas.ByteReader
+  | Cas.ByteWriter
+  | Cas.AddressScheme
+> =>
+  Layer.mergeAll(Cas.layerStore, Cas.layerSqlRootStore()).pipe(
+    Layer.provideMerge(Cas.layerKvsBackend),
+    Layer.provide(KeyValueStore.layerSql({ table: objectTable })),
+    // The store root stays a directory: the database is one file
+    // inside it, beside the config that names the backend.
+    Layer.provide(SqliteClient.layer({
+      filename: `${store}/${casDatabaseName}`,
+    })),
+    Layer.provideMerge(Cas.layerAddressSha256Live),
+  )
+
+/** The store composition at a resolved root, dispatched on the backend
+ * the store's config declares: the file backend over a store root, or
+ * the byte plane and roots registry over one SQLite file. Either way
+ * scheme-0 SHA-256 through WebCrypto, and either way the same seams
+ * come out — which is the point of dispatching here and nowhere else.
+ * The `FileSystem` realization stays a visible requirement, satisfied
+ * once at the entry point by the platform layer. */
+export const layerCasAt = (
+  store: string,
+  backend: StoreBackend = "file",
+): Layer.Layer<
+  | Cas.Store
+  | Cas.Loader
+  | Cas.RootStore
+  | Cas.ByteReader
+  | Cas.ByteWriter
+  | Cas.AddressScheme,
+  never,
+  FileSystem.FileSystem
+> =>
+  backend === "sqlite"
+    ? layerSqliteCasAt(store)
+    : Cas.layerFile(store).pipe(Layer.provideMerge(Cas.layerAddressSha256Live))
 
 /** Where this invocation's store was found, as a dependency — so a
  * verb that prints paths asks the context for them instead of
@@ -177,36 +294,41 @@ export const layerStoreAt = (
   | Cas.ByteReader
   | Cas.AddressScheme
   | StoreLocation,
-  NoStoreFound,
+  NoStoreFound | Schema.SchemaError,
   FileSystem.FileSystem | Path.Path
 > =>
-  Layer.unwrap(locateStore(explicit).pipe(
-    Effect.map((location) => Layer.merge(
-      layerCasAt(location.store),
+  Layer.unwrap(Effect.gen(function* () {
+    const location = yield* locateStore(explicit)
+    // The config is read once, here, and decides which backend is
+    // opened — so a verb never asks, and an undecodable config refuses
+    // the invocation instead of being defaulted past.
+    const config = yield* readConfig(location)
+    return Layer.merge(
+      layerCasAt(location.store, backendOf(config)),
       Layer.succeed(StoreLocation, location),
-    )),
-  ))
-
-/** Read and decode the store's config, absent when the file is not
- * there. A present-but-invalid config is a typed refusal, never a
- * silent default. */
-export const readConfig = (
-  location: Located,
-): Effect.Effect<
-  Option.Option<StoreConfig>,
-  Schema.SchemaError,
-  FileSystem.FileSystem
-> =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const raw = yield* fs.readFileString(location.configPath).pipe(
-      Effect.asSome,
-      Effect.orElseSucceed(() => Option.none<string>()),
     )
-    if (Option.isNone(raw)) return Option.none()
-    const decoded = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(StoreConfig))(raw.value)
-    return Option.some(decoded)
-  })
+  }))
+
+/**
+ * Create the database of a db-backed store, which is done by opening
+ * it: the client creates the file, the key-value layer creates the
+ * object table, and the roots adapter creates the roots table, all at
+ * layer build. The listing below is what forces that build — `init`
+ * admits no content, and this read of an empty registry is the whole
+ * creation step.
+ *
+ * The composition is provided here rather than at the command
+ * boundary because creating a store is not opening one: the boundary
+ * layer resolves and opens a store that already exists, and this is
+ * the one moment before that is true.
+ */
+const createDatabase = (store: string): Effect.Effect<void> =>
+  Cas.RootStore.pipe(
+    Effect.flatMap((roots) => roots.list),
+    Effect.asVoid,
+    Effect.provide(layerSqliteCasAt(store)),
+    Effect.orDie,
+  )
 
 /** Create a store: `<target>/.cas` by default, the target itself when
  * bare. Fails when a store already lives there — init creates exactly
@@ -214,6 +336,7 @@ export const readConfig = (
 export const initStore = (
   target: string,
   bare: boolean,
+  backend: StoreBackend = "file",
 ): Effect.Effect<
   Located,
   StoreAlreadyExists,
@@ -230,16 +353,29 @@ export const initStore = (
     }
 
     const config = StoreConfig.make({
-      backend: "file",
+      backend,
       serve: defaultServePolicy,
     })
     const rendered = yield* Schema.encodeEffect(
       Schema.fromJsonString(StoreConfig, { space: 2 }),
     )(config).pipe(Effect.orDie)
 
+    // The config comes first for both layouts: it is what a db-backed
+    // store is recognized by, and writing it before the database means
+    // a half-created store is never a directory holding an
+    // unattributable cas.db.
+    yield* fs.makeDirectory(store, { recursive: true }).pipe(
+      Effect.andThen(fs.writeFileString(path.join(store, "config.json"), `${rendered}\n`)),
+      Effect.orDie,
+    )
+
+    if (backend === "sqlite") {
+      yield* createDatabase(store)
+      return located(store, "explicit", path)
+    }
+
     yield* fs.makeDirectory(path.join(store, "objects"), { recursive: true }).pipe(
       Effect.andThen(fs.makeDirectory(path.join(store, "roots"), { recursive: true })),
-      Effect.andThen(fs.writeFileString(path.join(store, "config.json"), `${rendered}\n`)),
       Effect.orDie,
     )
     return located(store, "explicit", path)
