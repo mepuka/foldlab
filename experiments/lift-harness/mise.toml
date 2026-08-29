@@ -13,11 +13,11 @@
 # against files on disk. Migrating the ENGINE is therefore a rearchitecture,
 # not a swap; the TYPECHECKER moves today. See TOOLS.md for both pins.
 [tasks.check]
-description = "Strict typecheck + the differential suite (T1-T7) + the multi-parser agreement gate"
+description = "Strict typecheck + the active differential suite + the multi-parser agreement gate"
 run = ["bun x tsgo --noEmit", "bun x vitest run", "bun bin/main.ts gate"]
 
 [tasks.test]
-description = "The differential-testing suite alone (T1 contract, T2 ledger, T3 metamorphic, T4 property, T5 gate+adequacy, T6 reproducibility, T7 portability)"
+description = "The active differential-testing suite alone (T1-T6, T8, T10-T11)"
 run = "bun x vitest run"
 
 # The ONE tier that runs on a clean checkout: both its inputs are

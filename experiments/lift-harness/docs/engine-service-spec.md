@@ -128,9 +128,11 @@ Tagged errors, one family (names illustrative):
 - `OxlintOutputDecode` — schema decode failure, carrying the offending
   payload; a contract drift alarm, not a skip.
 - `FixtureLaneAbsent` — the fixture corpus (`.staging/fixture-gen`)
-  is not generated on this host. The README promises the gate "says
-  so"; today it throws bare `ENOENT`. As a typed error the promise
-  becomes checkable (portability tier T7).
+  is not generated on this host. The README promised the gate would
+  "say so"; before this service refactor it threw bare `ENOENT`. The
+  typed error made that promise checkable in portability tier T7. That
+  tier was retired on 2026-08-29 and no longer supplies regression
+  coverage.
 
 ## 6. The gate as a program
 

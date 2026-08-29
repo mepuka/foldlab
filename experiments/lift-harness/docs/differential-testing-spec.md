@@ -205,9 +205,12 @@ evidence, hoover-side, minting nothing.
 - **T6 — reproducibility tier.** `census` and every `records/*.json`
   regenerate byte-identically from the same corpus slice (the
   standing generated-not-hand-maintained law, mechanized).
-- **T7 — portability tier.** The suite runs green on both hosts;
-  covers the `fileURLToPath` fixes (`gate.ts`, `cli.ts`) and the
-  typed missing-fixture-lane report the README promises.
+- **T7 — portability tier (retired 2026-08-29).** Commit `7d8dda24`
+  recorded three Windows defects here: file-URL path conversion,
+  separator normalization, and command-line chunking. The tier also
+  asserted typed missing-fixture reporting and CRLF agreement. Commit
+  `a5fb51a9` removed all of those tests; T7 no longer contributes active
+  regression coverage.
 
 ## 6. Form-axis expansion (probe generation targets)
 
@@ -243,7 +246,8 @@ The axes T4(b) draws from; confirmed entries reference §3.
 3. Pin witnesses into the fixture corpus (fixture-gen grammar grows
    an arm per axis so pinned cases are *generated*; the verbatim
    witness sources stay in the ledger as the historical evidence).
-4. Land tiers T1–T7 under `mise run check` in this package.
+4. Land tiers T1–T7 under `mise run check` in this package. T7 was later
+   retired; see §5.
 5. Only then freeze `contract.ts` as the v0 surface and start the
    Lean port — the formalization inherits a contract whose edges have
    been fought over, not guessed.

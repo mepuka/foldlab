@@ -106,7 +106,7 @@ Landed 2026-08-28 under the rulings R1–R11 in
 | T4 | property tier: in-grammar programs generated from the manifest, then adversarially mutated along the form axes. It asserts ENGINE AGREEMENT, never a particular verdict |
 | T5 | the agreement gate, plus adequacy: declared engine mutants must be caught by the corpus, or the corpus is too weak to mean anything |
 | T6 | reproducibility: recognition is a pure function of source bytes, and committed records agree with the contract |
-| T7 | portability: the path, argv, separator and line-ending defects actually observed on the Windows host, each pinned as a test |
+| T7 (retired 2026-08-29) | the former portability tier pinned three Windows defects — file-URL path conversion, separator normalization, and command-line chunking — plus missing-fixture reporting and CRLF agreement. Commit `a5fb51a9` removed those tests, so these behaviors no longer have a dedicated portability regression tier |
 | T8 | the ESTree deviation audit — what oxc really emits, measured against the pinned specification |
 | T12 | the PProg round trip (P3): both engines reading the committed emitted programs must answer, byte for byte, the lift documents Lean emitted from the same tables |
 
@@ -207,7 +207,8 @@ and no default filesystem: every module names what it needs — `FileSystem`,
 and satisfies none of it. `bin/main.ts` chooses the world (bun);
 `test/runtime.ts` chooses a different one (node, because vitest executes
 test bodies in a node worker even under `bun x`). Same code, two worlds —
-that is the property the refactor buys, and T7 asserts it.
+that is the property the refactor buys. The retired T7 tier used to assert
+it; there is no longer a dedicated portability regression test.
 
 Shapes are Effect `Schema`, and the TypeScript types are derived from them
 rather than declared beside them. That matters where data crosses a
