@@ -202,6 +202,60 @@ it.effect("a revived typed reference is the reference codec, not the bare declar
     )))
   }).pipe(Effect.provide(layer)))
 
+it.effect("a revived union preserves member order and mode", () =>
+  Effect.gen(function* () {
+    const document = yield* documentFromStore("union-pin")
+    const revived = SchemaRepresentation.fromRepresentation(document, {
+      revivers: CS.Revivers,
+    })
+    const member = (name: string): SchemaAST.Union =>
+      (revived.ast as SchemaAST.Objects).propertySignatures
+        .find((property) => property.name === name)!.type as SchemaAST.Union
+
+    const choice = member("choice")
+    expect(choice._tag).toBe("Union")
+    expect(choice.mode).toBe("anyOf")
+    expect(choice.types.map((type) => type._tag))
+      .toEqual(["String", "Boolean", "Number"])
+
+    // ORDER IS IDENTITY: the literals come back in the order the bytes
+    // carry them — zebra before alpha — and nothing on the path from
+    // Lean through storage through revival sorts them.
+    const exact = member("exact")
+    expect(exact.mode).toBe("oneOf")
+    expect(exact.types.map((type) => (type as SchemaAST.Literal).literal))
+      .toEqual(["zebra", "alpha"])
+
+    // NO FLATTENING: `nested` is a two-member union whose second member
+    // is itself a union, carrying its own mode.
+    const nested = member("nested")
+    expect(nested.mode).toBe("anyOf")
+    expect(nested.types.length).toBe(2)
+    const inner = nested.types[1] as SchemaAST.Union
+    expect(inner._tag).toBe("Union")
+    expect(inner.mode).toBe("oneOf")
+    expect(inner.types.map((type) => type._tag)).toEqual(["Arrays", "Boolean"])
+
+    // The other side of order-is-identity: reordering the members, or
+    // changing only the mode, moves the payload bytes. Two unions over
+    // the same members are two codes at two addresses.
+    const zebraFirst = Schema.Union(
+      [Schema.Literal("zebra"), Schema.Literal("alpha")],
+      { mode: "oneOf" },
+    )
+    const alphaFirst = Schema.Union(
+      [Schema.Literal("alpha"), Schema.Literal("zebra")],
+      { mode: "oneOf" },
+    )
+    const anyOfMode = Schema.Union(
+      [Schema.Literal("zebra"), Schema.Literal("alpha")],
+    )
+    const payload = (schema: Schema.Top) => utf8.decode(CS.payloadOf(schema))
+    expect(payload(zebraFirst)).not.toBe(payload(alphaFirst))
+    expect(payload(zebraFirst)).not.toBe(payload(anyOfMode))
+    expect(yield* CS.put(zebraFirst)).not.toBe(yield* CS.put(alphaFirst))
+  }).pipe(Effect.provide(layer)))
+
 it.effect("toCodeDocument generates TypeScript for every registered code and for a reference", () =>
   Effect.gen(function* () {
     const names = [...registry.map(([name]) => name), "ref-root"]
@@ -231,6 +285,18 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `pin-sample Schema.Struct({ "count": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "flag": Schema.Boolean, "items": Schema.Array(Schema.String), "label": Schema.String, "note": Schema.optionalKey(Schema.String), "root": Cas.CanonicalSchema.ref(9), "unit": Schema.Null })`,
         `literal-pin Schema.Struct({ "a": Schema.Null, "b": Schema.Literal(true), "c": Schema.optionalKey(Schema.Literal(-7)), "d": Schema.Literal("pinned") })`,
         `annotation Schema.Struct({ "key": Schema.String, "subject": Cas.CanonicalSchema.ref(83), "value": Schema.String })`,
+        // Two facts about Effect's union code generation are recorded
+        // here rather than worked around. First, `anyOf` is elided,
+        // because it is `Schema.Union`'s default — `choice` and
+        // `nested` come back with no mode. Second, and lossily: when
+        // every member is a bare literal, the printer collapses the
+        // union to `Schema.Literals([…])`, which has NO mode slot, so
+        // `exact`'s `oneOf` DISAPPEARS from the generated source. The
+        // stored representation still carries it (the byte pin above
+        // is what holds that), and the estate's own emitter spells the
+        // mode always; regenerating `exact` from this text alone would
+        // silently weaken it to `anyOf`.
+        `union-pin Schema.Struct({ "choice": Schema.Union([Schema.String, Schema.Boolean, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]), "exact": Schema.Literals(["zebra", "alpha"]), "nested": Schema.optionalKey(Schema.Union([Schema.Null, Schema.Union([Schema.Array(Schema.String), Schema.Boolean], { mode: "oneOf" })])) })`,
         `ref-root Cas.CanonicalSchema.ref(83)`,
       ])
 
@@ -241,6 +307,11 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         `pin-sample { readonly "count": number, readonly "flag": boolean, readonly "items": ReadonlyArray<string>, readonly "label": string, readonly "note"?: string, readonly "root": Cas.ReferenceSentinel, readonly "unit": null }`,
         `literal-pin { readonly "a": null, readonly "b": true, readonly "c"?: -7, readonly "d": "pinned" }`,
         `annotation { readonly "key": string, readonly "subject": Cas.ReferenceSentinel, readonly "value": string }`,
+        // The type side flattens the nesting into one `|` chain, as TS
+        // unions do. That is a TYPE fact, not an identity one: the
+        // representation keeps `nested` a two-member union whose second
+        // member is a union, which is what the byte pin holds.
+        `union-pin { readonly "choice": string | boolean | number, readonly "exact": "zebra" | "alpha", readonly "nested"?: null | ReadonlyArray<string> | boolean }`,
         `ref-root Cas.ReferenceSentinel`,
       ])
 

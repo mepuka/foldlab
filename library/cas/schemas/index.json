@@ -25,6 +25,11 @@
       "byteLength": 563,
       "file": "annotation.json",
       "name": "annotation"
+    },
+    {
+      "byteLength": 1171,
+      "file": "union-pin.json",
+      "name": "union-pin"
     }
   ]
 }

@@ -124,4 +124,44 @@ the root of the code being emitted. -/
 def constructorExpr (env : List (String × Ast)) : Ast → Expr :=
   constructorGo env (atRoot := true)
 
+/-! ## The union lowering, pinned
+
+The two modes as rendered bytes, pinned at elaboration, so the
+lowering cannot drift from the shape Effect's own `Schema.Union`
+accepts (`Schema.ts:4912` — `Union(members, options?: { mode? })`).
+The pins are `#guard`s rather than `rfl` examples: the constructor
+emitter is a well-founded mutual recursion, so its equations do not
+reduce in the kernel, and the house rule is that executable checks run
+at elaboration and never as a kernel `decide`.
+
+Where this deliberately differs from Effect's `toCodeDocument`
+(`toCodeDocument.ts:559-574`): that printer elides `anyOf` because it
+is the constructor's default, and — when every member is a bare
+literal — collapses the union to `Schema.Literals([…])`, which drops
+the mode entirely, `oneOf` included. The estate spells the mode always
+and collapses nothing (D4). Both texts evaluate to the same schema for
+`anyOf`; for an all-literal `oneOf` they do not, which is a finding
+about Effect's generator, recorded and not worked around. -/
+
+/-- The rendered lowering of one code — what the pins below compare. -/
+private def renderedConstructor (a : Ast) : String :=
+  Render.expr house0 0 (constructorExpr [] a)
+
+#guard renderedConstructor (.union [.str, .bool] .anyOf) ==
+  "Schema.Union([Schema.String, Schema.Boolean], { mode: \"anyOf\" })"
+
+#guard renderedConstructor (.union [.str, .bool] .oneOf) ==
+  "Schema.Union([Schema.String, Schema.Boolean], { mode: \"oneOf\" })"
+
+-- Order is identity all the way out to the emitted source: reversing
+-- the members emits different text, because it is a different code.
+#guard renderedConstructor (.union [.bool, .str] .anyOf) ==
+  "Schema.Union([Schema.Boolean, Schema.String], { mode: \"anyOf\" })"
+
+-- No flattening at the lowering either: the nested union stays nested,
+-- and each level carries its own mode.
+#guard renderedConstructor (.union [.null, .union [.arr .str, .bool] .oneOf] .anyOf) ==
+  "Schema.Union([Schema.Null, Schema.Union([Schema.Array(Schema.String), " ++
+    "Schema.Boolean], { mode: \"oneOf\" })], { mode: \"anyOf\" })"
+
 end Cas.Backend

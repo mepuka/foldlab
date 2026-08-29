@@ -32,6 +32,31 @@ export const literalPin = Schema.Struct({
   d: Schema.Literal("pinned"),
 })
 
+/** Lean `SchemasMain.unionPin`, hand-mirrored in Effect Schema.
+ *
+ * ORDER IS IDENTITY: `exact` spells `"zebra"` before `"alpha"` on both
+ * sides on purpose. Any sort of union members — here or in Lean — moves
+ * the payload bytes and the address, and the pin goes red. `nested`
+ * mirrors the no-flattening rule: it is a union whose second member is
+ * a union, not a three-member union.
+ *
+ * `choice` and `nested` carry no `mode` option because Effect's own
+ * constructor defaults it to `"anyOf"`, which is the mode the Lean code
+ * spells; the estate's emitter always writes the mode out, which is a
+ * lowering choice and not a representation difference. */
+export const unionPin = Schema.Struct({
+  choice: Schema.Union([Schema.String, Schema.Boolean, Schema.Int]),
+  exact: Schema.Union([Schema.Literal("zebra"), Schema.Literal("alpha")], {
+    mode: "oneOf",
+  }),
+  nested: Schema.optionalKey(Schema.Union([
+    Schema.Null,
+    Schema.Union([Schema.Array(Schema.String), Schema.Boolean], {
+      mode: "oneOf",
+    }),
+  ])),
+})
+
 /** The registry, name-for-name with `library/cas/tools/Schemas.lean`.
  *
  * `annotation` mirrors Lean `Cas.Schema.Annotation` through the library's
@@ -45,4 +70,5 @@ export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["pin-sample", pinSample],
   ["literal-pin", literalPin],
   ["annotation", Annotations.Annotation],
+  ["union-pin", unionPin],
 ] as const

@@ -21,6 +21,10 @@
     {
       "address": "11b64dec4388090a2153faf414b9105f586b0e64e3a00ea4ae13d4b84b3152f7",
       "name": "annotation"
+    },
+    {
+      "address": "98e36f2243f0269fc3165110660f7b8f08a43aaffc450be7b87ca1f4f6005819",
+      "name": "union-pin"
     }
   ]
 }

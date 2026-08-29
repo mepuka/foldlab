@@ -15,8 +15,10 @@ The registry rows are the described wire codes already in service
 (the conformance-vector document and index), one notation-authored
 sample covering every deriving-reachable constructor, one
 hand-composed literal pin covering the `Literal` spellings the
-deriving handler does not reach, and the sidecar annotation kind
-(`Cas.Schema.Annotation`, stipulation S2). The TypeScript side asserts
+deriving handler does not reach, the sidecar annotation kind
+(`Cas.Schema.Annotation`, stipulation S2), and the union pin — both
+modes, a nested union, and members a sort would reorder, so
+order-is-identity is held by the bytes. The TypeScript side asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -47,13 +49,34 @@ def literalPin : Ast := .struct [
   ("d", false, .lit (.str "pinned"))
 ]
 
+/-- The union spellings, hand-composed (increment C1): both modes and a
+nested union, with member lists a sort WOULD REORDER — so
+order-is-identity is visible in the committed bytes, not only in a
+docstring.
+
+- `choice` — `anyOf` over three keywords, in a written order no
+  canonical arrangement would produce;
+- `exact` — `oneOf` over two string literals spelled `zebra` before
+  `alpha`: any sort of the members changes these bytes, and the fixture
+  goes red;
+- `nested` — an `anyOf` whose second member is itself a `oneOf`, so the
+  no-flattening rule is pinned too (this code is NOT
+  `union [null, arr str, bool]`), on an optional field so the union
+  rides both key positions. -/
+def unionPin : Ast := .struct [
+  ("choice", false, .union [.str, .bool, .int] .anyOf),
+  ("exact", false, .union [.lit (.str "zebra"), .lit (.str "alpha")] .oneOf),
+  ("nested", true, .union [.null, .union [.arr .str, .bool] .oneOf] .anyOf)
+]
+
 /-- The registry: every pinned code in one place. -/
 def registry : List (String × Ast) := [
   ("vector-document", Described.code (α := Cas.Vectors.Wire.VectorDocument)),
   ("vector-index", Described.code (α := Cas.Vectors.Wire.VectorIndex)),
   ("pin-sample", PinSample.schemaCode),
   ("literal-pin", literalPin),
-  ("annotation", Annotation.schemaCode)
+  ("annotation", Annotation.schemaCode),
+  ("union-pin", unionPin)
 ]
 
 /-! ## Emission -/
