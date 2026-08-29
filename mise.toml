@@ -18,6 +18,7 @@ run = [
   "mise run gen:lift-manifest",
   "mise run gen:grammar-manifest",
   "mise run gen:cas-surface",
+  "mise run gen:env-ledger",
   "mise run gen:ledger",
 ]
 
@@ -113,8 +114,13 @@ description = "Regenerate the Cas surface ledger (per-declaration signatures, do
 dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
+[tasks."gen:env-ledger"]
+description = "Regenerate the environment ledger (mise tool pins and task graph, every lean-toolchain pin, the lean_exe/task join) from the config files themselves"
+dir = "{{config_root}}/library/cas"
+run = "lake exe envledger"
+
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, surface-ledger, and environment-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -129,6 +135,7 @@ run = [
   "lake exe emitlift --check",
   "lake exe emitgrammar --check",
   "lake exe surface --check",
+  "lake exe envledger --check",
 ]
 
 [tasks."check:effects:archive"]
