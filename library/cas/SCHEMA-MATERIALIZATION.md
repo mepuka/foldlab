@@ -247,6 +247,20 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
 12. **Declaration registry documentation home**: the wire-identity
     table lives in `Declarations.lean`'s docstring; `REGISTRY.md` is
     scoped to kind tags. Promote or leave.
+13. **Effect upstream defect, confirmed by the C1 differential gate**
+    (2026-08-29): `toCodeDocument` collapses an all-bare-literal union
+    to `Schema.Literals([…])` (`toCodeDocument.ts:559-566`), and
+    `Literals` carries no mode slot — a `oneOf` literal union
+    regenerates as source meaning `anyOf`. Effect's generated TEXT is
+    therefore not a faithful regeneration path for literal `oneOf`
+    unions; the stored representation and the estate's own emitter
+    are. Demonstrated live by the `union-pin` fixture's `exact`
+    member, loss stated where it bites; not worked around. Decide:
+    report upstream, and/or exclude literal-`oneOf` from any future
+    reliance on Effect's text generation.
+14. **Union refusal taxonomy**: empty `types` refuses as `illFormed`,
+    unknown `mode` as `notASchema` — both `#guard`-pinned. A separate
+    `emptyUnion` name would be a taxonomy change, available on order.
 
 ## Defect register (found in passing, not part of the plan)
 
