@@ -712,7 +712,10 @@ function on codes (the only two-to-one identification the projection
 makes), `Ast.RepNormal` names its fixed points, and the laws are stated
 against them: the round trip answers `a.repNorm`, injectivity holds up
 to `repNorm`, and on `RepNormal` codes — every code the decoder can
-ever produce — both hold on the nose.
+ever produce — both hold on the nose. That last clause is a THEOREM,
+not a remark: `ofRepresentationJson_repNormal` (and its document and
+envelope corollaries) shows the decoder's image lies in `RepNormal`, so
+`RepNormal` is exactly the subset the projection is a bijection onto.
 
 ### The general declaration code adds no second collapse
 
@@ -1625,27 +1628,366 @@ theorem envelope_inj {a b : Ast} (h : a.envelope = b.envelope) :
   injection ha with ha
   exact ha.symm
 
-/-! ### Named open obligation — decoder soundness for `RepNormal`
+/-! ### Decoder soundness for `RepNormal`
 
-`Ast.ofRepresentationJson` has no `.lit .null` arm — the only `.lit`
-it can answer comes from `litOfRepresentationJson`, which has no null
-spelling — so its image is contained in `RepNormal`:
+The decoder's image is contained in `RepNormal`, and with
+`ofRepresentationJson_toRepresentationJson'` that makes `RepNormal`
+exactly the subset the revision-1 projection is a bijection onto.
 
-    ofRepresentationJson_repNormal :
-      ∀ {v : Json.Value} {a : Ast},
-        Ast.ofRepresentationJson v = some a → a.RepNormal
+The obligation stood parked because the proof was looked for in the
+wrong place. Lean 4.33 emits no functional-induction principle for a
+mutually recursive definition, so an induction FOLLOWING THE DECODER
+has no principle to run on, and `split` on the decoder's own equation
+severs the input from its sub-values — the termination argument is
+gone before the first recursive call.
 
-With that and `ofRepresentationJson_toRepresentationJson'`, `RepNormal`
-is exactly the subset the revision-1 projection is a bijection onto.
-It is NOT proved here. Lean 4.33 generates no functional-induction
-principle for a mutually recursive definition (`fun_induction` reports
-"No functional induction theorem ... or function is mutually
-recursive"), so the proof wants either a hand-written mutual recursion
-mirroring all nine decoder arms or a restructuring of the decoder into
-a non-mutual shape — a Slice-C-sized change to a frozen statement, not
-a proof edit. Nothing in this module or in `Cas.Schema.ingest` depends
-on it: the exactness laws take `RepNormal` as an explicit hypothesis
-(`ingest_envelope'`, `ofEnvelope_envelope'`) and hold unconditionally
-in their `repNorm` form. -/
+The decomposition that works inducts on the OUTPUT instead. `repNorm`
+recurses structurally on `Ast`, and the estate already runs a mutual
+block over exactly that recursion (`Ast.repNorm_idem`,
+`ofRepresentationJson_toRepresentationJson`); this proof is a third
+one, mirroring the same six families. The decoder then appears only
+through INVERSION lemmas — one per output constructor that carries a
+sub-code — each a single `split` with no recursion under it, so
+`split`'s loss of the input is free. `inv_lit` is where the question is
+actually decided: `litOfRepresentationJson` has no null spelling, so
+the decoder can never answer `.lit .null`, and every other arm merely
+carries `RepNormal` up from its parts. -/
+
+/-! #### Inversion — which arm answered, read off the output
+
+One `split` over the decoder's twelve arms, once, discharging every
+question the induction below asks of it. Six implications rather than a
+twelve-way disjunction, so the use sites are applications rather than
+case analyses; the five that do not match an arm's output constructor
+are vacuous and close by clash. There is no recursion under this
+`split`, which is exactly why `split`'s loss of the input costs
+nothing here. -/
+
+/-- The declaration gate answers a dedicated `.ref` or a general
+`.decl` over the parameters it was handed, and nothing else. Stated
+because it is the one decoder arm whose body is a registry dispatch
+rather than a constructor application, so the clash the other arms give
+`simp` for free has to be proved here. -/
+private theorem declOfRepresentation_image {w : String} {p : Json.Value}
+    {ps : List Ast} {a : Ast} (h : declOfRepresentation w p ps = some a) :
+    (∃ t, a = .ref t) ∨ (∃ g pay, a = .decl g pay ps) := by
+  rw [declOfRepresentation.eq_def] at h
+  split at h
+  · simp at h
+  · split at h <;> simp_all
+    exact Or.inl ⟨_, h.2.symm⟩
+  all_goals
+    simp only [generalDeclOf, Option.map_eq_some_iff] at h
+    obtain ⟨pay, _, hpay⟩ := h
+    exact Or.inr ⟨_, pay, hpay.symm⟩
+
+/-- The literal decoder has no null spelling: it answers `.bool`,
+`.int`, or `.str` and nothing else. THE fact the whole obligation rests
+on — every other decoder arm merely carries `RepNormal` up from its
+parts. -/
+private theorem litOfRepresentationJson_ne_null {j : Json.Value} {l : LitVal}
+    (h : litOfRepresentationJson j = some l) : l ≠ .null := by
+  intro hnull
+  subst hnull
+  rw [litOfRepresentationJson.eq_def] at h
+  split at h <;> simp_all
+
+/-- The decoder's arms, read off its OUTPUT: six implications, one per
+constructor that the induction below has to look inside. Proved by a
+single `split` over the twelve arms — the five implications that do not
+match an arm's output constructor are vacuous and close by clash. -/
+private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
+    (h : Ast.ofRepresentationJson v = some a) :
+    (∀ l, a = .lit l → l ≠ .null)
+    ∧ (∀ b, a = .arr b → ∃ item, Ast.ofRepresentationJson item = some b)
+    ∧ (∀ fs, a = .struct fs → ∃ ps, ofRepresentationProperties ps = some fs)
+    ∧ (∀ g p params, a = .decl g p params →
+        ∃ tps, ofRepresentationParams tps = some params)
+    ∧ (∀ ms m, a = .union ms m → ∃ ts, ofRepresentationMembers ts = some ms)
+    ∧ (∀ e es r, a = .tuple e es r →
+        (∃ x, ofRepresentationElement x = some e)
+          ∧ (∃ xs, ofRepresentationElements xs = some es)
+          ∧ (∃ rs, ofRepresentationRest rs = some r)) := by
+  rw [Ast.ofRepresentationJson.eq_def] at h
+  split at h
+  -- Null, Boolean, String
+  case h_1 | h_2 | h_3 => simp only [Option.some.injEq] at h; subst h; simp
+  -- Number
+  case h_4 =>
+    split at h
+    · simp only [Option.some.injEq] at h; subst h; simp
+    · simp at h
+  -- Literal
+  case h_5 =>
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨lv, hlv, rfl⟩ := h
+    refine ⟨?_, by simp, by simp, by simp, by simp, by simp⟩
+    intro l hl
+    injection hl with hl
+    exact hl ▸ litOfRepresentationJson_ne_null hlv
+  -- Arrays, plain
+  case h_6 item =>
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, rfl⟩ := h
+    exact ⟨by simp, fun b hb => ⟨item, by rw [hx]; injection hb with hb; rw [hb]⟩,
+      by simp, by simp, by simp, by simp⟩
+  -- Objects
+  case h_7 ps =>
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, rfl⟩ := h
+    exact ⟨by simp, by simp,
+      fun fs hfs => ⟨ps, by rw [hx]; injection hfs with hfs; rw [hfs]⟩,
+      by simp, by simp, by simp⟩
+  -- Declaration
+  case h_8 tps =>
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨params, hparams, hd⟩ := h
+    rcases declOfRepresentation_image hd with ⟨t, rfl⟩ | ⟨g, pay, rfl⟩
+    · exact ⟨by simp, by simp, by simp, by simp, by simp, by simp⟩
+    · refine ⟨by simp, by simp, by simp, ?_, by simp, by simp⟩
+      intro g' p' params' hp'
+      injection hp' with _ _ hp'
+      exact ⟨tps, by rw [hparams, hp']⟩
+  -- Union
+  case h_9 ts =>
+    split at h
+    · simp at h
+    · simp only [Option.map_eq_some_iff] at h
+      obtain ⟨x, hx, rfl⟩ := h
+      refine ⟨by simp, by simp, by simp, by simp, ?_, by simp⟩
+      intro ms m hm
+      injection hm with hm _
+      exact ⟨ts, by rw [hx, hm]⟩
+  -- Enum
+  case h_10 =>
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, _, rfl⟩ := h
+    exact ⟨by simp, by simp, by simp, by simp, by simp, by simp⟩
+  -- Arrays, tuple
+  case h_11 e es rs =>
+    simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, xs, hxs, r, hr, rfl⟩ := h
+    refine ⟨by simp, by simp, by simp, by simp, by simp, ?_⟩
+    intro e' es' r' he'
+    injection he' with h1 h2 h3
+    exact ⟨⟨e, by rw [hx, h1]⟩, ⟨es, by rw [hxs, h2]⟩, ⟨rs, by rw [hr, h3]⟩⟩
+  -- The catch-all: nothing decoded
+  case h_12 => simp at h
+
+/-! #### Inversion for the list families
+
+The helper decoders are plain list recursions, so their inversions are
+two-arm splits with nothing under them. -/
+
+private theorem ofRepresentationProperties_inv {ps : List Json.Value}
+    {f : String × Bool × Ast} {fs : List (String × Bool × Ast)}
+    (h : ofRepresentationProperties ps = some (f :: fs)) :
+    (∃ t, Ast.ofRepresentationJson t = some f.2.2)
+      ∧ (∃ ps', ofRepresentationProperties ps' = some fs) := by
+  rw [ofRepresentationProperties.eq_def] at h
+  split at h
+  · simp at h
+  · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, gs, hgs, heq⟩ := h
+    injection heq with h1 h2
+    subst h1
+    subst h2
+    exact ⟨⟨_, hx⟩, ⟨_, hgs⟩⟩
+  · simp at h
+
+private theorem ofRepresentationParams_inv {vs : List Json.Value}
+    {a : Ast} {as : List Ast}
+    (h : ofRepresentationParams vs = some (a :: as)) :
+    (∃ t, Ast.ofRepresentationJson t = some a)
+      ∧ (∃ vs', ofRepresentationParams vs' = some as) := by
+  rw [ofRepresentationParams.eq_def] at h
+  split at h
+  · simp at h
+  · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, ys, hys, heq⟩ := h
+    injection heq with h1 h2
+    subst h1
+    subst h2
+    exact ⟨⟨_, hx⟩, ⟨_, hys⟩⟩
+
+private theorem ofRepresentationMembers_inv {vs : List Json.Value}
+    {a : Ast} {as : List Ast}
+    (h : ofRepresentationMembers vs = some (a :: as)) :
+    (∃ t, Ast.ofRepresentationJson t = some a)
+      ∧ (∃ vs', ofRepresentationMembers vs' = some as) := by
+  rw [ofRepresentationMembers.eq_def] at h
+  split at h
+  · simp at h
+  · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, ys, hys, heq⟩ := h
+    injection heq with h1 h2
+    subst h1
+    subst h2
+    exact ⟨⟨_, hx⟩, ⟨_, hys⟩⟩
+
+private theorem ofRepresentationElement_inv {v : Json.Value} {e : Bool × Ast}
+    (h : ofRepresentationElement v = some e) :
+    ∃ t, Ast.ofRepresentationJson t = some e.2 := by
+  rw [ofRepresentationElement.eq_def] at h
+  split at h
+  · simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, heq⟩ := h
+    subst heq
+    exact ⟨_, hx⟩
+  · simp at h
+
+private theorem ofRepresentationElements_inv {vs : List Json.Value}
+    {e : Bool × Ast} {es : List (Bool × Ast)}
+    (h : ofRepresentationElements vs = some (e :: es)) :
+    (∃ t, ofRepresentationElement t = some e)
+      ∧ (∃ vs', ofRepresentationElements vs' = some es) := by
+  rw [ofRepresentationElements.eq_def] at h
+  split at h
+  · simp at h
+  · simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, ys, hys, heq⟩ := h
+    injection heq with h1 h2
+    subst h1
+    subst h2
+    exact ⟨⟨_, hx⟩, ⟨_, hys⟩⟩
+
+private theorem ofRepresentationRest_inv {vs : List Json.Value} {a : Ast}
+    (h : ofRepresentationRest vs = some (some a)) :
+    ∃ t, Ast.ofRepresentationJson t = some a := by
+  rw [ofRepresentationRest.eq_def] at h
+  split at h
+  · simp at h
+  · simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, heq⟩ := h
+    injection heq with heq
+    subst heq
+    exact ⟨_, hx⟩
+  · simp at h
+
+/-! #### The induction, on the OUTPUT
+
+Six families, the same six `repNorm` recurses on and the same six the
+round-trip block above already runs over. Every recursive call is on a
+structural subterm of an `Ast`, so there is no termination question at
+all — which is the whole content of the restructuring. -/
+
+mutual
+
+/-- The decoder answers only codes that are their own normal form. -/
+theorem ofRepresentationJson_repNorm :
+    ∀ (a : Ast) (v : Json.Value),
+      Ast.ofRepresentationJson v = some a → a.repNorm = a
+  | .null, _, _ => rfl
+  | .bool, _, _ => rfl
+  | .int, _, _ => rfl
+  | .str, _, _ => rfl
+  | .ref _, _, _ => rfl
+  | .enum _, _, _ => rfl
+  | .lit .null, _, h => absurd rfl ((ofRepresentationJson_inv h).1 .null rfl)
+  | .lit (.bool _), _, _ => rfl
+  | .lit (.int _), _, _ => rfl
+  | .lit (.str _), _, _ => rfl
+  | .arr b, _, h => by
+    obtain ⟨item, hitem⟩ := (ofRepresentationJson_inv h).2.1 b rfl
+    simp only [Ast.repNorm, ofRepresentationJson_repNorm b item hitem]
+  | .struct fs, _, h => by
+    obtain ⟨ps, hps⟩ := (ofRepresentationJson_inv h).2.2.1 fs rfl
+    simp only [Ast.repNorm, ofRepresentationProperties_repNorm fs ps hps]
+  | .decl g p params, _, h => by
+    obtain ⟨tps, htps⟩ := (ofRepresentationJson_inv h).2.2.2.1 g p params rfl
+    simp only [Ast.repNorm, ofRepresentationParams_repNorm params tps htps]
+  | .union ms m, _, h => by
+    obtain ⟨ts, hts⟩ := (ofRepresentationJson_inv h).2.2.2.2.1 ms m rfl
+    simp only [Ast.repNorm, ofRepresentationMembers_repNorm ms ts hts]
+  | .tuple e es r, _, h => by
+    obtain ⟨⟨x, hx⟩, ⟨xs, hxs⟩, ⟨rs, hrs⟩⟩ :=
+      (ofRepresentationJson_inv h).2.2.2.2.2 e es r rfl
+    simp only [Ast.repNorm, ofRepresentationElement_repNorm e x hx,
+      ofRepresentationElements_repNorm es xs hxs,
+      ofRepresentationRest_repNorm r rs hrs]
+
+theorem ofRepresentationProperties_repNorm :
+    ∀ (fs : List (String × Bool × Ast)) (ps : List Json.Value),
+      ofRepresentationProperties ps = some fs → repNormFields fs = fs
+  | [], _, _ => rfl
+  | (n, o, a) :: fs, _, h => by
+    obtain ⟨⟨t, ht⟩, ⟨ps', hps'⟩⟩ := ofRepresentationProperties_inv h
+    simp only [repNormFields, ofRepresentationJson_repNorm a t ht,
+      ofRepresentationProperties_repNorm fs ps' hps']
+
+theorem ofRepresentationParams_repNorm :
+    ∀ (as : List Ast) (vs : List Json.Value),
+      ofRepresentationParams vs = some as → repNormParams as = as
+  | [], _, _ => rfl
+  | a :: as, _, h => by
+    obtain ⟨⟨t, ht⟩, ⟨vs', hvs'⟩⟩ := ofRepresentationParams_inv h
+    simp only [repNormParams, ofRepresentationJson_repNorm a t ht,
+      ofRepresentationParams_repNorm as vs' hvs']
+
+theorem ofRepresentationMembers_repNorm :
+    ∀ (as : List Ast) (vs : List Json.Value),
+      ofRepresentationMembers vs = some as → repNormMembers as = as
+  | [], _, _ => rfl
+  | a :: as, _, h => by
+    obtain ⟨⟨t, ht⟩, ⟨vs', hvs'⟩⟩ := ofRepresentationMembers_inv h
+    simp only [repNormMembers, ofRepresentationJson_repNorm a t ht,
+      ofRepresentationMembers_repNorm as vs' hvs']
+
+theorem ofRepresentationElement_repNorm :
+    ∀ (e : Bool × Ast) (v : Json.Value),
+      ofRepresentationElement v = some e → repNormElement e = e
+  | (o, a), _, h => by
+    obtain ⟨t, ht⟩ := ofRepresentationElement_inv h
+    simp only [repNormElement, ofRepresentationJson_repNorm a t ht]
+
+theorem ofRepresentationElements_repNorm :
+    ∀ (es : List (Bool × Ast)) (vs : List Json.Value),
+      ofRepresentationElements vs = some es → repNormElements es = es
+  | [], _, _ => rfl
+  | e :: es, _, h => by
+    obtain ⟨⟨t, ht⟩, ⟨vs', hvs'⟩⟩ := ofRepresentationElements_inv h
+    simp only [repNormElements, ofRepresentationElement_repNorm e t ht,
+      ofRepresentationElements_repNorm es vs' hvs']
+
+theorem ofRepresentationRest_repNorm :
+    ∀ (r : Option Ast) (vs : List Json.Value),
+      ofRepresentationRest vs = some r → repNormRest r = r
+  | none, _, _ => rfl
+  | some a, _, h => by
+    obtain ⟨t, ht⟩ := ofRepresentationRest_inv h
+    simp only [repNormRest, ofRepresentationJson_repNorm a t ht]
+
+end
+
+/-- **Decoder soundness for `RepNormal`** (the obligation this module
+carried as open until slice 2's secondary): every code the revision-1
+decoder answers is its own normal form. With
+`ofRepresentationJson_toRepresentationJson'` in the other direction,
+`RepNormal` is exactly the subset the revision-1 projection is a
+bijection onto — the projection identifies `.lit .null` with `.null`
+and nothing else, and the decoder answers only the survivors. -/
+theorem ofRepresentationJson_repNormal {v : Json.Value} {a : Ast}
+    (h : Ast.ofRepresentationJson v = some a) : a.RepNormal :=
+  ofRepresentationJson_repNorm a v h
+
+/-- The document decoder inherits it. -/
+theorem ofRepresentationDocument_repNormal {v : Json.Value} {a : Ast}
+    (h : Ast.ofRepresentationDocument v = some a) : a.RepNormal := by
+  rw [Ast.ofRepresentationDocument.eq_def] at h
+  split at h
+  · exact ofRepresentationJson_repNormal h
+  · simp at h
+
+/-- The envelope decoder inherits it, so every code that comes through
+the revision-1 door is `RepNormal` and `ofEnvelope_envelope'` applies
+to it without a side condition to discharge. -/
+theorem ofEnvelope_repNormal {v : Json.Value} {a : Ast}
+    (h : Ast.ofEnvelope v = some a) : a.RepNormal := by
+  rw [Ast.ofEnvelope.eq_def] at h
+  split at h
+  · split at h
+    · exact ofRepresentationDocument_repNormal h
+    · simp at h
+  · simp at h
 
 end Cas.Schema
