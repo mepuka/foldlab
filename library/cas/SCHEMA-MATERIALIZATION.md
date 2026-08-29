@@ -503,6 +503,28 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     that vocabulary for the prose pillar is a ruling to make BEFORE an
     Utterance slice, not during one.
 
+26. **REGISTRY.md omits the git sort** (confirmed 2026-08-29):
+    `Ty.git = 0x47` is landed law in `Cas/Grammar/Sorts.lean:50` with
+    no REGISTRY.md row — the sort landed without its registry entry.
+    REGISTRY.md is not exhaustive until fixed. One-row fix; the row's
+    prose is the ruling's to write.
+27. **The rc.111/rc.112 split**: library/effects pins
+    `effect@4.0.0-rc.111` (the provenance lock); the workbench and
+    experiments/lift-harness are on rc.112 (foldkit peer-pins it
+    exactly). The workbench's package.json carries an honest C6
+    pending mark declaring its pin unresolved. RULING: upgrade the
+    estate's lock to rc.112 (re-confronting the SchemaRepresentation
+    surface the readers pinned) or hold the front-end lane on a
+    version the lock does not record. The split is real and someone
+    must own it.
+28. **A generated grammar/sort surface is owed** (requested by the
+    cas-ui exploration, needed by the workbench): no generated
+    artifact states the sort table (Ty rows) or the per-sort payload
+    layouts — two front-end lanes have now independently needed them
+    and one hand-typed/reverse-engineered them (unverified). An
+    emitter in the Gate discipline deriving the table from the Lean
+    definitions closes it; queued as wiring, not a ruling.
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
