@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 277,
+    "Schema": 288,
     "Values": 211,
     "Vectors": 65
   },
   "axiomCensus": {
     "Classical.choice": 76,
     "Quot.sound": 172,
-    "propext": 234
+    "propext": 235
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -34,8 +34,8 @@
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 1024,
-  "documented": 437,
+  "declarations": 1036,
+  "documented": 443,
   "library": "Cas",
   "modules": [
     {
@@ -6589,6 +6589,99 @@
       ]
     },
     {
+      "declarations": 12,
+      "documented": 6,
+      "module": "Cas.Schema.Union",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Schema.UnionMode",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.UnionMode.all",
+          "signature": "List Cas.Schema.UnionMode",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.UnionMode.all_complete",
+          "signature": "∀ (m : Cas.Schema.UnionMode), m ∈ Cas.Schema.UnionMode.all",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.UnionMode.ctorElim",
+          "signature": "{motive : Cas.Schema.UnionMode → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.UnionMode) → ctorIdx = t.ctorIdx → Cas.Schema.UnionMode.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.UnionMode.ctorElimType",
+          "signature": "{motive : Cas.Schema.UnionMode → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.UnionMode.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Schema.UnionMode), Cas.Schema.UnionMode.ofNat x.ctorIdx = x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.UnionMode.ofWire",
+          "signature": "String → Option Cas.Schema.UnionMode",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.UnionMode.ofWire_wire",
+          "signature": "∀ (m : Cas.Schema.UnionMode), Cas.Schema.UnionMode.ofWire m.wire = some m",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.UnionMode.wire",
+          "signature": "Cas.Schema.UnionMode → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqUnionMode",
+          "signature": "DecidableEq Cas.Schema.UnionMode",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instReprUnionMode",
+          "signature": "Repr Cas.Schema.UnionMode",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.instReprUnionMode.repr",
+          "signature": "Cas.Schema.UnionMode → Nat → Std.Format",
+          "touches": ["Schema"]
+        }
+      ]
+    },
+    {
       "declarations": 17,
       "documented": 9,
       "module": "Cas.Values.Canonicalize",
@@ -8137,10 +8230,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 582,
-    "inductive": 31,
-    "instance": 54,
+    "def": 588,
+    "inductive": 32,
+    "instance": 56,
     "structure": 36,
-    "theorem": 318
+    "theorem": 321
   }
 }

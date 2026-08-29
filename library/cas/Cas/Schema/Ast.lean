@@ -1,6 +1,7 @@
 import Cas.Core.Node
 import Cas.Values.Json
 import Cas.Schema.Declarations
+import Cas.Schema.Union
 
 /-!
 # The codes — the canonical schema, Lean side
