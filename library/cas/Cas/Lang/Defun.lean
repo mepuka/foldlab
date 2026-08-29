@@ -81,10 +81,32 @@ Proved below:
   that content runs identically, and denotes an observationally equal
   program. The program IS content, as one theorem.
 
+- `PProg.envelope` and THE SANDWICH (2026-08-29) — the table's static
+  analysis, and the proof that a run stays inside it. The envelope is
+  computed from the table alone (reads, put shapes, the answer-index
+  dataflow DAG); `runPFrom_puts_sound` bounds the word a run leaves by
+  the declared put shapes IN ORDER, `PProg.resolve_sound` and
+  `runPFrom_absent_sound` bound the addresses it consults,
+  `runPFrom_load_absent`/`runPFrom_load_present` give the lower bound so
+  it is not vacuous, and `runPFrom_done_answers` proves DESIGN.md §2.1's
+  hash-determined dataflow: given `H`, the answer history is a pure
+  recursion on the table. Where the over-approximation lives is stated
+  and exhibited rather than hidden — see that section's triage note.
+- `runP_no_dangling` — a refusal class the envelope decides WITHOUT
+  running: a table whose dataflow DAG is closed cannot refuse for a
+  dangling answer index, at any word.
+- `envelope_decodeProg_encodeProg` — the store content determines the
+  envelope: a table recovered from its own bytes analyses identically.
+
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
 - registry rows for wire tags 14/15 land with the registry agent; the
   literals here mirror that reservation.
+
+This module is the APPLICATIVE-STRENGTH rung of the fragment tower.
+`Cas/Lang/Fragments.lean` states the whole ladder and the interop
+contract each rung offers another effect system; read it before coding
+against a table.
 -/
 
 namespace Cas.Lang
