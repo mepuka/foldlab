@@ -31,6 +31,16 @@
  * the reviver set is `CanonicalSchema.Revivers`, and the address is
  * either the store's own verified id or the digest of the very bytes
  * that were materialized.
+ *
+ * **This door refuses exactly what Lean's `Cas.Schema.ingest` refuses.**
+ * `CanonicalSchema.fromEnvelope` runs the admitted-subset gate before
+ * anything is revived, so a node the Lean door turns away never becomes
+ * a live validator here (the JIT-substrate survey's B8,
+ * SCHEMA-MATERIALIZATION.md ruling-queue item 19). Both entry points run
+ * the gate AND revival inside their own failure channel: a refusal is a
+ * `ProjectionCodecFailure` carrying a named `CanonicalSchema.Refusal`,
+ * never a defect. `library/cas/conformance/schema-verdicts.json` and
+ * `test/SchemaVerdicts.test.ts` are what hold the two doors to it.
  */
 import { Effect, Schema, SchemaRepresentation, type SchemaAST } from "effect"
 import { CasNodeInput, type ContentId } from "./Node.ts"
@@ -80,10 +90,23 @@ const strictOptions = {
 export const fromStore = (
   address: ContentId,
 ): Effect.Effect<Materialized, ProjectionError, CasLoader> =>
-  CanonicalSchema.get(address).pipe(Effect.map((document) => ({
-    address,
-    schema: CanonicalSchema.fromRepresentation(document),
-  })))
+  CanonicalSchema.get(address).pipe(Effect.flatMap((document) =>
+    // Revival runs INSIDE the failure channel: a reviver that throws is
+    // a refusal of these bytes, not a defect of the program that asked
+    // for them (the survey's B8 — an unadmitted id used to explode).
+    Effect.try({
+      try: (): Materialized => ({
+        address,
+        schema: CanonicalSchema.fromRepresentation(document),
+      }),
+      catch: (issue) =>
+        new ProjectionCodecFailure({
+          direction: "decode",
+          id: address,
+          issue: String(issue),
+        }),
+    })
+  ))
 
 /** Materialize one schema node's payload bytes, held in hand rather
  * than fetched. The address is DERIVED: the bytes are re-verified as
@@ -95,8 +118,14 @@ export const fromPayload = (
 ): Effect.Effect<Materialized, ProjectionError, AddressScheme> =>
   Effect.gen(function* () {
     const envelope = yield* decodedVersionedEnvelope(payload)
-    const document = yield* Effect.try({
-      try: () => CanonicalSchema.fromEnvelope(envelope),
+    // The gate AND revival, both inside the failure channel: the door
+    // refuses by name (`CanonicalSchema.SchemaRefusal`) and never lets a
+    // throw escape as a defect.
+    const schema = yield* Effect.try({
+      try: () =>
+        CanonicalSchema.fromRepresentation(
+          CanonicalSchema.fromEnvelope(envelope),
+        ),
       catch: (issue) =>
         new ProjectionCodecFailure({
           direction: "decode",
@@ -111,7 +140,7 @@ export const fromPayload = (
     const address = yield* AddressScheme.use((scheme) =>
       scheme.digest(encodeCasNode(node))
     )
-    return { address, schema: CanonicalSchema.fromRepresentation(document) }
+    return { address, schema }
   })
 
 /** The VALIDATOR register: the decision a materialized schema makes

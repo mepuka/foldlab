@@ -156,6 +156,33 @@ it.effect("the TypeScript door admits exactly the codes the Lean door admits", (
     expect(disagreements).toEqual([])
   }).pipe(Effect.provide(layer)))
 
+it.effect("a refused code is refused BY NAME, and by the same name", () =>
+  Effect.gen(function* () {
+    const { cases } = yield* corpus
+    const mismatches: Array<string> = []
+    for (const one of cases) {
+      if (one.verdict !== "refuse") continue
+      if (knownDisagreements.has(key(one.name))) continue
+      // `result` keeps TYPED failures in hand; a defect would still blow
+      // this statement, which is the reading we want — the door refuses,
+      // it does not explode.
+      const outcome = yield* Effect.result(M.fromPayload(utf8.encode(one.payload)))
+      if (outcome._tag === "Success") continue // the admission statement owns this
+      const issue = String((outcome.failure as Cas.ProjectionCodecFailure).issue)
+      const named = /SchemaRefusal: (\w+):/.exec(issue)
+      if (named === null) {
+        mismatches.push(`${one.name}: refused without a name — ${issue.slice(0, 200)}`)
+        continue
+      }
+      if (named[1] !== one.refusal) {
+        mismatches.push(
+          `${one.name}: Lean names ${one.refusal}, TypeScript names ${named[1]}`,
+        )
+      }
+    }
+    expect(mismatches).toEqual([])
+  }).pipe(Effect.provide(layer)))
+
 it.effect("the materialized validator agrees with decode on every candidate", () =>
   Effect.gen(function* () {
     const { cases } = yield* corpus

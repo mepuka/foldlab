@@ -99,27 +99,49 @@ const normalizeRepresentationJson = (input: Schema.Json): Schema.Json => {
   return normalized
 }
 
-/** Decode into fresh Effect-owned data, reject excess properties, normalize
- * Effect's order-insensitive object fields, and freeze the identity snapshot. */
+/** Decode into fresh Effect-owned data, reject excess properties, run the
+ * admitted-subset gate on the door path, normalize Effect's
+ * order-insensitive object fields, and freeze the identity snapshot.
+ *
+ * `requireCanonicalOrder` is what tells a DOOR from a LOWERING.
+ * `fromJson`, `fromEnvelope`, and the annotation read are doors: they
+ * take a spelling from outside and must answer exactly what Lean's
+ * `Cas.Schema.ingest` answers, which is `admitDocument`'s job. The
+ * lowering path (`snapshotDocument`, `nativeDocument`) is the estate
+ * projecting a schema it already holds, where field order is Effect's
+ * declaration order and nothing foreign has arrived; it keeps the
+ * declaration allowlist and nothing more. */
 const documentFromJson = (
   input: Schema.Json,
   requireCanonicalOrder = true,
 ): SchemaRepresentation.Document => {
-  const document = SchemaRepresentation.fromJson(input)
+  // Effect's own persistent decoder runs first, and its rejections are
+  // renamed rather than left anonymous: a spelling `fromJson` will not
+  // read is not a schema, which is the name Lean's decoder gives it.
+  // Every refusal out of this door therefore carries a taxonomy name.
+  const document = ((): SchemaRepresentation.Document => {
+    try {
+      return SchemaRepresentation.fromJson(input)
+    } catch (issue) {
+      return refuse(
+        "notASchema",
+        `Effect's persistent decoder does not read this spelling: ${String(issue)}`,
+      )
+    }
+  })()
   const encoded = SchemaRepresentation.toJson(document)
   if (canonicalJson(input) !== canonicalJson(encoded)) {
-    throw new TypeError(
-      "Canonical schema representation contains unsupported or excess properties",
+    throw new SchemaRefusal(
+      "notASchema",
+      "canonical schema representation contains unsupported or excess properties",
     )
   }
   const normalized = normalizeRepresentationJson(encoded)
-  if (
-    requireCanonicalOrder
-    && canonicalJson(encoded) !== canonicalJson(normalized)
-  ) {
-    throw new TypeError("Canonical schema object fields are not in canonical order")
-  }
   refuseUnknownDeclarations(normalized)
+  // On the spelling AS STORED, not on the normalized one: sortedness is
+  // a property of the bytes that arrived, and normalizing first would
+  // sort the very thing under test.
+  if (requireCanonicalOrder) admitDocument(encoded)
   return deepFreeze(SchemaRepresentation.fromJson(normalized))
 }
 
@@ -128,11 +150,49 @@ const snapshotDocument = (
 ): SchemaRepresentation.Document =>
   documentFromJson(SchemaRepresentation.toJson(document), false)
 
-/** One row of the declaration registry: a persistence identity and the
- * number of type parameters the row takes. */
+/** THE refusal taxonomy, verbatim from Lean `Cas.Schema.IngestRefusal`.
+ * The two doors name the same five refusals or they are not two doors
+ * onto one language. */
+export type Refusal =
+  | "notASchema"
+  | "illFormed"
+  | "wrongRevision"
+  | "nonEmptyReferences"
+  | "unknownDeclaration"
+
+/** A refusal BY NAME. The schema plane's doors are synchronous and
+ * throw, so their callers can wrap them in one failure channel; what
+ * this adds is the name, so a caller (and a differential gate) can tell
+ * `illFormed` from `notASchema` instead of reading English. */
+export class SchemaRefusal extends TypeError {
+  readonly refusal: Refusal
+  readonly detail: string
+  constructor(refusal: Refusal, detail: string) {
+    super(`${refusal}: ${detail}`)
+    this.name = "SchemaRefusal"
+    this.refusal = refusal
+    this.detail = detail
+  }
+}
+
+// A function DECLARATION, not an arrow: TypeScript only treats a call as
+// unreachable-after (narrowing the code that follows) when the callee is
+// declared this way, and every gate below leans on that.
+function refuse(refusal: Refusal, detail: string): never {
+  throw new SchemaRefusal(refusal, detail)
+}
+
+/** One row of the declaration registry: a persistence identity, the
+ * number of type parameters the row takes, the payload its reviver
+ * admits, and the reviver itself. */
 export interface DeclarationRow {
   readonly id: string
   readonly arity: number
+  /** The row's payload discipline, mirroring Lean
+   * `DeclarationId.payloadWf`: `byte` is a natural number below 256 (a
+   * kind tag), `null` is the null payload. */
+  readonly payload: "byte" | "null"
+  readonly reviver: SchemaRepresentation.AnyReviver
 }
 
 /** THE declaration registry, TypeScript side: every declaration id a
@@ -159,15 +219,44 @@ export interface DeclarationRow {
  * toArbitrary}` contract, so admitting them costs the estate no new
  * identity and Effect's own revival and code generation apply
  * unchanged. Their adoption is pending operator ratification
- * (SCHEMA-MATERIALIZATION.md ruling-queue item 7), which is why they
- * are three adjacent rows here, three adjacent revivers in `Revivers`,
- * and nothing else: rejecting a row is deleting its two lines. */
+ * (SCHEMA-MATERIALIZATION.md ruling-queue item 7): rejecting a row is
+ * deleting its one line.
+ *
+ * ONE LIST. The row carries its own reviver, so the declaration arm of
+ * `Revivers` is derived from this table rather than hand-kept beside it
+ * — the allowlist the door gates on and the reviver set revival runs
+ * under cannot come apart, because they are the same rows. */
 export const DeclarationRegistry: ReadonlyArray<DeclarationRow> = [
-  { arity: 0, id: ReferenceRepresentationId },
-  { arity: 0, id: "effect/schema/Date" },
-  { arity: 0, id: "effect/schema/URL" },
-  { arity: 1, id: "effect/schema/Option" },
+  {
+    arity: 0,
+    id: ReferenceRepresentationId,
+    payload: "byte",
+    reviver: referenceRepresentationReviver,
+  },
+  {
+    arity: 0,
+    id: "effect/schema/Date",
+    payload: "null",
+    reviver: Schema.DateReviver,
+  },
+  {
+    arity: 0,
+    id: "effect/schema/URL",
+    payload: "null",
+    reviver: Schema.URLReviver,
+  },
+  {
+    arity: 1,
+    id: "effect/schema/Option",
+    payload: "null",
+    reviver: Schema.OptionReviver,
+  },
 ]
+
+const declarationRow = (id: unknown): DeclarationRow | undefined =>
+  typeof id === "string"
+    ? DeclarationRegistry.find((row) => row.id === id)
+    : undefined
 
 const admittedDeclarationIds: ReadonlySet<string> = new Set(
   DeclarationRegistry.map((row) => row.id),
@@ -192,7 +281,8 @@ const refuseUnknownDeclarations = (input: Schema.Json): void => {
       ? (representation as Schema.JsonObject).id
       : undefined
     if (typeof id !== "string" || !admittedDeclarationIds.has(id)) {
-      throw new TypeError(
+      refuse(
+        "unknownDeclaration",
         `unknown declaration ${canonicalJson(id ?? null)} — the canonical schema registry admits only ${
           DeclarationRegistry.map((row) => row.id).join(", ")
         }`,
@@ -200,6 +290,267 @@ const refuseUnknownDeclarations = (input: Schema.Json): void => {
     }
   }
   for (const value of Object.values(node)) refuseUnknownDeclarations(value)
+}
+
+/** THE admitted-subset gate — the TypeScript face of Lean's
+ * `Ast.ofRepresentationJson` composed with `Ast.wf`, which together are
+ * `Cas.Schema.ingest`.
+ *
+ * Before this gate the two doors disagreed (JIT-substrate survey B8,
+ * SCHEMA-MATERIALIZATION.md ruling-queue item 19): the TypeScript door
+ * ran Effect's shape decode and the declaration allowlist and nothing
+ * else, so a stored node Lean refuses `illFormed` still materialized
+ * into a live validator. The corpus in
+ * `library/cas/conformance/schema-verdicts.json` is what holds the two
+ * to one answer; this is the code that makes them agree.
+ *
+ * Two disciplines, one walk, because Lean applies both at one door:
+ *
+ * - WHICH NODES — the admitted subset. Nine representation nodes, one
+ *   admitted check spelling, no tuple elements, no index signatures, no
+ *   mutable properties, no reference table. Everything else is
+ *   `notASchema`, the same name Lean's decoder gives it. The subset is
+ *   a SLICE PLAN, not a limit of Effect: each refusal below names the
+ *   slice that would admit it.
+ * - THE DISCIPLINE — `Ast.wf`. Struct property names in strict
+ *   ascending order (which subsumes no-duplicates), unions nonempty,
+ *   and every declaration honouring its registry row's payload shape
+ *   and type-parameter count. These are `illFormed`.
+ *
+ * It runs PRE-REVIVAL, on the spelling as stored, so a refusal is a
+ * named refusal on the caller's own failure path rather than a throw
+ * out of Effect's reviver — which is what three of the corpus rows used
+ * to be. */
+const isIntCheckSpelling = canonicalJson({
+  _tag: "Filter",
+  aborted: false,
+  annotations: {
+    arbitrary: { constraint: { integer: true } },
+    expected: "an integer",
+  },
+  representation: { id: "effect/schema/isInt", payload: null },
+})
+
+const gateObject = (value: Schema.Json, path: string): Schema.JsonObject => {
+  if (!Predicate.isObject(value) || Array.isArray(value)) {
+    refuse("notASchema", `${path} is not an object`)
+  }
+  return value as Schema.JsonObject
+}
+
+const gateArray = (
+  value: Schema.Json | undefined,
+  path: string,
+): ReadonlyArray<Schema.Json> => {
+  if (!Array.isArray(value)) refuse("notASchema", `${path} is not an array`)
+  return value
+}
+
+const gateNoChecks = (node: Schema.JsonObject, path: string): void => {
+  if (gateArray(node.checks, `${path}.checks`).length !== 0) {
+    refuse(
+      "notASchema",
+      `${path} carries checks: the admitted subset carries the isInt check on Number and no other (the checks layer is Slice C5)`,
+    )
+  }
+}
+
+/** The row's payload discipline, mirroring `DeclarationId.payloadWf`. */
+const admitsPayload = (row: DeclarationRow, payload: Schema.Json): boolean =>
+  row.payload === "null"
+    ? payload === null
+    : typeof payload === "number" && Number.isInteger(payload)
+      && payload >= 0 && payload < 256
+
+const admitNode = (value: Schema.Json, path: string): void => {
+  const node = gateObject(value, path)
+  switch (node._tag) {
+    case "Null":
+    case "Boolean":
+    case "String": {
+      gateNoChecks(node, path)
+      return
+    }
+    case "Number": {
+      const checks = gateArray(node.checks, `${path}.checks`)
+      if (
+        checks.length !== 1
+        || canonicalJson(checks[0] ?? null) !== isIntCheckSpelling
+      ) {
+        refuse(
+          "notASchema",
+          `${path} is not the admitted integer: the subset carries Number under exactly the effect/schema/isInt check, and a bare Number would type a float the value plane has no term for (ruling 15, the float ceiling)`,
+        )
+      }
+      return
+    }
+    case "Literal": {
+      gateNoChecks(node, path)
+      const literal = gateObject(node.literal as Schema.Json, `${path}.literal`)
+      const value = literal.value
+      const admitted = literal.type === "boolean"
+        ? typeof value === "boolean"
+        : literal.type === "string"
+          ? typeof value === "string"
+          : literal.type === "number"
+            ? typeof value === "number" && Number.isSafeInteger(value)
+            : false
+      if (!admitted) {
+        refuse(
+          "notASchema",
+          `${path}.literal is not an admitted literal: booleans, strings, and safe integers only (a null literal is the Null keyword, register R13)`,
+        )
+      }
+      return
+    }
+    case "Arrays": {
+      gateNoChecks(node, path)
+      const elements = gateArray(node.elements, `${path}.elements`)
+      const rest = gateArray(node.rest, `${path}.rest`)
+      if (elements.length !== 0 || rest.length !== 1) {
+        refuse(
+          "notASchema",
+          `${path} is not the admitted array: no positional elements and exactly one rest element (tuples are Slice C2)`,
+        )
+      }
+      admitNode(rest[0]!, `${path}[]`)
+      return
+    }
+    case "Objects": {
+      gateNoChecks(node, path)
+      if (gateArray(node.indexSignatures, `${path}.indexSignatures`).length !== 0) {
+        refuse(
+          "notASchema",
+          `${path} carries index signatures, which the admitted subset does not reach (records are Slice C3)`,
+        )
+      }
+      let previous: string | undefined
+      for (
+        const [index, property] of gateArray(
+          node.propertySignatures,
+          `${path}.propertySignatures`,
+        ).entries()
+      ) {
+        const signature = gateObject(property, `${path}.propertySignatures[${index}]`)
+        if (signature.isMutable !== false) {
+          refuse(
+            "notASchema",
+            `${path}.propertySignatures[${index}] is mutable, which the admitted subset does not carry`,
+          )
+        }
+        if (typeof signature.isOptional !== "boolean") {
+          refuse(
+            "notASchema",
+            `${path}.propertySignatures[${index}].isOptional is not a boolean`,
+          )
+        }
+        const name = gateObject(
+          signature.name as Schema.Json,
+          `${path}.propertySignatures[${index}].name`,
+        )
+        if (name.type !== "string" || typeof name.value !== "string") {
+          refuse(
+            "notASchema",
+            `${path}.propertySignatures[${index}].name is not a string name (symbol keys have no reconstructable identity)`,
+          )
+        }
+        const current = name.value as string
+        if (previous !== undefined && !(previous < current)) {
+          refuse(
+            "illFormed",
+            `${path} declares ${canonicalJson(current)} after ${
+              canonicalJson(previous)
+            }: struct field names are in strict ascending order, which is what makes the canonical spelling unique and forbids a duplicate name`,
+          )
+        }
+        previous = current
+        admitNode(signature.type as Schema.Json, `${path}.${current}`)
+      }
+      return
+    }
+    case "Declaration": {
+      gateNoChecks(node, path)
+      const representation = gateObject(
+        node.representation as Schema.Json,
+        `${path}.representation`,
+      )
+      const row = declarationRow(representation.id)
+      if (row === undefined) {
+        refuse(
+          "unknownDeclaration",
+          `unknown declaration ${canonicalJson(representation.id ?? null)} at ${path}`,
+        )
+      }
+      if (!admitsPayload(row, representation.payload as Schema.Json)) {
+        refuse(
+          "illFormed",
+          `${path}: ${row.id} admits a ${row.payload} payload, the node carries ${
+            canonicalJson(representation.payload ?? null)
+          }`,
+        )
+      }
+      const parameters = gateArray(node.typeParameters, `${path}.typeParameters`)
+      if (parameters.length !== row.arity) {
+        refuse(
+          "illFormed",
+          `${path}: ${row.id} takes ${row.arity} type parameters, the node carries ${parameters.length}`,
+        )
+      }
+      parameters.forEach((parameter, index) =>
+        admitNode(parameter, `${path}<${index}>`)
+      )
+      return
+    }
+    case "Union": {
+      gateNoChecks(node, path)
+      if (node.mode !== "anyOf" && node.mode !== "oneOf") {
+        refuse(
+          "notASchema",
+          `${path}.mode is ${
+            canonicalJson(node.mode ?? null)
+          }, which is no union mode`,
+        )
+      }
+      const types = gateArray(node.types, `${path}.types`)
+      if (types.length === 0) {
+        refuse(
+          "illFormed",
+          `${path} is the empty union, which is Never — and Never is not admitted`,
+        )
+      }
+      types.forEach((member, index) => admitNode(member, `${path}|${index}`))
+      return
+    }
+    default: {
+      refuse(
+        "notASchema",
+        `${path} is a ${
+          canonicalJson(node._tag ?? null)
+        } node, which the admitted subset does not carry`,
+      )
+    }
+  }
+}
+
+/** The document gate: an empty reference table and one admitted root.
+ * A non-empty table is recursion, which the carrier has no constructor
+ * for (survey B3, open ruling 2), so it is refused by its own name
+ * rather than admitted and then failing to re-emit. */
+const admitDocument = (value: Schema.Json): void => {
+  const document = gateObject(value, "document")
+  const references = gateObject(
+    document.references as Schema.Json,
+    "document.references",
+  )
+  if (Object.keys(references).length > 0) {
+    refuse(
+      "nonEmptyReferences",
+      `the document allocates a reference table (${
+        Object.keys(references).join(", ")
+      }), which the admitted subset does not reach`,
+    )
+  }
+  admitNode(document.representation as Schema.Json, "representation")
 }
 
 const nativeDocument = (schema: Schema.Top): SchemaRepresentation.Document =>
@@ -226,23 +577,28 @@ export const representationOf = (
   return documentFromJson(json)
 }
 
-/** The estate's reviver registry: every declaration and check identity a
- * persisted canonical schema may carry. Built-in check ids and built-in
- * declaration revivers are reused VERBATIM — nothing is minted here — so
- * Effect's own revival, code generation, and instance generation apply
- * unchanged; only `foldlab/cas/ref` is ours.
- *
- * The declaration arm is `DeclarationRegistry` row for row: row zero's
- * reviver, then Effect's own `DateReviver`, `URLReviver`, and
- * `OptionReviver` for the three adopted rows. */
-export const Revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
+/** The check revivers: built-in ids reused VERBATIM, nothing minted.
+ * `isInt` is the one check the admitted subset carries; `isBetween` and
+ * `isPattern` serve the legacy revision-0 projection and the estate's
+ * own native lowerings, which do not travel through the door's gate. */
+export const CheckRevivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
   Schema.isIntReviver,
   Schema.isBetweenReviver,
   Schema.isPatternReviver,
-  referenceRepresentationReviver,
-  Schema.DateReviver,
-  Schema.URLReviver,
-  Schema.OptionReviver,
+]
+
+/** The estate's reviver registry: every declaration and check identity a
+ * persisted canonical schema may carry.
+ *
+ * The declaration arm is DERIVED from `DeclarationRegistry` — one row,
+ * one reviver, no second list to keep in step. That is the allowlist
+ * reconciliation the survey's B8 asked for: the set the door admits and
+ * the set revival can rebuild are the same rows by construction, so an
+ * id can no longer be admitted with no reviver behind it (or revived
+ * without being admitted). */
+export const Revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
+  ...CheckRevivers,
+  ...DeclarationRegistry.map((row) => row.reviver),
 ]
 
 /** Reconstruct a runtime Effect Schema from a persisted identity. */
@@ -283,7 +639,8 @@ export const fromEnvelope = (
     case LegacyRevision:
       return nativeDocument(legacySchema(envelope.value))
     default:
-      throw new TypeError(
+      return refuse(
+        "wrongRevision",
         `unsupported canonical schema revision ${envelope.revision}`,
       )
   }

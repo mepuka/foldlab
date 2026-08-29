@@ -324,6 +324,38 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     the six stages is the operator's; stages 3+4 are ruling 11's
     slice.
 
+    **STAGES 1-2 LANDED 2026-08-29.** `lake exe verdicts` emits
+    `conformance/schema-verdicts.json` — 51 codes (28 admitted, 23
+    refused) and 85 value triples, every verdict computed by running
+    `ingest` and `decode` — under a `--check` byte gate in `check:cas`;
+    `library/effects/test/SchemaVerdicts.test.ts` replays it through
+    `Materialize`. The gate landed RED on 16 codes and closed at stage
+    2 with `admitDocument`, the pre-revival admitted-subset gate on the
+    TS door (`CanonicalSchema.ts`), which mirrors
+    `Ast.ofRepresentationJson` and `Ast.wf` together, refuses through
+    the caller's failure channel with `SchemaRefusal` carrying Lean's
+    own five refusal names, and is checked name-for-name against the
+    corpus. The allowlist is now ONE list: `DeclarationRegistry` rows
+    carry their own reviver and payload discipline, and `Revivers`'
+    declaration arm is derived from them. Two findings ride along —
+    item 20 below, and this: ruling 3 predicts a value-plane Integer
+    disagreement and there is none, because `Schema.isInt` runs
+    `Number.isSafeInteger` (`Schema.ts:8227`), the bound `SafeInt`
+    carries. Ruling 3 remains open as a SPELLING question only.
+20. **Effect upstream defect — the empty struct admits excess**
+    (confirmed by the stage-1 corpus, 2026-08-29): Effect's decoder
+    skips the excess-property check entirely when an `Objects` node has
+    no property signatures and no index signatures, so
+    `Schema.Struct({})` accepts `{"a":1}` under
+    `onExcessProperty: "error"` while the same schema with one field
+    refuses it. Lean's `decodeFields [] (_ :: _)` answers `none`, so the
+    empty struct is the one place the two doors still part on a VALUE.
+    Not a `wf` question — the code is well-formed and both doors admit
+    it — so no admission gate can close it. Pinned as
+    `struct-empty/excess` in `SchemaVerdicts.test.ts`, which asserts it
+    still disagrees. Decide: report upstream, and/or stop admitting the
+    empty struct. Sibling of item 13.
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
