@@ -1,66 +1,23 @@
--- PROMOTED COPY (2026-08-28). The original stays at
--- .staging/parser-experiments/defun-held-proofs.lean.txt, which is the
--- path library/cas/Cas/Lang/Defun.lean cites.
--- Parked from library/cas/Cas/Lang/Defun.lean (C4 rollback, 2026-08-28).
--- Three round-trip theorems, unproven post-merge: readPIn_encodePIn fails
--- elaboration; decodeLine_encodeLine's proof exhausts kernel memory (the
--- OOM that killed full builds today); readPRef_encodePRef cites the first.
--- Repair via the llm-proof-loop lane, restore together, re-run check:cas.
-
-theorem readPIn_encodePIn (x : PIn) (h : x.WF) (rest : Bytes) :
-    readPIn (encodePIn x ++ rest) = some (x, rest) := by
-  -- HELD 2026-08-28 (merge-repair session): the original proof (kept
-  -- below, commented) exhausts kernel memory / fails post-merge; a
-  -- PENDING obligation per claim discipline, not a proved theorem.
-  -- Repair through the llm-proof-loop lane before any claim cites it.
-  sorry
-/-
-theorem readPIn_encodePIn (x : PIn) (h : x.WF) (rest : Bytes) :
-    readPIn (encodePIn x ++ rest) = some (x, rest) := by
-  cases x with
-  | lit a =>
-    simp only [encodePIn, List.cons_append, readPIn, if_pos rfl,
-      readChunk_append rest a.property, dif_pos a.property]
-  | ans i =>
-    simp only [encodePIn, List.cons_append, readPIn,
-      if_neg (by decide : (1 : UInt8) ≠ 0), if_pos rfl,
-      readNat32_nat32 i h rest]
--/
-
-
-theorem readPRef_encodePRef (r : UInt8 × PIn) (h : r.2.WF)
-    (rest : Bytes) : readPRef (encodePRef r ++ rest) = some (r, rest) := by
-  obtain ⟨t, i⟩ := r
-  simp only [encodePRef, List.cons_append, readPRef,
-    readPIn_encodePIn i h rest]
-
-
-theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
-    decodeLine (encodeLine l) = some l := by
-  -- HELD 2026-08-28 (merge-repair session): the original proof (kept
-  -- below, commented) exhausts kernel memory / fails post-merge; a
-  -- PENDING obligation per claim discipline, not a proved theorem.
-  -- Repair through the llm-proof-loop lane before any claim cites it.
-  sorry
-/-
-theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
-    decodeLine (encodeLine l) = some l := by
-  cases l with
-  | put v t payload refs =>
-    obtain ⟨hpay, _, hrefs⟩ := h
-    have hN : readN readPRef refs.length ((refs.map encodePRef).flatten)
-        = some (refs, []) := by
-      have := readN_encode_of readPRef_encodePRef refs hrefs []
-      simpa using this
-    simp only [decodeLine, encodeLine, encodeLineBody, readLine,
-      readFrame_frame payload hpay,
-      readNat32_nat32 refs.length (by omega) _, hN]
-    simp
-  | load src =>
-    have hsrc : readPIn (encodePIn src) = some (src, []) := by
-      have := readPIn_encodePIn src h []
-      simpa using this
-    simp only [decodeLine, encodeLine, encodeLineBody, readLine,
-      if_neg (by decide : (1 : UInt8) ≠ 0), hsrc]
-    simp
--/
+-- TOMBSTONE. Nothing here is owed.
+--
+-- This file held sorry-bearing copies of three round trips parked out
+-- of library/cas/Cas/Lang/Defun.lean on 2026-08-28 (the C4 rollback),
+-- with a header directing a reader to repair and restore them. All
+-- three are PROVED and LANDED in Cas/Lang/Defun.lean as of fb83712b:
+--
+--   readPIn_encodePIn      the operand round trip
+--   readPRef_encodePRef    the typed-reference round trip
+--   decodeLine_encodeLine  the code-point round trip
+--
+-- Un-parked 2026-08-29 by staging the proofs against abstract byte
+-- strings, which is what retired the kernel-memory exhaustion that
+-- forced the rollback. The exactness lemmas (readPIn_exact,
+-- readPRef_exact, readLine_exact, decodeLine_exact) and the
+-- table-level decoder (decodeProg, decodeProg_encodeProg) landed on
+-- the same day above them.
+--
+-- The original text is retired: read the theorems in
+-- library/cas/Cas/Lang/Defun.lean, which is the only place they are
+-- stated, and where `lake --wfail build` checks them. A copy carrying
+-- `sorry` beside a landed theorem is a claim-audit hazard, so this
+-- file keeps no code at all.

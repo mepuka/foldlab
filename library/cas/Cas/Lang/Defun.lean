@@ -487,9 +487,9 @@ sequence reader recovers a list whose ELEMENTS satisfy the reader's
 premise. The codec's `readN_encode` quantifies its hypothesis over all
 values; the encoding here round-trips only on well-formed operands, so
 the induction is repackaged with the premise carried by membership.
-Its consumer is the rolled-back round trips parked at
-`.staging/parser-experiments/defun-held-proofs.lean.txt`; it stays so
-their return does not re-prove it. -/
+Its consumer is `decodeLine_encodeLine`, which was rolled back on
+2026-08-28 and restored here on 2026-08-29; this lemma is what the
+restored proof reuses instead of re-proving. -/
 theorem readN_encode_of {α : Type} {p : Bytes → Option (α × Bytes)}
     {e : α → Bytes} {P : α → Prop}
     (hp : ∀ a, P a → ∀ rest, p (e a ++ rest) = some (a, rest)) :

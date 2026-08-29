@@ -50,6 +50,27 @@ abstraction, lowest first, and imported above in that order.
   (`JsonInj`), the strict parser that proves it — accepting exactly
   the rendering's image, with adequacy and exactness (`JsonParse`) —
   and the typed-reference marker grammar with `Root α` (`Refs`).
+- **`Schema/` — the schema plane, root of the type hierarchy.** The
+  canonical schema as a universe: codes (`Ast` — the Lean twin of the
+  TypeScript v0 constructor set, with `WF` the store's admission
+  discipline over them), denotation (`El`), and the generic codec
+  whose laws are proved once over all codes. `Described` and
+  `Foreign.RepresentedIn` attach Lean and target-language carriers to
+  a code by an explicit equivalence; `Declarations` is the extension
+  allowlist as first-order data, and `Ingest.ingest` is THE door —
+  normalize, decode the revision-1 envelope, gate on `Ast.wf` — with
+  named refusals, soundness (`ingest_wf`), and exactness on the
+  canonical image (`ingest_envelope`). `SelfCodec` carries the plane's
+  own self-description: revision-1 canonicality holds
+  unconditionally, with the round trip and injectivity
+  (`ofRepresentationJson_toRepresentationJson`,
+  `toRepresentationJson_inj`) stated modulo the one literal-null
+  collapse `Ast.repNorm` names (register R13), and
+  `PayloadInj.payload_inj` carries injectivity down to the schema
+  node's own bytes. The payload is byte-pinned against the TypeScript
+  `CanonicalSchema` by `lake exe schemas --check`. Nothing stands
+  above these codes: Effect Schema carries them, never authorizes
+  them.
 - **`IR/` — the store word.** Named `Binding`s in children-first
   admission order, non-empty and proof-bearing admitted wrappers,
   `wf`, and the bridge `toStore` with `wf_toStore_closed` (ledger L1).
@@ -80,9 +101,20 @@ abstraction, lowest first, and imported above in that order.
   the TypeScript twin through one canonical matrix.
 
 Consumers live in the separate `CasExamples` library (`examples/`):
-the language used, never part of the language. F1 (`putTree_correct`)
-and F2 (word deduplication: `toStore_append_shadowed`,
-`Honest.no_alias`) are proved; the remaining named follow-up is
-F3 defunctionalized continuations (steps as store-admissible
-content).
+the language used, never part of the language. F1 (`putTree_correct`),
+F2 (word deduplication: `toStore_append_shadowed`, `Honest.no_alias`),
+and F3 (defunctionalized continuations, `Lang/Defun.lean`) are all
+proved. F3's state: a straight-line program is a finite table of
+first-order code points, `runP_embed_agree` ties the direct
+interpreter to what the table denotes, `encodeProg`/`decodeProg` lay
+that table down as store content and read it back
+(`decodeProg_encodeProg`, with `decodeLine_encodeLine` and the
+exactness lemmas beneath it), and
+`runP_decodeProg_encodeProg`/`ObsEq_decodeProg_encodeProg` say a table
+recovered from its own content runs identically and denotes an
+observationally equal program — the program IS content, as a theorem.
+What is still owed there is registry, not proof: wire tags 14 and 15
+(`step`, `cont`) remain RESERVED rows spelled outside `Ty`, pinned to
+`REGISTRY.md` by `#guard`, and ratifying either into `Ty` is its own
+slice.
 -/
