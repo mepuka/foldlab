@@ -83,6 +83,15 @@ name = "emitprograms"
 srcDir = "tools"
 root = "EmitPrograms"
 
+# The layer emitter: `lake exe emitlayers` regenerates the effects
+# package's generated Effect layers, lowered from the authored service
+# topology the tool carries, at the target the tool bakes in (a
+# positional path overrides it); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitlayers"
+srcDir = "tools"
+root = "EmitLayers"
+
 # The MCP manifest emitter: lake exe mcpspec regenerates the versioned
 # CAS tool manifest (the R11 interchange document); --check is the
 # byte-identity gate.
