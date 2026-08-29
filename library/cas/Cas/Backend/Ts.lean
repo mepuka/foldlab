@@ -1,5 +1,3 @@
-import Cas.Schema.Foreign
-
 /-!
 # The TypeScript fragment, L2 — and the printer, L3
 
