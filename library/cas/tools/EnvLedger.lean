@@ -34,6 +34,23 @@ number, and offending text — on anything else. A grammar that defaults
 past an unmatched line would silently drop the very drift the ledger
 exists to catch, so unmatched is an error, never a shrug.
 
+## The build relation (BS1)
+
+Each task also carries the `sources`/`outputs` it declares to mise —
+the relation that decides whether the runner may SKIP it. Two arrays
+report the holes: `undeclared` names tasks in the `gen` chain with no
+`sources` (they always run), and `unjoined` names executables whose
+driving task declares no `outputs` (their artifacts are outside the
+relation). Neither is an error — an undeclared task is the correct
+answer when its real inputs cannot be named — but both are committed,
+so growing one is a diff somebody reviews.
+
+One thing here IS an error. `mise run --force` does not propagate into
+nested `mise run` lines, so `gen:ci` mirrors `gen` line for line with
+`--force` on each. Those two lists are hand-maintained, and drift
+between them is invisible in the worst way: CI goes green having
+skipped an emitter. So the ledger refuses to emit unless they agree.
+
 ## Enumeration by declaration, not by walk
 
 The `lean-toolchain` file list and the `portable | host-local` residence
@@ -91,6 +108,10 @@ def residence : List (String × String × String) := [
   ("brief:effects:archive", "portable", "all inputs tracked"),
   ("check", "portable", "all inputs tracked"),
   ("check:cas", "portable", "all inputs tracked"),
+  ("check:cas:laws", "portable", "all inputs tracked"),
+  ("check:cas:obligations", "portable", "all inputs tracked"),
+  ("check:cas:surface", "portable", "all inputs tracked"),
+  ("check:ci", "portable", "forces the same tasks `check` runs"),
   ("check:effects:archive", "portable", "all inputs tracked"),
   ("check:effects:research", "portable", "all inputs tracked"),
   ("check:effects:ts", "portable", "committed bun lockfile pins every dependency"),
@@ -108,6 +129,7 @@ def residence : List (String × String × String) := [
   ("check:machine", "portable", "all inputs tracked"),
   ("check:workbench", "host-local", "experiments/workbench is not yet committed"),
   ("gen", "portable", "all inputs tracked"),
+  ("gen:ci", "portable", "the forced mirror of `gen`; same inputs"),
   ("gen:inventory", "portable", "reads the vendored pinned Effect sources"),
   ("gen:backend-gate", "portable", "all inputs tracked"),
   ("gen:backend-layers", "portable", "all inputs tracked"),
@@ -179,6 +201,12 @@ structure MiseTask where
   name : String
   dir : Option String
   commands : List String
+  /-- The declared build relation (BS1): the input globs and the output
+  paths, both resolved by mise relative to the task's `dir`. An empty
+  list is UNDECLARED — the task always runs — and is transcribed as
+  such rather than as an empty relation. -/
+  sources : List String := []
+  outputs : List String := []
 deriving Inhabited
 
 structure Mise where
@@ -188,13 +216,23 @@ structure Mise where
 inductive Sect where
   | none
   | tools
+  | settings
   | task
+deriving DecidableEq
+
+/-- Which array the grammar is currently inside. `run` carries commands,
+`sources` and `outputs` carry the build relation; the three share one
+bracket shape and differ only in where the entries land. -/
+inductive Arr where
+  | run
+  | sources
+  | outputs
 deriving DecidableEq
 
 structure MiseSt where
   sect : Sect := .none
   cur : Option MiseTask := none
-  inRun : Bool := false
+  inRun : Option Arr := none
   /-- Inside a `description = \"\"\"` multi-line string (the standing-
   exception prose shape); consumed without transcription, closed by a
   line whose trimmed content ends with the `\"\"\"` delimiter. -/
@@ -210,7 +248,32 @@ def flushMise (st : MiseSt) : MiseSt :=
   | some t =>
     { st with
       cur := none,
-      tasks := { t with commands := t.commands.reverse } :: st.tasks }
+      tasks := { t with
+                 commands := t.commands.reverse,
+                 sources := t.sources.reverse,
+                 outputs := t.outputs.reverse } :: st.tasks }
+
+/-- Absorb one line's worth of array entries into the task being built.
+Shared by both array shapes: an entry per line inside a `run = [` block,
+and several comma-separated entries on one `sources = [...]` line. Every
+entry must be quoted — an unquoted one refuses, so a glob that lost its
+quotes cannot silently become no glob at all. -/
+def absorbEntries (ln : Nat) (which : Arr) (line : String) (st : MiseSt) :
+    Except String MiseSt := do
+  let entries := (line.splitOn ",").map trimmed |>.filter (fun e => !e.isEmpty)
+  match st.cur with
+  | none => throw s!"mise.toml:{ln}: array entry outside a task — «{line}»"
+  | some t =>
+    let mut cur := t
+    for entry in entries do
+      unless isQuoted entry do
+        throw s!"mise.toml:{ln}: unrecognized array entry — «{entry}»"
+      let v := unquote entry
+      cur := match which with
+        | .run => { cur with commands := v :: cur.commands }
+        | .sources => { cur with sources := v :: cur.sources }
+        | .outputs => { cur with outputs := v :: cur.outputs }
+    return { st with cur := some cur }
 
 /-- One line of `mise.toml`. Every admitted shape is spelled out; the
 final `throw` is the whole point of the grammar. -/
@@ -220,16 +283,15 @@ def miseStep (ln : Nat) (raw : String) (st : MiseSt) : Except String MiseSt := d
     if line.endsWith "\"\"\"" then return { st with inDesc := false }
     return st
   if line.isEmpty || line.startsWith "#" then return st
-  if st.inRun then
-    if line == "]" then return { st with inRun := false }
-    let entry := if line.endsWith "," then chop line 1 else line
-    if isQuoted entry then
-      match st.cur with
-      | some t =>
-        return { st with cur := some { t with commands := unquote entry :: t.commands } }
-      | none => throw s!"mise.toml:{ln}: run entry outside a task — «{line}»"
-    else throw s!"mise.toml:{ln}: unrecognized run entry — «{line}»"
+  if let some which := st.inRun then
+    if line == "]" then return { st with inRun := none }
+    return ← absorbEntries ln which line st
   if line == "[tools]" then return { flushMise st with sect := .tools }
+  -- `[settings]` carries estate-wide build policy (the content-hash
+  -- freshness relation). Its keys are policy, not task structure, so
+  -- they are admitted and not transcribed — but the section must be
+  -- KNOWN, or the ledger refuses the file it is meant to describe.
+  if line == "[settings]" then return { flushMise st with sect := .settings }
   if line.startsWith "[tasks." && line.endsWith "]" then
     let inner := chop (line.drop 7).toString 1
     let name := if isQuoted inner then unquote inner else inner
@@ -242,9 +304,28 @@ def miseStep (ln : Nat) (raw : String) (st : MiseSt) : Except String MiseSt := d
   match splitKV line with
   | none => throw s!"mise.toml:{ln}: unrecognized line — «{line}»"
   | some (key, val) =>
+    if st.sect == .settings then return st
+    -- An array opened on its own line (`run = [`) or closed on the same
+    -- one (`sources = ["a", "b"]`). Both shapes appear in `mise.toml`.
+    if val.startsWith "[" && st.sect == .task then
+      let which : Option Arr :=
+        if key == "run" then some .run
+        else if key == "sources" then some .sources
+        else if key == "outputs" then some .outputs
+        else none
+      match which with
+      | none => throw s!"mise.toml:{ln}: array value for unknown task key «{key}»"
+      | some w =>
+        let body := trimmed (val.drop 1).toString
+        if val.endsWith "]" then
+          -- Inline `sources = ["a", "b"]`: absorb the body and close.
+          let inner := trimmed (chop body 1)
+          if inner.isEmpty then return st
+          return { ← absorbEntries ln w inner st with inRun := none }
+        else if body.isEmpty then return { st with inRun := some w }
+        else throw s!"mise.toml:{ln}: unexpected text after `[` for «{key}»"
     if val == "[" then
-      if key == "run" && st.sect == .task then return { st with inRun := true }
-      else throw s!"mise.toml:{ln}: array value for key «{key}» outside a task `run`"
+      throw s!"mise.toml:{ln}: array value for key «{key}» outside a task"
     if val == "\"\"\"" then
       if key == "description" && st.sect == .task then return { st with inDesc := true }
       else throw s!"mise.toml:{ln}: multi-line string for key «{key}» outside a task `description`"
@@ -258,6 +339,9 @@ def miseStep (ln : Nat) (raw : String) (st : MiseSt) : Except String MiseSt := d
         else if key == "run" then return { st with cur := some { t with commands := [v] } }
         else throw s!"mise.toml:{ln}: unknown task key «{key}»"
       | .task, none => throw s!"mise.toml:{ln}: task key outside a task — «{line}»"
+      -- Build policy, admitted and not transcribed; the guard above
+      -- already returned, so this arm is only for exhaustiveness.
+      | .settings, _ => return st
       | .none, _ => throw s!"mise.toml:{ln}: key outside a section — «{line}»"
     throw s!"mise.toml:{ln}: unrecognized value for «{key}» — «{val}»"
 
@@ -267,7 +351,7 @@ def parseMise (text : String) : Except String Mise := do
   for raw in text.splitOn "\n" do
     ln := ln + 1
     st ← miseStep ln raw st
-  if st.inRun then throw "mise.toml: unterminated `run` array"
+  if st.inRun.isSome then throw "mise.toml: unterminated array"
   let done := flushMise st
   return { tools := done.tools.reverse, tasks := done.tasks.reverse }
 
@@ -368,19 +452,50 @@ private def expand (tasks : List MiseTask) (acc : List String) : List String :=
     | some t => t.commands.filterMap runTarget
   (acc ++ next).eraseDups
 
-/-- Every task the `check` chain reaches, transitively. Bounded by the
-task count, so it terminates without a `partial` waiver. -/
+/-- Every task the gate chains reach, transitively. Both roots count:
+`check` is the local chain and `check:ci` the authoritative one, and a
+task reached by only the second is IN the chain — being outside `check`
+is not the same as being outside the gate. Bounded by the task count,
+so it terminates without a `partial` waiver. -/
 def reachable (tasks : List MiseTask) : List String :=
-  (List.range (tasks.length + 1)).foldl (fun acc _ => expand tasks acc) ["check"]
+  (List.range (tasks.length + 1)).foldl (fun acc _ => expand tasks acc)
+    ["check", "check:ci"]
 
 /-- A task that runs this package's executable `name` bare. -/
 def drives (name : String) (t : MiseTask) : Bool :=
   t.dir == some casDir && t.commands.any (fun c => words c == ["lake", "exe", name])
 
-/-- A task that runs this package's executable `name` as a byte gate. -/
+/-- The gate as spelled inside a BATCHED `lake env sh -c` line.
+
+`check:cas` pays `lake exe`'s ~400 ms wrapper once instead of once per
+gate by invoking the built binaries directly under a single `lake env`.
+The gate is still declared, just not one per `run` line, so the join
+has to read the batch — otherwise collapsing the loop would silently
+empty the `gatedBy` column and land every emitter in `ungated`.
+
+Only the explicit `.lake/build/bin/<name> --check` spelling is
+recognized. A shell loop over the names would be shorter and is
+deliberately NOT admitted: a gate the ledger cannot see by name is a
+gate nobody can audit, so the batch must keep saying what it runs. -/
+def batchedGate (name : String) (c : String) : Bool :=
+  -- The batch is one shell string, so its punctuation rides on the
+  -- words: `;` separates the commands and the closing `'` sticks to the
+  -- very last one. Both are stripped before the words are compared, or
+  -- the final gate in every batch would go unseen.
+  let strip (w : String) : String :=
+    let w := if w.endsWith "'" then chop w 1 else w
+    if w.endsWith ";" then chop w 1 else w
+  let ws := (words c).map strip
+  let bin := ".lake/build/bin/" ++ name
+  (ws.zip ws.tail).any (fun (a, b) => a == bin && b == "--check")
+
+/-- A task that runs this package's executable `name` as a byte gate,
+in either spelling: one `lake exe X --check` run line, or the batched
+`lake env sh -c` form. -/
 def gates (name : String) (t : MiseTask) : Bool :=
   t.dir == some casDir &&
-    t.commands.any (fun c => words c == ["lake", "exe", name, "--check"])
+    t.commands.any (fun c =>
+      words c == ["lake", "exe", name, "--check"] || batchedGate name c)
 
 /-! ## The document -/
 
@@ -402,7 +517,13 @@ add it to `residence` in tools/EnvLedger.lean as portable or host-local, with a 
       ("commands", .arr (t.commands.map Value.str)),
       ("inChain", .bool (chain.contains t.name)),
       ("residence", .str place),
-      ("residenceReason", .str why)])
+      ("residenceReason", .str why),
+      -- The build relation, transcribed verbatim. Both resolve relative
+      -- to `dir`, not to the config root, so they are read against the
+      -- task's own directory. Empty means UNDECLARED — the task always
+      -- runs — which is a fact about the loop, not a missing field.
+      ("sources", .arr (t.sources.map Value.str)),
+      ("outputs", .arr (t.outputs.map Value.str))])
 
 def exeJson (tasks : List MiseTask) (e : LeanExe) : Value :=
   let driver := tasks.find? (drives e.name)
@@ -413,13 +534,67 @@ def exeJson (tasks : List MiseTask) (e : LeanExe) : Value :=
     ("root", optStr e.root),
     ("supportInterpreter", .bool e.supportInterpreter),
     ("drivenBy", optStr (driver.map (·.name))),
+    -- The emitter's declared outputs are its DRIVING task's `outputs` —
+    -- the fixture paths the tool would write, as the runner sees them.
+    -- Empty here is the interesting case: it means the runner cannot
+    -- tell whether this emitter's artifacts are current, and the
+    -- `unjoined` array below names it.
+    ("declaredOutputs", .arr ((driver.map (·.outputs)).getD [] |>.map Value.str)),
     ("gatedBy", match gate with
       | none => .null
-      | some t => .obj [("task", .str t.name),
-                        ("command", .str s!"lake exe {e.name} --check")])]
+      | some t => .obj [
+          ("task", .str t.name),
+          -- The command as ACTUALLY written, so the batched spelling is
+          -- visible rather than papered over with the one-per-line form.
+          ("command", .str
+            ((t.commands.find? (fun c =>
+               words c == ["lake", "exe", e.name, "--check"] || batchedGate e.name c)).getD
+              s!"lake exe {e.name} --check"))])]
+
+/-- The tasks `gen` runs, in its own order — the chain `check`
+regenerates from. -/
+def genChain (tasks : List MiseTask) : List String :=
+  match tasks.find? (·.name == "gen") with
+  | none => []
+  | some t => t.commands.filterMap runTarget
+
+/-- The tasks `gen:ci` forces, as bare names. -/
+def genCiForced (tasks : List MiseTask) : List String :=
+  match tasks.find? (·.name == "gen:ci") with
+  | none => []
+  | some t => t.commands.filterMap fun c =>
+      match words c with
+      | ["mise", "run", "--force", n] => some n
+      | _ => none
+
+/-- `gen:ci` exists because `mise run --force` does NOT propagate into
+the nested `mise run` lines of a `run` list — verified — so forcing a
+chain means spelling `--force` on every line of it. That makes the two
+lists a hand-maintained pair, and a hand-maintained pair drifts.
+
+An emitter added to `gen` and forgotten in `gen:ci` would be unforced in
+CI: the exact hole `gen:ci` exists to close, reintroduced one level up,
+and invisible because the result is a GREEN gate that checked nothing.
+So the ledger refuses rather than reporting. -/
+def checkCiForcing (tasks : List MiseTask) : Except String Unit :=
+  let forced := genCiForced tasks
+  match (genChain tasks).find? (fun n => !forced.contains n) with
+  | some missing =>
+    .error s!"`gen` runs «{missing}» but `gen:ci` does not force it; \
+add `mise run --force {missing}` to gen:ci in mise.toml — an unforced \
+task in CI can be skipped, and a skipped emitter makes `git diff \
+--exit-code` vacuously green"
+  | none =>
+    match forced.find? (fun n => !(genChain tasks).contains n) with
+    | some extra =>
+      .error s!"`gen:ci` forces «{extra}», which `gen` does not run; \
+the two chains must be the same set, or CI and local regenerate \
+different trees"
+    | none => .ok ()
 
 def document (m : Mise) (pins : List (String × String)) (exes : List LeanExe) :
     Except String String := do
+  checkCiForcing m.tasks
   let chain := reachable m.tasks
   let tasks := m.tasks.mergeSort (fun a b => a.name < b.name)
   let taskRows ← tasks.mapM (taskJson chain)
@@ -432,6 +607,24 @@ def document (m : Mise) (pins : List (String × String)) (exes : List LeanExe) :
     if m.tasks.any (drives e.name) then none else some e.name)
   let ungated := (sortedExes.filterMap fun e =>
     if m.tasks.any (gates e.name) then none else some e.name)
+  -- The build relation's two holes, as data. Neither is an error: an
+  -- undeclared task is CORRECT when its real inputs cannot be named
+  -- (`gen:oxc-surface` reads a gitignored cache found by an ancestor
+  -- walk), and the honest answer there is to always run. What the
+  -- arrays buy is that the hole is committed, so growing one is a diff
+  -- somebody has to look at rather than a quiet slowdown or a quiet
+  -- skip.
+  let undeclared := (genChain m.tasks).filterMap (fun n =>
+    match m.tasks.find? (·.name == n) with
+    | some t => if t.sources.isEmpty then some n else none
+    | none => none)
+  -- An emitter whose driving task declares no `outputs`: the runner
+  -- cannot tell whether this tool's artifacts are current, so the tool
+  -- is re-run every time and its fixtures are outside the relation.
+  let unjoined := (sortedExes.filterMap fun e =>
+    match m.tasks.find? (drives e.name) with
+    | some t => if t.outputs.isEmpty then some e.name else none
+    | none => none)
   return Cas.Json.render (.obj [
     ("ledger", .str "environment"),
     ("tools", .obj (m.tools.mergeSort (fun a b => a.1 < b.1) |>.map
@@ -443,7 +636,9 @@ def document (m : Mise) (pins : List (String × String)) (exes : List LeanExe) :
     ("excludedGates", .arr (excluded.map Value.str)),
     ("leanExes", .arr (sortedExes.map (exeJson m.tasks))),
     ("undriven", .arr (undriven.map Value.str)),
-    ("ungated", .arr (ungated.map Value.str))]) ++ "\n"
+    ("ungated", .arr (ungated.map Value.str)),
+    ("undeclared", .arr (undeclared.map Value.str)),
+    ("unjoined", .arr (unjoined.map Value.str))]) ++ "\n"
 
 /-! ## Reading -/
 
@@ -490,7 +685,19 @@ bun = \"1.4.0\"
 [tasks.\"gen:demo\"]
 description = \"demo\"
 dir = \"{{config_root}}/library/cas\"
+sources = [\"Cas/**/*.lean\"]
+outputs = [\"demo/out.json\"]
 run = \"lake exe demo\"
+
+[tasks.gen]
+run = [
+  \"mise run gen:demo\",
+]
+
+[tasks.\"gen:ci\"]
+run = [
+  \"mise run --force gen:demo\",
+]
 
 [tasks.check]
 run = [
@@ -544,7 +751,43 @@ def selfTest : IO Unit := do
     | .error msg => plantedControl label4 true msg
     | .ok _ =>
       plantedControl label4 false "emitted a document for a task with no residence row"
-  let fired := [c1, c2, c3, c4]
+  -- Rule 5: an emitter whose driving task declares no `outputs` lands
+  -- in `unjoined`, and one that declares them does not. This is the
+  -- control for BS1's whole point: a future emitter that forgets its
+  -- declaration must show up as a hole in the committed ledger rather
+  -- than as a silent re-run.
+  let label5 := "an emitter with no declared outputs lands in unjoined"
+  let c5 ← do
+    let m ← liftE (parseMise miseFixture)
+    let undeclaredMise := miseFixture.replace "outputs = [\"demo/out.json\"]\n" ""
+    let m' ← liftE (parseMise undeclaredMise)
+    let joined := ((m.tasks.find? (drives "demo")).map (·.outputs)).getD []
+    let hole := ((m'.tasks.find? (drives "demo")).map (·.outputs)).getD []
+    plantedControl label5 (joined == ["demo/out.json"] && hole.isEmpty)
+      s!"declared={joined}, with the declaration removed={hole}"
+  -- Rule 6: the batched `lake env sh -c` gate is still SEEN as a gate.
+  -- Collapsing the loop must not empty the `gatedBy` column; and a
+  -- shell loop, which hides the names, must NOT be accepted as one.
+  let label6 := "a batched gate joins, a looped one does not"
+  let c6 ← do
+    let batched := "lake env sh -c 'set -e; .lake/build/bin/demo --check; \
+.lake/build/bin/other --check'"
+    let looped := "lake env sh -c 'for g in demo other; do .lake/build/bin/$g --check; done'"
+    plantedControl label6
+      (batchedGate "demo" batched && batchedGate "other" batched &&
+        !batchedGate "demo" looped)
+      s!"batched demo={batchedGate "demo" batched}, \
+batched other={batchedGate "other" batched}, looped demo={batchedGate "demo" looped}"
+  -- Rule 7: a `gen` entry that `gen:ci` does not force refuses the
+  -- document. An unforced task in CI is a gate that can be skipped.
+  let label7 := "a gen task missing from gen:ci refuses the document"
+  let c7 ← do
+    let drifted := miseFixture.replace "  \"mise run --force gen:demo\",\n" ""
+    let m ← liftE (parseMise drifted)
+    match checkCiForcing m.tasks with
+    | .error msg => plantedControl label7 true msg
+    | .ok _ => plantedControl label7 false "admitted a gen chain gen:ci does not force"
+  let fired := [c1, c2, c3, c4, c5, c6, c7]
   let missed := fired.filter (· == false) |>.length
   IO.println s!"{fired.length - missed} of {fired.length} controls fired"
   unless missed == 0 do

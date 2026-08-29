@@ -27,8 +27,17 @@ Four words, the same in prose and in `--json`:
 `--check` visits EVERY fixture and reports each one before failing
 once at the end: a red gate with three stale fixtures is one run, not
 three. `--json` prints one object per fixture on its own line
-(`{tool, fixture, verdict, bytes, hint}`) instead of the prose line;
-the failure is still an error, so stdout stays parseable.
+(`{tool, fixture, verdict, bytes, ms, renderMs, hint}`) instead of the
+prose line; the failure is still an error, so stdout stays parseable.
+
+## Self-timing
+
+`ms` and `renderMs` make the gate loop's cost auditable from the gate
+itself rather than from a stopwatch outside it. They are wall times on
+the host that ran them, so they are TELEMETRY, never fixture bytes: no
+gate compares them, and nothing built from them may be committed. The
+prose line stays untimed — a human reading a red gate wants the
+diagnosis, not the milliseconds.
 -/
 
 namespace Gate
@@ -61,11 +70,24 @@ def Verdict.stale : Verdict → Bool
   | _ => false
 
 /-- One fixture's outcome. `hint` is the label for `wrote`/`ok` and the
-diagnosis (with the fix) for `missing`/`differs`. -/
+diagnosis (with the fix) for `missing`/`differs`.
+
+`ms` and `renderMs` are the self-timing, filled in by `run` and zero
+until it does: `ms` is THIS fixture's own emit-or-check wall time, and
+`renderMs` is the run's SHARED cost of producing the fixture list —
+the model execution (`importModules` for the environment walks, the
+computed verdicts, the payload-bound witness) that happens once before
+any fixture is written. The split matters because for the two
+`supportInterpreter` tools `renderMs` is nearly the whole run and `ms`
+is a rounding error, and a single number would hide which. `renderMs`
+repeats on every row of one run; it is a property of the run, printed
+per row so a row stands alone. -/
 structure Report where
   fixture : Fixture
   verdict : Verdict
   hint : String
+  ms : Nat := 0
+  renderMs : Nat := 0
 
 /-! ## Where the bytes part company -/
 
@@ -170,6 +192,8 @@ def jsonLine (tool : String) (r : Report) : String :=
   "\",\"fixture\":\"" ++ escape r.fixture.path.toString ++
   "\",\"verdict\":\"" ++ r.verdict.word ++
   "\",\"bytes\":" ++ toString r.fixture.content.toUTF8.size ++
+  ",\"ms\":" ++ toString r.ms ++
+  ",\"renderMs\":" ++ toString r.renderMs ++
   ",\"hint\":\"" ++ escape r.hint ++ "\"}"
 
 /-! ## The argument grammar -/
@@ -222,8 +246,13 @@ def toolOf (regen : String) : String :=
 
 def run (regen : String) (fixtures : IO (List Fixture)) (o : Options) :
     IO Unit := do
+  let renderStart ← IO.monoMsNow
   let fs ← fixtures
-  let reports ← fs.mapM fun f => if o.check then checkOne regen f else emitOne f
+  let renderMs := (← IO.monoMsNow) - renderStart
+  let reports ← fs.mapM fun f => do
+    let start ← IO.monoMsNow
+    let r ← if o.check then checkOne regen f else emitOne f
+    return { r with ms := (← IO.monoMsNow) - start, renderMs }
   for r in reports do
     IO.println (if o.json then jsonLine (toolOf regen) r else proseLine r)
   let stale := reports.filter (·.verdict.stale)
