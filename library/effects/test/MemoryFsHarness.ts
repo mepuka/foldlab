@@ -161,13 +161,21 @@ export const makeMemoryFs: Effect.Effect<MemoryFs> = Effect.gen(function* () {
             : Effect.succeed(resident.slice())
         }),
       ),
+    // A recursive remove takes a whole subtree, files and directories
+    // alike — the platform behavior the temp-file scaffold cleanup
+    // depends on. Without it a leaked scaffold would look cleaned here
+    // and survive on a real host.
     remove: (path, options) =>
-      Ref.get(files).pipe(
-        Effect.flatMap((held) => held.has(path)
-          ? Ref.update(files, removed(path))
-          : options?.force === true
+      Effect.all([Ref.get(files), Ref.get(directories)]).pipe(
+        Effect.flatMap(([held, present]) => {
+          if (options?.recursive === true && present.has(path)) {
+            return removeTree(path)
+          }
+          if (held.has(path)) return Ref.update(files, removed(path))
+          return options?.force === true
             ? Effect.void
-            : Effect.fail(notFound("remove", path))),
+            : Effect.fail(notFound("remove", path))
+        }),
       ),
     rename: (oldPath, newPath) =>
       Ref.get(files).pipe(

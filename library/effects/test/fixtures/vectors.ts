@@ -9,7 +9,7 @@
  */
 import { Effect, Schema } from "effect"
 import { Cas } from "../../src/index.ts"
-import { layerNodeFs } from "./diskFs.ts"
+import { layerDiskFs } from "./diskFs.ts"
 import { readFixtureString } from "./read.ts"
 
 const { ConformanceVector } = Cas
@@ -27,4 +27,4 @@ export const loadVectors = Effect.gen(function* () {
     readJson(entry.file).pipe(Effect.flatMap((json) =>
       Schema.decodeUnknownEffect(ConformanceVector.ConformanceVector)(json))))
   return { index, vectors }
-}).pipe(Effect.provide(layerNodeFs))
+}).pipe(Effect.provide(layerDiskFs))

@@ -3,15 +3,17 @@
  * cas — the content-addressed store, spoken from a shell.
  *
  * The entry point wires the command tree to the platform once:
- * `NodeServices.layer` supplies the filesystem, path, stdio, and
+ * `BunServices.layer` supplies the filesystem, path, stdio, and
  * terminal realizations the runner and every verb speak through, and
- * nothing below this file touches the platform directly.
+ * nothing below this file touches the platform directly. Bun is the
+ * host everywhere — the shim runs this file under it, so the platform
+ * layer is the Bun one and no Node realization is loaded.
  *
  * Help carries the vocabulary (the everyday register) beside the
  * commands, seeded from VOCABULARY.md — one coherent surface, per the
  * vocabulary law. `--wizard` on any command walks through its inputs.
  */
-import { NodeRuntime, NodeServices } from "@effect/platform-node"
+import { BunRuntime, BunServices } from "@effect/platform-bun"
 import { Effect } from "effect"
 import { Command } from "effect/unstable/cli"
 import { init, ls, show, status } from "./cli/commands.ts"
@@ -36,8 +38,8 @@ const cas = Command.make("cas").pipe(
   Command.withSubcommands([init, status, ls, show]),
 )
 
-NodeRuntime.runMain(
+BunRuntime.runMain(
   Command.run(cas, { version: "0.1.0" }).pipe(
-    Effect.provide(NodeServices.layer),
+    Effect.provide(BunServices.layer),
   ),
 )

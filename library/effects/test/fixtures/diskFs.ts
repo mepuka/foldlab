@@ -1,20 +1,20 @@
 /**
  * The real-disk test scaffolding shared by every suite that composes
- * the library over an actual directory: the platform-node `FileSystem`
- * realization (`@effect/platform-node`, dev-only — the library itself
+ * the library over an actual directory: the platform-bun `FileSystem`
+ * realization (`@effect/platform-bun`, dev-only — the library itself
  * stays platform-agnostic and speaks nothing but the `FileSystem`
  * service), the on-disk store composition, and a scoped temp store
  * root. No hand-rolled filesystem code anywhere: the platform layer is
  * the one realization, and disk-side assertions go through the same
  * `FileSystem` service the backend uses.
  */
-import { NodeFileSystem } from "@effect/platform-node"
+import { BunFileSystem } from "@effect/platform-bun"
 import { Effect, FileSystem, Layer, PlatformError } from "effect"
 import { Cas } from "../../src/index.ts"
 
-/** The real filesystem: the platform-node realization, once. */
-export const layerNodeFs: Layer.Layer<FileSystem.FileSystem> =
-  NodeFileSystem.layer
+/** The real filesystem: the platform-bun realization, once. */
+export const layerDiskFs: Layer.Layer<FileSystem.FileSystem> =
+  BunFileSystem.layer
 
 /** The on-disk store composition over a store root: the file backend,
  * scheme-0 SHA-256 through WebCrypto. `provideMerge` keeps the
@@ -22,7 +22,7 @@ export const layerNodeFs: Layer.Layer<FileSystem.FileSystem> =
 export const layerDisk = (storeRoot: string) =>
   Cas.layerFile(storeRoot).pipe(
     Layer.provideMerge(Layer.mergeAll(
-      layerNodeFs,
+      layerDiskFs,
       Cas.layerAddressSha256Live,
     )),
   )
@@ -43,4 +43,4 @@ export const withStoreRoot = <A, E>(
       prefix: "foldlab-cas-",
     })
     return yield* use(storeRoot)
-  })).pipe(Effect.provide(layerNodeFs))
+  })).pipe(Effect.provide(layerDiskFs))

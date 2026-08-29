@@ -106,6 +106,13 @@ export const storeRootFromFileUrl = (
     })),
   )
 
+/** The scaffold directory a temp file lives in. `makeTempFile` answers
+ * `<directory>/<prefix><random>/<file>` — a fresh directory with the
+ * file inside — and spells it with the host's separator whatever the
+ * caller passed, so both are cut. */
+const scaffoldOf = (temp: string): string =>
+  temp.slice(0, Math.max(temp.lastIndexOf("/"), temp.lastIndexOf("\\")))
+
 /** Build the three seam shapes over one store root. */
 export const makeFileBackend = (
   fs: FileSystem.FileSystem,
@@ -168,10 +175,6 @@ export const makeFileBackend = (
 
   const writeFresh = (id: ContentId, target: string, bytes: Uint8Array) => {
     const directory = fanoutDir(id)
-    // The temp file must be the SCOPED variant: the platform realizes a
-    // temp file as a scaffold directory with the file inside, and only
-    // the scope's release removes that scaffold — the unscoped form
-    // leaks one empty directory into the fanout per fresh write.
     return fs.makeDirectory(directory, { recursive: true }).pipe(
       Effect.andThen(Effect.acquireUseRelease(
         fs.makeTempFile({ directory, prefix: "put-" }),
@@ -182,7 +185,13 @@ export const makeFileBackend = (
               : Effect.fail(error)),
           )),
         ),
-        (temp) => fs.remove(temp, { force: true }),
+        // The release removes the whole SCAFFOLD, not just the file the
+        // platform handed back: a temp file is realized as a fresh
+        // directory with the file inside, so removing the file alone
+        // leaves one empty directory in the fanout per fresh write. A
+        // release that cannot clean up still fails the put rather than
+        // reporting a success it did not finish.
+        (temp) => fs.remove(scaffoldOf(temp), { recursive: true, force: true }),
       )),
     )
   }

@@ -11,7 +11,7 @@ import { expect, it } from "@effect/vitest"
 import { createHash } from "node:crypto"
 import { Effect } from "effect"
 import { GitKindTag } from "../src/internal/kindTags.ts"
-import { layerNodeFs } from "./fixtures/diskFs.ts"
+import { layerDiskFs } from "./fixtures/diskFs.ts"
 import { readFixtureString } from "./fixtures/read.ts"
 
 const PIN = "3a57f55e1401484251cfe80e26583d9ed94c82c8"
@@ -29,4 +29,4 @@ it.effect("the git node's payload sha1s to the pinned commit id", () =>
     const content = payload.subarray(payload.indexOf(0) + 1)
     expect(header.toString("utf8")).toBe(`commit ${content.length}`)
     expect(createHash("sha1").update(payload).digest("hex")).toBe(PIN)
-  }).pipe(Effect.provide(layerNodeFs)))
+  }).pipe(Effect.provide(layerDiskFs)))

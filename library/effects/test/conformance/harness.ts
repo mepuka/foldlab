@@ -7,7 +7,7 @@
  */
 import { expect } from "@effect/vitest"
 import { Effect, Equal, Schema } from "effect"
-import { layerNodeFs } from "../fixtures/diskFs.ts"
+import { layerDiskFs } from "../fixtures/diskFs.ts"
 import { readFixtureString } from "../fixtures/read.ts"
 import { ManifestModel } from "./suiteIndex.ts"
 
@@ -90,7 +90,7 @@ export const loadFamily = <
   ).pipe(
     Effect.map((text) => JSON.parse(text) as unknown),
     Effect.mapError((cause) => new ManifestReadError({ cause })),
-    Effect.provide(layerNodeFs),
+    Effect.provide(layerDiskFs),
   )
   const decoded = yield* Schema.decodeUnknownEffect(manifestSchema(binding))(json, {
     onExcessProperty: "error",

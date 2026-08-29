@@ -6,7 +6,7 @@
  */
 import { expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer, Option, Path, PlatformError } from "effect"
-import { NodePath } from "@effect/platform-node"
+import { BunPath } from "@effect/platform-bun"
 import {
   ByteReader,
   makeMemoryBackend,
@@ -135,10 +135,10 @@ it.effect("Effect Path normalizes native roots and resolves file URLs per host",
   Effect.gen(function* () {
     const windows = yield* storeRootFromFileUrl(
       new URL("file:///C:/estate/cas"),
-    ).pipe(Effect.provide(NodePath.layerWin32))
+    ).pipe(Effect.provide(BunPath.layerWin32))
     const posix = yield* storeRootFromFileUrl(
       new URL("file:///var/lib/cas"),
-    ).pipe(Effect.provide(NodePath.layerPosix))
+    ).pipe(Effect.provide(BunPath.layerPosix))
 
     expect(windows).toBe("C:\\estate\\cas")
     expect(posix).toBe("/var/lib/cas")
@@ -146,7 +146,7 @@ it.effect("Effect Path normalizes native roots and resolves file URLs per host",
     const normalizedWindows = yield* Effect.gen(function* () {
       const path = yield* Path.Path
       return normalizeStoreRootWith(path, "C:\\estate\\tmp\\..\\cas\\")
-    }).pipe(Effect.provide(NodePath.layerWin32))
+    }).pipe(Effect.provide(BunPath.layerWin32))
     expect(normalizedWindows).toBe("C:\\estate\\cas")
   }))
 
@@ -156,7 +156,7 @@ it.effect("file-URL backend publication stays in the normalized POSIX root", () 
     const backend = yield* makeFileBackendFromFileUrl(
       memory.fs,
       new URL("file:///portable/nested/../store"),
-    ).pipe(Effect.provide(NodePath.layerPosix))
+    ).pipe(Effect.provide(BunPath.layerPosix))
     const id = fixedId("56")
     yield* backend.writer.putBytes(id, Uint8Array.of(1, 2, 3))
     yield* backend.roots.publish(id)

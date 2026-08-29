@@ -10,7 +10,7 @@
  * drifts from the shipped SHA-256 path fails the gate.
  */
 import { Crypto, Effect, Encoding, Schema } from "effect"
-import { layerNodeFs } from "./diskFs.ts"
+import { layerDiskFs } from "./diskFs.ts"
 import { readFixtureString } from "./read.ts"
 import { Byte, CasNodeInput, ContentId, type StoreFailure } from "../../src/cas/Node.ts"
 import { encodeCasNode, makeSha256Address } from "../../src/cas/Store.ts"
@@ -102,7 +102,7 @@ const nodePreImages: Effect.Effect<ReadonlyArray<readonly [string, Uint8Array]>>
   Effect.gen(function* () {
     const text = yield* readFixtureString(codecManifestPath).pipe(
       Effect.orDie,
-      Effect.provide(layerNodeFs),
+      Effect.provide(layerDiskFs),
     )
     const manifest = yield* Schema.decodeUnknownEffect(CodecManifest)(
       JSON.parse(text) as unknown,

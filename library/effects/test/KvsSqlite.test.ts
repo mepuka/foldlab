@@ -12,7 +12,7 @@
  * `KeyValueStore` and never names a database, exactly as it speaks
  * `FileSystem` and never names a disk.
  */
-import { SqliteClient } from "@effect/sql-sqlite-node"
+import { SqliteClient } from "@effect/sql-sqlite-bun"
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"

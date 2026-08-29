@@ -13,7 +13,6 @@ const srcDir = fileURLToPath(new URL("../src", import.meta.url))
 const mod = await import(new URL("../dist/index.js", import.meta.url).href) as {
   readonly Cas?: Record<string, unknown>
   readonly Server?: Record<string, unknown>
-  readonly Server?: Record<string, unknown>
 }
 const rootExports = Object.keys(mod).sort()
 if (rootExports.length !== 2

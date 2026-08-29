@@ -1,6 +1,13 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Option } from "effect"
 import { ContentId } from "../../src/cas/Node.ts"
+import {
+  decodeKeyListDocument,
+  decodePresenceDocument,
+  encodeKeyListDocument,
+  encodePresenceDocument,
+  keyListDocumentEncodedLength,
+} from "../../src/internal/wire.ts"
 
 const key = (byte: number): ContentId => ContentId.make(byte.toString(16).padStart(2, "0").repeat(32))
 

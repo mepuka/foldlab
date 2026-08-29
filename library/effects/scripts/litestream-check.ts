@@ -35,7 +35,7 @@
  * fails. Strip the drive letter — `$U = ($W -replace '\\','/') -replace
  * '^C:',''` — and `file://$U/replica` resolves correctly.
  */
-import { SqliteClient } from "@effect/sql-sqlite-node"
+import { SqliteClient } from "@effect/sql-sqlite-bun"
 import { Effect, Layer, Schema } from "effect"
 import * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"
 import { readFileSync, writeFileSync } from "node:fs"

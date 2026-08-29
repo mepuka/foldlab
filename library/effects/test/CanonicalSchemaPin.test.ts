@@ -19,7 +19,7 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer, Option, Schema } from "effect"
 import { Cas } from "../src/index.ts"
-import { layerNodeFs } from "./fixtures/diskFs.ts"
+import { layerDiskFs } from "./fixtures/diskFs.ts"
 import { readFixtureBytes, readFixtureString } from "./fixtures/read.ts"
 
 const { CanonicalSchema, ConformanceVector, layerMemoryLive } = Cas
@@ -62,7 +62,7 @@ it.effect("every registered code's payload bytes agree across runtimes", () =>
       expect(`${name} ${Buffer.from(actual).toString("utf8")}`)
         .toBe(`${name} ${Buffer.from(expected).toString("utf8")}`)
     }
-  }).pipe(Effect.provide(layerNodeFs)))
+  }).pipe(Effect.provide(layerDiskFs)))
 
 it.effect("the schema-node vector's payload IS payloadOf(vectorSchema)", () =>
   Effect.gen(function* () {
@@ -75,7 +75,7 @@ it.effect("the schema-node vector's payload IS payloadOf(vectorSchema)", () =>
     const payload = Buffer.from(node.payload, "hex")
     const expected = Buffer.from(CanonicalSchema.payloadOf(ConformanceVector.vectorSchema))
     expect(payload.toString("utf8")).toBe(expected.toString("utf8"))
-  }).pipe(Effect.provide(layerNodeFs)))
+  }).pipe(Effect.provide(layerDiskFs)))
 
 it.effect("every registered code is admitted at the Lean-computed address", () =>
   Effect.gen(function* () {
@@ -92,7 +92,7 @@ it.effect("every registered code is admitted at the Lean-computed address", () =
       const id = yield* CanonicalSchema.put(schema)
       expect(`${name} ${id}`).toBe(`${name} ${expected.address}`)
     }
-  }).pipe(Effect.provide(Layer.mergeAll(layerMemoryLive, layerNodeFs))))
+  }).pipe(Effect.provide(Layer.mergeAll(layerMemoryLive, layerDiskFs))))
 
 it.effect("every registered code survives the annotation round trip", () =>
   Effect.sync(() => {

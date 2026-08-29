@@ -14,7 +14,7 @@
  */
 import { expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Schema } from "effect"
-import { layerNodeFs } from "../fixtures/diskFs.ts"
+import { layerDiskFs } from "../fixtures/diskFs.ts"
 import { ManifestModel, ManifestReadError, manifestIndexNames } from "./harness.ts"
 
 const manifestPath = "archive/lean-model-0.3/conformance/manifest"
@@ -90,7 +90,7 @@ it.effect("the index names exactly the committed family manifests", () =>
     expect([...manifestIndexNames]).toEqual(committed)
     // The index itself is canonically sorted.
     expect([...manifestIndexNames]).toEqual([...manifestIndexNames].sort())
-  }).pipe(Effect.provide(layerNodeFs)))
+  }).pipe(Effect.provide(layerDiskFs)))
 
 it.effect.each([...manifestIndexNames])(
   "family %s decodes through the closed envelope at the declared model",
@@ -118,7 +118,7 @@ it.effect.each([...manifestIndexNames])(
         name,
         unique: ids.length,
       })
-    }).pipe(Effect.provide(layerNodeFs)),
+    }).pipe(Effect.provide(layerDiskFs)),
 )
 
 it.effect("the binding registry covers the index exactly", () =>

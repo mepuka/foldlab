@@ -17,7 +17,7 @@ import {
   encodeCasNode,
   layerMemory,
 } from "../src/cas/Store.ts"
-import { layerNodeFs } from "./fixtures/diskFs.ts"
+import { layerDiskFs } from "./fixtures/diskFs.ts"
 import { readFixtureString } from "./fixtures/read.ts"
 import {
   buildCasKatFixture,
@@ -62,7 +62,7 @@ it.effect("the committed known-answer fixture regenerates from the shipped diges
     const regenerated = renderCasKatFixture(yield* buildCasKatFixture)
     const committed = yield* readFixtureString(casKatFixturePath).pipe(
       Effect.orDie,
-      Effect.provide(layerNodeFs),
+      Effect.provide(layerDiskFs),
     )
     // Compared byte for byte, less the carriage returns a Windows checkout
     // introduces: no vector, address, or field can drift undetected.
