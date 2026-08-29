@@ -272,6 +272,28 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     work as the standing "bytes determine the canonical value"
     obligation (ruling: injectivity of the canonical rendering), so one
     slice discharges both debts. Sequencing decision owed.
+
+    **Narrowed, 2026-08-29** (`Values/JsonInj.lean`,
+    `Schema/PayloadInj.lean`). The obligation is now ONE `Prop`,
+    `Cas.Json.RenderPlainInjective`, and everything above it is wired:
+    `payload_inj` (equal payloads, equal `repNorm`, under `WF`) and its
+    `RepNormal` corollary are derived from it, and the schema-plane
+    steps under it — `deNumNorm_numNorm_envelope`,
+    `envelope_numNorm_inj` — are proved unconditionally. Three findings
+    the wiring surfaced:
+    - the naive statement is FALSE (`renderPlain_not_injective`): the
+      value model has two number constructors with one decimal
+      spelling, so injectivity holds only up to `Value.numNorm`;
+    - the `WF` premise is LOAD-BEARING and not decoration —
+      `Ast.decl .date (.nat 5) []` and `Ast.decl .date (.int 5) []` are
+      two codes with one payload byte string, ruled out only by the
+      registry's payload discipline;
+    - the escape half is DISCHARGED (`escapeCompact_inj`,
+      `renderPlain_str_inj`), which was the expected wall. What remains
+      is `Nat.repr` injectivity (the toolchain ships no such lemma) and
+      the self-delimiting/follow-set argument — i.e. the parser proper.
+      The sequencing decision is therefore narrowed to: write the
+      parser, or write the digits inverse plus the follow-set induction.
 12. **Declaration registry documentation home**: the wire-identity
     table lives in `Declarations.lean`'s docstring; `REGISTRY.md` is
     scoped to kind tags. Promote or leave.

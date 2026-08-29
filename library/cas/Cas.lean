@@ -10,6 +10,7 @@ import Cas.Core.Canonical
 import Cas.Core.Canonicalize
 import Cas.Core.Admission
 import Cas.Values.Json
+import Cas.Values.JsonInj
 import Cas.Values.Markdown
 import Cas.Values.Refs
 import Cas.Values.Canonicalize
@@ -42,8 +43,9 @@ abstraction, lowest first, and imported above in that order.
   the sound-and-complete admission judgment with the characterized put
   transition (`Admission`).
 - **`Values/` — the typed projection plane.** The canonical JSON
-  printers (`Json`) and the typed-reference marker grammar with
-  `Root α` (`Refs`).
+  printers (`Json`), the rendering's injectivity direction with its
+  one named open obligation (`JsonInj`), and the typed-reference
+  marker grammar with `Root α` (`Refs`).
 - **`IR/` — the store word.** Named `Binding`s in children-first
   admission order, non-empty and proof-bearing admitted wrappers,
   `wf`, and the bridge `toStore` with `wf_toStore_closed` (ledger L1).

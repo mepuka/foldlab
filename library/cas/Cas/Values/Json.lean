@@ -164,7 +164,15 @@ strict codepoint order — and `renderCompact_eq_renderPlain` is the
 rendering theorem: on canonical values the canonical rendering IS the
 purely structural fold. The schema codec's encoders emit canonical
 values by construction (`Cas.Schema.encode_canonical`), which binds
-the byte identity to the structural encoding with no hidden sort. -/
+the byte identity to the structural encoding with no hidden sort.
+
+The converse direction — bytes determine the canonical value, i.e.
+`renderPlain` is injective — is NOT here. It lives in
+`Cas.Values.JsonInj`, which states it (`RenderPlainInjective`),
+refutes its naive form (`renderPlain_not_injective`: `.nat n` and
+`.int n` share a spelling), discharges the escape half
+(`escapeCompact_inj`, `renderPlain_str_inj`), and leaves the rest as
+one named open obligation. -/
 
 mutual
 
