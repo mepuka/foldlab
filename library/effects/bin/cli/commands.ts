@@ -15,6 +15,7 @@ import {
   Console,
   Effect,
   FileSystem,
+  Layer,
   Option,
   Result,
   Schema,
@@ -39,6 +40,12 @@ import {
   renderPayload,
   tagLabel,
 } from "./render.ts"
+import {
+  layerServe,
+  layerStderrLogs,
+  policyOrDefault,
+  serveUntilClosed,
+} from "../mcp/server.ts"
 
 /**
  * Every failure a verb can surface is rendered as a user error: the
@@ -350,6 +357,53 @@ export const publish = Command.make("publish", {
     userFacing,
   )).pipe(Command.withDescription(
     "publish an address as a root — loaded first, so an address that will not load is never published",
+  ))
+
+/* ── serve ───────────────────────────────────────────────────────── */
+
+/**
+ * The host over the store this invocation resolved. The policy is a
+ * property of that store, so it is read here — where the store is
+ * already open and `layerStoreAt` has already refused an undecodable
+ * config — and handed to the host, which knows about policies and
+ * nothing about where stores live.
+ */
+const layerServeHere = Layer.unwrap(Effect.gen(function* () {
+  const location = yield* StoreLocation
+  const config = yield* readConfig(location)
+  yield* Effect.logInfo("store opened").pipe(
+    Effect.annotateLogs({ store: location.store, origin: location.origin }),
+  )
+  return layerServe(policyOrDefault(
+    Option.isSome(config) ? config.value.serve : undefined,
+  ))
+}))
+
+/**
+ * The MCP host, over the store this invocation resolves — the verb the
+ * `ServePolicy` `init` writes has been waiting for (BOOTSTRAP B2).
+ *
+ * The tool table is the Lean-emitted manifest's, checked against what
+ * this host serves before a byte of protocol is spoken, so `cas serve`
+ * either answers the estate's own five tools or refuses to start.
+ *
+ * Nothing here prints. On stdio the protocol IS stdout, so the whole
+ * surface is the log, and this verb's one output choice is where it
+ * goes: logfmt on stderr. How MUCH it says is the runner's own
+ * built-in `--log-level` global flag (`GlobalFlag.LogLevel`, which
+ * sets `References.MinimumLogLevel`) — this package declares no second
+ * flag by that name.
+ */
+export const serve = Command.make("serve", {
+  store: storeFlag,
+}, ({ store }) =>
+  serveUntilClosed.pipe(
+    Effect.provide(layerServeHere),
+    Effect.provide(layerStoreAt(store)),
+    Effect.provide(layerStderrLogs),
+    userFacing,
+  )).pipe(Command.withDescription(
+    "speak MCP over stdio against this store — the five tools the estate's manifest declares, and no others",
   ))
 
 /* ── verify ──────────────────────────────────────────────────────── */

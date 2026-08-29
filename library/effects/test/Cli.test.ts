@@ -27,12 +27,12 @@ import {
 } from "effect"
 import { CliError, Command } from "effect/unstable/cli"
 import { ChildProcessSpawner } from "effect/unstable/process"
-import { init, ls, publish, put, show, status, verify } from "../bin/cli/commands.ts"
+import { init, ls, publish, put, serve, show, status, verify } from "../bin/cli/commands.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
 
 /** The command tree exactly as `bin/cas.ts` composes it. */
 const cas = Command.make("cas").pipe(
-  Command.withSubcommands([init, status, put, publish, ls, show, verify]),
+  Command.withSubcommands([init, status, put, publish, ls, show, verify, serve]),
 )
 
 const runCas = Command.runWith(cas, { version: "0.1.0", renderErrors: false })
@@ -289,4 +289,27 @@ it.effect("verify: a corrupted object is refused at the node that witnesses it",
       expect(verdicts[0]).toContain(address)
       expect(verdicts[0]).toContain("refused:")
       expect(verdicts[0]).not.toContain("verified")
+    })))
+
+it.effect("serve: the verb is wired, and reads the policy `init` writes", () =>
+  withWorkspace(({ store }) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      // `init` writes a policy whose reads are anonymous. Gate them,
+      // and the MCP host refuses to serve the store over stdio instead
+      // of answering reads the store's own config says to gate — the
+      // one `ServePolicy` field that stops an invocation rather than
+      // being reported as inapplicable.
+      const configPath = `${store}/config.json`
+      const config = JSON.parse(yield* fs.readFileString(configPath)) as {
+        serve: { anonymousReads: boolean; credentialEnv?: string }
+      }
+      config.serve.anonymousReads = false
+      config.serve.credentialEnv = "CAS_TOKEN"
+      yield* fs.writeFileString(configPath, JSON.stringify(config, undefined, 2))
+
+      const refusal = yield* Effect.flip(invoke("serve", "--store", store))
+      const text = refusalText(refusal)
+      expect(text).toContain("requires a credential for reads")
+      expect(text).toContain("CAS_TOKEN")
     })))
