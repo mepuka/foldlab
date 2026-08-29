@@ -9,7 +9,16 @@
  * provided once, at the command boundary — including the store
  * location itself, which `layerStoreAt` resolves into a dependency.
  */
-import { Cause, Config, Console, Effect, Option, Result, Schema } from "effect"
+import {
+  Cause,
+  Config,
+  Console,
+  Effect,
+  FileSystem,
+  Option,
+  Result,
+  Schema,
+} from "effect"
 import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
 import { Cas } from "../../src/index.ts"
 import {
@@ -69,6 +78,16 @@ const originLabel = {
   explicit: "file backend",
   discovered: "file backend, discovered",
 } satisfies Record<Located["origin"], string>
+
+/** An address off the command line. The refusal is the CLI's own
+ * clause, so a mistyped address reads as guidance instead of a schema
+ * issue — the library is never asked about a string that is not one. */
+const decodeAddress = (
+  input: string,
+): Effect.Effect<Cas.ContentId, InvalidAddress> =>
+  Schema.decodeUnknownEffect(Cas.ContentId)(input).pipe(
+    Effect.mapError(() => new InvalidAddress({ input })),
+  )
 
 /* ── init ────────────────────────────────────────────────────────── */
 
@@ -168,9 +187,7 @@ export const ls = Command.make("ls", {
 
 const showProgram = (address: string, json: boolean) =>
   Effect.gen(function* () {
-    const id = yield* Schema.decodeUnknownEffect(Cas.ContentId)(address).pipe(
-      Effect.mapError(() => new InvalidAddress({ input: address })),
-    )
+    const id = yield* decodeAddress(address)
     const loader = yield* Cas.Loader
     const node = yield* loader.load(id)
     if (json) {
@@ -204,4 +221,148 @@ export const show = Command.make("show", {
     userFacing,
   )).pipe(Command.withDescription(
     "one node, loaded and re-verified: its kind, payload, and typed links",
+  ))
+
+/* ── put ─────────────────────────────────────────────────────────── */
+
+/**
+ * NOT the ratified input register. CLI grill round 1 ruling 2 rules
+ * `put`'s input to be the described canonical node document — the
+ * vector wire shape, kind/payload/refs — so that a node with links can
+ * be spelled at all. This verb takes bytes and a kind tag, which is a
+ * strict subset: refs are always empty, and no format is minted (the
+ * ruling's actual prohibition). The node-document register, and the
+ * separate `--schema` and blob-ingestion verbs the same ruling names,
+ * remain owed.
+ */
+/** The kind a file's bytes take when nothing else is said: registry
+ * row 1 (`value`, 0x01, RATIFIED core — an opaque value payload),
+ * which is what bytes with no declared discipline are. The store
+ * admits every tag at the scheme version, so naming a row that
+ * carries its own payload law — a blob node, a schema node — is a
+ * claim only the caller can make, through `--kind-tag`. */
+const defaultKindTag = 0x01
+
+const putProgram = (file: string, kindTag: number) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const payload = yield* fs.readFile(file)
+    const store = yield* Cas.Store
+    // One node, no links: `put` is the store law's own door, so every
+    // admission clause it refuses on arrives named.
+    const id = yield* store.put(Cas.NodeInput.make({
+      kind: { version: Cas.SchemeVersion, tag: kindTag },
+      payload,
+      refs: [],
+    }))
+    yield* Console.log(`address    ${id}`)
+    yield* Console.log(
+      `kind       ${tagLabel(kindTag)}  (scheme ${Cas.SchemeVersion})`,
+    )
+    yield* Console.log(`payload    ${payload.length} bytes`)
+  })
+
+export const put = Command.make("put", {
+  store: storeFlag,
+  kindTag: Flag.integer("kind-tag").pipe(
+    Flag.withSchema(Cas.Byte),
+    Flag.withDefault(defaultKindTag),
+    Flag.withDescription(
+      "the kind the content takes, as a tag byte (default: 1, an opaque value payload)",
+    ),
+  ),
+  file: Argument.file("file", { mustExist: true }).pipe(
+    Argument.withDescription("the file whose bytes become the payload"),
+  ),
+}, ({ file, kindTag, store }) =>
+  putProgram(file, kindTag).pipe(
+    Effect.provide(layerStoreAt(store)),
+    userFacing,
+  )).pipe(Command.withDescription(
+    "put a file's bytes in the store as one node — the address is the answer, and equal bytes give it back unchanged",
+  ))
+
+/* ── publish ─────────────────────────────────────────────────────── */
+
+const publishProgram = (address: string) =>
+  Effect.gen(function* () {
+    const id = yield* decodeAddress(address)
+    const loader = yield* Cas.Loader
+    // Load before publishing, fail-closed: publication claims an
+    // address is an entry point, so an address that will not load —
+    // absent, non-canonical, mis-addressed — is refused here instead
+    // of becoming a root `ls` has to report as broken.
+    const node = yield* loader.load(id)
+    const roots = yield* Cas.RootStore
+    yield* roots.publish(id)
+    yield* Console.log(`published  ${id}`)
+    yield* Console.log(
+      `kind       ${tagLabel(node.kind.tag)}  (scheme ${node.kind.version})`,
+    )
+  })
+
+export const publish = Command.make("publish", {
+  store: storeFlag,
+  address: Argument.string("address").pipe(
+    Argument.withDescription("the 64-hex address to publish as a root"),
+  ),
+}, ({ address, store }) =>
+  publishProgram(address).pipe(
+    Effect.provide(layerStoreAt(store)),
+    userFacing,
+  )).pipe(Command.withDescription(
+    "publish an address as a root — loaded first, so an address that will not load is never published",
+  ))
+
+/* ── verify ──────────────────────────────────────────────────────── */
+
+/** The audit's verdict as one line: how many nodes the walk covered,
+ * or the refusal's own clause. */
+const verdictLine = (
+  id: Cas.ContentId,
+  walked: ReadonlyArray<Cas.ContentId>,
+): string =>
+  `${id}  verified  ${walked.length} ${walked.length === 1 ? "node" : "nodes"}`
+
+const verifyProgram = (address: Option.Option<string>) =>
+  Effect.gen(function* () {
+    if (Option.isSome(address)) {
+      // A named root is the caller's claim, so its refusal is the
+      // command's refusal — the clause is rendered as an error and the
+      // exit is non-zero, which is what makes the verb a gate.
+      const id = yield* decodeAddress(address.value)
+      return yield* Console.log(verdictLine(id, yield* Cas.Graph.verify(id)))
+    }
+    const roots = yield* Cas.RootStore
+    const published = yield* roots.list
+    if (published.length === 0) {
+      return yield* Console.log("no roots published")
+    }
+    for (const id of published.toSorted()) {
+      // Over every root the verdict is reported in place, as `ls`
+      // reports a root that will not load: a listing states what the
+      // store answered root by root, never stopping at the first
+      // refusal.
+      const audited = yield* Effect.result(Cas.Graph.verify(id))
+      yield* Console.log(Result.match(audited, {
+        onSuccess: (walked) => verdictLine(id, walked),
+        onFailure: (error) => `${id}  ${casErrorMessage(error)}`,
+      }))
+    }
+  })
+
+export const verify = Command.make("verify", {
+  store: storeFlag,
+  address: Argument.string("address").pipe(
+    Argument.optional,
+    Argument.withDescription(
+      "the root to audit (default: every published root)",
+    ),
+  ),
+}, ({ address, store }) =>
+  verifyProgram(address).pipe(
+    Effect.provide(layerStoreAt(store)),
+    userFacing,
+  )).pipe(Command.withDescription(
+    "re-hash and re-decode everything reachable from a root — the whole audit, over an untrusted store",
   ))

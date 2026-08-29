@@ -162,11 +162,21 @@ export class StoreLocation extends Context.Service<StoreLocation, Located>()(
  * a store path discovered at runtime still arrives as an ordinary
  * dependency — provided once at the command boundary, never inside a
  * program.
+ *
+ * The read seam and the address scheme stay in the answer beside the
+ * typed doors, because the graph laws are stated over them:
+ * `Cas.Graph.verify` recomputes every address itself rather than
+ * trusting the store, which is exactly what `cas verify` is for.
  */
 export const layerStoreAt = (
   explicit: Option.Option<string>,
 ): Layer.Layer<
-  Cas.Store | Cas.Loader | Cas.RootStore | StoreLocation,
+  | Cas.Store
+  | Cas.Loader
+  | Cas.RootStore
+  | Cas.ByteReader
+  | Cas.AddressScheme
+  | StoreLocation,
   NoStoreFound,
   FileSystem.FileSystem | Path.Path
 > =>

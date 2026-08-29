@@ -11,12 +11,14 @@
  *
  * Help carries the vocabulary (the everyday register) beside the
  * commands, seeded from VOCABULARY.md — one coherent surface, per the
- * vocabulary law. `--wizard` on any command walks through its inputs.
+ * vocabulary law. `--wizard` on any command walks through its inputs:
+ * it is one of the runner's own built-in global flags
+ * (`GlobalFlag.wizard`), not a declaration of this package's.
  */
 import { BunRuntime, BunServices } from "@effect/platform-bun"
 import { Effect } from "effect"
 import { Command } from "effect/unstable/cli"
-import { init, ls, show, status } from "./cli/commands.ts"
+import { init, ls, publish, put, show, status, verify } from "./cli/commands.ts"
 
 /** The everyday register, seeded from VOCABULARY.md — the words every
  * rendered surface uses, and no others. */
@@ -35,7 +37,7 @@ const cas = Command.make("cas").pipe(
   Command.withDescription(
     `a content-addressed store as a data structure\n\n${vocabulary}`,
   ),
-  Command.withSubcommands([init, status, ls, show]),
+  Command.withSubcommands([init, status, put, publish, ls, show, verify]),
 )
 
 BunRuntime.runMain(
