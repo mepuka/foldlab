@@ -2,6 +2,41 @@
 bun = "1.4.0"
 node = "22.23.2"
 
+[settings]
+# THE BUILD RELATION (BS1). Every `gen:*` task below declares `sources`
+# and `outputs`; mise skips a task whose outputs are fresh for its
+# sources. Three things make that safe to trust, and all three are
+# load-bearing:
+#
+# 1. `sources` are OVER-declared — whole-tree globs, not the precise
+#    input set. Under-declaration is the one hazard that matters: a
+#    source outside the glob changes, the emitter is skipped, and
+#    `git diff --exit-code` is vacuously clean while the fixture is
+#    wrong. Over-declaration costs only stats.
+# 2. Freshness is CONTENT, not mtime. mise's default relation is
+#    `max(source mtime) < max(output mtime)`; the setting below
+#    replaces it with a blake3 hash over source contents. The estate
+#    does not get to have a freshness relation weaker than its identity
+#    relation. This is not a refinement — see `check:ci` below for the
+#    measured reason it is mandatory.
+# 3. Hand edits are still caught. A hand-edited fixture is a `git diff`,
+#    and `[tasks.check]` still runs `git diff --exit-code` whether or
+#    not any emitter ran.
+task.source_freshness_hash_contents = true
+
+# REFUSED, by name, so nobody adopts it later as an obvious-looking win:
+# mise's experimental per-task remote cache (`[tasks.X.cache]` with
+# `task.cache.remote_url`). It is a real content-addressed action cache,
+# and the estate will not use it. Its own documentation states the
+# reason: A CHECKSUM IS NOT A SIGNATURE FROM THE ORIGINAL TASK RUNNER —
+# anyone who can write a namespace publishes entries readers trust. The
+# estate's addressing is strictly better at exactly that seam: every
+# object is admitted by recomputing its digest and re-verified at load,
+# so a wrong answer fails admission at the receiving seam rather than at
+# a trust boundary, and no signing plane is required or wanted. If a
+# shared build cache is ever needed, it is `cas-http/0`, not this.
+# (Study: .staging/operational-structure/BUILD-SEMANTICS.md §2, §5, ask 7.)
+
 [tasks.gen]
 description = "Regenerate every derived file from declared sources"
 run = [
@@ -26,14 +61,68 @@ run = [
   "mise run gen:ledger",
 ]
 
+# The forced mirror of `gen`, for `check:ci`. It exists because
+# `--force` does not propagate into nested `mise run` lines, so the only
+# way to force a chain is to spell it on every line of the chain.
+#
+# The obvious hazard is drift: a new emitter added to `gen` and
+# forgotten here would be silently unforced in CI — exactly the failure
+# this task exists to prevent, reintroduced one line higher up. So it is
+# not left to vigilance. `tools/EnvLedger.lean` REFUSES to emit the
+# environment ledger unless every task in `gen`'s chain has a
+# `mise run --force` counterpart here, which makes the omission a red
+# gate at the moment it is committed rather than a quiet green in CI.
+[tasks."gen:ci"]
+description = "Regenerate every derived file, FORCED — the CI half of `gen`, kept line-for-line in step with it by the environment ledger's refusal"
+run = [
+  "mise run --force gen:inventory",
+  "mise run --force gen:vectors",
+  "mise run --force gen:cas-vectors",
+  "mise run --force gen:cas-schemas",
+  "mise run --force gen:cas-verdicts",
+  "mise run --force gen:cas-admission-map",
+  "mise run --force gen:backend-wire",
+  "mise run --force gen:backend-gate",
+  "mise run --force gen:backend-programs",
+  "mise run --force gen:backend-layers",
+  "mise run --force gen:backend-mcp",
+  "mise run --force gen:backend-materialize",
+  "mise run --force gen:effects-materialize",
+  "mise run --force gen:lift-manifest",
+  "mise run --force gen:grammar-manifest",
+  "mise run --force gen:cas-surface",
+  "mise run --force gen:cas-obligations",
+  "mise run --force gen:env-ledger",
+  "mise run --force gen:ledger",
+]
+
 [tasks."gen:inventory"]
 description = "Stage 1 (EXT-6): re-extract inventory.json from the vendored pinned Effect sources"
 dir = "{{config_root}}/experiments/entity-store-extract"
+sources = ["src/**/*.ts", "vendor/effect-src/**"]
+outputs = ["inventory.json"]
 run = "bun run src/extract.ts"
 
 [tasks."gen:vectors"]
 description = "Regenerate the golden-vector corpus and transcripts from the oracle (CV-1 bundle raw material)"
 dir = "{{config_root}}/experiments/entity-store-shell"
+# The two local `require`s in this package's lakefile are declared too:
+# a change under the E2 model or the fips202 annex changes these
+# vectors, and neither lives under this task's dir.
+#
+# `.harness-work` is deliberately absent from BOTH lists: it is scratch
+# that the middle command `git clean`s away, and declaring scratch as an
+# output would make the runner treat a wiped directory as a build
+# product and rerun forever.
+sources = [
+  "lakefile.toml", "lean-toolchain",
+  "Shell.lean", "Shell/**/*.lean",
+  "VectorsMain.lean", "HarnessMain.lean",
+  "harness/**",
+  "../entity-store-model/E2.lean", "../entity-store-model/E2/**/*.lean",
+  "../../formal/fips202/Sha3.lean", "../../formal/fips202/Sha3/**/*.lean",
+]
+outputs = ["vectors/**", "transcripts/**"]
 run = [
   "lake exe estore-vectors vectors",
   "git clean -qxfd .harness-work",
@@ -43,6 +132,18 @@ run = [
 [tasks."gen:ledger"]
 description = "Regenerate docs/entity-store/LEDGER.md by fresh extraction (PROCEDURE §8)"
 dir = "{{config_root}}/experiments/entity-store-ledger"
+# This ledger is extracted by SHELLING OUT to lake in two sibling
+# packages, so its real inputs are those packages' Lean trees, not
+# anything under its own dir. The harness leg runs in a `mkdtemp` work
+# directory outside the repo, so it contributes no output.
+sources = [
+  "package.json", "src/*.ts",
+  "../entity-store-model/E2.lean", "../entity-store-model/E2/**/*.lean",
+  "../entity-store-shell/Shell.lean", "../entity-store-shell/Shell/**/*.lean",
+  "../entity-store-shell/HarnessMain.lean", "../entity-store-shell/harness/**",
+  "../../formal/fips202/Sha3.lean", "../../formal/fips202/Sha3/**/*.lean",
+]
+outputs = ["../../docs/entity-store/LEDGER.md"]
 run = "bun run gen"
 
 [tasks."check:fips202"]
@@ -63,107 +164,297 @@ description = "Build the machine library under --wfail"
 dir = "{{config_root}}/library/machine"
 run = "lake --wfail build"
 
+# THE CAS EMITTERS' SHARED SOURCE SET.
+#
+# `sources` and `outputs` resolve relative to the task's `dir`, NOT to
+# `config_root` — verified, and it is the opposite of what the paths in
+# a root config look like they mean. So every cas task's globs are
+# written from `library/cas`, which is exactly how each tool's own
+# `Gate.Fixture.path` is written. `..`-escaping paths are honoured on
+# both sides, which is what lets an emitter declare the file it writes
+# into `library/effects` or `docs/`.
+#
+# Every cas emitter reads the compiled library, so every cas emitter
+# declares the WHOLE Lean tree. This is deliberate over-declaration:
+# nobody has to know which emitter reads which module, and nobody has to
+# maintain that knowledge as the library moves. Tasks whose inputs go
+# beyond the Lean tree add them; those additions are the only per-task
+# judgment here, and each is named where it appears.
+#
+# `outputs` are transcribed from each tool's own fixture list — the
+# authority is `lake exe <tool> --check --json`, whose `fixture` field
+# is the path below. `docs/lab-core/ENVIRONMENT.json` carries the join
+# as data, so an emitter that forgets a declaration is a red gate.
+
 [tasks."gen:cas-vectors"]
 description = "Regenerate the CAS conformance vectors from the Lean registry"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "vectors/value-single.json",
+  "vectors/blob-two-leaves.json",
+  "vectors/file-readme.json",
+  "vectors/journal-two-entries.json",
+  "vectors/shared-chunk.json",
+  "vectors/git-pin-commit.json",
+  "vectors/schema-vector-document.json",
+  "vectors/index.json",
+]
 run = "lake exe vectors"
 
 [tasks."gen:cas-schemas"]
 description = "Regenerate the canonical-schema payload fixtures from the Lean self-codec registry"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "schemas/vector-document.json",
+  "schemas/vector-index.json",
+  "schemas/pin-sample.json",
+  "schemas/literal-pin.json",
+  "schemas/annotation.json",
+  "schemas/union-pin.json",
+  "schemas/tagged-pin.json",
+  "schemas/enum-pin.json",
+  "schemas/tuple-pin.json",
+  "schemas/exchange.json",
+  "schemas/index.json",
+  "schemas/addresses.json",
+]
 run = "lake exe schemas"
 
 [tasks."gen:cas-verdicts"]
 description = "Regenerate the two-doors conformance corpus (code/value/verdict triples) by executing the Lean model"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["conformance/schema-verdicts.json"]
 run = "lake exe verdicts"
 
 [tasks."gen:cas-admission-map"]
 description = "Regenerate the ACC-1 carrier-adequacy table (every Representation variant's admission verdict) from Cas.Schema.admissionMapV0"
 dir = "{{config_root}}/library/cas"
+# Beyond the Lean tree: the extraction inventory is a genuine second
+# input — `AdmissionMap` checks every variant of the committed
+# inventory has exactly one row, so a new variant there must re-run it.
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "../../experiments/entity-store-extract/inventory.json",
+]
+outputs = ["conformance/admission-map.json"]
 run = "lake exe admissionmap"
 
 [tasks."gen:backend-wire"]
 description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["../effects/src/cas/generated/ConformanceVectorSchema.ts"]
 run = "lake exe emitwire"
 
 [tasks."gen:backend-gate"]
 description = "Regenerate the effects package's admission table (what the schema door admits, as data) from the Lean manifest"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["../effects/src/cas/generated/SchemaAdmission.ts"]
 run = "lake exe emitgate"
 
 [tasks."gen:backend-programs"]
 description = "Regenerate the straight-line Effect programs of the registered grammar terms, and the lift documents the recognizer must answer for them (P3's Lean half)"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "../effects/test/generated/VectorPrograms.ts",
+  "../effects/test/generated/VectorProgramLifts.json",
+]
 run = "lake exe emitprograms"
 
 [tasks."gen:backend-layers"]
 description = "Regenerate the Effect layers lowered from the authored service topology (G6-a)"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["../effects/test/generated/EmittedLayers.ts"]
 run = "lake exe emitlayers"
 
 [tasks."gen:backend-mcp"]
 description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["mcp/cas-tools.json"]
 run = "lake exe mcpspec"
 
 [tasks."gen:lift-manifest"]
 description = "Regenerate the effect-lift rule manifest (JSON + Markdown projections) from the Lean lift data (authority: Cas.Lift.manifestV0)"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "../effects/src/cas/generated/lift/manifest.json",
+  "../effects/src/cas/generated/lift/manifest.md",
+]
 run = "lake exe emitlift"
 
 [tasks."gen:grammar-manifest"]
 description = "Regenerate the data grammar's sort table (JSON for the front ends, REGISTRY.md for humans) from the Lean grammar manifest (authority: Cas.Grammar.manifestV0)"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "../effects/src/cas/generated/grammar/manifest.json",
+  "../effects/src/cas/generated/grammar/kindTags.ts",
+  "REGISTRY.md",
+]
 run = "lake exe emitgrammar"
 
 [tasks."gen:backend-materialize"]
 description = "Regenerate the estate-native materialized modules (P6's second register) from the committed schema payloads"
 dir = "{{config_root}}/library/cas"
+# Beyond the Lean tree: this emitter reads the COMMITTED schema payloads
+# back through the ingestion door (`schemas/index.json`,
+# `schemas/addresses.json`, and each payload), so it is downstream of
+# `gen:cas-schemas` through the filesystem rather than through a task
+# dependency. Declaring them is what makes that edge real to the runner.
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "schemas/*.json",
+]
+outputs = [
+  "../effects/test/generated/materialized/estate/vector-document.ts",
+  "../effects/test/generated/materialized/estate/vector-index.ts",
+  "../effects/test/generated/materialized/estate/pin-sample.ts",
+  "../effects/test/generated/materialized/estate/literal-pin.ts",
+  "../effects/test/generated/materialized/estate/annotation.ts",
+  "../effects/test/generated/materialized/estate/union-pin.ts",
+  "../effects/test/generated/materialized/estate/tagged-pin.ts",
+  "../effects/test/generated/materialized/estate/enum-pin.ts",
+  "../effects/test/generated/materialized/estate/tuple-pin.ts",
+  "../effects/test/generated/materialized/estate/exchange.ts",
+  "../effects/test/generated/materialized/estate/index.ts",
+]
 run = "lake exe materialize"
 
 [tasks."gen:effects-materialize"]
 description = "Regenerate the Effect-native materialized modules (Materialize.source's committed snapshots)"
 dir = "{{config_root}}/library/effects"
+# The Effect-native register of the P6 differential. It reads the SAME
+# committed schema payloads `lake exe materialize` reads, so it too is
+# downstream of `gen:cas-schemas` through the filesystem. Its outputs
+# land under `materialized/effect/`; the sibling `materialized/estate/`
+# is the Lean register and belongs to `gen:backend-materialize`.
+sources = [
+  "scripts/gen-materialized.ts",
+  "src/**/*.ts",
+  "test/fixtures/materialized.ts", "test/fixtures/read.ts",
+  "../cas/schemas/**/*.json",
+]
+outputs = ["test/generated/materialized/effect/**"]
 run = "bun scripts/gen-materialized.ts"
 
 [tasks."gen:cas-surface"]
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["surface/cas-surface.json"]
 run = "lake exe surface"
 
 [tasks."gen:cas-obligations"]
 description = "Regenerate the Cas obligation ledger (the named obligations written in the docstrings, plus the health counters) from the compiled environment"
 dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["surface/cas-obligations.json"]
 run = "lake exe obligations"
 
 [tasks."gen:env-ledger"]
 description = "Regenerate the environment ledger (mise tool pins and task graph, every lean-toolchain pin, the lean_exe/task join) from the config files themselves"
 dir = "{{config_root}}/library/cas"
+# The configuration plane's emitter reads CONFIG FILES, not the compiled
+# library — so its real inputs are `mise.toml` (this file, which mise
+# also adds automatically as the task definition), this package's
+# `lakefile.toml`, and every `lean-toolchain` in the estate. The
+# toolchain list is spelled out rather than globbed because
+# `tools/EnvLedger.lean` already declares exactly these eight as a Lean
+# constant: a `**` walk would also descend `.lake` build trees, and the
+# two lists disagreeing is precisely the drift the ledger exists to
+# catch. The Lean globs stay because the tool itself is Lean.
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "../../mise.toml",
+  "../../experiments/entity-store-extract/twin/extract-lean/lean-toolchain",
+  "../../experiments/entity-store-generate/generated/lean-toolchain",
+  "../../experiments/entity-store-model/lean-toolchain",
+  "../../experiments/entity-store-shell/lean-toolchain",
+  "../../formal/fips202/lean-toolchain",
+  "../../library/effects/archive/lean-model-0.3/lean-toolchain",
+  "../../library/machine/lean-toolchain",
+]
+outputs = ["../../docs/lab-core/ENVIRONMENT.json"]
 run = "lake exe envledger"
 
+# THE GATE LOOP.
+#
+# Two shapes changed here, both measured, neither weakening a gate.
+#
+# BATCHING. `lake exe X` pays ~400 ms of wrapper before X's own work
+# begins (measured on this host; the study measured 283 ms on the main
+# tree). Thirteen of those was 6.78 s of a loop whose real work is
+# 1.55 s. `lake env sh -c` pays the environment setup ONCE and then
+# invokes the built binaries directly, so the thirteen fast gates now
+# cost what they actually do. Every gate still runs, in the same order,
+# and `set -e` stops at the first red one exactly as separate `run`
+# lines did. The binaries are spelled out one per gate rather than
+# looped, deliberately: `docs/lab-core/ENVIRONMENT.json` joins each
+# `[[lean_exe]]` to the command that gates it, and a loop would hide
+# every name from that join and land all thirteen in `ungated`.
+#
+# THE SPLIT. `surface` (8.18 s) and `obligations` (4.98 s) are 70% of
+# this task's real work and are the only two `supportInterpreter`
+# executables — their cost is `importModules`, not their own logic.
+# They are their own tasks so they cache on their own sources instead of
+# being re-paid whenever any other gate's input moves. NOTE against the
+# study, which names `surface` as the only `supportInterpreter` exe and
+# 77% of the work: `obligations` landed with the same flag afterwards,
+# so the split covers both.
+#
+# SOURCES INCLUDE THE FIXTURES. A byte gate's whole job is to notice a
+# hand-edited artifact, so every artifact it checks is one of its
+# sources. Declaring only the Lean tree would let a hand-edited fixture
+# leave the gate "fresh" and skipped — the gate would stop being able to
+# fail. This is the one declaration on this task that is load-bearing
+# rather than an optimization.
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, surface-ledger, obligation-ledger, and environment-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the two supportInterpreter ledgers are check:cas:surface and check:cas:obligations)"
 dir = "{{config_root}}/library/cas"
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "vectors/**", "schemas/**", "conformance/**", "mcp/**", "REGISTRY.md",
+  "../effects/src/cas/generated/**", "../effects/test/generated/**",
+  "../../docs/lab-core/ENVIRONMENT.json",
+  "../../experiments/entity-store-extract/inventory.json",
+]
 run = [
   "lake --wfail build",
-  "lake exe vectors --check",
-  "lake exe schemas --check",
-  "lake exe verdicts --check",
-  "lake exe admissionmap --check",
-  "lake exe emitwire --check",
-  "lake exe emitgate --check",
-  "lake exe emitprograms --check",
-  "lake exe emitlayers --check",
-  "lake exe materialize --check",
-  "lake exe mcpspec --check",
-  "lake exe emitlift --check",
-  "lake exe emitgrammar --check",
-  "lake exe surface --check",
-  "lake exe obligations --self-test",
-  "lake exe obligations --check",
-  "lake exe envledger --check",
+  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+  "mise run check:cas:surface",
+  "mise run check:cas:obligations",
+]
+
+[tasks."check:cas:surface"]
+description = "The surface-ledger byte-identity gate — split from check:cas because `surface` is a supportInterpreter executable whose importModules cost dominates the loop, and so caches on its own sources"
+dir = "{{config_root}}/library/cas"
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "surface/cas-surface.json",
+]
+run = [
+  "lake --wfail build",
+  "lake env sh -c 'set -e; .lake/build/bin/surface --check'",
+]
+
+[tasks."check:cas:obligations"]
+description = "The obligation-ledger byte-identity gate and its planted-defect controls — split from check:cas for the same supportInterpreter reason as check:cas:surface. `--self-test` runs FIRST: a gate that cannot fail proves nothing, so the controls are checked before the gate they vouch for"
+dir = "{{config_root}}/library/cas"
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "surface/cas-obligations.json",
+]
+run = [
+  "lake --wfail build",
+  "lake env sh -c 'set -e; .lake/build/bin/obligations --self-test; .lake/build/bin/obligations --check'",
 ]
 
 [tasks."check:effects:archive"]
@@ -239,8 +530,64 @@ run = [
   "bun run check",
 ]
 
+# WHAT CI MUST RUN. `check` is the local chain and is allowed to skip a
+# fresh task; `check:ci` is the authoritative one and skips nothing.
+#
+# This is not belt-and-braces, it is load-bearing, and the reason is a
+# measured refutation rather than a precaution. The study reasoned — from
+# mise's source, explicitly without testing it — that a fresh clone
+# re-runs everything on its own, because git stamps every file with
+# checkout time and mise's default freshness is the STRICT
+# `max(source mtime) < max(output mtime)`. That reasoning is FALSE, and
+# the failure is systematic rather than a race:
+#
+#   git checks a clone out in index order, so a file's mtime is ordered
+#   by its PATH. Wherever an output path sorts after its source paths —
+#   `Cas/**` and `tools/**` sources against `docs/`, `schemas/`,
+#   `surface/`, `vectors/` outputs, which is nearly every task here —
+#   the outputs are stamped LATER and the task is fresh on arrival.
+#
+# Verified: a fixture with sources under `aaa/` and outputs under `zzz/`,
+# cloned to a new path with an empty MISE_STATE_DIR, reported "sources
+# up-to-date, skipping" and never ran. A fresh CI clone would have
+# gated nothing and reported green.
+#
+# Two things fix it, and both are in force:
+#
+#   1. `task.source_freshness_hash_contents` (see [settings]). Freshness
+#      becomes a blake3 over source CONTENTS recorded in the state dir,
+#      and a fresh runner has no such record — so the same clone that
+#      skipped under mtime RAN under content hashing. Verified. This is
+#      why that setting is mandatory and not a nicety.
+#   2. This task. `mise run --force` does NOT propagate into the
+#      `mise run X` lines inside a `run` list (verified: the outer force
+#      is ignored and the inner task skips), and there is no force
+#      setting or environment variable. The only mechanism that works is
+#      spelling `--force` on each nested invocation, which is what this
+#      task is. CI runs `mise run check:ci`, never `mise run check`.
+[tasks."check:ci"]
+description = "What CI runs: `check`, with every task FORCED. Skipping is a local convenience and must never decide a gate — see the comment above for the measured reason a fresh clone does not force on its own"
+run = [
+  "mise run gen:ci",
+  "git diff --exit-code",
+  "mise run --force check:fips202",
+  "mise run --force check:entity-store",
+  "mise run --force check:extract",
+  "mise run --force check:generate",
+  "mise run --force check:machine",
+  # The two split ledgers are forced BEFORE `check:cas`, which invokes
+  # them itself: forced first, they are then fresh when it reaches them,
+  # so each runs exactly once instead of once skipped and once forced.
+  "mise run --force check:cas:surface",
+  "mise run --force check:cas:obligations",
+  "mise run --force check:cas",
+  "mise run --force check:effects:ts",
+  "mise run --force check:effects:research",
+  "mise run --force check:ledger",
+]
+
 [tasks.check]
-description = "gen + clean-tree assertion + tests and gates (what CI runs)"
+description = "gen + clean-tree assertion + tests and gates (the LOCAL chain — it may skip a task whose sources are unchanged; CI runs check:ci, which forces)"
 run = [
   "mise run gen",
   "git diff --exit-code",
@@ -309,4 +656,15 @@ run = [
 [tasks."gen:oxc-surface"]
 description = "Regenerate experiments/entity-store-extract/oxc-surface.json — the oxc leg's census of the full six-file surface (parse cleanliness, declaration histogram, and every declaration the tree-sitter grammar cannot read)"
 dir = "{{config_root}}/experiments/entity-store-extract"
+# DELIBERATELY UNDECLARED — the one gen task with no `sources`/`outputs`,
+# and the reason is the same standing exception that keeps it out of the
+# `gen` chain and marks it `host-local` in the environment ledger. Its
+# dominant input is the full six-file pinned source cache under
+# `.staging/e2/src-cache`, which is gitignored, has no bootstrap, and is
+# found by walking ANCESTOR directories — so its path is not even stable
+# between a checkout and a worktree. Declaring only the in-repo half
+# would buy a skip whose freshness relation cannot see the input that
+# actually decides the output bytes. An undeclared task always runs,
+# which is the correct answer here. This becomes declarable when the
+# source cache gets a committed bootstrap (INGESTION-HARNESS.md M1).
 run = "bun run src/oxc-extract.ts"

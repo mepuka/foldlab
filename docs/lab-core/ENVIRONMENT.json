@@ -3,9 +3,10 @@
   "excludedGates": ["brief:effects:archive", "check:effects:archive", "check:extract-oxc", "check:extract-twin", "check:lift-roundtrip", "gen:effects:archive", "gen:effects:research", "gen:oxc-surface"],
   "leanExes": [
     {
+      "declaredOutputs": ["conformance/admission-map.json"],
       "drivenBy": "gen:cas-admission-map",
       "gatedBy": {
-        "command": "lake exe admissionmap --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "admissionmap",
@@ -14,9 +15,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/src/cas/generated/SchemaAdmission.ts"],
       "drivenBy": "gen:backend-gate",
       "gatedBy": {
-        "command": "lake exe emitgate --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitgate",
@@ -25,9 +27,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/src/cas/generated/grammar/manifest.json", "../effects/src/cas/generated/grammar/kindTags.ts", "REGISTRY.md"],
       "drivenBy": "gen:grammar-manifest",
       "gatedBy": {
-        "command": "lake exe emitgrammar --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitgrammar",
@@ -36,9 +39,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/test/generated/EmittedLayers.ts"],
       "drivenBy": "gen:backend-layers",
       "gatedBy": {
-        "command": "lake exe emitlayers --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitlayers",
@@ -47,9 +51,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/src/cas/generated/lift/manifest.json", "../effects/src/cas/generated/lift/manifest.md"],
       "drivenBy": "gen:lift-manifest",
       "gatedBy": {
-        "command": "lake exe emitlift --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitlift",
@@ -58,9 +63,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramLifts.json"],
       "drivenBy": "gen:backend-programs",
       "gatedBy": {
-        "command": "lake exe emitprograms --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitprograms",
@@ -69,9 +75,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/src/cas/generated/ConformanceVectorSchema.ts"],
       "drivenBy": "gen:backend-wire",
       "gatedBy": {
-        "command": "lake exe emitwire --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitwire",
@@ -80,9 +87,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../../docs/lab-core/ENVIRONMENT.json"],
       "drivenBy": "gen:env-ledger",
       "gatedBy": {
-        "command": "lake exe envledger --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "envledger",
@@ -91,9 +99,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/test/generated/materialized/estate/vector-document.ts", "../effects/test/generated/materialized/estate/vector-index.ts", "../effects/test/generated/materialized/estate/pin-sample.ts", "../effects/test/generated/materialized/estate/literal-pin.ts", "../effects/test/generated/materialized/estate/annotation.ts", "../effects/test/generated/materialized/estate/union-pin.ts", "../effects/test/generated/materialized/estate/tagged-pin.ts", "../effects/test/generated/materialized/estate/enum-pin.ts", "../effects/test/generated/materialized/estate/tuple-pin.ts", "../effects/test/generated/materialized/estate/exchange.ts", "../effects/test/generated/materialized/estate/index.ts"],
       "drivenBy": "gen:backend-materialize",
       "gatedBy": {
-        "command": "lake exe materialize --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "materialize",
@@ -102,9 +111,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["mcp/cas-tools.json"],
       "drivenBy": "gen:backend-mcp",
       "gatedBy": {
-        "command": "lake exe mcpspec --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "mcpspec",
@@ -113,10 +123,11 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["surface/cas-obligations.json"],
       "drivenBy": "gen:cas-obligations",
       "gatedBy": {
-        "command": "lake exe obligations --check",
-        "task": "check:cas"
+        "command": "lake env sh -c 'set -e; .lake/build/bin/obligations --self-test; .lake/build/bin/obligations --check'",
+        "task": "check:cas:obligations"
       },
       "name": "obligations",
       "root": "Obligations",
@@ -124,9 +135,10 @@
       "supportInterpreter": true
     },
     {
+      "declaredOutputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json"],
       "drivenBy": "gen:cas-schemas",
       "gatedBy": {
-        "command": "lake exe schemas --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "schemas",
@@ -135,10 +147,11 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["surface/cas-surface.json"],
       "drivenBy": "gen:cas-surface",
       "gatedBy": {
-        "command": "lake exe surface --check",
-        "task": "check:cas"
+        "command": "lake env sh -c 'set -e; .lake/build/bin/surface --check'",
+        "task": "check:cas:surface"
       },
       "name": "surface",
       "root": "Surface",
@@ -146,9 +159,10 @@
       "supportInterpreter": true
     },
     {
+      "declaredOutputs": ["vectors/value-single.json", "vectors/blob-two-leaves.json", "vectors/file-readme.json", "vectors/journal-two-entries.json", "vectors/shared-chunk.json", "vectors/git-pin-commit.json", "vectors/schema-vector-document.json", "vectors/index.json"],
       "drivenBy": "gen:cas-vectors",
       "gatedBy": {
-        "command": "lake exe vectors --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "vectors",
@@ -157,9 +171,10 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["conformance/schema-verdicts.json"],
       "drivenBy": "gen:cas-verdicts",
       "gatedBy": {
-        "command": "lake exe verdicts --check",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "verdicts",
@@ -209,310 +224,428 @@
       "dir": "{{config_root}}/library/effects/archive/lean-model-0.3",
       "inChain": false,
       "name": "brief:effects:archive",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["mise run gen", "git diff --exit-code", "mise run check:fips202", "mise run check:entity-store", "mise run check:extract", "mise run check:generate", "mise run check:machine", "mise run check:cas", "mise run check:effects:ts", "mise run check:effects:research", "mise run check:ledger"],
       "dir": null,
       "inChain": true,
       "name": "check",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
-      "commands": ["lake --wfail build", "lake exe vectors --check", "lake exe schemas --check", "lake exe verdicts --check", "lake exe admissionmap --check", "lake exe emitwire --check", "lake exe emitgate --check", "lake exe emitprograms --check", "lake exe emitlayers --check", "lake exe materialize --check", "lake exe mcpspec --check", "lake exe emitlift --check", "lake exe emitgrammar --check", "lake exe surface --check", "lake exe obligations --self-test", "lake exe obligations --check", "lake exe envledger --check"],
+      "commands": ["lake --wfail build", "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'", "mise run check:cas:surface", "mise run check:cas:obligations"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "check:cas",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "vectors/**", "schemas/**", "conformance/**", "mcp/**", "REGISTRY.md", "../effects/src/cas/generated/**", "../effects/test/generated/**", "../../docs/lab-core/ENVIRONMENT.json", "../../experiments/entity-store-extract/inventory.json"]
+    },
+    {
+      "commands": ["lake --wfail build", "lake env sh -c 'set -e; .lake/build/bin/obligations --self-test; .lake/build/bin/obligations --check'"],
+      "dir": "{{config_root}}/library/cas",
+      "inChain": true,
+      "name": "check:cas:obligations",
+      "outputs": [],
+      "residence": "portable",
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "surface/cas-obligations.json"]
+    },
+    {
+      "commands": ["lake --wfail build", "lake env sh -c 'set -e; .lake/build/bin/surface --check'"],
+      "dir": "{{config_root}}/library/cas",
+      "inChain": true,
+      "name": "check:cas:surface",
+      "outputs": [],
+      "residence": "portable",
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "surface/cas-surface.json"]
+    },
+    {
+      "commands": ["mise run gen:ci", "git diff --exit-code", "mise run --force check:fips202", "mise run --force check:entity-store", "mise run --force check:extract", "mise run --force check:generate", "mise run --force check:machine", "mise run --force check:cas:surface", "mise run --force check:cas:obligations", "mise run --force check:cas", "mise run --force check:effects:ts", "mise run --force check:effects:research", "mise run --force check:ledger"],
+      "dir": null,
+      "inChain": true,
+      "name": "check:ci",
+      "outputs": [],
+      "residence": "portable",
+      "residenceReason": "forces the same tasks `check` runs",
+      "sources": []
     },
     {
       "commands": ["lake --wfail build", "lake exe conformance_ledger CONFORMANCE-LEDGER.md", "lake exe conformance_manifest conformance/manifest", "bun scripts/check-ledger-transitions.ts", "bun scripts/check-mutant-quarantine.ts", "lake exe conformance_mutation", "git diff --exit-code -- CONFORMANCE-LEDGER.md conformance/manifest"],
       "dir": "{{config_root}}/library/effects/archive/lean-model-0.3",
       "inChain": false,
       "name": "check:effects:archive",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["bun scripts/sync-research.ts"],
       "dir": "{{config_root}}/library/effects",
       "inChain": true,
       "name": "check:effects:research",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["bun scripts/check-src-purity.ts", "bun install --frozen-lockfile", "bun run lint", "bun run typecheck", "bun run test", "bun run build", "bun scripts/check-dist-consumer.ts"],
       "dir": "{{config_root}}/library/effects",
       "inChain": true,
       "name": "check:effects:ts",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "committed bun lockfile pins every dependency"
+      "residenceReason": "committed bun lockfile pins every dependency",
+      "sources": []
     },
     {
       "commands": ["lake --wfail build"],
       "dir": "{{config_root}}/experiments/entity-store-model",
       "inChain": true,
       "name": "check:entity-store",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["bun install --frozen-lockfile", "bun test"],
       "dir": "{{config_root}}/experiments/entity-store-extract",
       "inChain": true,
       "name": "check:extract",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "reads the vendored pinned Effect sources; committed bun lockfile"
+      "residenceReason": "reads the vendored pinned Effect sources; committed bun lockfile",
+      "sources": []
     },
     {
       "commands": ["bun install --frozen-lockfile", "bun x tsgo --noEmit", "bun x vitest run", "bun test test/extract.test.ts", "bun run src/oxc-check.ts"],
       "dir": "{{config_root}}/experiments/entity-store-extract",
       "inChain": false,
       "name": "check:extract-oxc",
+      "outputs": [],
       "residence": "host-local",
-      "residenceReason": "the six-file oxc census reads the full pinned source cache, gitignored with no bootstrap"
+      "residenceReason": "the six-file oxc census reads the full pinned source cache, gitignored with no bootstrap",
+      "sources": []
     },
     {
       "commands": ["bash bootstrap.sh", "bash -c 'cd extract-lean && lake build'", "bash -c 'cd harness && bun install --frozen-lockfile && bun run check'"],
       "dir": "{{config_root}}/experiments/entity-store-extract/twin",
       "inChain": false,
       "name": "check:extract-twin",
+      "outputs": [],
       "residence": "host-local",
-      "residenceReason": "twin/bootstrap.sh clones the tree-sitter seam from the network with no lockfile pinning it"
+      "residenceReason": "twin/bootstrap.sh clones the tree-sitter seam from the network with no lockfile pinning it",
+      "sources": []
     },
     {
       "commands": ["lake --wfail build", "lake env leanchecker --fresh Sha3.Bridge"],
       "dir": "{{config_root}}/formal/fips202",
       "inChain": true,
       "name": "check:fips202",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["bun test", "bun run check"],
       "dir": "{{config_root}}/experiments/entity-store-generate",
       "inChain": true,
       "name": "check:generate",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "zero dependencies; reads the committed inventory"
+      "residenceReason": "zero dependencies; reads the committed inventory",
+      "sources": []
     },
     {
       "commands": ["bun test", "bun run check"],
       "dir": "{{config_root}}/experiments/entity-store-ledger",
       "inChain": true,
       "name": "check:ledger",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "committed bun lockfile pins every dependency"
+      "residenceReason": "committed bun lockfile pins every dependency",
+      "sources": []
     },
     {
       "commands": ["bun install --frozen-lockfile", "bun x vitest run test/T12-roundtrip.test.ts"],
       "dir": "{{config_root}}/experiments/lift-harness",
       "inChain": false,
       "name": "check:lift-roundtrip",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "committed bun lockfile; T12 reads the committed emitted programs and lift documents"
+      "residenceReason": "committed bun lockfile; T12 reads the committed emitted programs and lift documents",
+      "sources": []
     },
     {
       "commands": ["lake --wfail build"],
       "dir": "{{config_root}}/library/machine",
       "inChain": true,
       "name": "check:machine",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:env-ledger", "mise run gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["lake exe emitgate"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-gate",
+      "outputs": ["../effects/src/cas/generated/SchemaAdmission.ts"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe emitlayers"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-layers",
+      "outputs": ["../effects/test/generated/EmittedLayers.ts"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe materialize"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-materialize",
+      "outputs": ["../effects/test/generated/materialized/estate/vector-document.ts", "../effects/test/generated/materialized/estate/vector-index.ts", "../effects/test/generated/materialized/estate/pin-sample.ts", "../effects/test/generated/materialized/estate/literal-pin.ts", "../effects/test/generated/materialized/estate/annotation.ts", "../effects/test/generated/materialized/estate/union-pin.ts", "../effects/test/generated/materialized/estate/tagged-pin.ts", "../effects/test/generated/materialized/estate/enum-pin.ts", "../effects/test/generated/materialized/estate/tuple-pin.ts", "../effects/test/generated/materialized/estate/exchange.ts", "../effects/test/generated/materialized/estate/index.ts"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "schemas/*.json"]
     },
     {
       "commands": ["lake exe mcpspec"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-mcp",
+      "outputs": ["mcp/cas-tools.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe emitprograms"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-programs",
+      "outputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramLifts.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe emitwire"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-wire",
+      "outputs": ["../effects/src/cas/generated/ConformanceVectorSchema.ts"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe admissionmap"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-admission-map",
+      "outputs": ["conformance/admission-map.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "../../experiments/entity-store-extract/inventory.json"]
     },
     {
       "commands": ["lake exe obligations"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-obligations",
+      "outputs": ["surface/cas-obligations.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe schemas"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-schemas",
+      "outputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe surface"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-surface",
+      "outputs": ["surface/cas-surface.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe vectors"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-vectors",
+      "outputs": ["vectors/value-single.json", "vectors/blob-two-leaves.json", "vectors/file-readme.json", "vectors/journal-two-entries.json", "vectors/shared-chunk.json", "vectors/git-pin-commit.json", "vectors/schema-vector-document.json", "vectors/index.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["lake exe verdicts"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-verdicts",
+      "outputs": ["conformance/schema-verdicts.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+    },
+    {
+      "commands": ["mise run --force gen:inventory", "mise run --force gen:vectors", "mise run --force gen:cas-vectors", "mise run --force gen:cas-schemas", "mise run --force gen:cas-verdicts", "mise run --force gen:cas-admission-map", "mise run --force gen:backend-wire", "mise run --force gen:backend-gate", "mise run --force gen:backend-programs", "mise run --force gen:backend-layers", "mise run --force gen:backend-mcp", "mise run --force gen:backend-materialize", "mise run --force gen:effects-materialize", "mise run --force gen:lift-manifest", "mise run --force gen:grammar-manifest", "mise run --force gen:cas-surface", "mise run --force gen:cas-obligations", "mise run --force gen:env-ledger", "mise run --force gen:ledger"],
+      "dir": null,
+      "inChain": true,
+      "name": "gen:ci",
+      "outputs": [],
+      "residence": "portable",
+      "residenceReason": "the forced mirror of `gen`; same inputs",
+      "sources": []
     },
     {
       "commands": ["bun scripts/gen-materialized.ts"],
       "dir": "{{config_root}}/library/effects",
       "inChain": true,
       "name": "gen:effects-materialize",
+      "outputs": ["test/generated/materialized/effect/**"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["scripts/gen-materialized.ts", "src/**/*.ts", "test/fixtures/materialized.ts", "test/fixtures/read.ts", "../cas/schemas/**/*.json"]
     },
     {
       "commands": ["lake exe conformance_ledger CONFORMANCE-LEDGER.md", "lake exe conformance_manifest conformance/manifest"],
       "dir": "{{config_root}}/library/effects/archive/lean-model-0.3",
       "inChain": false,
       "name": "gen:effects:archive",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["bun scripts/sync-research.ts --write"],
       "dir": "{{config_root}}/library/effects",
       "inChain": false,
       "name": "gen:effects:research",
+      "outputs": [],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": []
     },
     {
       "commands": ["lake exe envledger"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:env-ledger",
+      "outputs": ["../../docs/lab-core/ENVIRONMENT.json"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain", "../../mise.toml", "../../experiments/entity-store-extract/twin/extract-lean/lean-toolchain", "../../experiments/entity-store-generate/generated/lean-toolchain", "../../experiments/entity-store-model/lean-toolchain", "../../experiments/entity-store-shell/lean-toolchain", "../../formal/fips202/lean-toolchain", "../../library/effects/archive/lean-model-0.3/lean-toolchain", "../../library/machine/lean-toolchain"]
     },
     {
       "commands": ["lake exe emitgrammar"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:grammar-manifest",
+      "outputs": ["../effects/src/cas/generated/grammar/manifest.json", "../effects/src/cas/generated/grammar/kindTags.ts", "REGISTRY.md"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["bun run src/extract.ts"],
       "dir": "{{config_root}}/experiments/entity-store-extract",
       "inChain": true,
       "name": "gen:inventory",
+      "outputs": ["inventory.json"],
       "residence": "portable",
-      "residenceReason": "reads the vendored pinned Effect sources"
+      "residenceReason": "reads the vendored pinned Effect sources",
+      "sources": ["src/**/*.ts", "vendor/effect-src/**"]
     },
     {
       "commands": ["bun run gen"],
       "dir": "{{config_root}}/experiments/entity-store-ledger",
       "inChain": true,
       "name": "gen:ledger",
+      "outputs": ["../../docs/entity-store/LEDGER.md"],
       "residence": "portable",
-      "residenceReason": "committed bun lockfile pins every dependency"
+      "residenceReason": "committed bun lockfile pins every dependency",
+      "sources": ["package.json", "src/*.ts", "../entity-store-model/E2.lean", "../entity-store-model/E2/**/*.lean", "../entity-store-shell/Shell.lean", "../entity-store-shell/Shell/**/*.lean", "../entity-store-shell/HarnessMain.lean", "../entity-store-shell/harness/**", "../../formal/fips202/Sha3.lean", "../../formal/fips202/Sha3/**/*.lean"]
     },
     {
       "commands": ["lake exe emitlift"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:lift-manifest",
+      "outputs": ["../effects/src/cas/generated/lift/manifest.json", "../effects/src/cas/generated/lift/manifest.md"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
       "commands": ["bun run src/oxc-extract.ts"],
       "dir": "{{config_root}}/experiments/entity-store-extract",
       "inChain": false,
       "name": "gen:oxc-surface",
+      "outputs": [],
       "residence": "host-local",
-      "residenceReason": "the oxc surface census reads the full pinned source cache, gitignored with no bootstrap"
+      "residenceReason": "the oxc surface census reads the full pinned source cache, gitignored with no bootstrap",
+      "sources": []
     },
     {
       "commands": ["lake exe estore-vectors vectors", "git clean -qxfd .harness-work", "lake exe harness harness .harness-work --record transcripts"],
       "dir": "{{config_root}}/experiments/entity-store-shell",
       "inChain": true,
       "name": "gen:vectors",
+      "outputs": ["vectors/**", "transcripts/**"],
       "residence": "portable",
-      "residenceReason": "all inputs tracked"
+      "residenceReason": "all inputs tracked",
+      "sources": ["lakefile.toml", "lean-toolchain", "Shell.lean", "Shell/**/*.lean", "VectorsMain.lean", "HarnessMain.lean", "harness/**", "../entity-store-model/E2.lean", "../entity-store-model/E2/**/*.lean", "../../formal/fips202/Sha3.lean", "../../formal/fips202/Sha3/**/*.lean"]
     }
   ],
   "tools": {
     "bun": "1.4.0",
     "node": "22.23.2"
   },
+  "undeclared": [],
   "undriven": [],
-  "ungated": []
+  "ungated": [],
+  "unjoined": []
 }
