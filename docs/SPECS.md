@@ -271,3 +271,12 @@ records the 2026-08-29 session rulings that cut across specs.
     estate-paperwork audit (files, sessions, the ledger's own
     maintenance law checked against tonight's practice). *Why:
     "let's stay organized — we've been firing at peak performance."*
+    **Addendum to 17/22 (same night): PREFER well-regarded Rust/Go
+    implementations for the hosting plane** — "if we can bootstrap
+    from well-regarded Rust or Go implementations we should do that;
+    performance, liveness, responsiveness is crucial." Adopted
+    binaries are admission events (TOOLS.md rows, pins); semantics
+    stay Lean-authored; the trust story is unchanged because the
+    address is the certificate — a fast foreign host serving
+    content-addressed bytes cannot lie. litestream (Go) is the
+    standing precedent already in the estate.
