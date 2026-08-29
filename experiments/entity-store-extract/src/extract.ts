@@ -458,10 +458,21 @@ export const extract = (srcDir: string): { inventory: unknown; report: CrossChec
 
 export const emit = (inventory: unknown): string => JSON.stringify(inventory, null, 2) + "\n"
 
+/**
+ * The default input: the two pinned files vendored into this lane (`vendor/README.md`
+ * for provenance). It is a fixed path, not a search — Stage 1's output must be a
+ * function of the pinned bytes alone, so which directory happens to exist on a host may
+ * not decide what gets read. `.staging/e2/src-cache` remains reachable by passing it as
+ * argv[2]; that is how `twin/harness/harness.ts` drives both instruments off the same
+ * cache. Either way `readVerified` refuses on a digest that is not the pin (EXT-1), so
+ * the two paths are interchangeable or the run is dead.
+ */
+export const VENDORED_SRC_DIR = join(import.meta.dir, "..", "vendor", "effect-src")
+
 // ---------- CLI ----------
 
 if (import.meta.main) {
-  const srcDir = process.argv[2] ?? join(import.meta.dir, "..", "..", "..", ".staging", "e2", "src-cache")
+  const srcDir = process.argv[2] ?? VENDORED_SRC_DIR
   const outPath = process.argv[3] ?? join(import.meta.dir, "..", "inventory.json")
   const { inventory, report } = extract(srcDir)
   if (report.failures.length > 0) {

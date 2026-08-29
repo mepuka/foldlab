@@ -5,6 +5,7 @@ node = "22.23.2"
 [tasks.gen]
 description = "Regenerate every derived file from declared sources"
 run = [
+  "mise run gen:inventory",
   "mise run gen:vectors",
   "mise run gen:cas-vectors",
   "mise run gen:cas-schemas",
@@ -21,6 +22,11 @@ run = [
   "mise run gen:cas-surface",
   "mise run gen:ledger",
 ]
+
+[tasks."gen:inventory"]
+description = "Stage 1 (EXT-6): re-extract inventory.json from the vendored pinned Effect sources"
+dir = "{{config_root}}/experiments/entity-store-extract"
+run = "bun run src/extract.ts"
 
 [tasks."gen:vectors"]
 description = "Regenerate the golden-vector corpus and transcripts from the oracle (CV-1 bundle raw material)"
@@ -187,6 +193,22 @@ run = [
   "bun scripts/check-dist-consumer.ts",
 ]
 
+[tasks."check:extract"]
+description = "Stage 1 gate (EXT-6): pin verification, the four-way enumeration agreement, and byte-determinism"
+dir = "{{config_root}}/experiments/entity-store-extract"
+run = [
+  "bun install --frozen-lockfile",
+  "bun test",
+]
+
+[tasks."check:generate"]
+description = "Stage 2 gate: regenerated Lean tree byte-equal to the committed one, then lake build"
+dir = "{{config_root}}/experiments/entity-store-generate"
+run = [
+  "bun test",
+  "bun run check",
+]
+
 [tasks."check:ledger"]
 description = "Both packages green, harness green, committed LEDGER.md byte-equal to a fresh extraction"
 dir = "{{config_root}}/experiments/entity-store-ledger"
@@ -202,6 +224,8 @@ run = [
   "git diff --exit-code",
   "mise run check:fips202",
   "mise run check:entity-store",
+  "mise run check:extract",
+  "mise run check:generate",
   "mise run check:machine",
   "mise run check:cas",
   "mise run check:effects:ts",
@@ -210,7 +234,22 @@ run = [
 ]
 
 [tasks."check:extract-twin"]
-description = "Stage 1 cross-instrument gate: TS-compiler-API extractor vs lean4-tree-sitter twin (bootstraps the pinned C seam; network + elan on first run; not in the default check chain)"
+description = """
+STANDING EXCEPTION — manual gate, deliberately outside `mise run check`. Reviewed \
+2026-08-29 against M3 of the ingestion-harness report; vendoring was priced and refused. \
+Stage 1 cross-instrument gate: TS-compiler-API extractor vs lean4-tree-sitter twin. \
+WHY IT STAYS MANUAL: (1) `extract-lean/lakefile.toml` requires the lean4-tree-sitter \
+package by path out of a gitignored clone, and that package's `extern_lib` links ALL TEN \
+vendored grammars unconditionally — 111 MB of generated C — so the vendoring is the whole \
+seam, not the TypeScript slice; (2) the clone pins `leanprover/lean4:v4.32.0` against an \
+estate-wide v4.33.1, so vendoring the C would not remove the elan network fetch anyway, \
+and the toolchain split is itself unruled (grill item 3); (3) building only the \
+TypeScript grammar means editing an admitted third party's lakefile, which is a \
+re-admission event, not a wiring change. WHAT WOULD CHANGE THIS: the twin bumped to \
+v4.33.1 with a lean4-tree-sitter re-admission, or an upstream release that makes the \
+grammar set selectable — either removes the standing exception and this task joins the \
+chain. Until then run it by hand after any change to the extractor, the walk, or the pins.\
+"""
 dir = "{{config_root}}/experiments/entity-store-extract/twin"
 run = [
   "bash bootstrap.sh",

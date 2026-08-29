@@ -5,13 +5,20 @@
  */
 import { describe, expect, it } from "@effect/vitest";
 import { Schema } from "effect";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   MANIFEST_V0, SPECTRUM, UNREACHABLE_V0, canonJson, detail,
   isCanonicalNat, isPayloadHex, verdictKey,
   type RefusalCode, type Verdict,
 } from "../src/contract";
+// @ts-expect-error — .mjs engine, deliberately untyped (see test/engines.ts):
+// it is the independent leg and must not acquire a shape from the ck leg.
+import { MANIFEST as OXC_MANIFEST, MANIFEST_PATH } from "../src/oxc-engine.mjs";
 import { ENGINES, ledgerSource } from "./engines";
 import ledger from "./ledger.json" with { type: "json" };
+import manifestJson from "../../../library/effects/src/cas/generated/lift/manifest.json" with { type: "json" };
 
 /** Every code in the taxonomy. Kept as a runtime value beside the type so
  * the totality claim is checkable, not merely compilable. */
@@ -188,5 +195,36 @@ describe("T1 manifest shape (R11)", () => {
 
   it("round-trips through canonical JSON", () => {
     expect(canonJson(JSON.parse(canonJson(MANIFEST_V0)))).toBe(canonJson(MANIFEST_V0));
+  });
+});
+
+/**
+ * R11's premise, made a test. The two engines are only each other's check
+ * while they read ONE manifest: `contract.ts` (ck leg) imports it, and
+ * `oxc-engine.mjs` (oxc leg) readFileSyncs it. They diverged once — the oxc
+ * leg read a stale `src/manifest.json`, and every load-bearing field happened
+ * to still be byte-equal, so the gate stayed green while the authority had
+ * already forked. These assertions are about the BYTES and the PATH, not the
+ * decoded values, because it was the values agreeing that hid the defect.
+ */
+describe("T1 manifest authority (R11 — one file, both legs)", () => {
+  const AUTHORITY = fileURLToPath(
+    new URL("../../../library/effects/src/cas/generated/lift/manifest.json", import.meta.url),
+  );
+
+  it("has the oxc leg reading the Lean-generated file, not a local copy", () => {
+    expect(resolve(MANIFEST_PATH)).toBe(resolve(AUTHORITY));
+  });
+
+  it("gives both legs byte-identical manifests", () => {
+    expect(readFileSync(MANIFEST_PATH).equals(readFileSync(AUTHORITY))).toBe(true);
+    expect(canonJson(OXC_MANIFEST)).toBe(canonJson(manifestJson));
+  });
+
+  it("has no second manifest anywhere in src/ to drift against", () => {
+    const srcDir = fileURLToPath(new URL("../src", import.meta.url));
+    const strays = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
+      .filter((p) => p.endsWith("manifest.json"));
+    expect(strays).toEqual([]);
   });
 });

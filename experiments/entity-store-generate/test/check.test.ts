@@ -37,12 +37,19 @@ const makeMiniCase = (): { inventory: string; generated: string } => {
   return { inventory, generated }
 }
 
+/** Every test that calls `lakeBuild` shells out to a COLD `lake build` of a
+ * fresh temp project, which is minutes of work on a loaded machine and well
+ * past bun's 5 s default. That default made this suite pass on an idle host and
+ * time out under `mise run check`, which is the worst way for a gate to fail:
+ * red for a reason that has nothing to do with what it asserts. */
+const LAKE_BUILD_TIMEOUT_MS = 300_000
+
 test("the mini inventory and handwritten fixture build together", () => {
   const fixture = makeMiniCase()
   const build = lakeBuild(fixture.generated)
 
   expect(build.exitCode).toBe(0)
-})
+}, LAKE_BUILD_TIMEOUT_MS)
 
 test("a hand edit to generated text fails the whole-tree comparison", () => {
   const fixture = makeMiniCase()
@@ -77,7 +84,7 @@ test("tag drift fails the comparison and the handwritten fixture fails the kerne
   expect(build.exitCode).not.toBe(0)
   expect(build.stdout + build.stderr).toContain("Fixtures.lean")
   expect(build.stdout + build.stderr).toContain("tag_Null")
-})
+}, LAKE_BUILD_TIMEOUT_MS)
 
 test("an added inventory constructor fails the whole-tree comparison", () => {
   const fixture = makeMiniCase()

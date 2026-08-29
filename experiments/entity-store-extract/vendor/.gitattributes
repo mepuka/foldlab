@@ -1,0 +1,5 @@
+# Pinned foreign bytes. The extractor verifies each file's git blob SHA-1
+# against src/extract.ts PIN before it reads a byte (EXT-1), so a checkout
+# that invents CRLF produces a pin-mismatch refusal on that host and nowhere
+# else. No EOL conversion, on any platform.
+effect-src/* -text

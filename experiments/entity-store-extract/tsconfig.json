@@ -1,4 +1,8 @@
 {
+  // `vendor/effect-src` holds pinned foreign bytes the extractor reads as DATA. It is
+  // never imported, and typechecking someone else's source against this lane's flags
+  // would report defects that are not ours to fix.
+  "exclude": ["vendor"],
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext"],

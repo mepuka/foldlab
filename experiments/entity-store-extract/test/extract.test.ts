@@ -17,10 +17,14 @@ import {
   enumUnionAlias,
   extract,
   gitBlobSha1,
-  PIN
+  PIN,
+  VENDORED_SRC_DIR
 } from "../src/extract.ts"
 
-const SRC = new URL("../../../.staging/e2/src-cache", import.meta.url).pathname
+/** The vendored pins (`vendor/README.md`), not `.staging/e2/src-cache` — this suite is
+ * `check:extract`, so it must run from a clean checkout. The bytes are the same bytes:
+ * every read here goes through the same EXT-1 digest refusal the extractor uses. */
+const SRC = VENDORED_SRC_DIR
 
 describe("pin verification", () => {
   test("SchemaAST.ts and SchemaRepresentation.ts match the lock's git blobs", () => {

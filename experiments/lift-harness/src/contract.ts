@@ -119,13 +119,21 @@ export const SPECTRUM: Record<RefusalCode, SpectrumClass> = {
   "E-IMPORT-OPAQUE": "instrument", "E-HELPER-UNPINNED": "instrument",
 };
 
-/** The v0 rule manifest (R11). The AUTHORITY is `./manifest.json`; this
- * module DECODES those bytes rather than asserting a type over them, so a
- * malformed manifest fails here instead of somewhere downstream that has
- * already trusted it. `plugin.mjs` reads the same file — the engines share
- * DATA, never code, so the gate stays meaningful. When the Lean port lands
- * this file stops being hand-authored and becomes the generated projection
- * of Lean first-order data: same bytes, new authority. */
+/** The v0 rule manifest (R11). The AUTHORITY is
+ * `library/effects/src/cas/generated/lift/manifest.json` — the Lean port has
+ * landed, so the manifest is no longer hand-authored here: `lake exe emitlift`
+ * projects it from `Cas.Lift.manifestV0` and `check:cas` byte-gates the result.
+ * The import at the head of this file names those bytes, and this module
+ * DECODES them rather than asserting a type over them, so a malformed manifest
+ * fails here instead of somewhere downstream that has already trusted it.
+ *
+ * `oxc-engine.mjs` reads the SAME file (by path — it must stay a readFileSync
+ * for oxlint's plugin runtime). Nothing in this package holds a second copy;
+ * `test/T1-contract.test.ts` asserts both legs' bytes are identical, because
+ * the moment they are not, a Lean edit moves one engine and not the other and
+ * the agreement gate proves nothing. The struct below is deliberately narrower
+ * than the file: the emitter also carries `elements` and per-rule
+ * `description`, which are the human projection and no part of recognition. */
 export const Manifest = Schema.Struct({
   manifestVersion: Schema.Number,
   language: Schema.String,
