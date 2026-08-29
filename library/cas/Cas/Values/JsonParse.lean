@@ -28,9 +28,12 @@ Accepted, exactly (`parse_sound`, `parse_render`):
   and `-0` is refused. No `+`, no fraction, no exponent;
 - strings as `escapeCompact` spells them: the two mandatory escapes, the
   five short escapes, lowercase `\u00xx` for the rest of the control
-  range, every other character literal. The escape reader is
-  `unescapeOne` — the same one `Cas.Values.JsonInj` proves the round trip
-  for — so there is ONE escape alphabet in the estate, not two;
+  range, every other character literal. The reader is `unescapeOne` —
+  the same one `Cas.Values.JsonInj` proves the round trip for, so there
+  is ONE escape alphabet in the estate — behind `unescapeCanon`, which
+  re-encodes what it read and demands the input spelled it that way.
+  `"A"` and `""` are therefore REFUSED: the canonical
+  spellings are `"A"` and `"\b"`;
 - arrays and objects with NO whitespace anywhere: `[`, `]`, `{`, `}`,
   `,` and `:` are adjacent to their neighbours.
 
@@ -294,9 +297,9 @@ theorem unescapeCanon_sound {cs : List Char} {ch : Char} {rest : List Char}
   split at h
   · rename_i c' _ _
     match hm : matchLit (escapeCharCompact c').toList cs with
-    | none => rw [hm] at h; simp at h
+    | none => simp [hm] at h
     | some r =>
-      rw [hm] at h
+      simp only [hm] at h
       simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
       obtain ⟨hc, hr⟩ := h
       subst hc; subst hr
@@ -374,10 +377,12 @@ def parseField : Nat → List Char → Option ((String × Value) × List Char)
   | f + 1, c :: cs =>
     if c = '"' then
       match parseStrChars f cs with
-      | some (k, ':' :: r) =>
-        match parseValue f r with
-        | some (v, r') => some ((String.ofList k, v), r')
-        | none => none
+      | some (k, d :: r) =>
+        if d = ':' then
+          match parseValue f r with
+          | some (v, r') => some ((String.ofList k, v), r')
+          | none => none
+        else none
       | _ => none
     else none
 
@@ -789,6 +794,334 @@ theorem renderPlain_injective : RenderPlainInjective :=
 theorem renderCompact_inj {v w : Value} (hv : v.Canonical) (hw : w.Canonical)
     (h : renderCompact v = renderCompact w) : v.numNorm = w.numNorm :=
   renderCompact_inj_of renderPlain_injective hv hw h
+
+/-! ## Exactness — nothing but the rendering parses
+
+The other half of the contract, and the half that makes `parse` a
+CHARACTERIZATION rather than merely a left inverse: whatever the parser
+answers, it answers because the input spelled it. Every accepted
+document is the canonical rendering of the value answered — so the image
+of `parse` is exactly the image of `renderPlain`, and there is no second
+spelling anywhere in the grammar.
+
+The parser's answers are always `NumNormal`: it has no arm that produces
+a nonnegative `Value.int`. That is the exactness statement's only
+qualifier, and it is carried alongside rather than assumed. -/
+
+/-- EXACTNESS of the string reader. -/
+theorem parseStrChars_sound : ∀ (f : Nat) (cs k r : List Char),
+    parseStrChars f cs = some (k, r) → escapeCodes k ++ '"' :: r = cs
+  | 0, _, _, _, h => by simp [parseStrChars] at h
+  | _ + 1, [], _, _, h => by simp [parseStrChars] at h
+  | f + 1, c :: cs, k, r, h => by
+    simp only [parseStrChars] at h
+    by_cases hq : c = '"'
+    · subst hq
+      rw [if_pos rfl] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hk, hr⟩ := h
+      subst hk; subst hr
+      simp [escapeCodes]
+    · rw [if_neg hq] at h
+      match hu : unescapeCanon (c :: cs) with
+      | none => simp [hu] at h
+      | some (ch, rest) =>
+        simp only [hu] at h
+        match hps : parseStrChars f rest with
+        | none => simp [hps] at h
+        | some (k', r') =>
+          simp only [hps] at h
+          simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hk, hr⟩ := h
+          subst hk; subst hr
+          rw [escapeCodes, List.append_assoc,
+            parseStrChars_sound f rest k' r' hps, unescapeCanon_sound hu]
+
+mutual
+
+/-- EXACTNESS: whatever the value parser answers, the input it consumed
+is that value's canonical rendering — and the value is number-normal. -/
+theorem parseValue_sound : ∀ (f : Nat) (cs : List Char) (v : Value) (r : List Char),
+    parseValue f cs = some (v, r) → renderChars v ++ r = cs ∧ v.numNorm = v
+  | 0, _, _, _, h => by simp [parseValue] at h
+  | _ + 1, [], _, _, h => by simp [parseValue] at h
+  | f + 1, c :: cs, v, r, h => by
+    simp only [parseValue] at h
+    by_cases h1 : c = 'n'
+    · subst h1
+      rw [if_pos rfl] at h
+      match hm : matchLit ['u', 'l', 'l'] cs with
+      | none => simp [hm] at h
+      | some r' =>
+        simp only [hm] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hr⟩ := h
+        subst hv; subst hr
+        exact ⟨by rw [← matchLit_sound _ _ _ hm]; rfl, rfl⟩
+    rw [if_neg h1] at h
+    by_cases h2 : c = 't'
+    · subst h2
+      rw [if_pos rfl] at h
+      match hm : matchLit ['r', 'u', 'e'] cs with
+      | none => simp [hm] at h
+      | some r' =>
+        simp only [hm] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hr⟩ := h
+        subst hv; subst hr
+        exact ⟨by rw [← matchLit_sound _ _ _ hm]; rfl, rfl⟩
+    rw [if_neg h2] at h
+    by_cases h3 : c = 'f'
+    · subst h3
+      rw [if_pos rfl] at h
+      match hm : matchLit ['a', 'l', 's', 'e'] cs with
+      | none => simp [hm] at h
+      | some r' =>
+        simp only [hm] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hr⟩ := h
+        subst hv; subst hr
+        exact ⟨by rw [← matchLit_sound _ _ _ hm]; rfl, rfl⟩
+    rw [if_neg h3] at h
+    by_cases h4 : c = '"'
+    · subst h4
+      rw [if_pos rfl] at h
+      match hs : parseStrChars f cs with
+      | none => simp [hs] at h
+      | some (k, r') =>
+        simp only [hs] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hr⟩ := h
+        subst hv; subst hr
+        refine ⟨?_, rfl⟩
+        rw [← parseStrChars_sound f cs k r' hs]
+        simp [renderChars, String.toList_ofList]
+    rw [if_neg h4] at h
+    by_cases h5 : c = '-'
+    · subst h5
+      rw [if_pos rfl] at h
+      match hn : parseNat cs with
+      | none => simp [hn] at h
+      | some (n, r') =>
+        simp only [hn] at h
+        by_cases hz : n = 0
+        · simp [hz] at h
+        · rw [if_neg hz] at h
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hr⟩ := h
+          subst hv; subst hr
+          have hpos : 0 < n := Nat.pos_of_ne_zero hz
+          have hcast : (Int.ofNat n) = (n : Int) := rfl
+          have hneg : ¬ (0 : Int) ≤ -(Int.ofNat n) := by rw [hcast]; omega
+          have htn : (-(-(Int.ofNat n))).toNat = n := by rw [hcast]; omega
+          refine ⟨?_, by simp only [Value.numNorm, if_neg hneg]⟩
+          simp only [renderChars, if_neg hneg, htn, List.cons_append,
+            (parseNat_sound hn).1]
+    rw [if_neg h5] at h
+    by_cases h6 : c = '['
+    · subst h6
+      rw [if_pos rfl] at h
+      cases cs with
+      | nil => simp at h
+      | cons d cs' =>
+        dsimp only at h
+        by_cases hd : d = ']'
+        · subst hd
+          rw [if_pos rfl] at h
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hr⟩ := h
+          subst hv; subst hr
+          exact ⟨rfl, rfl⟩
+        · rw [if_neg hd] at h
+          match hx : parseValue f (d :: cs') with
+          | none => simp [hx] at h
+          | some (x, r1) =>
+            simp only [hx] at h
+            match hxs : parseItems f r1 with
+            | none => simp [hxs] at h
+            | some (xs, r2) =>
+              simp only [hxs] at h
+              simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+              obtain ⟨hv, hr⟩ := h
+              subst hv; subst hr
+              obtain ⟨hx1, hx2⟩ := parseValue_sound f (d :: cs') x r1 hx
+              obtain ⟨hxs1, hxs2⟩ := parseItems_sound f r1 xs r2 hxs
+              refine ⟨?_, by simp only [Value.numNorm, numNormItems, hx2, hxs2]⟩
+              simp only [renderChars, List.cons_append, List.append_assoc,
+                hxs1, hx1]
+    rw [if_neg h6] at h
+    by_cases h7 : c = '{'
+    · subst h7
+      rw [if_pos rfl] at h
+      cases cs with
+      | nil => simp at h
+      | cons d cs' =>
+        dsimp only at h
+        by_cases hd : d = '}'
+        · subst hd
+          rw [if_pos rfl] at h
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hr⟩ := h
+          subst hv; subst hr
+          exact ⟨rfl, rfl⟩
+        · rw [if_neg hd] at h
+          match hkv : parseField f (d :: cs') with
+          | none => simp [hkv] at h
+          | some (kv, r1) =>
+            simp only [hkv] at h
+            match hfs : parseFields f r1 with
+            | none => simp [hfs] at h
+            | some (fs, r2) =>
+              simp only [hfs] at h
+              simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+              obtain ⟨hv, hr⟩ := h
+              subst hv; subst hr
+              obtain ⟨hk1, hk2⟩ := parseField_sound f (d :: cs') kv r1 hkv
+              obtain ⟨hfs1, hfs2⟩ := parseFields_sound f r1 fs r2 hfs
+              refine ⟨?_, ?_⟩
+              · simp only [renderChars, List.cons_append, List.append_assoc,
+                  hfs1, hk1]
+              · simp only [Value.numNorm, numNormFields, hfs2]
+                rw [show ((kv.1, kv.2.numNorm) : String × Value) = kv by
+                  rw [hk2]]
+    · rw [if_neg h7] at h
+      match hn : parseNat (c :: cs) with
+      | none => simp [hn] at h
+      | some (n, r') =>
+        simp only [hn] at h
+        simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hr⟩ := h
+        subst hv; subst hr
+        exact ⟨(parseNat_sound hn).1, rfl⟩
+
+/-- EXACTNESS for an array's tail. -/
+theorem parseItems_sound : ∀ (f : Nat) (cs : List Char) (xs : List Value) (r : List Char),
+    parseItems f cs = some (xs, r) → itemsChars xs ++ r = cs ∧ numNormItems xs = xs
+  | 0, _, _, _, h => by simp [parseItems] at h
+  | _ + 1, [], _, _, h => by simp [parseItems] at h
+  | f + 1, c :: cs, xs, r, h => by
+    simp only [parseItems] at h
+    by_cases h1 : c = ']'
+    · subst h1
+      rw [if_pos rfl] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hv, hr⟩ := h
+      subst hv; subst hr
+      exact ⟨rfl, rfl⟩
+    rw [if_neg h1] at h
+    by_cases h2 : c = ','
+    · subst h2
+      rw [if_pos rfl] at h
+      match hx : parseValue f cs with
+      | none => simp [hx] at h
+      | some (x, r1) =>
+        simp only [hx] at h
+        match hxs : parseItems f r1 with
+        | none => simp [hxs] at h
+        | some (ys, r2) =>
+          simp only [hxs] at h
+          simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hr⟩ := h
+          subst hv; subst hr
+          obtain ⟨hx1, hx2⟩ := parseValue_sound f cs x r1 hx
+          obtain ⟨hxs1, hxs2⟩ := parseItems_sound f r1 ys r2 hxs
+          exact ⟨by simp only [itemsChars, List.cons_append, List.append_assoc,
+            hxs1, hx1], by simp only [numNormItems, hx2, hxs2]⟩
+    · rw [if_neg h2] at h; simp at h
+
+/-- EXACTNESS for one object field. -/
+theorem parseField_sound :
+    ∀ (f : Nat) (cs : List Char) (kv : String × Value) (r : List Char),
+      parseField f cs = some (kv, r) →
+        fieldChars kv.1 (renderChars kv.2) ++ r = cs ∧ kv.2.numNorm = kv.2
+  | 0, _, _, _, h => by simp [parseField] at h
+  | _ + 1, [], _, _, h => by simp [parseField] at h
+  | f + 1, c :: cs, kv, r, h => by
+    simp only [parseField] at h
+    by_cases h1 : c = '"'
+    · subst h1
+      rw [if_pos rfl] at h
+      match hs : parseStrChars f cs with
+      | none => simp [hs] at h
+      | some (k, []) => simp [hs] at h
+      | some (k, d :: r1) =>
+        simp only [hs] at h
+        by_cases hd : d = ':'
+        · subst hd
+          rw [if_pos rfl] at h
+          match hv : parseValue f r1 with
+          | none => simp [hv] at h
+          | some (w, r2) =>
+            simp only [hv] at h
+            simp only [Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨hkv, hr⟩ := h
+            subst hkv; subst hr
+            obtain ⟨hv1, hv2⟩ := parseValue_sound f r1 w r2 hv
+            refine ⟨?_, hv2⟩
+            simp only [fieldChars, String.toList_ofList, List.cons_append,
+              List.append_assoc, hv1]
+            rw [← parseStrChars_sound f cs k (':' :: r1) hs]
+        · rw [if_neg hd] at h; simp at h
+    · rw [if_neg h1] at h; simp at h
+
+/-- EXACTNESS for an object's tail. -/
+theorem parseFields_sound :
+    ∀ (f : Nat) (cs : List Char) (fs : List (String × Value)) (r : List Char),
+      parseFields f cs = some (fs, r) → fieldsChars fs ++ r = cs ∧ numNormFields fs = fs
+  | 0, _, _, _, h => by simp [parseFields] at h
+  | _ + 1, [], _, _, h => by simp [parseFields] at h
+  | f + 1, c :: cs, fs, r, h => by
+    simp only [parseFields] at h
+    by_cases h1 : c = '}'
+    · subst h1
+      rw [if_pos rfl] at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hv, hr⟩ := h
+      subst hv; subst hr
+      exact ⟨rfl, rfl⟩
+    rw [if_neg h1] at h
+    by_cases h2 : c = ','
+    · subst h2
+      rw [if_pos rfl] at h
+      match hkv : parseField f cs with
+      | none => simp [hkv] at h
+      | some (kv, r1) =>
+        simp only [hkv] at h
+        match hfs : parseFields f r1 with
+        | none => simp [hfs] at h
+        | some (gs, r2) =>
+          simp only [hfs] at h
+          simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hr⟩ := h
+          subst hv; subst hr
+          obtain ⟨hk1, hk2⟩ := parseField_sound f cs kv r1 hkv
+          obtain ⟨hfs1, hfs2⟩ := parseFields_sound f r1 gs r2 hfs
+          refine ⟨?_, ?_⟩
+          · simp only [fieldsChars, List.cons_append, List.append_assoc, hfs1, hk1]
+          · simp only [numNormFields, hfs2]
+            rw [show ((kv.1, kv.2.numNorm) : String × Value) = kv by rw [hk2]]
+    · rw [if_neg h2] at h; simp at h
+
+end
+
+/-- EXACTNESS at the door: every document `parse` accepts IS the
+canonical rendering of the value it answers, and that value is
+number-normal. With `parse_renderPlain`, the image of `parse` is exactly
+the image of `renderPlain`. -/
+theorem parse_sound {s : String} {v : Value} (h : parse s = some v) :
+    renderPlain v = s ∧ v.NumNormal := by
+  simp only [parse, parseChars] at h
+  match hp : parseValue s.toList.length s.toList with
+  | none => simp [hp] at h
+  | some (w, []) =>
+    simp only [hp] at h
+    obtain ⟨h1, h2⟩ := parseValue_sound _ _ _ _ hp
+    have hw : w = v := Option.some.inj h
+    subst hw
+    refine ⟨String.toList_inj.mp ?_, h2⟩
+    rw [← renderChars_eq w, ← h1]
+    simp
+  | some (w, _ :: _) => simp [hp] at h
 
 /-! ## The acceptance contract, worked at elaboration
 
