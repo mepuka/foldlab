@@ -1,6 +1,9 @@
 import { Effect, Equal, Option, Schema } from "effect"
 import { Recipe, type Bytes } from "../../src/internal/merkleChunk.ts"
-import { verifyConsistency } from "../../src/internal/merkleConsistency.ts"
+import {
+  type VerifyConsistencyInput,
+  verifyConsistency,
+} from "../../src/internal/merkleConsistency.ts"
 import {
   dstep,
   initState,
@@ -18,7 +21,10 @@ import {
   type StreamDoc,
 } from "../../src/internal/merkleProofCodec.ts"
 import { type HP, type Pre, root } from "../../src/internal/merkleTree.ts"
-import { verifyInclusion } from "../../src/internal/merkleVerify.ts"
+import {
+  type VerifyInclusionInput,
+  verifyInclusion,
+} from "../../src/internal/merkleVerify.ts"
 import { feedAll, type FramerResult } from "../../src/internal/proofFramer.ts"
 import { ManifestModel } from "../conformance/harness.ts"
 
@@ -210,20 +216,10 @@ export type ChunkFunction = (
   bytes: Bytes,
 ) => ReadonlyArray<Bytes>
 export type InclusionFunction = (
-  P: HP<MerkleAddress>,
-  index: number,
-  count: number,
-  bytes: Bytes,
-  siblings: ReadonlyArray<MerkleAddress>,
-  expectedRoot: MerkleAddress,
+  input: VerifyInclusionInput<MerkleAddress>,
 ) => boolean
 export type ConsistencyFunction = (
-  P: HP<MerkleAddress>,
-  oldSize: number,
-  newSize: number,
-  oldRoot: MerkleAddress,
-  newRoot: MerkleAddress,
-  proof: ReadonlyArray<MerkleAddress>,
+  input: VerifyConsistencyInput<MerkleAddress>,
 ) => boolean
 export type OpeningDecodeFunction = (bytes: Bytes) => Option.Option<OpeningDoc>
 export type StreamDecodeFunction = (bytes: Bytes) => Option.Option<StreamDoc>
@@ -265,28 +261,28 @@ export const runInclusionRow = (
   verify: InclusionFunction,
   row: InclusionRow,
 ) => Effect.sync(() => ({
-  accepted: verify(
-    merkleH,
-    row.input.index,
-    row.input.count,
-    row.input.bytes,
-    row.input.siblings,
-    row.input.root,
-  ),
+  accepted: verify({
+    P: merkleH,
+    index: row.input.index,
+    count: row.input.count,
+    bytes: row.input.bytes,
+    siblings: row.input.siblings,
+    expectedRoot: row.input.root,
+  }),
 }))
 
 export const runConsistencyRow = (
   verify: ConsistencyFunction,
   row: ConsistencyRow,
 ) => Effect.sync(() => ({
-  accepted: verify(
-    merkleH,
-    row.input.oldSize,
-    row.input.newSize,
-    row.input.oldRoot,
-    row.input.newRoot,
-    row.input.proof,
-  ),
+  accepted: verify({
+    P: merkleH,
+    oldSize: row.input.oldSize,
+    newSize: row.input.newSize,
+    oldRoot: row.input.oldRoot,
+    newRoot: row.input.newRoot,
+    proof: row.input.proof,
+  }),
 }))
 
 export const runOpeningRow = (

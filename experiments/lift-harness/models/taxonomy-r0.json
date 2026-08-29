@@ -62,6 +62,9 @@
     "effect/ManagedRuntime.make": "out"
   },
   "byConstruct": {
+    "effect.pipe": "computation",
+    "effect.flow": "computation",
+    "effect.identity": "computation",
     "effect/Effect.gen": "computation",
     "effect/Effect.fn": "computation",
     "effect/Effect.provide": "wiring",
