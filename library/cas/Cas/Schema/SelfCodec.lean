@@ -20,12 +20,11 @@ increment's open obligation (pending, per the facade's increment
 list) — nothing here claims it.
 
 The OTHER direction — "bytes determine the canonical value", i.e.
-injectivity of the payload — is wired in `Cas.Schema.PayloadInj`
-(`payload_inj`), conditionally on the value plane's one named open
-obligation `Cas.Json.RenderPlainInjective` (`Cas.Values.JsonInj`).
-Everything schema-side of that obligation, including the step where
-`WF` is load-bearing, is proved there. Nothing here or there asserts
-the obligation.
+injectivity of the payload — is PROVED in `Cas.Schema.PayloadInj`
+(`payload_inj`, `payload_inj'`, `payloadBytes_inj`), unconditionally.
+It rests on `Cas.Json.renderPlain_injective` (`Cas.Values.JsonParse`,
+from the strict parser), which was this lane's last named open
+obligation.
 -/
 
 namespace Cas.Schema

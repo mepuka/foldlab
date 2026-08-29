@@ -294,6 +294,56 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
       the self-delimiting/follow-set argument — i.e. the parser proper.
       The sequencing decision is therefore narrowed to: write the
       parser, or write the digits inverse plus the follow-set induction.
+
+    **CLOSED, 2026-08-29** (`Values/Digits.lean`,
+    `Values/JsonParse.lean`). The parser was written; it discharges
+    both debts, and `payload_inj` / `payload_inj'` / `payloadBytes_inj`
+    are unconditional theorems. What landed:
+    - `Cas.Json.parse : String → Option Value`, structural on fuel (no
+      `partial`, no well-founded recursion, no `native_decide`), with
+      the fuel the entry point supplies being the input's own length.
+      `String` rather than `ByteArray` because `Ast.payloadBytes` is
+      `Ast.payload.toUTF8` and `String.toByteArray_inj` already carries
+      the byte step; a `ByteArray` parser would owe a UTF-8 decoder
+      proof nothing needs.
+    - `parse_render` (adequacy): on canonical values, `parse
+      (renderCompact v) = some v.numNorm`, with `parse_render'` on the
+      nose for `NumNormal` values — the `repNorm` treatment, mirrored.
+    - `parse_sound` (exactness): every accepted document IS the
+      canonical rendering of the value answered, and that value is
+      `NumNormal`. With adequacy, the image of `parse` is exactly the
+      image of `renderPlain`.
+    - `Cas.Json.renderPlain_injective : RenderPlainInjective`. Survey
+      blocker B7 closed: "the node at this address IS this code" is a
+      fact.
+    - `Cas.Schema.ingestBytes` — the bytes-in door, `parse` composed
+      with `ingest`, with `ingestBytes_wf` and `ingestBytes_payload`.
+      The R15 loop's missing first step.
+
+    Three findings worth the record:
+    - `Nat.repr` injectivity cost almost nothing: the toolchain ships
+      no such LEMMA, but Lean 4.33 ships the INVERSE
+      (`Nat.ofDigitChars`, `Nat.ofDigitChars_ten_toDigits`), which was
+      the expensive half. The narrowing above assumed otherwise.
+    - `RenderPlainInjective`'s `Canonical` premises are NOT needed.
+      `JsonParse.renderPlain_inj` is the unrestricted statement; the
+      premises were an artefact of the anticipated proof route through
+      the sort.
+    - `unescapeOne` is a left inverse ON THE ENCODER'S IMAGE, which is
+      less than a strict parser needs — it reads `A` as `A` and
+      `` as a backspace, neither of which the encoder emits. A
+      parser built on it directly would accept two spellings of one
+      string and `parse_sound` would be FALSE.
+      `JsonParse.unescapeCanon` closes it by re-encoding what it read
+      and demanding the input spelled it that way.
+
+    SORTED KEYS, decided: `parse` does not require them and does not
+    impose them. It answers objects in the order the bytes carry them,
+    and canonicality is the gate's question — the door's existing split
+    ("Shape is the decoder's question; discipline is the gate's",
+    `Ingest.lean`), and what keeps `parse` a left inverse of
+    `renderPlain` rather than of `renderPlain` restricted to canonical
+    values. `ingestBytes` runs `canonValue` exactly as `ingest` does.
 12. **Declaration registry documentation home**: the wire-identity
     table lives in `Declarations.lean`'s docstring; `REGISTRY.md` is
     scoped to kind tags. Promote or leave.

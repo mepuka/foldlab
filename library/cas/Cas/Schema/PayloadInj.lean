@@ -1,14 +1,18 @@
 import Cas.Schema.SelfCodec
-import Cas.Values.JsonInj
+import Cas.Values.JsonParse
 
 /-!
 # Revision-1 payload injectivity — equal bytes, equal code
 
 The schema plane's half of "bytes determine the canonical value". The
-value plane (`Cas.Values.JsonInj`) owns the hard direction and states it
-as one named obligation, `Json.RenderPlainInjective`; everything here is
-the short derivation on top of it, plus the one thing the value plane
-cannot know.
+value plane owns the hard direction, `Json.RenderPlainInjective`;
+everything here is the short derivation on top of it, plus the one thing
+the value plane cannot know.
+
+The hard direction is now PROVED (`Json.renderPlain_injective`,
+`Cas.Values.JsonParse`, from the strict parser's adequacy), so every law
+in this module is UNCONDITIONAL. It was stated conditionally through
+Stage 3; the statements are unchanged, the hypothesis is gone.
 
 ## The chain
 
@@ -53,17 +57,16 @@ puts a number under `"payload"` at all. `deNumNorm_decl_payload` is
 that step, and it is the only arm of the recovery that consumes a
 hypothesis.
 
-## Proved vs conditional
+## All proved
 
 - `deNumNorm_numNorm_representation`, `deNumNorm_numNorm_envelope`,
-  `envelope_numNorm_inj` — UNCONDITIONAL, kernel-checked here.
-- `payload_inj_needs_wf` — UNCONDITIONAL: the `WF` premise is
-  necessary, exhibited by the two codes above.
-- `payload_inj`, `payload_inj'`, `payloadBytes_inj` — CONDITIONAL on
-  `Json.RenderPlainInjective`, carried as an explicit hypothesis. The
-  obligation is stated and unproved in `Cas.Values.JsonInj`; see its
-  docstring for the three sub-obligations and the wall (survey blocker
-  B7, ruling 11).
+  `envelope_numNorm_inj` — kernel-checked here;
+- `payload_inj_needs_wf` — the `WF` premise is necessary, exhibited by
+  the two codes above;
+- `payload_inj`, `payload_inj'`, `payloadBytes_inj` — the laws
+  themselves, now unconditional. "The node at this address IS this
+  code" is a fact, not a pin (survey blocker B7 closed, ruling 11
+  closed).
 -/
 
 namespace Cas.Schema
@@ -244,32 +247,36 @@ theorem envelope_numNorm_inj {a b : Ast} (ha : a.WF) (hb : b.WF)
   have := congrArg deNumNorm h
   rwa [deNumNorm_numNorm_envelope ha, deNumNorm_numNorm_envelope hb] at this
 
-/-! ## The payload law — conditional on the value-plane obligation -/
+/-! ## The payload law -/
 
 /-- REVISION-1 PAYLOAD INJECTIVITY: for well-formed codes, equal
-canonical payload bytes give equal normal codes.
-
-Conditional on `Json.RenderPlainInjective`, the value plane's named
-open obligation (`Cas.Values.JsonInj`); every other step is proved. -/
-theorem payload_inj (hinj : Json.RenderPlainInjective) {a b : Ast}
+canonical payload bytes give equal normal codes. -/
+theorem payload_inj {a b : Ast}
     (ha : a.WF) (hb : b.WF) (h : a.payload = b.payload) :
     a.repNorm = b.repNorm :=
   envelope_numNorm_inj ha hb
-    (hinj _ _ (envelope_canonical a) (envelope_canonical b)
+    (Json.renderPlain_injective _ _ (envelope_canonical a) (envelope_canonical b)
       (by rw [← payload_renderPlain a, ← payload_renderPlain b]; exact h))
 
 /-- The `RepNormal` corollary: on the codes the decoder can produce,
 equal payloads give equality on the nose — one payload, one code. -/
-theorem payload_inj' (hinj : Json.RenderPlainInjective) {a b : Ast}
+theorem payload_inj' {a b : Ast}
     (ha : a.WF) (hb : b.WF) (hna : a.RepNormal) (hnb : b.RepNormal)
     (h : a.payload = b.payload) : a = b := by
-  have := payload_inj hinj ha hb h
+  have := payload_inj ha hb h
   rwa [hna, hnb] at this
 
 /-- The same law at the bytes the schema node actually carries. -/
-theorem payloadBytes_inj (hinj : Json.RenderPlainInjective) {a b : Ast}
+theorem payloadBytes_inj {a b : Ast}
     (ha : a.WF) (hb : b.WF) (h : a.payloadBytes = b.payloadBytes) :
     a.repNorm = b.repNorm :=
-  payload_inj hinj ha hb (String.toByteArray_inj.mp h)
+  payload_inj ha hb (String.toByteArray_inj.mp h)
+
+/-- The door's own left inverse, at the bytes: a well-formed code's
+canonical payload parses and ingests back to that code's revision-1
+normal form. The read half of the loop, end to end. -/
+theorem payload_parse {a : Ast} :
+    Json.parse a.payload = some a.envelope.numNorm :=
+  Json.parse_render (envelope_canonical a)
 
 end Cas.Schema

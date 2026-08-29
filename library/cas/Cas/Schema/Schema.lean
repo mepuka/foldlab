@@ -52,26 +52,23 @@ Named increments, in order:
   `toRepresentationJson_inj` the round trip and injectivity, both
   stated modulo the literal-null collapse (`Ast.repNorm`,
   `Ast.RepNormal`) — the ONE identification the revision-1 projection
-  makes, which no decoder can undo (register R13). Still open, named
-  precisely: injectivity of the canonical rendering itself (bytes
-  determine the canonical value — the verified-parser argument), and
-  `Ast.ofRepresentationJson`'s image being `RepNormal` (true by
-  inspection — the decoder has no `.lit .null` arm — but not yet
-  proved as a theorem).
-- **Payload injectivity** — WIRED (`PayloadInj`, 2026-08-29):
-  `payload_inj` — for well-formed codes, equal payload bytes give
-  equal `repNorm`, with `payload_inj'` the on-the-nose `RepNormal`
-  corollary. CONDITIONAL on ONE hypothesis, the value plane's named
-  open obligation `Cas.Json.RenderPlainInjective`
-  (`Cas.Values.JsonInj`); every step schema-side of it is proved
-  unconditionally (`deNumNorm_numNorm_representation`,
-  `deNumNorm_numNorm_envelope`, `envelope_numNorm_inj`). Two things
-  the wiring pins: the rendering identifies `Value.nat n` with
-  `Value.int n`, so the obligation can only conclude equality up to
-  `Value.numNorm` and the schema plane undoes that collapse by key;
-  and the `WF` premise is LOAD-BEARING there — without the registry's
-  payload discipline, `Ast.decl .date (.nat 5) []` and
-  `Ast.decl .date (.int 5) []` are two codes with one payload.
+  makes, which no decoder can undo (register R13). The verified-parser
+  argument that was named open here has LANDED
+  (`Cas.Json.renderPlain_injective`, `Cas.Values.JsonParse`); what
+  remains open is `Ast.ofRepresentationJson`'s image being `RepNormal`
+  (true by inspection — the decoder has no `.lit .null` arm — but not
+  yet proved as a theorem).
+- **Payload injectivity** — LANDED (`PayloadInj`, unconditional since
+  the parser slice): `payload_inj` — for well-formed codes, equal
+  payload bytes give equal `repNorm`, with `payload_inj'` the
+  on-the-nose `RepNormal` corollary and `payloadBytes_inj` the same at
+  the schema node's bytes. Two things the derivation pins: the
+  rendering identifies `Value.nat n` with `Value.int n`, so the value
+  plane can only conclude equality up to `Value.numNorm` and the
+  schema plane undoes that collapse by key; and the `WF` premise is
+  LOAD-BEARING there — without the registry's payload discipline,
+  `Ast.decl .date (.nat 5) []` and `Ast.decl .date (.int 5) []` are
+  two codes with one payload (`payload_inj_needs_wf`).
 - **Ingestion** — LANDED (Slice B): `Ingest` is the door. `ingest`
   normalizes, decodes the revision-1 envelope, and gates on `Ast.wf`,
   with named refusals (`notASchema`/`illFormed`/`wrongRevision`/

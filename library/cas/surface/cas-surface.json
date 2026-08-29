@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 346,
-    "Values": 265,
+    "Schema": 351,
+    "Values": 308,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 112,
-    "Quot.sound": 212,
-    "propext": 298
+    "Classical.choice": 148,
+    "Quot.sound": 251,
+    "propext": 339
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 199,
+    "Cas.Schema.Ast": 204,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
     "Cas.Word": 56
   },
-  "declarations": 1129,
-  "documented": 506,
+  "declarations": 1190,
+  "documented": 565,
   "library": "Cas",
   "modules": [
     {
@@ -6079,8 +6079,8 @@
       ]
     },
     {
-      "declarations": 24,
-      "documented": 13,
+      "declarations": 28,
+      "documented": 17,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -6135,6 +6135,41 @@
           "name": "Cas.Schema.ingest",
           "signature": "Cas.Json.Value → Except Cas.Schema.IngestRefusal Cas.Schema.Ast",
           "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ingestBytes",
+          "signature": "String → Except Cas.Schema.IngestRefusal Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingestBytes_payload",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → Cas.Schema.ingestBytes a.payload = Except.ok a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingestBytes_payload'",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.WF → a.RepNormal → Cas.Schema.ingestBytes a.payload = Except.ok a",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.ingestBytes_wf",
+          "signature": "∀ {s : String} {a : Cas.Schema.Ast}, Cas.Schema.ingestBytes s = Except.ok a → a.WF",
+          "touches": ["Schema"]
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -6281,8 +6316,8 @@
       ]
     },
     {
-      "declarations": 15,
-      "documented": 10,
+      "declarations": 16,
+      "documented": 11,
       "module": "Cas.Schema.PayloadInj",
       "surface": [
         {
@@ -6374,8 +6409,8 @@
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Schema.payloadBytes_inj",
-          "signature": "Cas.Json.RenderPlainInjective → ∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.payloadBytes = b.payloadBytes → a.repNorm = b.repNorm",
-          "touches": ["Schema", "Values"]
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.payloadBytes = b.payloadBytes → a.repNorm = b.repNorm",
+          "touches": ["Schema"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6383,8 +6418,8 @@
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Schema.payload_inj",
-          "signature": "Cas.Json.RenderPlainInjective → ∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.payload = b.payload → a.repNorm = b.repNorm",
-          "touches": ["Schema", "Values"]
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.payload = b.payload → a.repNorm = b.repNorm",
+          "touches": ["Schema"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6392,8 +6427,8 @@
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Schema.payload_inj'",
-          "signature": "Cas.Json.RenderPlainInjective → ∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.RepNormal → b.RepNormal → a.payload = b.payload → a = b",
-          "touches": ["Schema", "Values"]
+          "signature": "∀ {a b : Cas.Schema.Ast}, a.WF → b.WF → a.RepNormal → b.RepNormal → a.payload = b.payload → a = b",
+          "touches": ["Schema"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6403,6 +6438,15 @@
           "name": "Cas.Schema.payload_inj_needs_wf",
           "signature": "∃ a b, a.payload = b.payload ∧ a.repNorm ≠ b.repNorm",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.payload_parse",
+          "signature": "∀ {a : Cas.Schema.Ast}, Cas.Json.parse a.payload = some a.envelope.numNorm",
+          "touches": ["Schema", "Values"]
         },
         {
           "documented": true,
@@ -7374,6 +7418,137 @@
       ]
     },
     {
+      "declarations": 17,
+      "documented": 17,
+      "module": "Cas.Values.Digits",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.NoDigitStart",
+          "signature": "List Char → Prop"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.canonDigits",
+          "signature": "List Char → Bool"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.canonDigits_toDigits",
+          "signature": "∀ (n : Nat), Cas.Json.canonDigits (Nat.toDigits 10 n) = true",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.digitValue",
+          "signature": "Char → Option Nat"
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.digitValue_digitChar",
+          "signature": "∀ (n : Nat), n < 10 → Cas.Json.digitValue n.digitChar = some n",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.digitValue_mem_toDigits",
+          "signature": "∀ (n : Nat) (c : Char), c ∈ Nat.toDigits 10 n → (Cas.Json.digitValue c).isSome = true",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.digitValue_sound",
+          "signature": "∀ {c : Char} {k : Nat}, Cas.Json.digitValue c = some k → k < 10 ∧ k.digitChar = c ∧ c.toNat - '0'.toNat = k",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.natRepr_inj",
+          "signature": "∀ {n m : Nat}, n.repr = m.repr → n = m"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseNat",
+          "signature": "List Char → Option (Nat × List Char)"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseNat_repr",
+          "signature": "∀ (n : Nat) (rest : List Char), Cas.Json.NoDigitStart rest → Cas.Json.parseNat ((toString n).toList ++ rest) = some (n, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseNat_sound",
+          "signature": "∀ {cs : List Char} {n : Nat} {rest : List Char}, Cas.Json.parseNat cs = some (n, rest) → Nat.toDigits 10 n ++ rest = cs ∧ Cas.Json.NoDigitStart rest",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseNat_toDigits",
+          "signature": "∀ (n : Nat) (rest : List Char), Cas.Json.NoDigitStart rest → Cas.Json.parseNat (Nat.toDigits 10 n ++ rest) = some (n, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.takeDigits",
+          "signature": "List Char → List Char × List Char"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.takeDigits_append",
+          "signature": "∀ (ds rest : List Char), (∀ (c : Char), c ∈ ds → (Cas.Json.digitValue c).isSome = true) → Cas.Json.NoDigitStart rest → Cas.Json.takeDigits (ds ++ rest) = (ds, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.takeDigits_sound",
+          "signature": "∀ (cs : List Char), (Cas.Json.takeDigits cs).fst ++ (Cas.Json.takeDigits cs).snd = cs ∧ (∀ (c : Char), c ∈ (Cas.Json.takeDigits cs).fst → (Cas.Json.digitValue c).isSome = true) ∧ Cas.Json.NoDigitStart (Cas.Json.takeDigits cs).snd",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.toDigits_ofDigitChars",
+          "signature": "∀ (ds : List Char), (∀ (c : Char), c ∈ ds → (Cas.Json.digitValue c).isSome = true) → Cas.Json.canonDigits ds = true → Nat.toDigits 10 (Nat.ofDigitChars 10 ds 0) = ds",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.toString_nat_inj",
+          "signature": "∀ {n m : Nat}, toString n = toString m → n = m"
+        }
+      ]
+    },
+    {
       "declarations": 39,
       "documented": 8,
       "module": "Cas.Values.Json",
@@ -7885,6 +8060,308 @@
           "kind": "theorem",
           "name": "Cas.Json.unescapeOne_escapeCharCompact",
           "signature": "∀ (c : Char) (rest : List Char), Cas.Json.unescapeOne ((Cas.Json.escapeCharCompact c).toList ++ rest) = some (c, rest)",
+          "touches": ["Values"]
+        }
+      ]
+    },
+    {
+      "declarations": 39,
+      "documented": 37,
+      "module": "Cas.Values.JsonParse",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.fieldChars",
+          "signature": "String → List Char → List Char"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.fieldsChars",
+          "signature": "List (String × Cas.Json.Value) → List Char",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.fieldsChars_eq",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)) (pre : String), (\",\".intercalate (pre :: Cas.Json.renderPlainFields fs)).toList ++ ['}'] = pre.toList ++ Cas.Json.fieldsChars fs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.itemsChars",
+          "signature": "List Cas.Json.Value → List Char",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.itemsChars_eq",
+          "signature": "∀ (xs : List Cas.Json.Value) (pre : String), (\",\".intercalate (pre :: Cas.Json.renderPlainItems xs)).toList ++ [']'] = pre.toList ++ Cas.Json.itemsChars xs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.matchLit",
+          "signature": "List Char → List Char → Option (List Char)"
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.matchLit_append",
+          "signature": "∀ (l r : List Char), Cas.Json.matchLit l (l ++ r) = some r",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Json.matchLit_sound",
+          "signature": "∀ (l cs r : List Char), Cas.Json.matchLit l cs = some r → l ++ r = cs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parse",
+          "signature": "String → Option Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseChars",
+          "signature": "List Char → Option Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseField",
+          "signature": "Nat → List Char → Option ((String × Cas.Json.Value) × List Char)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseField_sound",
+          "signature": "∀ (f : Nat) (cs : List Char) (kv : String × Cas.Json.Value) (r : List Char), Cas.Json.parseField f cs = some (kv, r) → Cas.Json.fieldChars kv.fst (Cas.Json.renderChars kv.snd) ++ r = cs ∧ kv.snd.numNorm = kv.snd",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseFields",
+          "signature": "Nat → List Char → Option (List (String × Cas.Json.Value) × List Char)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseFields_fieldsChars",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)) (rest : List Char) (f : Nat), (Cas.Json.fieldsChars fs ++ rest).length ≤ f → Cas.Json.NoDigitStart rest → Cas.Json.parseFields f (Cas.Json.fieldsChars fs ++ rest) = some (Cas.Json.numNormFields fs, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseFields_sound",
+          "signature": "∀ (f : Nat) (cs : List Char) (fs : List (String × Cas.Json.Value)) (r : List Char), Cas.Json.parseFields f cs = some (fs, r) → Cas.Json.fieldsChars fs ++ r = cs ∧ Cas.Json.numNormFields fs = fs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseItems",
+          "signature": "Nat → List Char → Option (List Cas.Json.Value × List Char)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseItems_itemsChars",
+          "signature": "∀ (xs : List Cas.Json.Value) (rest : List Char) (f : Nat), (Cas.Json.itemsChars xs ++ rest).length ≤ f → Cas.Json.NoDigitStart rest → Cas.Json.parseItems f (Cas.Json.itemsChars xs ++ rest) = some (Cas.Json.numNormItems xs, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseItems_sound",
+          "signature": "∀ (f : Nat) (cs : List Char) (xs : List Cas.Json.Value) (r : List Char), Cas.Json.parseItems f cs = some (xs, r) → Cas.Json.itemsChars xs ++ r = cs ∧ Cas.Json.numNormItems xs = xs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseStrChars",
+          "signature": "Nat → List Char → Option (List Char × List Char)"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseStrChars_escapeCodes",
+          "signature": "∀ (cs rest : List Char) (f : Nat), (Cas.Json.escapeCodes cs ++ '\\\"' :: rest).length ≤ f → Cas.Json.parseStrChars f (Cas.Json.escapeCodes cs ++ '\\\"' :: rest) = some (cs, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseStrChars_sound",
+          "signature": "∀ (f : Nat) (cs k r : List Char), Cas.Json.parseStrChars f cs = some (k, r) → Cas.Json.escapeCodes k ++ '\\\"' :: r = cs",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.parseValue",
+          "signature": "Nat → List Char → Option (Cas.Json.Value × List Char)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseValue_renderChars",
+          "signature": "∀ (v : Cas.Json.Value) (rest : List Char) (f : Nat), (Cas.Json.renderChars v ++ rest).length ≤ f → Cas.Json.NoDigitStart rest → Cas.Json.parseValue f (Cas.Json.renderChars v ++ rest) = some (v.numNorm, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parseValue_sound",
+          "signature": "∀ (f : Nat) (cs : List Char) (v : Cas.Json.Value) (r : List Char), Cas.Json.parseValue f cs = some (v, r) → Cas.Json.renderChars v ++ r = cs ∧ v.numNorm = v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_render",
+          "signature": "∀ {v : Cas.Json.Value}, v.Canonical → Cas.Json.parse (Cas.Json.renderCompact v) = some v.numNorm",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_render'",
+          "signature": "∀ {v : Cas.Json.Value}, v.Canonical → v.NumNormal → Cas.Json.parse (Cas.Json.renderCompact v) = some v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_renderPlain",
+          "signature": "∀ (v : Cas.Json.Value), Cas.Json.parse (Cas.Json.renderPlain v) = some v.numNorm",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_renderPlain'",
+          "signature": "∀ {v : Cas.Json.Value}, v.NumNormal → Cas.Json.parse (Cas.Json.renderPlain v) = some v",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_sound",
+          "signature": "∀ {s : String} {v : Cas.Json.Value}, Cas.Json.parse s = some v → Cas.Json.renderPlain v = s ∧ v.NumNormal",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.parse_sound_compact",
+          "signature": "∀ {s : String} {v : Cas.Json.Value}, Cas.Json.parse s = some v → v.Canonical → Cas.Json.renderCompact v = s",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.renderChars",
+          "signature": "Cas.Json.Value → List Char",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderChars_eq",
+          "signature": "∀ (v : Cas.Json.Value), Cas.Json.renderChars v = (Cas.Json.renderPlain v).toList",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderChars_head",
+          "signature": "∀ (v : Cas.Json.Value), ∃ c t, Cas.Json.renderChars v = c :: t ∧ c ≠ ']'",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderCompact_inj",
+          "signature": "∀ {v w : Cas.Json.Value}, v.Canonical → w.Canonical → Cas.Json.renderCompact v = Cas.Json.renderCompact w → v.numNorm = w.numNorm",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderPlain_inj",
+          "signature": "∀ {v w : Cas.Json.Value}, Cas.Json.renderPlain v = Cas.Json.renderPlain w → v.numNorm = w.numNorm",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.renderPlain_injective",
+          "signature": "Cas.Json.RenderPlainInjective",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Json.unescapeCanon",
+          "signature": "List Char → Option (Char × List Char)"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.unescapeCanon_escapeCharCompact",
+          "signature": "∀ (c : Char) (rest : List Char), Cas.Json.unescapeCanon ((Cas.Json.escapeCharCompact c).toList ++ rest) = some (c, rest)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Json.unescapeCanon_sound",
+          "signature": "∀ {cs : List Char} {ch : Char} {rest : List Char}, Cas.Json.unescapeCanon cs = some (ch, rest) → (Cas.Json.escapeCharCompact ch).toList ++ rest = cs",
           "touches": ["Values"]
         }
       ]
@@ -9018,10 +9495,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 615,
+    "def": 634,
     "inductive": 33,
     "instance": 57,
     "structure": 36,
-    "theorem": 385
+    "theorem": 427
   }
 }
