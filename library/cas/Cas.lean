@@ -9,6 +9,7 @@ import Cas.Core.Address
 import Cas.Core.Canonical
 import Cas.Core.Canonicalize
 import Cas.Core.Admission
+import Cas.Values.Digits
 import Cas.Values.Json
 import Cas.Values.JsonInj
 import Cas.Values.Markdown
