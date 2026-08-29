@@ -248,3 +248,13 @@ records the 2026-08-29 session rulings that cut across specs.
     the product; the front end is its projection — and the views
     pillar (VISION.md, Paper/Linear) was deferred behind substrate
     completeness, which tonight's stack has substantially closed.*
+    **Addendum (same night): FOLDKIT is ruled the chassis.** The
+    direction is server-side estate AST → front-end components —
+    modular, composable, components SPEAKING the estate language:
+    a described kind's canonical code determines its component the
+    way it already determines its wire mirror, admission row, and
+    prose (the materializer discipline extended to UI — EmitAst/
+    EmitLayer/ProgProse precedents). "We speak all languages and we
+    teach others to speak ours" — the component register itself a
+    gated manifest, so third-party front ends learn the UI
+    vocabulary the way agents learn the tool vocabulary.
