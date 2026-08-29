@@ -1,0 +1,131 @@
+/*
+ * Ink on paper, and nothing else.
+ *
+ * There is no accent colour here on purpose. The session's standing
+ * invariant reserves hue for verdicts: one saturated colour in the whole
+ * product, spent on `owed`. Spending it in a skeleton stylesheet would
+ * quietly settle a decision that belongs to whoever designs the verdict
+ * surface. This file therefore declares tone only, and the palette
+ * arrives with the design.
+ *
+ * No CSS framework either. Tailwind is what foldkit's own scaffolder
+ * installs, and it is a reasonable default — but a utility vocabulary is
+ * a design-system decision, and this lane does not own it.
+ */
+
+:root {
+  --paper: #fbfbfa;
+  --ink: #16161a;
+  --ink-soft: #5c5c66;
+  --rule: #dedede;
+  --measure: 62ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121214;
+    --ink: #ececf0;
+    --ink-soft: #9a9aa4;
+    --rule: #2c2c31;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+}
+
+.panel {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.prose {
+  margin: 0 0 1rem;
+}
+
+.action {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.action:hover {
+  opacity: 0.85;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.status {
+  margin: 1rem 0 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.owed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.owed-item {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.owed-item:last-child {
+  border-bottom: 0;
+}
+
+.owed-lane {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}

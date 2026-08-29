@@ -91,7 +91,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe emitgate"
 
 [tasks."gen:backend-programs"]
-description = "Regenerate the straight-line Effect programs of the registered grammar terms"
+description = "Regenerate the straight-line Effect programs of the registered grammar terms, and the lift documents the recognizer must answer for them (P3's Lean half)"
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitprograms"
 
@@ -126,7 +126,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program + lift-document, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -231,6 +231,14 @@ run = [
   "mise run check:effects:ts",
   "mise run check:effects:research",
   "mise run check:ledger",
+]
+
+[tasks."check:lift-roundtrip"]
+description = "P3: the recognition leg of the PProg round trip — the harness reading the committed emitted programs must answer the committed lift documents byte for byte (not in the default check chain: experiments/lift-harness/bun.lock does not resolve under bun 1.4.0, so `--frozen-lockfile` is red before the test runs)"
+dir = "{{config_root}}/experiments/lift-harness"
+run = [
+  "bun install --frozen-lockfile",
+  "bun x vitest run test/T12-roundtrip.test.ts",
 ]
 
 [tasks."check:extract-twin"]

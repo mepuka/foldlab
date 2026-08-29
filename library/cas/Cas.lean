@@ -22,6 +22,7 @@ import Cas.IR.Word
 import Cas.Grammar.Grammar
 import Cas.Lang.Lang
 import Cas.Lift.Manifest
+import Cas.Lift.Decode
 import Cas.Vectors.Vectors
 import Cas.Architecture
 
@@ -96,11 +97,14 @@ abstraction, lowest first, and imported above in that order.
   when it consumes one. It is orthogonal to `Tower`, which is the
   vertical SERVICE tower.
 - **`Lift/` — the read face.** The effect-lift lane's first-order
-  data: the closed refusal taxonomy with its spectrum (`Taxonomy`)
-  and the v0 rule manifest (`Manifest`) — the R11 interchange
+  data: the closed refusal taxonomy with its spectrum (`Taxonomy`),
+  the v0 rule manifest (`Manifest`) — the R11 interchange
   document both recognition engines consume, emitted by the
-  `emitlift` executable. Reading never mints identity (the direction
-  law); the lane's engines and gates live with the TypeScript twin.
+  `emitlift` executable — and the DOOR (`Decode`), which reads the
+  recognizer's canonical lift document back as a `PProg` and stops
+  there: a document carrying a word is refused by name. Reading never
+  mints identity (the direction law); the lane's engines and gates
+  live with the TypeScript twin.
 - **`Vectors/` — the registered replay surface.** Checked names,
   non-empty words, runtime-admitted vectors, unique-name registries,
   and named wire records. `Cas.Vectors.Schema` derives their canonical

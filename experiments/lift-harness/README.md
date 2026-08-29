@@ -108,6 +108,44 @@ Landed 2026-08-28 under the rulings R1–R11 in
 | T6 | reproducibility: recognition is a pure function of source bytes, and committed records agree with the contract |
 | T7 | portability: the path, argv, separator and line-ending defects actually observed on the Windows host, each pinned as a test |
 | T8 | the ESTree deviation audit — what oxc really emits, measured against the pinned specification |
+| T12 | the PProg round trip (P3): both engines reading the committed emitted programs must answer, byte for byte, the lift documents Lean emitted from the same tables |
+
+### T12 — the round trip is closed (P3)
+
+The Lean landing exists. `Cas.Lift.decodeLift`
+(`library/cas/Cas/Lift/Decode.lean`) reads a canonical lift document
+back as a `PProg`, with named refusals and a stated domain — puts only,
+answer references only, dense and backward-resolving — and it delivers
+the program and stops. A document carrying a `word` is refused by name,
+which is the direction law spelled as machinery instead of prose. The
+decoder and the document encoder are proved mutual inverses on that
+domain (`decodeLift_encodeLift`, `encodeLift_decodeLift`,
+`decodeLift_inj`).
+
+That closes the loop the seam above describes:
+
+```
+PProg  ──lake exe emitprograms──▶  VectorPrograms.ts
+                                        │ ck / oxc
+                                        ▼
+                                  lift documents  ══byte-compared══  Cas.Lift.encodeLift
+                                        │
+                                        ▼ Cas.Lift.decodeLiftBytes
+                                      PProg  (the one it started from)
+```
+
+Both of T12's inputs are COMMITTED and emitted by one Lean run under a
+byte-identity gate (`lake exe emitprograms --check`, in `check:cas`),
+which also executes the Lean half of the trip on every registered
+program before writing the bytes. So T12 is the one tier that runs on a
+clean checkout: it never reaches for the fixture corpus in gitignored
+`.staging`. `mise run roundtrip` runs it alone.
+
+**It is not a run-safety claim.** TG1 stands open: a type-only import
+erases at compile time, both engines agree, and the program can still
+`ReferenceError` at runtime. A decoder inverting an encoder, and two
+type-blind engines agreeing, are both facts about SYNTAX. Green here
+says the document survives the trip, not that the program runs.
 
 ### The divergence ledger
 

@@ -1,0 +1,8 @@
+# One line ending in the tree, matching library/effects. A CRLF checkout
+# on the Windows host would make every regeneration report a phantom
+# modification once generated surfaces land here.
+*.ts   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf

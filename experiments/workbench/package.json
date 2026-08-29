@@ -1,0 +1,38 @@
+{
+  "name": "@foldlab/workbench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The workbench: a foldkit front end over the store language. Skeleton only — no API contract, no feature set.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --config oxlint.config.ts src",
+    "test": "bun --bun vitest run"
+  },
+  "dependencies": {
+    "effect": "4.0.0-rc.112",
+    "foldkit": "0.154.0"
+  },
+  "devDependencies": {
+    "@foldkit/oxlint-plugin": "0.10.0",
+    "@foldkit/vite-plugin": "0.19.0",
+    "@types/node": "22.20.1",
+    "oxlint": "1.80.0",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  },
+  "foldlab": {
+    "effectProvenance": {
+      "status": "PENDING",
+      "version": "4.0.0-rc.112",
+      "commit": null,
+      "lock": "../../.reference/provenance/sources.lock.json",
+      "note": "C6 pending mark. The lock resolves effect@4.0.0-rc.111 at commit 0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07. foldkit@0.154.0 peer-pins effect@4.0.0-rc.112 exactly, which is NOT yet in the lock. This package therefore names an UNRESOLVED effect pin. Nothing here may be cited as provenance-backed until the lock records rc.112, or until the workbench and library/effects agree on one effect version."
+    }
+  }
+}

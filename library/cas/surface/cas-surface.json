@@ -5,16 +5,16 @@
     "Core": 338,
     "Grammar": 126,
     "IR": 133,
-    "Lang": 244,
-    "Lift": 37,
+    "Lang": 268,
+    "Lift": 76,
     "Schema": 526,
-    "Values": 417,
+    "Values": 443,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 207,
-    "Quot.sound": 373,
-    "propext": 525
+    "Classical.choice": 220,
+    "Quot.sound": 387,
+    "propext": 544
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -34,8 +34,8 @@
     "Cas.Schema.El": 35,
     "Cas.Word": 107
   },
-  "declarations": 1612,
-  "documented": 821,
+  "declarations": 1659,
+  "documented": 847,
   "library": "Cas",
   "modules": [
     {
@@ -5566,6 +5566,360 @@
           "name": "Cas.Lang.step_put_honest",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type}, Function.Injective H → ∀ {w : Cas.Word}, w.wf = true → Cas.Grammar.Honest H w → ∀ {n : Cas.Node}, n.WF → Cas.RefsOk w.toStore n.refs → ∀ (k : Cas.Addr32 → Cas.Lang.Prog Cas.Lang.CasSig A), ∃ v, List.Sublist v [{ address := H (Cas.encodeNode n), node := n }] ∧ Cas.Lang.step H (Cas.Lang.Prog.vis (Cas.Lang.CasE.put n) k) w = (Cas.Lang.Status.running (k (H (Cas.encodeNode n))), w ++ v) ∧ (w ++ v).toStore = (w ++ [{ address := H (Cas.encodeNode n), node := n }]).toStore ∧ (w ++ v).wf = true ∧ Cas.Grammar.Honest H (w ++ v)",
           "touches": ["Codec", "Core", "Grammar", "IR", "Lang"]
+        }
+      ]
+    },
+    {
+      "declarations": 47,
+      "documented": 26,
+      "module": "Cas.Lift.Decode",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PIn.wf",
+          "signature": "Cas.Lang.PIn → Bool",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.PIn.wf_iff",
+          "signature": "∀ (i : Cas.Lang.PIn), i.wf = true ↔ i.WF",
+          "touches": ["Lang", "Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PLine.wf",
+          "signature": "Cas.Lang.PLine → Bool",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.PLine.wf_iff",
+          "signature": "∀ (l : Cas.Lang.PLine), l.wf = true ↔ l.WF",
+          "touches": ["Lang", "Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lift.LiftRefusal",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.LiftRefusal.ctorElim",
+          "signature": "{motive : Cas.Lift.LiftRefusal → Sort u} → (ctorIdx : Nat) → (t : Cas.Lift.LiftRefusal) → ctorIdx = t.ctorIdx → Cas.Lift.LiftRefusal.ctorElimType ctorIdx → motive t",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.LiftRefusal.ctorElimType",
+          "signature": "{motive : Cas.Lift.LiftRefusal → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.LiftRefusal.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Lift.LiftRefusal), Cas.Lift.LiftRefusal.ofNat x.ctorIdx = x",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lift.Lifted",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Lifted.helperUnpinned",
+          "signature": "Cas.Lift.Lifted → Bool",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Lifted.name",
+          "signature": "Cas.Lift.Lifted → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Lifted.prog",
+          "signature": "Cas.Lift.Lifted → Cas.Lang.PProg",
+          "touches": ["Lang", "Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.Lifted.storeBinder",
+          "signature": "Cas.Lift.Lifted → String",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeLift",
+          "signature": "Cas.Json.Value → Except Cas.Lift.LiftRefusal Cas.Lift.Lifted",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeLiftBytes",
+          "signature": "String → Except Cas.Lift.LiftRefusal Cas.Lift.Lifted",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLiftBytes_encodeLiftBytes",
+          "signature": "∀ {l : Cas.Lift.Lifted} {s : String}, Cas.Lift.encodeLiftBytes l = some s → Cas.Lift.decodeLiftBytes s = Except.ok l",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLift_encodeLift",
+          "signature": "∀ {l : Cas.Lift.Lifted} {v : Cas.Json.Value}, Cas.Lift.encodeLift l = some v → Cas.Lift.decodeLift v = Except.ok l",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLift_inj",
+          "signature": "∀ {v w : Cas.Json.Value} {l : Cas.Lift.Lifted}, Cas.Lift.decodeLift v = Except.ok l → Cas.Lift.decodeLift w = Except.ok l → v = w",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLift_wf",
+          "signature": "∀ {v : Cas.Json.Value} {l : Cas.Lift.Lifted}, Cas.Lift.decodeLift v = Except.ok l → ∀ (line : Cas.Lang.PLine), line ∈ l.prog → line.WF",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeLine",
+          "signature": "Nat → Cas.Json.Value → Except Cas.Lift.LiftRefusal Cas.Lang.PLine",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLine_encodeLine",
+          "signature": "∀ {index : Nat} {l : Cas.Lang.PLine} {v : Cas.Json.Value}, Cas.Lift.encodeLine index l = some v → Cas.Lift.decodeLine index v = Except.ok l",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeLine_wf",
+          "signature": "∀ {index : Nat} {v : Cas.Json.Value} {l : Cas.Lang.PLine}, Cas.Lift.decodeLine index v = Except.ok l → l.WF",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeProgFrom",
+          "signature": "Nat → List Cas.Json.Value → Except Cas.Lift.LiftRefusal Cas.Lang.PProg",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeProgFrom_encodeProgFrom",
+          "signature": "∀ (index : Nat) (p : Cas.Lang.PProg) (vs : List Cas.Json.Value), Cas.Lift.encodeProgFrom index p = some vs → Cas.Lift.decodeProgFrom index vs = Except.ok p",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeProgFrom_wf",
+          "signature": "∀ (index : Nat) (vs : List Cas.Json.Value) (p : Cas.Lang.PProg), Cas.Lift.decodeProgFrom index vs = Except.ok p → ∀ (l : Cas.Lang.PLine), l ∈ p → l.WF",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeRef",
+          "signature": "Nat → Cas.Json.Value → Except Cas.Lift.LiftRefusal (UInt8 × Cas.Lang.PIn)",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeRef_encodeRef",
+          "signature": "∀ {index : Nat} {r : UInt8 × Cas.Lang.PIn} {v : Cas.Json.Value}, Cas.Lift.encodeRef index r = some v → Cas.Lift.decodeRef index v = Except.ok r",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.decodeRefs",
+          "signature": "Nat → List Cas.Json.Value → Except Cas.Lift.LiftRefusal (List (UInt8 × Cas.Lang.PIn))",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.decodeRefs_encodeRefs",
+          "signature": "∀ (index : Nat) (rs : List (UInt8 × Cas.Lang.PIn)) (vs : List Cas.Json.Value), Cas.Lift.encodeRefs index rs = some vs → Cas.Lift.decodeRefs index vs = Except.ok rs",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeLift",
+          "signature": "Cas.Lift.Lifted → Option Cas.Json.Value",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeLiftBytes",
+          "signature": "Cas.Lift.Lifted → Option String",
+          "touches": ["Lift"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeLift_canonical",
+          "signature": "∀ {l : Cas.Lift.Lifted} {v : Cas.Json.Value}, Cas.Lift.encodeLift l = some v → v.Canonical",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeLift_decodeLift",
+          "signature": "∀ {v : Cas.Json.Value} {l : Cas.Lift.Lifted}, Cas.Lift.decodeLift v = Except.ok l → Cas.Lift.encodeLift l = some v",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeLift_numNormal",
+          "signature": "∀ {l : Cas.Lift.Lifted} {v : Cas.Json.Value}, Cas.Lift.encodeLift l = some v → v.NumNormal",
+          "touches": ["Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeLine",
+          "signature": "Nat → Cas.Lang.PLine → Option Cas.Json.Value",
+          "touches": ["Lang", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeLine_decodeLine",
+          "signature": "∀ {index : Nat} {v : Cas.Json.Value} {l : Cas.Lang.PLine}, Cas.Lift.decodeLine index v = Except.ok l → Cas.Lift.encodeLine index l = some v",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeProgFrom",
+          "signature": "Nat → Cas.Lang.PProg → Option (List Cas.Json.Value)",
+          "touches": ["Lang", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeProgFrom_decodeProgFrom",
+          "signature": "∀ (index : Nat) (vs : List Cas.Json.Value) (p : Cas.Lang.PProg), Cas.Lift.decodeProgFrom index vs = Except.ok p → Cas.Lift.encodeProgFrom index p = some vs",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeRef",
+          "signature": "Nat → UInt8 × Cas.Lang.PIn → Option Cas.Json.Value",
+          "touches": ["Lang", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeRef_decodeRef",
+          "signature": "∀ {index : Nat} {v : Cas.Json.Value} {r : UInt8 × Cas.Lang.PIn}, Cas.Lift.decodeRef index v = Except.ok r → Cas.Lift.encodeRef index r = some v",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lift.encodeRefs",
+          "signature": "Nat → List (UInt8 × Cas.Lang.PIn) → Option (List Cas.Json.Value)",
+          "touches": ["Lang", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lift.encodeRefs_decodeRefs",
+          "signature": "∀ (index : Nat) (vs : List Cas.Json.Value) (rs : List (UInt8 × Cas.Lang.PIn)), Cas.Lift.decodeRefs index vs = Except.ok rs → Cas.Lift.encodeRefs index rs = some vs",
+          "touches": ["Lang", "Lift", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instDecidableEqLiftRefusal",
+          "signature": "DecidableEq Cas.Lift.LiftRefusal",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instDecidableEqLifted",
+          "signature": "DecidableEq Cas.Lift.Lifted",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instDecidableEqLifted.decEq",
+          "signature": "(x x_1 : Cas.Lift.Lifted) → Decidable (x = x_1)",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lift.instReprLiftRefusal",
+          "signature": "Repr Cas.Lift.LiftRefusal",
+          "touches": ["Lift"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lift.instReprLiftRefusal.repr",
+          "signature": "Cas.Lift.LiftRefusal → Nat → Std.Format",
+          "touches": ["Lift"]
         }
       ]
     },
@@ -12849,10 +13203,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 820,
-    "inductive": 42,
-    "instance": 76,
-    "structure": 46,
-    "theorem": 625
+    "def": 841,
+    "inductive": 43,
+    "instance": 80,
+    "structure": 47,
+    "theorem": 645
   }
 }
