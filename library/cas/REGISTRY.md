@@ -1,8 +1,12 @@
 # Kind-tag registry — scheme 0
 
+Manifest version `1` — the version the JSON projection carries in its `manifestVersion` key.
+
 GENERATED — projection of `Cas.Grammar.manifestV0` by `lake exe emitgrammar`; do not edit. Every layout below is read off a witness term per form — the encoders in `Cas/Grammar/Tree.lean` where the grammar has a constructor, the node itself where it has none — so this document cannot drift from what is written.
 
 The wire kind tags of the grammar's sorts (`Cas/Grammar/Sorts.lean`, `Ty.wireTag`/`Ty.ofTag`). Ratified by the grammar grill (2026-08-28, rulings 2 and 3; recorded in `library/effects/IMPLEMENTATION-PLAN.md` §14). Tags 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; references type-check at tag granularity, so a row here is a contract on every wire.
+
+The version above was bumped for a surface change, per the manifest-versioning ruling: a form's reference discipline is now stated under a `discipline` key rather than implied by the `refs` array alone. The previous version knew only fixed slot lists, so a reader of it would take a FREE discipline — any number of edges, constrained by a law rather than a list — for a form with no references at all. Consumers pinned to the previous version keep reading `refs` correctly for every fixed form; only the free ones need the new key.
 
 ## The node envelope
 
@@ -151,11 +155,9 @@ One journal entry over a file, linked to its predecessor.
 A folded context: no payload, one typed edge per folded item.
 
 - payload: 0 bytes
-- references: item
+- references: free — any number of item edges
 
-| reference | expects | tag | meaning |
-| --- | --- | --- | --- |
-| `item` | `value` | `0x01` | one folded item, its edge tag read off the node that was loaded |
+Free reference discipline: any number of `item` edges, no slot list. One edge per folded item, in fold order, any number of them. The sort fixes no slot list — a context is whatever was folded — so what holds instead is a law: every edge's expected tag must resolve through Ty.ofTag, a context edge may not carry an unratified tag. CasExamples.AgentStep.agentStep is the consumer that satisfies it, reading each edge tag off the node it loaded.
 
 ### git.git
 

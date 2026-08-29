@@ -28,6 +28,13 @@ ratified tag with real consumers (`CasExamples.AgentStep.contextNode`)
 and no constructor — so it states its form as a literal node rather
 than through a fake constructor.
 
+A form's references are a DISCIPLINE, not always a list. `.fixed` names
+the slots exactly — the discipline of every grammar constructor.
+`.free` names none and states a law instead: every edge must resolve
+through `Ty.ofTag`, so a free node may not carry an unratified tag.
+`context` is the free one, because a context is whatever was folded,
+and a slot list would be a lie in the shape of a table.
+
 The only rows that carry no form are the RESERVED ones: 14/15
 (`step`/`cont`) are code points spelled outside `Ty` by
 `Cas/Lang/Defun.lean`. That exception is pinned, so ratifying a
@@ -152,6 +159,36 @@ structure Slot where
   expects : Ty
   meaning : String
 
+/-- How a form's references are constrained. Two disciplines, because
+the grammar has two kinds of node.
+
+`.fixed` names the slots exactly: the form writes those references, in
+that order, and nothing else — the discipline of every constructor in
+`Cas/Grammar/Tree.lean`.
+
+`.free` names no slots: the form writes any number of edges, and what
+holds of them is a LAW rather than a list — every edge must resolve
+through `Ty.ofTag`, so a free-discipline node may not carry an
+unratified tag. That is the constraint a folded `context` actually
+satisfies, and stating it as a slot list would be a lie in the shape of
+a table. -/
+inductive RefDiscipline where
+  /-- Exactly these slots, in this order. -/
+  | fixed (slots : List Slot)
+  /-- Any number of edges of one named kind, each carrying a ratified
+  sort's tag. -/
+  | free (name : String) (meaning : String)
+
+/-- The slots a discipline names — none, under a free one. -/
+def RefDiscipline.slots : RefDiscipline → List Slot
+  | .fixed ss => ss
+  | .free _ _ => []
+
+/-- The discipline's wire spelling, the `discipline` key's `kind`. -/
+def RefDiscipline.kind : RefDiscipline → String
+  | .fixed _ => "fixed"
+  | .free _ _ => "free"
+
 /-- What a form's shape is read off. `.tree` is a grammar term, whose
 elaboration under `Tree.node` IS the form's node; `.node` is that node
 written directly, for a ratified sort the grammar has no constructor
@@ -170,13 +207,13 @@ has two rows here and ONE wire tag: the forms are told apart by their
 payload, never by the tag.
 
 `witness` is a term whose elaboration IS this form's shape. The fields
-and slots below are checked against it; they are not a second spelling
-of the encoder. -/
+and the reference discipline below are checked against it; they are not
+a second spelling of the encoder. -/
 structure Form where
   name : String
   witness : Witness
   fields : List Field
-  slots : List Slot
+  refs : RefDiscipline
   meaning : String
 
 /-- The node a form's witness elaborates to. The address function is
@@ -319,7 +356,7 @@ reference count is reachable without knowing a sort. Each reference \
 record is one expected-tag byte followed by a 32-byte address."]
 
 def manifestV0 : Manifest where
-  manifestVersion := 0
+  manifestVersion := 1
   grammar := "cas-grammar"
   scheme := 0
   title := "Kind-tag registry — scheme 0"
@@ -337,7 +374,16 @@ grill (2026-08-28, rulings 2 and 3; recorded in ",
      .code "library/effects/IMPLEMENTATION-PLAN.md", .text " §14). Tags \
 8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names \
 one node form family; references type-check at tag granularity, so a row \
-here is a contract on every wire."]
+here is a contract on every wire."],
+    [.text "The version above was bumped for a surface change, per the \
+manifest-versioning ruling: a form's reference discipline is now stated \
+under a ", .code "discipline", .text " key rather than implied by the ",
+     .code "refs", .text " array alone. The previous version knew only \
+fixed slot lists, so a reader of it would take a FREE discipline — any \
+number of edges, constrained by a law rather than a list — for a form \
+with no references at all. Consumers pinned to the previous version \
+keep reading ", .code "refs", .text " correctly for every fixed form; \
+only the free ones need the new key."]
   ]
   envelope := envelopeV0
   rows := [
@@ -348,7 +394,7 @@ here is a contract on every wire."]
           fields := [
             { name := "payload", enc := .opaque,
               meaning := "the value's bytes; nothing in the grammar reads them" }]
-          slots := []
+          refs := .fixed []
           meaning := "An opaque value payload." }]
       notes := [.text "Opaque value payload. A leaf: no references." ] },
     { id := .sort .chunk, name := "chunk", status := .core
@@ -358,7 +404,7 @@ here is a contract on every wire."]
           fields := [
             { name := "bytes", enc := .opaque,
               meaning := "the chunk's bytes" }]
-          slots := []
+          refs := .fixed []
           meaning := "Position-free chunk data." }]
       notes := [.text "Position-free chunk data (profile blob kind). \
 The chunk carries no index: position lives in the ", .code "tree",
@@ -373,13 +419,13 @@ shared by two leaves."] },
               meaning := "the leaf's absolute chunk index within the blob" },
             { name := "length", enc := .beU32,
               meaning := "the declared byte length of the chunk" }]
-          slots := [
+          refs := .fixed [
             { name := "data", expects := .chunk,
               meaning := "the chunk this leaf positions" }]
           meaning := "A blob leaf: a positioned pointer at one chunk." },
         { name := "parent", witness := .tree ⟨.tree, wParent⟩
           fields := []
-          slots := [
+          refs := .fixed [
             { name := "left", expects := .tree, meaning := "the earlier subtree" },
             { name := "right", expects := .tree, meaning := "the later subtree" }]
           meaning := "A blob interior node: two ordered subtrees, no payload." }]
@@ -398,7 +444,7 @@ payload: eight bytes for a leaf, none for an interior node."] },
               meaning := "the blob's total byte length" },
             { name := "leafCount", enc := .beU32,
               meaning := "how many leaves the tree carries" }]
-          slots := [
+          refs := .fixed [
             { name := "root", expects := .tree,
               meaning := "the blob tree this manifest heads" }]
           meaning := "The recipe-1 blob manifest." }]
@@ -414,7 +460,7 @@ total is the only 64-bit field in the grammar."] },
               meaning := "the file name, UTF-8, under 2^16 bytes" },
             { name := "mediaType", enc := .framed,
               meaning := "the media type, UTF-8, under 2^16 bytes" }]
-          slots := [
+          refs := .fixed [
             { name := "content", expects := .manifest,
               meaning := "the blob manifest holding the file's bytes" }]
           meaning := "A named file over a blob manifest." }]
@@ -427,13 +473,13 @@ bound."] },
       forms := [
         { name := "genesis", witness := .tree ⟨.entry, wGenesis⟩
           fields := []
-          slots := []
+          refs := .fixed []
           meaning := "The journal's first entry: no note, no edges." },
         { name := "entry", witness := .tree ⟨.entry, wEntry⟩
           fields := [
             { name := "note", enc := .opaque,
               meaning := "the entry's note bytes, uninterpreted" }]
-          slots := [
+          refs := .fixed [
             { name := "item", expects := .file,
               meaning := "the file this entry records" },
             { name := "prev", expects := .entry,
@@ -449,9 +495,13 @@ it finds, not on this row."] },
       forms := [
         { name := "context", witness := .node wContext
           fields := []
-          slots := [
-            { name := "item", expects := .value,
-              meaning := "one folded item, its edge tag read off the node that was loaded" }]
+          refs := .free "item"
+            "One edge per folded item, in fold order, any number of \
+them. The sort fixes no slot list — a context is whatever was folded — \
+so what holds instead is a law: every edge's expected tag must resolve \
+through Ty.ofTag, a context edge may not carry an unratified tag. \
+CasExamples.AgentStep.agentStep is the consumer that satisfies it, \
+reading each edge tag off the node it loaded."
           meaning := "A folded context: no payload, one typed edge per folded item." }]
       notes := [.text "Context node: typed edges, no payload. The \
 grammar has no ", .code "context", .text " constructor — ",
@@ -482,7 +532,7 @@ bare def ", .code "Cas.Lang.stepWireTag", .text ", outside ", .code "Ty",
           fields := [
             { name := "object", enc := .opaque,
               meaning := "the git loose-object preimage: the type word, a space, the decimal byte length, a NUL, then the object's content" }]
-          slots := []
+          refs := .fixed []
           meaning := "A git object as content." }]
       notes := [.text "The estate's VERSIONING primitive (drafted \
 2026-08-29; awaiting ratification). A git object enters the store as \
@@ -511,7 +561,7 @@ is what would turn a pinned object into a walkable history."] },
           fields := [
             { name := "bytes", enc := .opaque,
               meaning := "the schema's canonical bytes, opaque at this layer" }]
-          slots := []
+          refs := .fixed []
           meaning := "A canonical schema as content." }]
       notes := [.text "Payload = the canonical JSON envelope of \
 Effect's persistent ", .code "SchemaRepresentation",
@@ -591,9 +641,23 @@ theorem manifestV0_rows_complete (t : Ty) :
 -- Every witness writes the scheme version the grammar declares.
 #guard (formsOf manifestV0).all fun (_, f) => f.node.version == schemeVersion
 
--- The declared reference discipline IS the witness's, in order.
+-- The declared reference discipline IS the witness's. Under `.fixed`,
+-- exact list equality: those slots, in that order. Under `.free`, THE
+-- LAW — every edge resolves through `Ty.ofTag`, so a free node may not
+-- carry an unratified tag. Nothing checked this before.
 #guard (formsOf manifestV0).all fun (_, f) =>
-  f.node.refs.map Ref.expectedTag == f.slots.map fun s => s.expects.wireTag
+  match f.refs with
+  | .fixed slots =>
+      f.node.refs.map Ref.expectedTag == slots.map fun s => s.expects.wireTag
+  | .free _ _ =>
+      f.node.refs.all fun r => (Ty.ofTag r.expectedTag).isSome
+
+-- A free discipline EXHIBITS its law rather than passing it vacuously:
+-- its witness carries at least one edge for the check above to read.
+#guard (formsOf manifestV0).all fun (_, f) =>
+  match f.refs with
+  | .fixed _ => true
+  | .free _ _ => !f.node.refs.isEmpty
 
 -- A fixed-width layout states the witness's exact payload size.
 #guard (formsOf manifestV0).all fun (_, f) =>
@@ -639,13 +703,27 @@ def Slot.toValue (s : Slot) : Cas.Json.Value :=
     ("expectsTagHex", .str (hexTag s.expects.wireTag)),
     ("meaning", .str s.meaning)]
 
+/-- The discipline as a JSON value: its kind always, and under `.free`
+the name and the law the edges satisfy. `refs` beside it stays the slot
+array a fixed discipline names, and is empty under a free one — a
+reader that only knew `refs` would read a free form as edgeless, which
+is why the key exists. -/
+def RefDiscipline.toValue : RefDiscipline → Cas.Json.Value
+  | .fixed _ => .obj [("kind", .str "fixed")]
+  | .free name meaning =>
+      .obj [
+        ("kind", .str "free"),
+        ("name", .str name),
+        ("meaning", .str meaning)]
+
 def Form.toValue (f : Form) : Cas.Json.Value :=
   .obj ([
     ("name", .str f.name),
     ("meaning", .str f.meaning),
     ("payloadMinBytes", .nat f.payloadMinBytes),
     ("fields", .arr (f.fields.map Field.toValue)),
-    ("refs", .arr (f.slots.map Slot.toValue))] ++
+    ("discipline", f.refs.toValue),
+    ("refs", .arr (f.refs.slots.map Slot.toValue))] ++
     (match f.payloadBytes with
       | some n => [("payloadBytes", Cas.Json.Value.nat n)]
       | none => []))
@@ -706,6 +784,21 @@ private def slotTable (slots : List Slot) : Block :=
       #v[⟨[.code s.name]⟩, ⟨[.code s.expects.sortName]⟩,
          ⟨[.code (hexTag s.expects.wireTag)]⟩, ⟨[.text s.meaning]⟩] }
 
+/-- How a form's reference discipline reads in one line, and what it
+puts under the bullets: a fixed discipline renders its slot table, a
+free one states its law in prose because there is no list to table. -/
+private def disciplineLine : RefDiscipline → String
+  | .fixed [] => "none"
+  | .fixed slots => String.intercalate ", " (slots.map fun s => s.name)
+  | .free name _ => s!"free — any number of {name} edges"
+
+private def disciplineBlocks : RefDiscipline → List Block
+  | .fixed [] => []
+  | .fixed slots => [slotTable slots]
+  | .free name meaning =>
+      [.p [.text "Free reference discipline: any number of ",
+           .code name, .text " edges, no slot list. ", .text meaning]]
+
 private def formBlocks (row : Row) (f : Form) : List Block :=
   [.h3 s!"{row.name}.{f.name}",
    .p [.text f.meaning],
@@ -715,17 +808,18 @@ private def formBlocks (row : Row) (f : Form) : List Block :=
         | some n, _ => s!"{n} bytes"
         | none, 0 => "variable"
         | none, m => s!"variable, at least {m} bytes")],
-     [.text "references: ",
-      .text (if f.slots.isEmpty then "none"
-        else String.intercalate ", " (f.slots.map fun s => s.name))]]] ++
+     [.text "references: ", .text (disciplineLine f.refs)]]] ++
   (if f.fields.isEmpty then [] else [fieldTable f.fields]) ++
-  (if f.slots.isEmpty then [] else [slotTable f.slots])
+  disciplineBlocks f.refs
 
 /-- The registry document — `REGISTRY.md`. -/
 def Manifest.toMarkdown (m : Manifest) : String :=
   let formless := m.rows.filter (·.forms.isEmpty)
   render <|
-    [.h1 m.title] ++
+    [.h1 m.title,
+     .p [.text "Manifest version ", .code (toString m.manifestVersion),
+         .text " — the version the JSON projection carries in its ",
+         .code "manifestVersion", .text " key."]] ++
     m.preamble.map Block.p ++
     [.h2 "The node envelope",
      .p m.envelope.meaning,
