@@ -18,6 +18,14 @@ The projection is total and structural; the byte-level rendering
 theorem binding it to `encode` and the store envelope remains the
 increment's open obligation (pending, per the facade's increment
 list) — nothing here claims it.
+
+The OTHER direction — "bytes determine the canonical value", i.e.
+injectivity of the payload — is wired in `Cas.Schema.PayloadInj`
+(`payload_inj`), conditionally on the value plane's one named open
+obligation `Cas.Json.RenderPlainInjective` (`Cas.Values.JsonInj`).
+Everything schema-side of that obligation, including the step where
+`WF` is load-bearing, is proved there. Nothing here or there asserts
+the obligation.
 -/
 
 namespace Cas.Schema

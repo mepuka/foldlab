@@ -5,6 +5,7 @@ import Cas.Schema.Codec
 import Cas.Schema.Described
 import Cas.Schema.Foreign
 import Cas.Schema.SelfCodec
+import Cas.Schema.PayloadInj
 import Cas.Schema.Ingest
 
 /-!
@@ -57,6 +58,20 @@ Named increments, in order:
   `Ast.ofRepresentationJson`'s image being `RepNormal` (true by
   inspection — the decoder has no `.lit .null` arm — but not yet
   proved as a theorem).
+- **Payload injectivity** — WIRED (`PayloadInj`, 2026-08-29):
+  `payload_inj` — for well-formed codes, equal payload bytes give
+  equal `repNorm`, with `payload_inj'` the on-the-nose `RepNormal`
+  corollary. CONDITIONAL on ONE hypothesis, the value plane's named
+  open obligation `Cas.Json.RenderPlainInjective`
+  (`Cas.Values.JsonInj`); every step schema-side of it is proved
+  unconditionally (`deNumNorm_numNorm_representation`,
+  `deNumNorm_numNorm_envelope`, `envelope_numNorm_inj`). Two things
+  the wiring pins: the rendering identifies `Value.nat n` with
+  `Value.int n`, so the obligation can only conclude equality up to
+  `Value.numNorm` and the schema plane undoes that collapse by key;
+  and the `WF` premise is LOAD-BEARING there — without the registry's
+  payload discipline, `Ast.decl .date (.nat 5) []` and
+  `Ast.decl .date (.int 5) []` are two codes with one payload.
 - **Ingestion** — LANDED (Slice B): `Ingest` is the door. `ingest`
   normalizes, decodes the revision-1 envelope, and gates on `Ast.wf`,
   with named refusals (`notASchema`/`illFormed`/`wrongRevision`/
