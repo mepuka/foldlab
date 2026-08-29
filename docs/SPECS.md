@@ -322,3 +322,14 @@ records the 2026-08-29 session rulings that cut across specs.
     something breaks and we do not ignore hard work when it
     surfaces; BROKEN-SILENT is the only alarm category. *"Have fun,
     be proud of what you've built — let's get this thing working."*
+25. **The CLI push — all five asks accepted, the bar is A** (2026-08-29
+    night): cas doctor is IN (the runtime reader of the four emitted
+    ledgers + full config validation, closing VOCABULARY.md's
+    forward-reference); --store at a non-store REFUSES (init stays
+    the only creator); kind names enter the human register off the
+    generated registry; put says working tags out loud; --json on
+    ALL verbs (serve exempt — stdout is the protocol). And the
+    standing law: **every refusal answers at grade A — the everyday
+    register, the defect named, the fix named — "we do not accept
+    anything less than A-level work, period."** A non-A answer is a
+    named framework blocker, never an accepted grade.
