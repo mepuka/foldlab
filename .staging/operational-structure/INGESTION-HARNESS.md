@@ -220,3 +220,76 @@ store-resident program content  (F3; R7 "programs are content, hosts are code")
 16. **Generate the recognizers from the manifest** (P6, `dsl-proposal.md §9.2-9.4`) — or accept that a D1 pin upgrade is a hand-port. These two rulings are coupled: item 10's cost estimate depends on item 16's answer.
 
 **Standing behind all of it:** `.staging/libfree/dsl-proposal.md` carries ten decisions D1-D10 (`:1650-1775`), each with its recommendation and its strongest counter, and the document's closing line requests a grilling pass before any part of it enters `docs/` or generates code. D1 above is that document's D1. The other nine are the second grill, not this one.
+
+---
+
+## Corrections — 2026-08-29
+
+Appended, not rewritten: the body above stands as written, and each entry
+below names the line it corrects and the lane that refuted it.
+
+**C1 — M9's machine-readable citation, re-checked against the tree.**
+The admission-map lane reported M9's pointer (`:134`) as dead. Verified
+here, and the report is only half right, so the correction is recorded
+as measured rather than as received:
+
+- `library/effects/src/cas/generated/SchemaAdmission.ts:240-306` is
+  **LIVE, with a five-line drift**: the `Nodes` table runs `:240-301`
+  and admits exactly the ten tags M9 names — `Null, Boolean, String,
+  Number, Literal, Arrays, Objects, Declaration, Union, Enum`. Read the
+  range as `:240-301`; the claim it carries is unchanged.
+- `library/cas/tools/Admission.lean` is **absent** — no such file, at
+  that path or any other in `library/cas`. It is not cited in this
+  document's body either; the citation travelled with the lane record,
+  not with M9, and it should not be picked up from there.
+
+The ten-tag fact has two authorities to cite in its place, and they are
+the ones the admission-map lane's own table (`ADMISSION-MAP.md:16`)
+points at:
+
+- `library/cas/Cas/Schema/SelfCodec.lean` — `Ast.toRepresentationJson`
+  (`:200`), the Lean side's representation projection.
+- `library/effects/src/cas/CanonicalSchema.ts` — `admitNode` (`:460`),
+  the door's own walk.
+
+The eleven unrowed inventory variants named in M9 are unaffected. M9's
+mechanization ask — emit `admission-map.json` beside `emitgate`, plus an
+ACC-1 totality check — stands, and should be written against the two
+files above rather than against the generated TypeScript table.
+[admission-map lane, re-verified 2026-08-29]
+
+**C2 — the §4 variance table undercounts twice.** The table at `:99-106`
+is wrong in two rows, and one of its column headings conflates two
+different measurements (variance *sites* in the source versus ERROR
+*nodes* the pinned grammar produces over them):
+
+- `SchemaTransformation.ts` — the row reads `2`. There are 2
+  declarations (`Middleware`, `Transformation`) but each carries two
+  annotated type parameters (`<in out T, in out E>`), so the pinned
+  grammar produces **4 ERROR nodes, not 2** (2 declarations × 2).
+  [`D1-OPTION-A-SCOPING.md:46, :52`]
+- `Schema.ts` — the row reads `8 — :824, :848, :867, :941, :1041,
+  :1064, :1087, :1141`. There are **TWELVE** variance sites. The four
+  the row misses are the `Bottom` family — `BottomWithoutNew` (`:151`),
+  `Bottom` (`:283`), `BottomLazyWithoutNew` (`:345`), `BottomLazy`
+  (`:394`) — whose multi-line type-parameter lists hide the annotations
+  from a single-line scan. Verified in-tree against the committed
+  artifact `experiments/entity-store-extract/oxc-surface.json`
+  (`totals.varianceSites: 16` over six files; `Schema.ts` carries 12,
+  `SchemaAST.ts` 2, `SchemaTransformation.ts` 2). [OXC lane]
+- And the sentence following the table — "the D1 answer is owed for
+  **exactly two files, twelve declarations**" — is therefore also wrong
+  in its arithmetic: it is two files, **fourteen** declarations
+  (12 + 2), plus the 2 already held in `SchemaAST.ts`.
+
+**C3 — `Schema.ts` is not an eight-site file, and it is not a
+sites-file at all at the pin.** The table's "not pinned; the R8 public
+surface" gloss understates the standing. Under the current grammar pin
+`Schema.ts` is **unparsed from byte zero**: 397 ERROR + 44 MISSING
+nodes, root ERROR at line 1 column 1. Under the candidate upstream fix
+(#364) it parses to line 6242 and then hits 237 distinct residual error
+sites, **none of them variance** — a second, separate grammar defect
+(newline-separated generic call-signature overloads). So no variance
+upgrade unblocks `Schema.ts`, and the R8 public surface has no
+tree-sitter instrument at any pin currently reachable.
+[`D1-OPTION-A-SCOPING.md:48, :53`, blocker B3]

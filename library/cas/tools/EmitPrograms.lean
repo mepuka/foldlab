@@ -24,21 +24,38 @@ def hexHelper : String :=
   "  Uint8Array.from({ length: s.length / 2 }, (_, i) =>\n" ++
   "    Number.parseInt(s.slice(i * 2, i * 2 + 2), 16))"
 
-abbrev Row := String × String × ((t : Ty) × Tree t)
+abbrev Row := String × String × String × ((t : Ty) × Tree t)
 
-/-- (program name, vector fixture name, term) — the vector registry's
-order. There is no doc column: a program's description is its effect
-envelope verbalized (`Cas/Backend/ProgProse.lean`), so the docstrings
-below are computed from the same terms the statements are lowered
-from, and the byte gate checks the description rather than
-transcribing it. -/
+/-- (program name, vector fixture name, authored POINT, term) — the
+vector registry's order.
+
+Two registers, and the emitted docstring carries both. The POINT is
+AUTHORED: one sentence saying what this program is FOR, which no walk
+over the term can recover, because "the smallest program" and "a
+provenance pin as store content" are facts about why the row is in the
+registry, not about its puts. Everything after it is COMPUTED: the
+term's effect envelope verbalized (`Cas/Backend/ProgProse.lean`), from
+the same term the statements are lowered from, so the byte gate checks
+the description rather than transcribing it.
+
+The authored line is E3's answer to the toProse lane: verbalizing the
+envelope replaced the hand docs wholesale, and it should have replaced
+only their second half. -/
 def pureRows : List Row := [
-  ("valueSingle", "value-single", ⟨_, helloValue⟩),
-  ("blobTwoLeaves", "blob-two-leaves", ⟨_, blobTwoLeaves⟩),
-  ("fileReadme", "file-readme", ⟨_, fileReadme⟩),
-  ("journalTwoEntries", "journal-two-entries", ⟨_, journalTwo⟩),
-  ("sharedChunk", "shared-chunk", ⟨_, blobSharedChunk⟩),
-  ("gitPinCommit", "git-pin-commit", ⟨_, gitPinCommit⟩)
+  ("valueSingle", "value-single",
+    "One opaque value node — the smallest program.", ⟨_, helloValue⟩),
+  ("blobTwoLeaves", "blob-two-leaves",
+    "A two-leaf blob: chunks, leaves, parent, manifest.", ⟨_, blobTwoLeaves⟩),
+  ("fileReadme", "file-readme",
+    "A named file over a one-chunk blob.", ⟨_, fileReadme⟩),
+  ("journalTwoEntries", "journal-two-entries",
+    "A journal: genesis and two entries over saved files.", ⟨_, journalTwo⟩),
+  ("sharedChunk", "shared-chunk",
+    "Two leaves over one shared chunk — the duplicate put replays as a dedup.",
+    ⟨_, blobSharedChunk⟩),
+  ("gitPinCommit", "git-pin-commit",
+    "The lean4-tree-sitter pin commit as a git node — a provenance pin as store content.",
+    ⟨_, gitPinCommit⟩)
 ]
 
 /-- The schema program needs the payload-bound witness, so it joins
@@ -46,6 +63,7 @@ the registry in `IO` (the vector tool's own pattern). -/
 def schemaRow : IO Row := do
   if small : (Cas.Grammar.utf8 vectorDocumentCode.payload).length < 4294967296 then
     return ("schemaVectorDocument", "schema-vector-document",
+      "The vector format's own canonical schema as a schema node.",
       ⟨_, .schema ⟨Cas.Grammar.utf8 vectorDocumentCode.payload, small⟩⟩)
   else
     throw (IO.userError "schema program: payload exceeds the node byte bound")
@@ -53,23 +71,26 @@ def schemaRow : IO Row := do
 /-- The emitter is partial on `PProg` (puts only, earlier-answer
 operands only — `Cas.Backend.progProgram`). Every registered term
 lowers inside that domain, so a `none` here is a defect in the walk and
-is named as one rather than silently skipped. The doc column is
-computed: the description is the term's effect envelope verbalized
-(`Cas/Backend/ProgProse.lean`), so the byte gate checks the
-description rather than transcribing it. -/
-def progDecl (name : String) (tree : (t : Ty) × Tree t) : IO Decl := do
-  match treeProgram tree.2.docLines name tree.2 with
+is named as one rather than silently skipped.
+
+The doc block is `point :: envelope`: the authored sentence first, then
+the computed lines. Only the first line is transcribed, and it is
+transcribed because it is not derivable; the byte gate still checks the
+whole block, so the envelope half cannot drift from the term. -/
+def progDecl (name : String) (point : String) (tree : (t : Ty) × Tree t) :
+    IO Decl := do
+  match treeProgram (point :: tree.2.docLines) name tree.2 with
   | some d => return .prog d
   | none => throw (IO.userError
       s!"program {name}: the lowered table is outside the recognized surface")
 
 def moduleDecls (rows : List Row) : IO (List Decl) := do
-  let progs ← rows.mapM fun (name, _, tree) => progDecl name tree
+  let progs ← rows.mapM fun (name, _, point, tree) => progDecl name point tree
   return .raw hexHelper :: progs ++
     [.const {
       doc := ["Every generated program beside its vector fixture's name."]
       name := "programs"
-      value := .arr (rows.map fun (name, fixture, _) =>
+      value := .arr (rows.map fun (name, fixture, _, _) =>
         .object [("name", .str fixture), ("run", .ident name)])
     }]
 
@@ -127,7 +148,7 @@ def liftDocumentOf (name : String) (tree : (t : Ty) × Tree t) :
       s!"lift document {name}: decoded back to a different program")
 
 def liftsDocument (rows : List Row) : IO String := do
-  let docs ← rows.mapM fun (name, _, tree) => liftDocumentOf name tree
+  let docs ← rows.mapM fun (name, _, _, tree) => liftDocumentOf name tree
   return Cas.Json.renderCompact (.arr docs) ++ "\n"
 
 /-- Where the generated programs live in the effects package — the

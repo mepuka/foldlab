@@ -85,8 +85,20 @@ are ordered content under the canonical rendering, as every array in
 this store is. `EmitLayer`'s residual fold deduplicates and sorts by
 key, so two spellings of one service SET emit the same TypeScript and
 answer the same Context; they do not reside at the same address.
-Canonicalizing the authored lists is available as growth and wants a
-ruling, not a quiet normalization here.
+
+**CANON-1, ruled: canonicalize at the AUTHORING door, never here.** The
+reason is the cache, not tidiness — a plan keyed by address misses on a
+term meaning exactly what the hit meant — so the fix belongs where the
+term is written, not where it is read. `tools/EmitLayers.lean` spells
+every service list in `Cas.Backend.canonServices` order and `#guard`s
+that it did, so the term this estate STORES is the canonical one and
+equal service sets reside at equal addresses. The carrier stays
+untouched: this kind still means the term it was given, and a
+`normalize` on the load path would be renormalize-on-read, which is a
+named defect (`Cas/Core/Canonicalize.lean:40-42`). The guard's scope is
+the authored topology, not every `SystemNode` a caller can build; what
+closing the door at the constructor would cost is written out at the
+CANON-1 section of `tools/EmitLayers.lean`.
 
 ## How this kind grows
 

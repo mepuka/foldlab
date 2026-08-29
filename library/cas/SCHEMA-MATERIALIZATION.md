@@ -582,7 +582,8 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
 - `representationOf` annotation-slot read (fixed by Slice A).
 - Rev-0/rev-1 Integer disagreement (ruling 3).
-- `Cas/Backend/Ts.lean` imports `Cas.Schema.Foreign` and never uses it.
+- ~~`Cas/Backend/Ts.lean` imports `Cas.Schema.Foreign` and never uses it.~~
+  **FIXED** in `34145109`; the file now carries no `import` line at all.
 - `.claude/worktrees/entity-store-parallelize-d0a1cd/` holds a stale
   duplicate of `Foreign.lean` era files.
 - Extractor promotion EXT-6 not wired into `mise run gen`.

@@ -4,7 +4,14 @@ Status: staged, pre-grade — 2026-08-25. Definition-of-done items 1–6 of the 
 brief, in order. Everything below is regenerable; nothing outside `experiments/entity-store-extract/`
 was touched.
 
-## 1. Admission rows — DRAFTS for the operator to land (C4: not applied to TOOLS.md)
+## 1. Admission rows — C4 DISCHARGED, both rows landed in TOOLS.md
+
+Corrected 2026-08-29: the drafts below are no longer pending. Both rows are live in
+`docs/lab-core/TOOLS.md` — the TypeScript compiler API row at `:26` and the
+lean4-tree-sitter row at `:31` (admitted 2026-08-28, carrying the stand-up receipt's
+pins). Ruling R-1 is likewise discharged (`docs/entity-store/RULINGS.md`, R-1,
+2026-08-25). What follows is the draft text as submitted, kept as the lane's record;
+the LANDED wording is TOOLS.md's, which is the authority.
 
 Two rows, because two instruments are in play and the operator should rule which enters
 gated work (they are not exclusive — the second can serve until the first is stood up,
@@ -12,7 +19,7 @@ then become the cross-check):
 
 | Tool | Role | Trust statement |
 |---|---|---|
-| lean4-tree-sitter (`predictable-machines/lean4-tree-sitter`, revision-pinned; C seam: the tree-sitter runtime + the `tree-sitter-typescript` grammar shared library, each version-and-digest-pinned) | Syntax-level walk over pinned TypeScript sources for inventory extraction and cross-checks | Trusted only that the named grammar's parse of the pinned bytes yields the CSTs the walk reads; the C FFI boundary (runtime `.dylib`/`.so` + grammar `.so`, digests recorded per host) is the entire trusted seam. Contributes shape facts only; no semantic claims. Output enters gated work solely as `inventory.json`, which the four-way enumeration agreement must pass. |
+| lean4-tree-sitter (`predictable-machines/lean4-tree-sitter`, revision-pinned; C seam: the tree-sitter runtime + the `tree-sitter-typescript` grammar shared library, each version-and-digest-pinned) | Syntax-level walk over pinned TypeScript sources for inventory extraction and cross-checks | Trusted only that the named grammar's parse of the pinned bytes yields the CSTs the walk reads; the C FFI boundary (runtime `.dylib`/`.so` + grammar `.so`, digests recorded per host) is the entire trusted seam. Contributes shape facts only; no semantic claims. Output enters gated work solely as `inventory.json`, which the five-way enumeration agreement must pass. |
 | TypeScript compiler API (`typescript@5.9.2` exactly, npm; classic JS API, not the 7.x native port) | Interim extractor instrument: syntax-only parse (`createSourceFile`, no checker) of the pinned sources | Trusted only that its parser maps the pinned bytes to a faithful syntax tree; no type resolution is used, so no inference is trusted. Same output gate as above. Version drift is a re-admission event. |
 
 Note for the ruling: the census keying (§7 items 1–4) is expressed in compiler-API node

@@ -1,6 +1,6 @@
 {
   "distinctPins": ["leanprover/lean4:v4.32.0", "leanprover/lean4:v4.33.1"],
-  "excludedGates": ["brief:effects:archive", "check:effects:archive", "check:extract-oxc", "check:extract-twin", "check:lift-roundtrip", "gen:effects:archive", "gen:effects:research", "gen:oxc-surface"],
+  "excludedGates": ["brief:effects:archive", "check:effects:archive", "check:extract-oxc", "check:extract-twin", "check:lift-roundtrip", "gen:effects:archive", "gen:oxc-surface"],
   "leanExes": [
     {
       "declaredOutputs": ["conformance/admission-map.json"],
@@ -422,7 +422,7 @@
       "sources": []
     },
     {
-      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:cas-laws", "mise run gen:env-ledger", "mise run gen:ledger"],
+      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:effects:research", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:cas-laws", "mise run gen:env-ledger", "mise run gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen",
@@ -562,7 +562,7 @@
       "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
-      "commands": ["mise run --force gen:inventory", "mise run --force gen:vectors", "mise run --force gen:cas-vectors", "mise run --force gen:cas-schemas", "mise run --force gen:cas-verdicts", "mise run --force gen:cas-admission-map", "mise run --force gen:backend-wire", "mise run --force gen:backend-gate", "mise run --force gen:backend-programs", "mise run --force gen:backend-layers", "mise run --force gen:backend-mcp", "mise run --force gen:backend-materialize", "mise run --force gen:effects-materialize", "mise run --force gen:lift-manifest", "mise run --force gen:grammar-manifest", "mise run --force gen:cas-surface", "mise run --force gen:cas-obligations", "mise run --force gen:cas-laws", "mise run --force gen:env-ledger", "mise run --force gen:ledger"],
+      "commands": ["mise run --force gen:inventory", "mise run --force gen:vectors", "mise run --force gen:cas-vectors", "mise run --force gen:cas-schemas", "mise run --force gen:cas-verdicts", "mise run --force gen:cas-admission-map", "mise run --force gen:backend-wire", "mise run --force gen:backend-gate", "mise run --force gen:backend-programs", "mise run --force gen:backend-layers", "mise run --force gen:backend-mcp", "mise run --force gen:backend-materialize", "mise run --force gen:effects-materialize", "mise run --force gen:effects:research", "mise run --force gen:lift-manifest", "mise run --force gen:grammar-manifest", "mise run --force gen:cas-surface", "mise run --force gen:cas-obligations", "mise run --force gen:cas-laws", "mise run --force gen:env-ledger", "mise run --force gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen:ci",
@@ -594,7 +594,7 @@
     {
       "commands": ["bun scripts/sync-research.ts --write"],
       "dir": "{{config_root}}/library/effects",
-      "inChain": false,
+      "inChain": true,
       "name": "gen:effects:research",
       "outputs": [],
       "residence": "portable",
@@ -676,7 +676,7 @@
     "bun": "1.4.0",
     "node": "22.23.2"
   },
-  "undeclared": ["gen:cas-laws"],
+  "undeclared": ["gen:effects:research", "gen:cas-laws"],
   "undriven": [],
   "ungated": [],
   "unjoined": ["laws"]
