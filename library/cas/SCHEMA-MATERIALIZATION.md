@@ -223,7 +223,35 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
 6. **Union identity — RULED 2026-08-29** (UNION-DESIGN.md, promoted):
    order is identity, both modes carried and admitted, Stage 1 landed
    to order. Stage 2 (discriminated denotation) joins
-   deriving-for-inductives.
+   deriving-for-inductives — LANDED.
+15. **D1, the deriving handler's member spelling**: `deriving
+    Described` orders a derived union's members by ascending tag
+    string, not source order, so that shuffling an inductive's
+    constructors does not move its address. Order stays identity to
+    the CARRIER (nothing rearranges a code); the choice is the
+    generator's, made once. R17's register row owes both clauses.
+    Ratify or reject the sort.
+16. **Parameter-free restriction on the alternatives path**: the
+    structure path derives for parametric types; the
+    constructor-alternative path refuses them, because the union code
+    has nowhere to spell a type parameter and the emission reads
+    constructor field types as closed expressions. Not a defect — a
+    scoped restriction with a named refusal — but it is the obvious
+    next growth request, and it wants the reference/`Suspend` slice
+    (C6) more than it wants a handler change.
+17. **`_tag` as the estate's discriminant name**: adopted verbatim
+    from Effect's `TaggedStruct` so a derived union materializes as
+    idiomatic TypeScript with no translation. It reserves the field
+    name in every derived member, and it constrains member field names
+    to sort at or after `_tag` (uppercase-initial JSON names are
+    therefore refused on this path). Ratify the reservation.
+18. **`Schema.TaggedUnion` is NOT the TypeScript mirror**: Effect's
+    `TaggedUnion` constructor builds at the default `anyOf`, and a
+    derived union's mode is `oneOf`, which is part of its identity. The
+    hand mirror therefore spells `Schema.Union([...], { mode: "oneOf" })`.
+    Confirmed live: the derived code regenerates faithfully through
+    `toCodeDocument` (the literal-collapse defect of ruling 13 cannot
+    fire, because no member is a bare literal).
 7. **The three adopted Effect declaration rows** (`effect/schema/Date`,
    `URL`, `Option` — C-decl merge `78f38364`): ratify or reject.
    Adopted verbatim per P4 so the general constructor is inhabited; no

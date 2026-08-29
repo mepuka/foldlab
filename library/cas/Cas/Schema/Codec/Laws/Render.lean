@@ -78,6 +78,22 @@ theorem encode_canonical :
     have hsub := encodeFields_keys_sublist fs x
     exact (List.pairwise_map).mp (hkeys.sublist hsub)
   | .ref t, _, r => encRef_canonical t r.addr
+  | .union ms _, ⟨_, hwf⟩, x =>
+    encodeMembers_canonical (discriminatedB ms) ms hwf x
+
+/-- The union image is canonical because the MEMBER's image is: a
+tagged union's wire shape is the wire shape of the member that matched,
+with no envelope of our own to spell. -/
+theorem encodeMembers_canonical :
+    ∀ (b : Bool) (ms : List Ast), WFMembers ms →
+      ∀ (x : cond b (ElMembers ms) Empty), (encodeMembers b ms x).Canonical
+  | true, [], _, x => Empty.elim x
+  | true, [a], hwf, x => encode_canonical a hwf.1 x
+  | true, a :: b :: rest, hwf, x =>
+    match x with
+    | Sum.inl y => encode_canonical a hwf.1 y
+    | Sum.inr y => encodeMembers_canonical true (b :: rest) hwf.2 y
+  | false, _, _, x => Empty.elim x
 
 theorem encodeList_canonical :
     ∀ (a : Ast), a.WF → ∀ (xs : List (El a)),

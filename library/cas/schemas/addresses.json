@@ -25,6 +25,10 @@
     {
       "address": "98e36f2243f0269fc3165110660f7b8f08a43aaffc450be7b87ca1f4f6005819",
       "name": "union-pin"
+    },
+    {
+      "address": "90208f8ffb27351f48346c096e93869c633ec58840c91456b7b533f70c65c8d9",
+      "name": "tagged-pin"
     }
   ]
 }

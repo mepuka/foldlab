@@ -57,6 +57,47 @@ export const unionPin = Schema.Struct({
   ])),
 })
 
+/** Lean `SchemasMain.TaggedPin`, hand-mirrored in Effect Schema.
+ *
+ * The Lean side does NOT hand-write this code: it is what
+ * `deriving Described` emits for the inductive
+ *
+ *     inductive TaggedPin
+ *       | move (dx : SafeInt) (dy : SafeInt)
+ *       | stop
+ *       | say (body : String) (note : Option String)
+ *
+ * so this mirror is the tripwire on the GENERATOR, not on a hand-composed
+ * code. Two spellings the generator commits to and this mirror holds:
+ *
+ * - member order is ASCENDING TAG (`move`, `say`, `stop`), not source
+ *   order — order is identity, so a generator has to pick one, and it
+ *   picks the one that does not move when the source is shuffled;
+ * - the mode is `oneOf`, spelled, because the members are pairwise
+ *   disjoint by construction and the estate never elides a mode.
+ *
+ * `_tag` is Effect's own TaggedStruct discriminant name, first in each
+ * member, which is what makes the union discriminated — the property the
+ * Lean side proves as `TaggedPin.schemaDiscriminated`. This is written as
+ * a plain `Schema.Union` of `Schema.Struct`s rather than
+ * `Schema.TaggedUnion` on purpose: `TaggedUnion` builds at Effect's
+ * default `anyOf`, and the mode is part of the identity here. */
+export const taggedPin = Schema.Union([
+  Schema.Struct({
+    _tag: Schema.Literal("move"),
+    dx: Schema.Int,
+    dy: Schema.Int,
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("say"),
+    body: Schema.String,
+    note: Schema.optionalKey(Schema.String),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("stop"),
+  }),
+], { mode: "oneOf" })
+
 /** The registry, name-for-name with `library/cas/tools/Schemas.lean`.
  *
  * `annotation` mirrors Lean `Cas.Schema.Annotation` through the library's
@@ -71,4 +112,5 @@ export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["literal-pin", literalPin],
   ["annotation", Annotations.Annotation],
   ["union-pin", unionPin],
+  ["tagged-pin", taggedPin],
 ] as const

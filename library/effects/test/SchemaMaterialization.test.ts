@@ -297,6 +297,14 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         // mode always; regenerating `exact` from this text alone would
         // silently weaken it to `anyOf`.
         `union-pin Schema.Struct({ "choice": Schema.Union([Schema.String, Schema.Boolean, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]), "exact": Schema.Literals(["zebra", "alpha"]), "nested": Schema.optionalKey(Schema.Union([Schema.Null, Schema.Union([Schema.Array(Schema.String), Schema.Boolean], { mode: "oneOf" })])) })`,
+        // The DERIVED tagged union regenerates faithfully, and that is
+        // the contrast case to `union-pin`'s `exact`: the literal
+        // collapse cannot fire here because no member is a bare
+        // literal — every member is an Objects — so the `oneOf` mode
+        // survives into the generated source. `deriving Described`'s
+        // output is therefore round-trippable through Effect's own
+        // printer, which the hand-composed literal `oneOf` is not.
+        `tagged-pin Schema.Union([Schema.Struct({ "_tag": Schema.Literal("move"), "dx": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "dy": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })) }), Schema.Struct({ "_tag": Schema.Literal("say"), "body": Schema.String, "note": Schema.optionalKey(Schema.String) }), Schema.Struct({ "_tag": Schema.Literal("stop") })], { mode: "oneOf" })`,
         `ref-root Cas.CanonicalSchema.ref(83)`,
       ])
 
@@ -312,6 +320,7 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         // representation keeps `nested` a two-member union whose second
         // member is a union, which is what the byte pin holds.
         `union-pin { readonly "choice": string | boolean | number, readonly "exact": "zebra" | "alpha", readonly "nested"?: null | ReadonlyArray<string> | boolean }`,
+        `tagged-pin { readonly "_tag": "move", readonly "dx": number, readonly "dy": number } | { readonly "_tag": "say", readonly "body": string, readonly "note"?: string } | { readonly "_tag": "stop" }`,
         `ref-root Cas.ReferenceSentinel`,
       ])
 

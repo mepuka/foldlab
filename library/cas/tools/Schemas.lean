@@ -16,9 +16,11 @@ The registry rows are the described wire codes already in service
 sample covering every deriving-reachable constructor, one
 hand-composed literal pin covering the `Literal` spellings the
 deriving handler does not reach, the sidecar annotation kind
-(`Cas.Schema.Annotation`, stipulation S2), and the union pin — both
+(`Cas.Schema.Annotation`, stipulation S2), the union pin — both
 modes, a nested union, and members a sort would reorder, so
-order-is-identity is held by the bytes. The TypeScript side asserts
+order-is-identity is held by the bytes — and the DERIVED tagged union,
+the generator's own pin for `deriving Described` over constructor
+alternatives. The TypeScript side asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -69,6 +71,30 @@ def unionPin : Ast := .struct [
   ("nested", true, .union [.null, .union [.arr .str, .bool] .oneOf] .anyOf)
 ]
 
+/-- The DERIVED tagged union (increment C1, stage 2), authored through
+`cas_union`: the `Described` instance is what the deriving handler
+generates, so these bytes are the GENERATOR's output and not a
+hand-composed code — the fixture is the generator's own pin.
+
+Three constructors at three arities (binary, nullary, and one carrying
+an optional field), and the source order — `move`, `stop`, `say` — is
+deliberately NOT the code's order. The handler sorts members by tag, so
+the payload spells `move`, `say`, `stop`: the one spelling a generator
+is allowed to pick, held by the bytes.
+
+`TaggedPin.schemaDiscriminated`, emitted alongside the instance, is the
+proof that this code is a discriminated union — which is what makes
+`El` of it the member sum and its round trip a theorem. -/
+cas_union TaggedPin where
+  | move (dx : SafeInt) (dy : SafeInt)
+  | stop
+  | say (body : String) (note : Option String)
+
+-- The generator's discrimination claim, checked at elaboration; the
+-- theorem it is checking is `TaggedPin.schemaDiscriminated`, emitted
+-- beside the instance.
+#guard TaggedPin.schemaCode.discriminated
+
 /-- The registry: every pinned code in one place. -/
 def registry : List (String × Ast) := [
   ("vector-document", Described.code (α := Cas.Vectors.Wire.VectorDocument)),
@@ -76,7 +102,8 @@ def registry : List (String × Ast) := [
   ("pin-sample", PinSample.schemaCode),
   ("literal-pin", literalPin),
   ("annotation", Annotation.schemaCode),
-  ("union-pin", unionPin)
+  ("union-pin", unionPin),
+  ("tagged-pin", TaggedPin.schemaCode)
 ]
 
 /-! ## Emission -/
