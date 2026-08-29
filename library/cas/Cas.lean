@@ -12,6 +12,7 @@ import Cas.Core.Admission
 import Cas.Values.Digits
 import Cas.Values.Json
 import Cas.Values.JsonInj
+import Cas.Values.JsonParse
 import Cas.Values.Markdown
 import Cas.Values.Refs
 import Cas.Values.Canonicalize
