@@ -67,6 +67,7 @@ deleted.
 | [.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md](../.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md) | store semantics + hygiene | Ruling prep (2026-08-29): projection is TWO things (kind→component = emitted manifest, seat taken; value↔view = Annotation two fields short); published programs unspellable until items 22/23 + host step/cont codec; paperwork defects D1-D11 incl. the SECURITY item and the sessions convention |
 | [.staging/operational-structure/BACKEND-ROBUSTNESS.md](../.staging/operational-structure/BACKEND-ROBUSTNESS.md) | server robustness | Probed sweep (2026-08-29): store crash-safe by construction (2097/2097 verified post-SIGKILL); host NOT live-safe — oversized frames silently lost, SQLite busy = whole-process stall; BS-1 slice specified; adopt-vs-build table per Rust/Go ruling; hashing centralized-as-service is a virtue, scheme identification the real gap; 6 ruling asks |
 | [.staging/operational-structure/DOGFOOD.md](../.staging/operational-structure/DOGFOOD.md) | dogfooding | The wave plan (decision 24): five personalities, successive release, capability baseline, rules of engagement |
+| [.staging/operational-structure/STATE-OF-MECHANIZATION.md](../.staging/operational-structure/STATE-OF-MECHANIZATION.md) | status | The proof-ladder status report (L5 rock-solid → L0 paper) with the waiting list and critical-path order; two-hour audit cadence scheduled |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
