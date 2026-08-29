@@ -9,6 +9,7 @@
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer } from "effect"
 import type { FileSystem } from "effect"
+import type * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"
 import {
   addressSchemeKey,
   capabilityMatrix,
@@ -25,6 +26,7 @@ import {
   layerMemoryBackend,
 } from "../src/cas/Backend.ts"
 import { layerFileBackend } from "../src/cas/FileBackend.ts"
+import { layerKvsBackend } from "../src/cas/KvsBackend.ts"
 import { layerPathReader } from "../src/cas/PathReader.ts"
 import {
   AddressScheme,
@@ -69,6 +71,17 @@ const pathReaderIsReadOnly: Equals<
   ProvidedOf<ReturnType<typeof layerPathReader>>,
   ByteReader
 > = true
+// The key-value backend provides the byte plane and no roots seam: a
+// key-value store carries no enumeration, so publishing over it is a
+// compile error rather than a runtime refusal.
+const kvsProvidesBytesOnly: Equals<
+  ProvidedOf<typeof layerKvsBackend>,
+  ByteReader | ByteWriter
+> = true
+const kvsNeedsKeyValueStore: Equals<
+  RequiredOf<typeof layerKvsBackend>,
+  KeyValueStore.KeyValueStore
+> = true
 
 // The declared law capabilities ARE the real requirement channels; the
 // address scheme rides every law as the digest dependency.
@@ -100,12 +113,14 @@ it.effect("the static description-vs-code checks elaborated", () =>
       fileProvides,
       filePlatform,
       pathReaderIsReadOnly,
+      kvsProvidesBytesOnly,
+      kvsNeedsKeyValueStore,
       storeNeedsReadWrite,
       readStoreNeedsReadOnly,
       readStoreProvidesLoader,
       valueGetNeedsLoaderOnly,
       valuePutNeedsStore,
-    ]).toEqual([true, true, true, true, true, true, true, true, true])
+    ]).toEqual(Array.from({ length: 11 }, () => true))
   }))
 
 it.effect("the capability matrix renders to the pin the Lean model guards", () =>

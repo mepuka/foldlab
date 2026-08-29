@@ -107,6 +107,8 @@ def foldlabCas : Architecture where
     ⟨"memory", [.read, .write, .roots], "plain maps, grow-only"⟩,
     ⟨"file", [.read, .write, .roots],
       "a store root: objects/<2 hex>/<62 hex> + roots/<hex>, temp+rename"⟩,
+    ⟨"kvs", [.read, .write],
+      "any Effect KeyValueStore; SQL is the Litestream route; no roots seam"⟩,
     ⟨"pathReader", [.read],
       "any host serving bytes at a path; writes do not compile"⟩ ]
 
@@ -123,6 +125,12 @@ def capsSubset (xs ys : List Capability) : Bool := xs.all (ys.contains ·)
 -- Read-only honesty: the path reader provides exactly the read seam.
 #guard (foldlabCas.backends.find? (·.name = "pathReader")).map (·.provides)
   = some [.read]
+
+-- Roots honesty: the key-value backend provides the byte plane and no
+-- roots seam, because a key-value store carries no key enumeration —
+-- publishing over it does not compile.
+#guard (foldlabCas.backends.find? (·.name = "kvs")).map (·.provides)
+  = some [.read, .write]
 
 -- Reads ride the loader: the load law and every typed read need only
 -- the read seam, so the read-only backend serves them all.
@@ -151,7 +159,7 @@ def capabilityMatrix (a : Architecture) : Value :=
 `test/Architecture.test.ts`. Changing the shape means changing this
 string in BOTH homes — that is the point. -/
 def capabilityMatrixPin : String :=
-  "{\"backends\":{\"file\":[\"read\",\"roots\",\"write\"],\"memory\":[\"read\",\"roots\",\"write\"],\"pathReader\":[\"read\"]},\"laws\":{\"blob\":[\"read\",\"write\"],\"graphClosure\":[\"read\"],\"graphVerify\":[\"read\"],\"loader\":[\"read\"],\"serverCore\":[\"read\",\"roots\",\"write\"],\"store\":[\"read\",\"write\"],\"valueGet\":[\"read\"],\"valuePut\":[\"read\",\"write\"]},\"seams\":[\"read\",\"roots\",\"write\"],\"types\":[\"address\",\"addressScheme\",\"marker\",\"node\",\"payload\",\"ref\",\"root\",\"store\"]}"
+  "{\"backends\":{\"file\":[\"read\",\"roots\",\"write\"],\"kvs\":[\"read\",\"write\"],\"memory\":[\"read\",\"roots\",\"write\"],\"pathReader\":[\"read\"]},\"laws\":{\"blob\":[\"read\",\"write\"],\"graphClosure\":[\"read\"],\"graphVerify\":[\"read\"],\"loader\":[\"read\"],\"serverCore\":[\"read\",\"roots\",\"write\"],\"store\":[\"read\",\"write\"],\"valueGet\":[\"read\"],\"valuePut\":[\"read\",\"write\"]},\"seams\":[\"read\",\"roots\",\"write\"],\"types\":[\"address\",\"addressScheme\",\"marker\",\"node\",\"payload\",\"ref\",\"root\",\"store\"]}"
 
 #guard Json.renderCompact (capabilityMatrix foldlabCas) = capabilityMatrixPin
 

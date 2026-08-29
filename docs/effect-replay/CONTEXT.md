@@ -42,10 +42,19 @@ ratified — programs-are-content. Amended 2026-08-28 at the
 effects-backend RATIFICATION (operator: "make this official and pin
 it"; the R1–R14 dialogue is the grilling record): three entries
 minted — handler, the tower, representation strata — and one rule
-ratified — the-direction-law. Kind:
+ratified — the-direction-law. Amended 2026-08-28 at the
+canonicalization ruling (operator-ratified, in-session; four rulings,
+each as recommended: methods are first-class structure values;
+completeness instances syntactic-only; duplicate keys refuse at
+admission, normalization never repairs; both mints approved): two
+entries minted — canonicalization method, form address — and the
+"form hash" spelling retired. Kind:
 **glossary**. This document owns the context's vocabulary
 and nothing else. The design view lives in
 [library/effects/IMPLEMENTATION-PLAN.md](../../library/effects/IMPLEMENTATION-PLAN.md);
+the user-facing projection of this vocabulary — the two-register split
+the CLI renders — is pinned in
+[library/effects/VOCABULARY.md](../../library/effects/VOCABULARY.md);
 claims are stamped per [CLAIM-GATES.md](../effect-typescript-semantics/CLAIM-GATES.md).
 
 ## Scope and independence
@@ -916,3 +925,48 @@ purity; adjudicating individual combinators ad hoc.
   pipeline.
 - **Avoid:** transport knowledge in the core; opinions in the shell;
   rendering that consults policy instead of the outcome.
+
+### Canonicalization method
+- **Kind:** model. **Code label:**
+  `library/cas/Cas/Core/Canonicalize.lean` (`Canonicalizer`, the
+  induced quotient, the ladder) and
+  `library/cas/Cas/Values/Canonicalize.lean` (`canonJson`, the
+  key-sorting instance).
+- **Form:** an idempotent normalizer held as first-class data — one
+  carrier admits many methods. A method induces a decidable
+  equivalence (same representative) with its setoid form space;
+  methods compare by refinement and compose under the
+  ladder-coherence premise, with idempotence, preservation, and
+  refinement inherited by the composite rather than re-proved.
+- **Obligations:** idempotence is the admission bar; every further
+  claim a method carries is a named preservation law against a named
+  observation, with admissibility (equivalent values are
+  observation-equal) the proved consequence. Completeness is
+  instantiated only against decidable syntactic observations, only by
+  proof — for semantic observations it is the permanently open bound:
+  identity hashes presentations, never denotations. A method is
+  normalize-side machinery (the acquisition loop's normalize verb):
+  it reorders spellings and repairs nothing — duplicate keys and
+  every other ambiguity remain admission refusals.
+- **Avoid:** a typeclass-style "the" canonicalizer for a carrier;
+  renormalize-on-read; a normalizer that dedups, drops, or otherwise
+  repairs content; claiming completeness for a handler-image or word
+  observation.
+
+### Form address
+- **Kind:** model (function with premises). **Code label:**
+  `library/cas/Cas/Core/Canonicalize.lean`
+  (`Canonicalizer.formAddress`).
+- **Form:** the address of a value's canonical representative under a
+  named method — the observed-form identity of the construct-ledger
+  lane, defined over the abstract `H` exactly like every address.
+- **Obligations:** the hash-hypothesis lattice, inherited: Level 0 —
+  form addresses are well-defined on the method's quotient, and equal
+  form addresses yield equivalence or an explicit collision witness
+  on the representatives; Level 1 — reflection only under the named
+  `hInj` premise. A recorded form address names the method that
+  minted it, and the canonical encoder of record computes it — never
+  a hoover-side instrument.
+- **Avoid:** "form hash" (retired spelling); reading form-address
+  equality as semantic equivalence; a form address whose method is
+  unrecorded.

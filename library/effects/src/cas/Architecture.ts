@@ -70,6 +70,11 @@ export const value: Description = Description.make({
       provides: ["read", "roots", "write"],
     },
     {
+      means: "any Effect KeyValueStore; SQL is the Litestream route; no roots seam",
+      name: "kvs",
+      provides: ["read", "write"],
+    },
+    {
       means: "any host serving bytes at a path; writes do not compile",
       name: "pathReader",
       provides: ["read"],
@@ -227,4 +232,4 @@ export const capabilityMatrix = (description: Description): CapabilityMatrix => 
  * `library/cas/Cas/Architecture.lean`. Changing the shape means
  * changing this string in BOTH homes — that is the point. */
 export const capabilityMatrixPin =
-  `{"backends":{"file":["read","roots","write"],"memory":["read","roots","write"],"pathReader":["read"]},"laws":{"blob":["read","write"],"graphClosure":["read"],"graphVerify":["read"],"loader":["read"],"serverCore":["read","roots","write"],"store":["read","write"],"valueGet":["read"],"valuePut":["read","write"]},"seams":["read","roots","write"],"types":["address","addressScheme","marker","node","payload","ref","root","store"]}`
+  `{"backends":{"file":["read","roots","write"],"kvs":["read","write"],"memory":["read","roots","write"],"pathReader":["read"]},"laws":{"blob":["read","write"],"graphClosure":["read"],"graphVerify":["read"],"loader":["read"],"serverCore":["read","roots","write"],"store":["read","write"],"valueGet":["read"],"valuePut":["read","write"]},"seams":["read","roots","write"],"types":["address","addressScheme","marker","node","payload","ref","root","store"]}`

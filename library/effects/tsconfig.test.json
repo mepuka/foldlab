@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["bun"]
+    "types": ["bun"],
+    // rc.111 ships unstable/cli declarations referencing an internal
+    // Param.getParamMetadata absent from the emitted Param.d.ts — an
+    // upstream packaging defect only surfaced by importing the cli
+    // module. Scoped here; the src-only tsconfig stays lib-checked.
+    "skipLibCheck": true
   },
-  "include": ["src", "test", "scripts", "vitest.config.ts"]
+  "include": ["src", "test", "scripts", "bin", "vitest.config.ts"]
 }

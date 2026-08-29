@@ -45,11 +45,16 @@ it.effect("round-trips through the store law and lands the fan-out layout", () =
       expect(yield* store.load(id)).toEqual(child)
 
       // The address is the path: objects/<2 hex>/<62 hex>, and the
-      // publish left no temp file behind.
+      // publish left no temp file — and no temp SCAFFOLD DIRECTORY —
+      // behind: the platform realizes a temp file as a directory with
+      // the file inside, so an unscoped temp leaks a directory per
+      // fresh write.
       const held = yield* memory.dump
       expect(held.has(`${storeRoot}/objects/${id.slice(0, 2)}/${id.slice(2)}`))
         .toBe(true)
       expect([...held.keys()].filter((key) => key.includes("put-"))).toEqual([])
+      const heldDirectories = yield* memory.dumpDirectories
+      expect([...heldDirectories].filter((key) => key.includes("put-"))).toEqual([])
 
       // The law, not the backend, refuses a dangling closure.
       const dangling = node([9], 92, [{

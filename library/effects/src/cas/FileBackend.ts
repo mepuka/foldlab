@@ -90,22 +90,30 @@ export const makeFileBackend = (
 
   const writeFresh = (id: ContentId, target: string, bytes: Uint8Array) => {
     const directory = fanoutDir(id)
+    // The temp file must be the SCOPED variant: the platform realizes a
+    // temp file as a scaffold directory with the file inside, and only
+    // the scope's release removes that scaffold — the unscoped form
+    // leaks one empty directory into the fanout per fresh write.
     return fs.makeDirectory(directory, { recursive: true }).pipe(
-      Effect.andThen(fs.makeTempFile({ directory, prefix: "put-" })),
-      Effect.flatMap((temp) =>
-        fs.writeFile(temp, bytes.slice()).pipe(
-          Effect.andThen(fs.rename(temp, target).pipe(
-            // A lost rename race is a win: the same address carries the
-            // same canonical bytes, so whatever resides is this write.
-            Effect.catchTag("PlatformError", (error) =>
-              fs.exists(target).pipe(
-                Effect.orElseSucceed(() => false),
-                Effect.flatMap((resident) => resident
-                  ? fs.remove(temp, { force: true }).pipe(Effect.ignore)
-                  : Effect.fail(error)),
+      Effect.andThen(Effect.scoped(
+        fs.makeTempFileScoped({ directory, prefix: "put-" }).pipe(
+          Effect.flatMap((temp) =>
+            fs.writeFile(temp, bytes.slice()).pipe(
+              Effect.andThen(fs.rename(temp, target).pipe(
+                // A lost rename race is a win: the same address carries
+                // the same canonical bytes, so whatever resides is this
+                // write. The scope's release cleans the loser's temp.
+                Effect.catchTag("PlatformError", (error) =>
+                  fs.exists(target).pipe(
+                    Effect.orElseSucceed(() => false),
+                    Effect.flatMap((resident) => resident
+                      ? Effect.void
+                      : Effect.fail(error)),
+                  )),
               )),
-          )),
-        )),
+            )),
+        ),
+      )),
     )
   }
 

@@ -7,9 +7,11 @@ import Cas.Codec.Sha256
 import Cas.Core.Store
 import Cas.Core.Address
 import Cas.Core.Canonical
+import Cas.Core.Canonicalize
 import Cas.Core.Admission
 import Cas.Values.Json
 import Cas.Values.Refs
+import Cas.Values.Canonicalize
 import Cas.Codec.Hex
 import Cas.Schema.Schema
 import Cas.IR.Word

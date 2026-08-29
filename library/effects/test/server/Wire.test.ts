@@ -6,7 +6,7 @@ import {
   decodePresenceDocument,
   encodeKeyListDocument,
   encodePresenceDocument,
-} from "../../src/internal/remoteControl.ts"
+} from "../../src/internal/wire.ts"
 
 const key = (byte: number): ContentId => ContentId.make(byte.toString(16).padStart(2, "0").repeat(32))
 

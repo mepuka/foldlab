@@ -24,6 +24,8 @@ export interface MemoryFs {
   readonly fs: FileSystem.FileSystem
   /** Every file currently held, path → bytes. */
   readonly dump: Effect.Effect<ReadonlyMap<string, Uint8Array>>
+  /** Every directory currently held — leak assertions look here. */
+  readonly dumpDirectories: Effect.Effect<ReadonlySet<string>>
   /** Overwrite one file in place — the corruption lever for tests. */
   readonly poke: (path: string, bytes: Uint8Array) => Effect.Effect<void>
 }
@@ -65,6 +67,47 @@ export const makeMemoryFs: Effect.Effect<MemoryFs> = Effect.gen(function* () {
         : Effect.fail(notFound(method, path))),
     )
 
+  /** The platform's temp-file semantics, mirrored faithfully: a temp
+   * file is a scaffold DIRECTORY with the file inside, and only the
+   * scoped variant's release removes the scaffold — so a backend that
+   * uses the unscoped form leaks a directory here exactly as it does
+   * on a real host. */
+  const makeTempFile = (options?: {
+    readonly directory?: string | undefined
+    readonly prefix?: string | undefined
+  }) => {
+    const directory = options?.directory ?? ""
+    return requireDirectory("makeTempFile", directory).pipe(
+      Effect.flatMap(() => Ref.modify(tempSerial, (serial) =>
+        [serial + 1, serial + 1] as const)),
+      Effect.flatMap((serial) => {
+        const scaffold = `${directory}/${options?.prefix ?? "tmp-"}${serial}`
+        const path = `${scaffold}/f${serial}`
+        return Ref.update(directories, withDirectories(scaffold, false)).pipe(
+          Effect.andThen(Ref.update(files, inserted(path, new Uint8Array(0)))),
+          Effect.as(path),
+        )
+      }),
+    )
+  }
+
+  const removeTree = (root: string) =>
+    Ref.update(files, (current) => {
+      const next = new Map(current)
+      for (const key of current.keys()) {
+        if (key === root || key.startsWith(`${root}/`)) next.delete(key)
+      }
+      return next
+    }).pipe(
+      Effect.andThen(Ref.update(directories, (current) => {
+        const next = new Set(current)
+        for (const key of current) {
+          if (key === root || key.startsWith(`${root}/`)) next.delete(key)
+        }
+        return next
+      })),
+    )
+
   const fs = FileSystem.makeNoop({
     exists: (path) =>
       Effect.all([Ref.get(files), Ref.get(directories)]).pipe(
@@ -72,19 +115,12 @@ export const makeMemoryFs: Effect.Effect<MemoryFs> = Effect.gen(function* () {
       ),
     makeDirectory: (path, options) =>
       Ref.update(directories, withDirectories(path, options?.recursive ?? false)),
-    makeTempFile: (options) => {
-      const directory = options?.directory ?? ""
-      return requireDirectory("makeTempFile", directory).pipe(
-        Effect.flatMap(() => Ref.modify(tempSerial, (serial) =>
-          [serial + 1, serial + 1] as const)),
-        Effect.flatMap((serial) => {
-          const path = `${directory}/${options?.prefix ?? "tmp-"}${serial}`
-          return Ref.update(files, inserted(path, new Uint8Array(0))).pipe(
-            Effect.as(path),
-          )
-        }),
-      )
-    },
+    makeTempFile,
+    makeTempFileScoped: (options) =>
+      Effect.acquireRelease(
+        makeTempFile(options),
+        (file) => removeTree(parentOf(file)),
+      ),
     readDirectory: (path) =>
       requireDirectory("readDirectory", path).pipe(
         Effect.flatMap(() => Ref.get(files)),
@@ -135,6 +171,7 @@ export const makeMemoryFs: Effect.Effect<MemoryFs> = Effect.gen(function* () {
 
   return {
     dump: Ref.get(files),
+    dumpDirectories: Ref.get(directories),
     fs,
     poke: (path, bytes) => Ref.update(files, inserted(path, bytes.slice())),
   }

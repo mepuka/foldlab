@@ -11,19 +11,19 @@ const distDir = fileURLToPath(new URL("../dist", import.meta.url))
 
 const mod = await import(new URL("../dist/index.js", import.meta.url).href) as {
   readonly Cas?: Record<string, unknown>
-  readonly Replay?: Record<string, unknown>
+  readonly Server?: Record<string, unknown>
 }
 if (typeof mod.Cas !== "object" || mod.Cas === null) {
   failures.push("dist entry is missing the Cas namespace")
 } else {
-  if (typeof mod.Cas.layerMemory !== "function") failures.push("Cas.layerMemory is not a function")
-  if (typeof mod.Cas.layerRemote !== "function") failures.push("Cas.layerRemote is not a function")
+  if (mod.Cas.layerMemory === undefined) failures.push("Cas.layerMemory is missing")
+  if (mod.Cas.layerFile === undefined) failures.push("Cas.layerFile is missing")
 }
-if (typeof mod.Replay !== "object" || mod.Replay === null) {
-  failures.push("dist entry is missing the Replay namespace")
+if (typeof mod.Server !== "object" || mod.Server === null) {
+  failures.push("dist entry is missing the Server namespace")
 } else {
-  if (mod.Replay.layer === undefined) failures.push("Replay.layer is missing")
-  if (mod.Replay.WitnessSink === undefined) failures.push("Replay.WitnessSink is missing")
+  if (mod.Server.httpApp === undefined) failures.push("Server.httpApp is missing")
+  if (mod.Server.Core === undefined) failures.push("Server.Core is missing")
 }
 
 const walk = (dir: string): Array<string> =>

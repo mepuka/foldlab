@@ -26,7 +26,7 @@
  */
 import { Context, Effect, Layer, Option, Schema } from "effect"
 import type { ContentId } from "./Node.ts"
-import type { PresenceStatus } from "../internal/remoteControl.ts"
+import type { PresenceStatus } from "../internal/wire.ts"
 
 export type { PresenceStatus }
 
