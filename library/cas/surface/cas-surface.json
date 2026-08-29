@@ -1,41 +1,42 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 259,
-    "Core": 338,
-    "Grammar": 126,
-    "IR": 133,
-    "Lang": 244,
+    "Backend": 122,
+    "Codec": 261,
+    "Core": 341,
+    "Grammar": 128,
+    "IR": 135,
+    "Lang": 258,
     "Lift": 37,
-    "Schema": 490,
-    "Values": 416,
-    "Vectors": 65
+    "Schema": 587,
+    "Values": 429,
+    "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 207,
-    "Quot.sound": 373,
-    "propext": 525
+    "Classical.choice": 223,
+    "Quot.sound": 389,
+    "propext": 543
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 181,
+    "Cas.Addr32": 184,
     "Cas.Binding": 54,
-    "Cas.Grammar.Tree": 26,
-    "Cas.Grammar.Ty": 38,
+    "Cas.Grammar.Tree": 28,
+    "Cas.Grammar.Ty": 40,
     "Cas.Lang.Handler": 19,
     "Cas.Lang.Prog": 78,
     "Cas.Lang.Refusal": 40,
     "Cas.Lang.Sig": 42,
-    "Cas.Lang.Status": 51,
+    "Cas.Lang.Status": 53,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 93,
-    "Cas.Schema.Ast": 309,
-    "Cas.Schema.Described": 26,
-    "Cas.Schema.El": 35,
-    "Cas.Word": 107
+    "Cas.Schema.Ast": 335,
+    "Cas.Schema.Described": 41,
+    "Cas.Schema.El": 42,
+    "Cas.Word": 109
   },
-  "declarations": 1571,
-  "documented": 796,
+  "declarations": 1819,
+  "documented": 894,
   "library": "Cas",
   "modules": [
     {
@@ -323,6 +324,1365 @@
           "kind": "def",
           "name": "Cas.pin",
           "signature": "IO Unit"
+        }
+      ]
+    },
+    {
+      "declarations": 42,
+      "documented": 29,
+      "module": "Cas.Backend.Admission",
+      "surface": [
+        {
+          "documented": false,
+          "kind": "structure",
+          "name": "Cas.Backend.Admission.Clause",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.Clause.clause",
+          "signature": "Cas.Backend.Admission.Clause → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.Clause.detail",
+          "signature": "Cas.Backend.Admission.Clause → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.Clause.refusal",
+          "signature": "Cas.Backend.Admission.Clause → Cas.Schema.IngestRefusal",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "structure",
+          "name": "Cas.Backend.Admission.NodeRow",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.checks",
+          "signature": "Cas.Backend.Admission.NodeRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.form",
+          "signature": "Cas.Backend.Admission.NodeRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.keys",
+          "signature": "Cas.Backend.Admission.NodeRow → List String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.rep",
+          "signature": "Cas.Backend.Admission.NodeRow → Cas.Json.Value",
+          "touches": ["Backend", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.tag",
+          "signature": "Cas.Backend.Admission.NodeRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.NodeRow.witness",
+          "signature": "Cas.Backend.Admission.NodeRow → Cas.Schema.Ast",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.clauses",
+          "signature": "List Cas.Backend.Admission.Clause",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.declarationIdentityKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.declarations",
+          "signature": "List (String × Nat × String)"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.decls",
+          "signature": "List Cas.Backend.Ts.Decl",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.documentKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.elementKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.enumTypeOf",
+          "signature": "Cas.Schema.EnumValue → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.enumValueKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.enumValueTypes",
+          "signature": "List (String × String)"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.envelopeKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.fieldOf",
+          "signature": "String → Cas.Json.Value → Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.isIntCheckSpelling",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.jsonExpr",
+          "signature": "Cas.Json.Value → Cas.Backend.Ts.Expr",
+          "touches": ["Backend", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.jsonExprFields",
+          "signature": "List (String × Cas.Json.Value) → List (String × Cas.Backend.Ts.Expr)",
+          "touches": ["Backend", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.jsonExprItems",
+          "signature": "List Cas.Json.Value → List Cas.Backend.Ts.Expr",
+          "touches": ["Backend", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.keysOf",
+          "signature": "Cas.Json.Value → List String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.literalKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.literalTypeOf",
+          "signature": "Cas.Schema.LitVal → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.literalTypes",
+          "signature": "List (String × String)"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.module",
+          "signature": "Cas.Backend.Ts.Module",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.nodes",
+          "signature": "List Cas.Backend.Admission.NodeRow",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.payloadByteBound",
+          "signature": "Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.payloadColumn",
+          "signature": "Cas.Schema.DeclarationId → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.propertyKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.propertyNameKeys",
+          "signature": "List String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.refusalName",
+          "signature": "Cas.Schema.IngestRefusal → String",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.refusals",
+          "signature": "List Cas.Schema.IngestRefusal",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Admission.refusals_complete",
+          "signature": "∀ (r : Cas.Schema.IngestRefusal), r ∈ Cas.Backend.Admission.refusals",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.rendered",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.stringOf",
+          "signature": "Cas.Json.Value → String",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Admission.tagOf",
+          "signature": "Cas.Json.Value → String",
+          "touches": ["Values"]
+        }
+      ]
+    },
+    {
+      "declarations": 10,
+      "documented": 2,
+      "module": "Cas.Backend.EmitAst",
+      "surface": [
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.astBeq",
+          "signature": "Cas.Schema.Ast → Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.constructorExpr",
+          "signature": "List (String × Cas.Schema.Ast) → Cas.Schema.Ast → Cas.Backend.Ts.Expr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.elementBeq",
+          "signature": "Bool × Cas.Schema.Ast → Bool × Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.elementsBeq",
+          "signature": "List (Bool × Cas.Schema.Ast) → List (Bool × Cas.Schema.Ast) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.fieldsBeq",
+          "signature": "List (String × Bool × Cas.Schema.Ast) → List (String × Bool × Cas.Schema.Ast) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.instBEqAst",
+          "signature": "BEq Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.litExpr",
+          "signature": "Cas.Schema.LitVal → Cas.Backend.Ts.Expr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.membersBeq",
+          "signature": "List Cas.Schema.Ast → List Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.paramsBeq",
+          "signature": "List Cas.Schema.Ast → List Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.restBeq",
+          "signature": "Option Cas.Schema.Ast → Option Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        }
+      ]
+    },
+    {
+      "declarations": 2,
+      "documented": 2,
+      "module": "Cas.Backend.EmitProg",
+      "surface": [
+        {
+          "carriers": ["Cas.Grammar.Tree", "Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.lowerTree",
+          "signature": "{t : Cas.Grammar.Ty} → Cas.Grammar.Tree t → StateM (Array Cas.Backend.Ts.Stmt × Nat) String",
+          "touches": ["Backend", "Grammar"]
+        },
+        {
+          "carriers": ["Cas.Grammar.Tree", "Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.treeProgram",
+          "signature": "{t : Cas.Grammar.Ty} → List String → String → Cas.Grammar.Tree t → Cas.Backend.Ts.ProgDecl",
+          "touches": ["Backend", "Grammar"]
+        }
+      ]
+    },
+    {
+      "declarations": 52,
+      "documented": 24,
+      "module": "Cas.Backend.Mcp",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.McpTool",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.McpTool.description",
+          "signature": "Cas.Backend.Mcp.McpTool → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.McpTool.name",
+          "signature": "Cas.Backend.Mcp.McpTool → String",
+          "touches": ["Backend"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.McpTool.params",
+          "signature": "Cas.Backend.Mcp.McpTool → Cas.Schema.Ast",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.McpTool.result",
+          "signature": "Cas.Backend.Mcp.McpTool → Cas.Schema.Ast",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.RunInstruction",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.ofPLine",
+          "signature": "Cas.Lang.PLine → Option Cas.Backend.Mcp.RunInstruction",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.RunInstruction.ofPLine_load",
+          "signature": "∀ (src : Cas.Lang.PIn), Cas.Backend.Mcp.RunInstruction.ofPLine (Cas.Lang.PLine.load src) = none",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.payloadHex",
+          "signature": "Cas.Backend.Mcp.RunInstruction → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.rawSchema",
+          "signature": "String"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.refs",
+          "signature": "Cas.Backend.Mcp.RunInstruction → List Cas.Backend.Mcp.RunRef",
+          "touches": ["Backend"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.tag",
+          "signature": "Cas.Backend.Mcp.RunInstruction → Cas.Schema.SafeInt",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.toPLine",
+          "signature": "Cas.Backend.Mcp.RunInstruction → Option Cas.Lang.PLine",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.version",
+          "signature": "Cas.Backend.Mcp.RunInstruction → Cas.Schema.SafeInt",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.RunParams",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.instructions",
+          "signature": "Cas.Backend.Mcp.RunParams → List Cas.Backend.Mcp.RunInstruction",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.ofPProg",
+          "signature": "Cas.Lang.PProg → Option Cas.Backend.Mcp.RunParams",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.rawSchema",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.run",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Backend.Mcp.RunParams → Cas.Word → Option (Cas.Lang.Status Cas.Lang.CasSig Cas.Addr32 × Cas.Word)",
+          "touches": ["Backend", "Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunParams.toPProg",
+          "signature": "Cas.Backend.Mcp.RunParams → Option Cas.Lang.PProg",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.RunRef",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.expectedTag",
+          "signature": "Cas.Backend.Mcp.RunRef → Cas.Schema.SafeInt",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.ofPRef",
+          "signature": "UInt8 × Cas.Lang.PIn → Option Cas.Backend.Mcp.RunRef",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.RunRef.ofPRef_lit",
+          "signature": "∀ (t : UInt8) (a : Cas.Addr32), Cas.Backend.Mcp.RunRef.ofPRef (t, Cas.Lang.PIn.lit a) = none",
+          "touches": ["Backend", "Core", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.rawSchema",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.source",
+          "signature": "Cas.Backend.Mcp.RunRef → Cas.Schema.SafeInt",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRef.toPRef",
+          "signature": "Cas.Backend.Mcp.RunRef → UInt8 × Cas.Lang.PIn",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.RunResult",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunResult.rawSchema",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunResult.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunResult.word",
+          "signature": "Cas.Backend.Mcp.RunResult → List Cas.Backend.Mcp.WordEntry",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.WordEntry",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.WordEntry.address",
+          "signature": "Cas.Backend.Mcp.WordEntry → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.WordEntry.rawSchema",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.WordEntry.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.document",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunInstruction",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunInstruction",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunParams",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunParams",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunRef",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunRef",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunResult",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunResult",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedWordEntry",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.WordEntry",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.manifest",
+          "signature": "Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.manifestVersion",
+          "signature": "Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.ofPLines",
+          "signature": "Cas.Lang.PProg → Option (List Cas.Backend.Mcp.RunInstruction)",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.ofPRefs",
+          "signature": "List (UInt8 × Cas.Lang.PIn) → Option (List Cas.Backend.Mcp.RunRef)",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.run_ofPProg",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {p : Cas.Lang.PProg} {d : Cas.Backend.Mcp.RunParams}, Cas.Backend.Mcp.RunParams.ofPProg p = some d → ∀ (w : Cas.Word), Cas.Backend.Mcp.RunParams.run H d w = some (Cas.Lang.runP H p w)",
+          "touches": ["Backend", "Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.toPLines",
+          "signature": "List Cas.Backend.Mcp.RunInstruction → Option Cas.Lang.PProg",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.toPProg_ofPProg",
+          "signature": "∀ {p : Cas.Lang.PProg} {d : Cas.Backend.Mcp.RunParams}, Cas.Backend.Mcp.RunParams.ofPProg p = some d → d.toPProg = some p",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.tools",
+          "signature": "List Cas.Backend.Mcp.McpTool",
+          "touches": ["Backend"]
+        }
+      ]
+    },
+    {
+      "declarations": 23,
+      "documented": 6,
+      "module": "Cas.Backend.Target",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.CodecType",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.CodecType.decoded",
+          "signature": "Cas.Backend.CodecType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.CodecType.decodingServices",
+          "signature": "Cas.Backend.CodecType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.CodecType.encoded",
+          "signature": "Cas.Backend.CodecType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.CodecType.encodingServices",
+          "signature": "Cas.Backend.CodecType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.CodecType.lower",
+          "signature": "Cas.Backend.CodecType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.EffectType",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.EffectType.error",
+          "signature": "Cas.Backend.EffectType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.EffectType.lower",
+          "signature": "Cas.Backend.EffectType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.EffectType.services",
+          "signature": "Cas.Backend.EffectType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.EffectType.success",
+          "signature": "Cas.Backend.EffectType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.LayerType",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.LayerType.error",
+          "signature": "Cas.Backend.LayerType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.LayerType.lower",
+          "signature": "Cas.Backend.LayerType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.LayerType.provides",
+          "signature": "Cas.Backend.LayerType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.LayerType.requires",
+          "signature": "Cas.Backend.LayerType → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.OperationSig",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.OperationSig.lower",
+          "signature": "Cas.Backend.OperationSig → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.OperationSig.name",
+          "signature": "Cas.Backend.OperationSig → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.OperationSig.params",
+          "signature": "Cas.Backend.OperationSig → List (String × Cas.Schema.Foreign.TypeScript.TypeExpr)",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.OperationSig.returns",
+          "signature": "Cas.Backend.OperationSig → Cas.Backend.EffectType",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.optionType",
+          "signature": "Cas.Schema.Foreign.TypeScript.TypeExpr → Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.schemaTop",
+          "signature": "Cas.Schema.Foreign.TypeScript.TypeExpr",
+          "touches": ["Schema"]
+        }
+      ]
+    },
+    {
+      "declarations": 60,
+      "documented": 12,
+      "module": "Cas.Backend.Ts",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Ts.ConstDecl",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ConstDecl.doc",
+          "signature": "Cas.Backend.Ts.ConstDecl → List String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ConstDecl.name",
+          "signature": "Cas.Backend.Ts.ConstDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ConstDecl.type",
+          "signature": "Cas.Backend.Ts.ConstDecl → Option String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ConstDecl.value",
+          "signature": "Cas.Backend.Ts.ConstDecl → Cas.Backend.Ts.Expr",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.Ts.Decl",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Decl.ctorElim",
+          "signature": "{motive : Cas.Backend.Ts.Decl → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Ts.Decl) → ctorIdx = t.ctorIdx → Cas.Backend.Ts.Decl.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Decl.ctorElimType",
+          "signature": "{motive : Cas.Backend.Ts.Decl → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.Ts.Expr",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.below_1",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → List Cas.Backend.Ts.Expr → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.below_2",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → List (String × Cas.Backend.Ts.Expr) → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.below_3",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → String × Cas.Backend.Ts.Expr → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.Ts.Expr.brecOn.eq",
+          "signature": "∀ {motive_1 : Cas.Backend.Ts.Expr → Sort u} {motive_2 : List Cas.Backend.Ts.Expr → Sort u} {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} (t : Cas.Backend.Ts.Expr) (F_1 : (t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) (F_2 : (t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) (F_3 : (t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) (F_4 : (t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t), t.brecOn F_1 F_2 F_3 F_4 = F_1 t (Cas.Backend.Ts.Expr.brecOn.go t F_1 F_2 F_3 F_4).2",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn.go",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : Cas.Backend.Ts.Expr) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_1 t ×' t.below",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_1",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : List Cas.Backend.Ts.Expr) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_2 t",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.Ts.Expr.brecOn_1.eq",
+          "signature": "∀ {motive_1 : Cas.Backend.Ts.Expr → Sort u} {motive_2 : List Cas.Backend.Ts.Expr → Sort u} {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} (t : List Cas.Backend.Ts.Expr) (F_1 : (t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) (F_2 : (t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) (F_3 : (t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) (F_4 : (t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t), Cas.Backend.Ts.Expr.brecOn_1 t F_1 F_2 F_3 F_4 = F_2 t (Cas.Backend.Ts.Expr.brecOn_1.go t F_1 F_2 F_3 F_4).2",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_1.go",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : List Cas.Backend.Ts.Expr) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_2 t ×' Cas.Backend.Ts.Expr.below_1 t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_2",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : List (String × Cas.Backend.Ts.Expr)) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_3 t",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.Ts.Expr.brecOn_2.eq",
+          "signature": "∀ {motive_1 : Cas.Backend.Ts.Expr → Sort u} {motive_2 : List Cas.Backend.Ts.Expr → Sort u} {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} (t : List (String × Cas.Backend.Ts.Expr)) (F_1 : (t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) (F_2 : (t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) (F_3 : (t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) (F_4 : (t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t), Cas.Backend.Ts.Expr.brecOn_2 t F_1 F_2 F_3 F_4 = F_3 t (Cas.Backend.Ts.Expr.brecOn_2.go t F_1 F_2 F_3 F_4).2",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_2.go",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : List (String × Cas.Backend.Ts.Expr)) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_3 t ×' Cas.Backend.Ts.Expr.below_2 t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_3",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : String × Cas.Backend.Ts.Expr) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_4 t",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.Ts.Expr.brecOn_3.eq",
+          "signature": "∀ {motive_1 : Cas.Backend.Ts.Expr → Sort u} {motive_2 : List Cas.Backend.Ts.Expr → Sort u} {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} (t : String × Cas.Backend.Ts.Expr) (F_1 : (t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) (F_2 : (t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) (F_3 : (t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) (F_4 : (t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t), Cas.Backend.Ts.Expr.brecOn_3 t F_1 F_2 F_3 F_4 = F_4 t (Cas.Backend.Ts.Expr.brecOn_3.go t F_1 F_2 F_3 F_4).2",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.brecOn_3.go",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → {motive_2 : List Cas.Backend.Ts.Expr → Sort u} → {motive_3 : List (String × Cas.Backend.Ts.Expr) → Sort u} → {motive_4 : String × Cas.Backend.Ts.Expr → Sort u} → (t : String × Cas.Backend.Ts.Expr) → ((t : Cas.Backend.Ts.Expr) → t.below → motive_1 t) → ((t : List Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_1 t → motive_2 t) → ((t : List (String × Cas.Backend.Ts.Expr)) → Cas.Backend.Ts.Expr.below_2 t → motive_3 t) → ((t : String × Cas.Backend.Ts.Expr) → Cas.Backend.Ts.Expr.below_3 t → motive_4 t) → motive_4 t ×' Cas.Backend.Ts.Expr.below_3 t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.ctorElim",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Ts.Expr) → ctorIdx = t.ctorIdx → Cas.Backend.Ts.Expr.ctorElimType ctorIdx → motive_1 t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Expr.ctorElimType",
+          "signature": "{motive_1 : Cas.Backend.Ts.Expr → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.Ts.Import",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Import.ctorElim",
+          "signature": "{motive : Cas.Backend.Ts.Import → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Ts.Import) → ctorIdx = t.ctorIdx → Cas.Backend.Ts.Import.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Import.ctorElimType",
+          "signature": "{motive : Cas.Backend.Ts.Import → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Ts.Module",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Module.decls",
+          "signature": "Cas.Backend.Ts.Module → List Cas.Backend.Ts.Decl",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Module.header",
+          "signature": "Cas.Backend.Ts.Module → List String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Module.imports",
+          "signature": "Cas.Backend.Ts.Module → List Cas.Backend.Ts.Import",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Ts.ProgDecl",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ProgDecl.doc",
+          "signature": "Cas.Backend.Ts.ProgDecl → List String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ProgDecl.name",
+          "signature": "Cas.Backend.Ts.ProgDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ProgDecl.paramName",
+          "signature": "Cas.Backend.Ts.ProgDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ProgDecl.paramType",
+          "signature": "Cas.Backend.Ts.ProgDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.ProgDecl.stmts",
+          "signature": "Cas.Backend.Ts.ProgDecl → List Cas.Backend.Ts.Stmt",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.constDecl",
+          "signature": "Cas.Backend.Ts.Style → Cas.Backend.Ts.ConstDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.decl",
+          "signature": "Cas.Backend.Ts.Style → Cas.Backend.Ts.Decl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.docBlock",
+          "signature": "List String → String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.escapeString",
+          "signature": "Cas.Backend.Ts.Style → String → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.expr",
+          "signature": "Cas.Backend.Ts.Style → Nat → Cas.Backend.Ts.Expr → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.exprs",
+          "signature": "Cas.Backend.Ts.Style → Nat → List Cas.Backend.Ts.Expr → List String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.import_",
+          "signature": "Cas.Backend.Ts.Style → Cas.Backend.Ts.Import → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.indentOf",
+          "signature": "Cas.Backend.Ts.Style → Nat → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.module",
+          "signature": "Cas.Backend.Ts.Style → Cas.Backend.Ts.Module → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.objectFields",
+          "signature": "Cas.Backend.Ts.Style → Nat → List (String × Cas.Backend.Ts.Expr) → List (String × String)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.progDecl",
+          "signature": "Cas.Backend.Ts.Style → Cas.Backend.Ts.ProgDecl → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.quoted",
+          "signature": "Cas.Backend.Ts.Style → String → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Render.stmt",
+          "signature": "Cas.Backend.Ts.Style → Nat → Cas.Backend.Ts.Stmt → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.Ts.Stmt",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Stmt.ctorElim",
+          "signature": "{motive : Cas.Backend.Ts.Stmt → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Ts.Stmt) → ctorIdx = t.ctorIdx → Cas.Backend.Ts.Stmt.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Stmt.ctorElimType",
+          "signature": "{motive : Cas.Backend.Ts.Stmt → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Ts.Style",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Style.indent",
+          "signature": "Cas.Backend.Ts.Style → Nat",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.Style.quote",
+          "signature": "Cas.Backend.Ts.Style → Char",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.house0",
+          "signature": "Cas.Backend.Ts.Style",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Ts.instInhabitedExpr",
+          "signature": "Inhabited Cas.Backend.Ts.Expr",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Ts.instInhabitedExpr.default",
+          "signature": "Cas.Backend.Ts.Expr",
+          "touches": ["Backend"]
         }
       ]
     },
@@ -7507,6 +8867,191 @@
       ]
     },
     {
+      "declarations": 2,
+      "documented": 0,
+      "module": "Cas.Schema.Deriving.Handler",
+      "surface": [
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.Deriving.instInhabitedAltInfo",
+          "signature": "Inhabited Cas.Schema.Deriving.AltInfo✝"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.instInhabitedAltInfo.default",
+          "signature": "Cas.Schema.Deriving.AltInfo✝"
+        }
+      ]
+    },
+    {
+      "declarations": 20,
+      "documented": 6,
+      "module": "Cas.Schema.Deriving.Util",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "class",
+          "name": "Cas.Schema.Deriving.FieldDescription",
+          "signature": "Type u → Type u"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.FieldDescription.code",
+          "signature": "(α : Type u) → [self : Cas.Schema.Deriving.FieldDescription α] → Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.FieldDescription.ofEl",
+          "signature": "{α : Type u} → [self : Cas.Schema.Deriving.FieldDescription α] → (bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) → α",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.FieldDescription.ofEl_toEl",
+          "signature": "∀ {α : Type u} [self : Cas.Schema.Deriving.FieldDescription α] (x : α), Cas.Schema.Deriving.FieldDescription.ofEl (Cas.Schema.Deriving.FieldDescription.toEl x) = x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.FieldDescription.optional",
+          "signature": "(α : Type u) → [self : Cas.Schema.Deriving.FieldDescription α] → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.FieldDescription.toEl",
+          "signature": "{α : Type u} → [self : Cas.Schema.Deriving.FieldDescription α] → α → bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.El"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.FieldDescription.toEl_ofEl",
+          "signature": "∀ {α : Type u} [self : Cas.Schema.Deriving.FieldDescription α] (x : bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)), Cas.Schema.Deriving.FieldDescription.toEl (Cas.Schema.Deriving.FieldDescription.ofEl x) = x",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.FieldDescription.wf",
+          "signature": "∀ {α : Type u} [self : Cas.Schema.Deriving.FieldDescription α], (Cas.Schema.Deriving.FieldDescription.code α).WF",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.altOfEl",
+          "signature": "{α : Type u} → [d : Cas.Schema.Deriving.FieldDescription α] → (bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) → α",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.altSpec",
+          "signature": "String → (α : Type u) → [d : Cas.Schema.Deriving.FieldDescription α] → String × Bool × Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.altToEl",
+          "signature": "{α : Type u} → [d : Cas.Schema.Deriving.FieldDescription α] → α → bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.altWF",
+          "signature": "∀ (α : Type u) [d : Cas.Schema.Deriving.FieldDescription α], (Cas.Schema.Deriving.FieldDescription.code α).WF",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.fieldOfEl",
+          "signature": "{ρ : Type v} → {α : Type u} → [d : Cas.Schema.Deriving.FieldDescription α] → (ρ → α) → (bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) → α",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.fieldSpec",
+          "signature": "{ρ : Type v} → {α : Type u} → [d : Cas.Schema.Deriving.FieldDescription α] → String → (ρ → α) → String × Bool × Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.El"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.fieldToEl",
+          "signature": "{ρ : Type v} → {α : Type u} → [d : Cas.Schema.Deriving.FieldDescription α] → (ρ → α) → ρ → bif Cas.Schema.Deriving.FieldDescription.optional α then Option (Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)) else Cas.Schema.El (Cas.Schema.Deriving.FieldDescription.code α)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.fieldWF",
+          "signature": "∀ {ρ : Type v} {α : Type u} [d : Cas.Schema.Deriving.FieldDescription α] (_getter : ρ → α), (Cas.Schema.Deriving.FieldDescription.code α).WF",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.Deriving.instFieldDescriptionOfDescribed",
+          "signature": "{α : Type u} → [d : Cas.Schema.Described α] → Cas.Schema.Deriving.FieldDescription α",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.Deriving.instFieldDescriptionOptionOfDescribed",
+          "signature": "{α : Type u} → [d : Cas.Schema.Described α] → Cas.Schema.Deriving.FieldDescription (Option α)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Deriving.rebuildFields",
+          "signature": "(fs : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.ElFields fs → Cas.Schema.ElFields fs",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Deriving.rebuildFields_eq",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)) (x : Cas.Schema.ElFields fs), Cas.Schema.Deriving.rebuildFields fs x = x",
+          "touches": ["Schema"]
+        }
+      ]
+    },
+    {
       "declarations": 12,
       "documented": 3,
       "module": "Cas.Schema.Described.Core",
@@ -8503,6 +10048,37 @@
           "name": "Cas.Schema.wfRest_iff",
           "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.wfRest r = true ↔ Cas.Schema.WFRest r",
           "touches": ["Schema"]
+        }
+      ]
+    },
+    {
+      "declarations": 4,
+      "documented": 4,
+      "module": "Cas.Schema.Notation",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Notation.casSchemaField",
+          "signature": "Lean.ParserDescr"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Notation.casUnionAlt",
+          "signature": "Lean.ParserDescr"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Notation.command_Cas_struct_Where___",
+          "signature": "Lean.ParserDescr"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Notation.command_Cas_union_Where___",
+          "signature": "Lean.ParserDescr"
         }
       ]
     },
@@ -11969,6 +13545,265 @@
       ]
     },
     {
+      "declarations": 33,
+      "documented": 13,
+      "module": "Cas.Vectors.Schema",
+      "surface": [
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.CheckedConformanceVector.decode_json",
+          "signature": "∀ (vector : Cas.Vectors.CheckedConformanceVector), Cas.Schema.Described.decode vector.json = some (Cas.Vectors.Wire.ofVector vector)",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Vectors.CheckedConformanceVector.document",
+          "signature": "Cas.Vectors.CheckedConformanceVector → String",
+          "touches": ["Vectors"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Vectors.CheckedConformanceVector.json",
+          "signature": "Cas.Vectors.CheckedConformanceVector → Cas.Json.Value",
+          "touches": ["Values", "Vectors"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.CheckedConformanceVector.json_exact",
+          "signature": "∀ {value : Cas.Json.Value} {vector : Cas.Vectors.CheckedConformanceVector}, Cas.Schema.Described.decode value = some (Cas.Vectors.Wire.ofVector vector) → value = vector.json",
+          "touches": ["Schema", "Values", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Vectors.ForeignRepresentation.effectSchema",
+          "signature": "String → Cas.Schema.Foreign.Representation Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Vectors.ForeignRepresentation.exportedName",
+          "signature": "String → Cas.Schema.Foreign.TypeScript.QualifiedName",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.decode_index",
+          "signature": "∀ (index : Cas.Vectors.Wire.VectorIndex), Cas.Schema.Described.decode (Cas.Schema.Described.encode index) = some index",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Vectors.formatSafeInt",
+          "signature": "Cas.Schema.SafeInt",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Vectors.indexAst",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.indexAst_shape",
+          "signature": "Cas.Vectors.indexAst = Cas.Schema.Ast.struct [(\"digest\", false, Cas.Schema.Ast.lit (Cas.Schema.LitVal.str Cas.Vectors.digestScheme)), (\"schemaVersion\", false, Cas.Schema.Ast.lit (Cas.Schema.LitVal.int Cas.Vectors.formatSafeInt)), (\"vectors\", false, (Cas.Schema.Ast.struct [(\"bindings\", false, Cas.Schema.Ast.int), (\"description\", false, Cas.Schema.Ast.str), (\"file\", false, Cas.Schema.Ast.str), (\"name\", false, Cas.Schema.Ast.str), (\"root\", false, Cas.Schema.Ast.str)]).arr)]",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.indexAst_wf",
+          "signature": "Cas.Vectors.indexAst.WF",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Vectors.indexDocument",
+          "signature": "Cas.Vectors.VectorRegistry → Except Cas.Vectors.VectorError String",
+          "touches": ["Vectors"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Vectors.indexJson",
+          "signature": "Cas.Vectors.VectorRegistry → Except Cas.Vectors.VectorError Cas.Json.Value",
+          "touches": ["Values", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedDigestAlgorithm",
+          "signature": "Cas.Schema.Described Cas.Vectors.DigestAlgorithm",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedIndexEntry",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.IndexEntry",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorBinding",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.VectorBinding",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorDocument",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.VectorDocument",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorFormat",
+          "signature": "Cas.Schema.Described Cas.Vectors.VectorFormat",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorIndex",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.VectorIndex",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorNode",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.VectorNode",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instDescribedVectorRef",
+          "signature": "Cas.Schema.Described Cas.Vectors.Wire.VectorRef",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInIndexEntryTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.IndexEntry Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInVectorBindingTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.VectorBinding Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInVectorDocumentTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.VectorDocument Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInVectorIndexTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.VectorIndex Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInVectorNodeTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.VectorNode Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Vectors.instRepresentedInVectorRefTypeScript",
+          "signature": "Cas.Schema.Foreign.RepresentedIn Cas.Vectors.Wire.VectorRef Cas.Schema.Foreign.Language.typeScript",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Vectors.validates",
+          "signature": "Cas.Json.Value → Bool",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Vectors.validates_json",
+          "signature": "∀ (vector : Cas.Vectors.CheckedConformanceVector), Cas.Vectors.validates vector.json = true",
+          "touches": ["Vectors"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Vectors.vectorAst",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.vectorAst_shape",
+          "signature": "Cas.Vectors.vectorAst = Cas.Schema.Ast.struct [(\"description\", false, Cas.Schema.Ast.str), (\"digest\", false, Cas.Schema.Ast.lit (Cas.Schema.LitVal.str Cas.Vectors.digestScheme)), (\"name\", false, Cas.Schema.Ast.str), (\"schemaVersion\", false, Cas.Schema.Ast.lit (Cas.Schema.LitVal.int Cas.Vectors.formatSafeInt)), (\"word\", false, (Cas.Schema.Ast.struct [(\"address\", false, Cas.Schema.Ast.str), (\"node\", false, Cas.Schema.Ast.struct [(\"payload\", false, Cas.Schema.Ast.str), (\"refs\", false, (Cas.Schema.Ast.struct [(\"expectedTag\", false, Cas.Schema.Ast.int), (\"id\", false, Cas.Schema.Ast.str)]).arr), (\"tag\", false, Cas.Schema.Ast.int), (\"version\", false, Cas.Schema.Ast.int)])]).arr)]",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.vectorAst_wf",
+          "signature": "Cas.Vectors.vectorAst.WF",
+          "touches": ["Schema", "Vectors"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Vectors.vector_effect_schema_type",
+          "signature": "(Cas.Schema.Foreign.TypeScript.effectSchemaType Cas.Vectors.Wire.VectorDocument).render = \"Schema.Codec<Cas.ConformanceVector.ConformanceVector, typeof Cas.ConformanceVector.ConformanceVector.Encoded, never, never>\"",
+          "touches": ["Schema", "Vectors"]
+        }
+      ]
+    },
+    {
       "declarations": 84,
       "documented": 13,
       "module": "Cas.Vectors.Vectors",
@@ -12557,11 +14392,11 @@
     }
   ],
   "totals": {
-    "class": 3,
-    "def": 789,
-    "inductive": 40,
-    "instance": 71,
-    "structure": 44,
-    "theorem": 624
+    "class": 4,
+    "def": 968,
+    "inductive": 44,
+    "instance": 95,
+    "structure": 60,
+    "theorem": 648
   }
 }
