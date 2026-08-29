@@ -53,12 +53,22 @@ def Ast.toJson : Ast → Json.Value
   | .arr a => .obj [("_tag", .str "Array"), ("item", a.toJson)]
   | .struct fs => .obj [("_tag", .str "Struct"), ("fields", .obj (fieldsToJson fs))]
   | .ref t => .obj [("_tag", .str "Ref"), ("tag", .nat t.toNat)]
+  | .decl id p ps => .obj [
+      ("_tag", .str "Decl"),
+      ("id", .str id.wire),
+      ("payload", p.toJson),
+      ("typeParameters", .arr (paramsToJson ps))]
 
 /-- One record entry per struct field: `name ↦ {optional, schema}`. -/
 def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
   | [] => []
   | (name, opt, a) :: fs =>
     (name, .obj [("optional", .bool opt), ("schema", a.toJson)]) :: fieldsToJson fs
+
+/-- A declaration's type parameters, in order. -/
+def paramsToJson : List Ast → List Json.Value
+  | [] => []
+  | a :: as => a.toJson :: paramsToJson as
 
 end
 
@@ -126,6 +136,13 @@ def Ast.toRepresentationJson : Ast → Json.Value
         ("id", .str "foldlab/cas/ref"),
         ("payload", .nat tag.toNat)]),
       ("typeParameters", .arr [])]
+  | .decl id p ps => .obj [
+      ("_tag", .str "Declaration"),
+      ("checks", .arr []),
+      ("representation", .obj [
+        ("id", .str id.wire),
+        ("payload", p.toJson)]),
+      ("typeParameters", .arr (paramsToRepresentationJson ps))]
 
 /-- Effect property-signature representations, preserving canonical field order. -/
 def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Value
@@ -136,6 +153,11 @@ def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Valu
       ("isOptional", .bool opt),
       ("name", .obj [("type", .str "string"), ("value", .str name)]),
       ("type", a.toRepresentationJson)] :: fieldsToRepresentationJson fs
+
+/-- A declaration's type-parameter representations, in order. -/
+def paramsToRepresentationJson : List Ast → List Json.Value
+  | [] => []
+  | a :: as => a.toRepresentationJson :: paramsToRepresentationJson as
 
 end
 
@@ -242,6 +264,18 @@ theorem toJson_canonical : ∀ (a : Ast), a.WF → a.toJson.Canonical
     subst hb
     show ("_tag" : String) < "tag"
     decide
+  | .decl _ p ps, ⟨_, _, hps⟩ => by
+    refine ⟨List.pairwise_map.mp
+        (by decide :
+          List.Pairwise (· < ·) ["_tag", "id", "payload", "typeParameters"]),
+      trivial, trivial, DeclPayload.toJson_canonical p,
+      paramsToJson_canonical ps hps, trivial⟩
+
+theorem paramsToJson_canonical :
+    ∀ (ps : List Ast), WFParams ps → CanonicalItems (paramsToJson ps)
+  | [], _ => trivial
+  | a :: as, ⟨ha, has⟩ =>
+    ⟨toJson_canonical a ha, paramsToJson_canonical as has⟩
 
 theorem fieldsToJson_canonical :
     ∀ (fs : List (String × Bool × Ast)), WFFields fs →
@@ -307,6 +341,13 @@ def Ast.ofJson : Json.Value → Option Ast
     (ofJsonFields kvs).map .struct
   | .obj [("_tag", .str "Ref"), ("tag", .nat t)] =>
     if _h : t < 256 then some (.ref (UInt8.ofNat t)) else none
+  | .obj [("_tag", .str "Decl"), ("id", .str w), ("payload", p),
+      ("typeParameters", .arr tps)] =>
+    match DeclarationId.General.ofWire w with
+    | none => none
+    | some g =>
+      (DeclPayload.ofJson p).bind fun pay =>
+      (ofJsonParams tps).map fun ps => .decl g pay ps
   | _ => none
 
 def ofJsonFields :
@@ -316,6 +357,12 @@ def ofJsonFields :
     (Ast.ofJson v).bind fun a =>
     (ofJsonFields rest).map fun fs => (n, opt, a) :: fs
   | _ => none
+
+def ofJsonParams : List Json.Value → Option (List Ast)
+  | [] => some []
+  | v :: vs =>
+    (Ast.ofJson v).bind fun a =>
+    (ofJsonParams vs).map fun as => a :: as
 
 end
 
@@ -337,6 +384,10 @@ theorem ofJson_toJson : ∀ (a : Ast), Ast.ofJson a.toJson = some a
     simp only [Ast.toJson, Ast.ofJson]
     rw [dif_pos (UInt8.toNat_lt_size t)]
     simp
+  | .decl g p ps => by
+    simp only [Ast.toJson, Ast.ofJson, DeclarationId.General.ofWire_wire g,
+      DeclPayload.ofJson_toJson p, ofJsonParams_paramsToJson ps,
+      Option.bind_some, Option.map_some]
 
 theorem ofJsonFields_fieldsToJson :
     ∀ (fs : List (String × Bool × Ast)),
@@ -345,6 +396,13 @@ theorem ofJsonFields_fieldsToJson :
   | (n, opt, a) :: fs => by
     simp only [fieldsToJson, ofJsonFields, ofJson_toJson a,
       ofJsonFields_fieldsToJson fs, Option.bind_some, Option.map_some]
+
+theorem ofJsonParams_paramsToJson :
+    ∀ (ps : List Ast), ofJsonParams (paramsToJson ps) = some ps
+  | [] => rfl
+  | a :: as => by
+    simp only [paramsToJson, ofJsonParams, ofJson_toJson a,
+      ofJsonParams_paramsToJson as, Option.bind_some, Option.map_some]
 
 end
 
@@ -387,7 +445,18 @@ function on codes (the only two-to-one identification the projection
 makes), `Ast.RepNormal` names its fixed points, and the laws are stated
 against them: the round trip answers `a.repNorm`, injectivity holds up
 to `repNorm`, and on `RepNormal` codes — every code the decoder can
-ever produce — both hold on the nose. -/
+ever produce — both hold on the nose.
+
+### The general declaration code adds no second collapse
+
+Increment C-decl grows `Ast.decl` (a registry id, a first-order
+payload, the type parameters) and `declOfRepresentation` — the
+registry-driven dispatch every persisted `Declaration` goes through.
+It introduces NO new identification: `Ast.repNorm_decl` shows the
+normal form rewrites only the type parameters, and
+`decl_wire_ne_casRef` shows why nothing more is owed — the general code
+cannot spell row zero (`foldlab/cas/ref`), which keeps the dedicated
+code `.ref` the unique spelling of its own representation. -/
 
 open Cas.Json
 
@@ -448,6 +517,23 @@ theorem toRepresentationJson_canonical :
       ⟨List.pairwise_map.mp (by decide : List.Pairwise (· < ·) ["id", "payload"]),
         trivial, trivial, trivial⟩,
       trivial, trivial⟩
+  | .decl _ p ps =>
+    ⟨List.pairwise_map.mp
+        (by decide :
+          List.Pairwise (· < ·)
+            ["_tag", "checks", "representation", "typeParameters"]),
+      trivial, trivial,
+      ⟨List.pairwise_map.mp (by decide : List.Pairwise (· < ·) ["id", "payload"]),
+        trivial, DeclPayload.toJson_canonical p, trivial⟩,
+      paramsToRepresentationJson_canonical ps, trivial⟩
+
+/-- A declaration's type-parameter representations are canonically
+spelled — like every other representation, by construction. -/
+theorem paramsToRepresentationJson_canonical :
+    ∀ (ps : List Ast), CanonicalItems (paramsToRepresentationJson ps)
+  | [] => trivial
+  | a :: as =>
+    ⟨toRepresentationJson_canonical a, paramsToRepresentationJson_canonical as⟩
 
 /-- Every emitted property signature is canonically spelled
 (`isMutable < isOptional < name < type`, and `type < value` inside the
@@ -498,12 +584,25 @@ def Ast.repNorm : Ast → Ast
   | .lit .null => .null
   | .arr a => .arr a.repNorm
   | .struct fs => .struct (repNormFields fs)
+  | .decl id p ps => .decl id p (repNormParams ps)
   | a => a
 
 def repNormFields :
     List (String × Bool × Ast) → List (String × Bool × Ast)
   | [] => []
   | (n, o, a) :: fs => (n, o, a.repNorm) :: repNormFields fs
+
+/-- The general declaration code adds NO collapse of its own: this arm
+rewrites the type parameters and nothing else, so the id and the
+payload survive verbatim. That is by construction, not by luck —
+`DeclarationId.General` excludes the registry rows that already have a
+dedicated code, so no representation ever has two spellings
+(`DeclarationId.General.row_not_dedicated`). The literal-null
+identification stays the only two-to-one map the revision-1 projection
+makes. -/
+def repNormParams : List Ast → List Ast
+  | [] => []
+  | a :: as => a.repNorm :: repNormParams as
 
 end
 
@@ -522,6 +621,8 @@ theorem Ast.repNorm_idem : ∀ (a : Ast), a.repNorm.repNorm = a.repNorm
     simp only [Ast.repNorm, Ast.repNorm_idem a]
   | .struct fs => by
     simp only [Ast.repNorm, repNormFields_idem fs]
+  | .decl _ _ ps => by
+    simp only [Ast.repNorm, repNormParams_idem ps]
 
 theorem repNormFields_idem :
     ∀ (fs : List (String × Bool × Ast)),
@@ -530,11 +631,35 @@ theorem repNormFields_idem :
   | (n, o, a) :: fs => by
     simp only [repNormFields, Ast.repNorm_idem a, repNormFields_idem fs]
 
+theorem repNormParams_idem :
+    ∀ (ps : List Ast), repNormParams (repNormParams ps) = repNormParams ps
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormParams, Ast.repNorm_idem a, repNormParams_idem as]
+
 end
 
 /-- Every normal form is `RepNormal`. -/
 theorem Ast.repNorm_repNormal (a : Ast) : a.repNorm.RepNormal :=
   Ast.repNorm_idem a
+
+/-- THE no-new-collapse statement for increment C-decl: on a general
+declaration the normal form rewrites the type parameters and NOTHING
+else — the id and the payload survive verbatim. So the general code
+identifies no two declarations that differ in id or payload, and the
+literal-null identification (register R13) remains the only two-to-one
+map the revision-1 projection makes. -/
+theorem Ast.repNorm_decl (g : DeclarationId.General) (p : DeclPayload)
+    (ps : List Ast) :
+    (Ast.decl g p ps).repNorm = .decl g p (repNormParams ps) := rfl
+
+/-- Why there is no new collapse to make: the general code never
+spells row zero, so no general declaration projects onto the dedicated
+code's representation. This is `DeclarationId.General.row_not_dedicated`
+read at the wire. -/
+theorem decl_wire_ne_casRef (g : DeclarationId.General) :
+    g.wire ≠ DeclarationId.casRef.wire := by
+  cases g <;> decide
 
 mutual
 
@@ -551,6 +676,9 @@ theorem toRepresentationJson_repNorm :
   | .struct fs => by
     simp only [Ast.repNorm, Ast.toRepresentationJson,
       fieldsToRepresentationJson_repNorm fs]
+  | .decl _ _ ps => by
+    simp only [Ast.repNorm, Ast.toRepresentationJson,
+      paramsToRepresentationJson_repNorm ps]
 
 theorem fieldsToRepresentationJson_repNorm :
     ∀ (fs : List (String × Bool × Ast)),
@@ -561,7 +689,24 @@ theorem fieldsToRepresentationJson_repNorm :
     simp only [repNormFields, fieldsToRepresentationJson,
       toRepresentationJson_repNorm a, fieldsToRepresentationJson_repNorm fs]
 
+theorem paramsToRepresentationJson_repNorm :
+    ∀ (ps : List Ast),
+      paramsToRepresentationJson (repNormParams ps) =
+        paramsToRepresentationJson ps
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormParams, paramsToRepresentationJson,
+      toRepresentationJson_repNorm a, paramsToRepresentationJson_repNorm as]
+
 end
+
+/-- Normalization preserves a declaration's arity — it rewrites the
+type parameters in place. -/
+theorem repNormParams_length :
+    ∀ (ps : List Ast), (repNormParams ps).length = ps.length
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormParams, List.length_cons, repNormParams_length as]
 
 mutual
 
@@ -577,11 +722,18 @@ theorem Ast.repNorm_wf : ∀ (a : Ast), a.WF → a.repNorm.WF
     have hkeys : (repNormFields fs).map (fun f => f.1) = fs.map (fun f => f.1) :=
       repNormFields_keys fs
     exact List.pairwise_map.mp (hkeys ▸ List.pairwise_map.mpr hsorted)
+  | .decl _ _ ps, ⟨hp, harity, hps⟩ =>
+    ⟨hp, (repNormParams_length ps).trans harity, repNormParams_wf ps hps⟩
 
 theorem repNormFields_wf :
     ∀ (fs : List (String × Bool × Ast)), WFFields fs → WFFields (repNormFields fs)
   | [], _ => trivial
   | (_, _, a) :: fs, ⟨ha, hfs⟩ => ⟨Ast.repNorm_wf a ha, repNormFields_wf fs hfs⟩
+
+theorem repNormParams_wf :
+    ∀ (ps : List Ast), WFParams ps → WFParams (repNormParams ps)
+  | [], _ => trivial
+  | a :: as, ⟨ha, has⟩ => ⟨Ast.repNorm_wf a ha, repNormParams_wf as has⟩
 
 theorem repNormFields_keys :
     ∀ (fs : List (String × Bool × Ast)),
@@ -618,6 +770,32 @@ private def litOfRepresentationJson : Json.Value → Option LitVal
   | .obj [("type", .str "string"), ("value", .str s)] => some (.str s)
   | _ => none
 
+/-- The general declaration code, from its decoded parts. -/
+private def generalDeclOf (g : DeclarationId.General) (p : Json.Value)
+    (ps : List Ast) : Option Ast :=
+  (DeclPayload.ofJson p).map fun pay => .decl g pay ps
+
+/-- THE declaration gate: a persisted `{id, payload}` and its decoded
+type parameters, dispatched through the registry.
+
+Row zero answers the DEDICATED code (`.ref`); every general row answers
+the general code (`.decl`); an id that is no row at all is refused —
+which is exactly the allowlist P4 requires, and the refusal the door
+names `IngestRefusal.unknownDeclaration`. The match is exhaustive over
+`DeclarationId`, so a new registry row cannot be added without
+dispositioning it here. -/
+def declOfRepresentation (w : String) (p : Json.Value) (ps : List Ast) :
+    Option Ast :=
+  match DeclarationId.ofWire w with
+  | none => none
+  | some .casRef =>
+    match p, ps with
+    | .nat tag, [] => if _h : tag < 256 then some (.ref (UInt8.ofNat tag)) else none
+    | _, _ => none
+  | some .effectDate => generalDeclOf .date p ps
+  | some .effectUrl => generalDeclOf .url p ps
+  | some .effectOption => generalDeclOf .option p ps
+
 mutual
 
 /-- The strict decoder of the revision-1 representation: exactly the
@@ -639,10 +817,9 @@ def Ast.ofRepresentationJson : Json.Value → Option Ast
       ("indexSignatures", .arr []), ("propertySignatures", .arr ps)] =>
     (ofRepresentationProperties ps).map .struct
   | .obj [("_tag", .str "Declaration"), ("checks", .arr []),
-      ("representation", .obj [
-        ("id", .str "foldlab/cas/ref"), ("payload", .nat tag)]),
-      ("typeParameters", .arr [])] =>
-    if _h : tag < 256 then some (.ref (UInt8.ofNat tag)) else none
+      ("representation", .obj [("id", .str w), ("payload", p)]),
+      ("typeParameters", .arr tps)] =>
+    (ofRepresentationParams tps).bind fun ps => declOfRepresentation w p ps
   | _ => none
 
 /-- The property-signature list decoder, preserving order verbatim. -/
@@ -655,6 +832,13 @@ private def ofRepresentationProperties :
     (Ast.ofRepresentationJson t).bind fun a =>
     (ofRepresentationProperties rest).map fun fs => (n, opt, a) :: fs
   | _ => none
+
+/-- The type-parameter list decoder, preserving order verbatim. -/
+def ofRepresentationParams : List Json.Value → Option (List Ast)
+  | [] => some []
+  | v :: vs =>
+    (Ast.ofRepresentationJson v).bind fun a =>
+    (ofRepresentationParams vs).map fun as => a :: as
 
 end
 
@@ -701,9 +885,31 @@ theorem ofRepresentationJson_toRepresentationJson :
       ofRepresentationProperties_fieldsToRepresentationJson fs,
       Option.map_some, Ast.repNorm]
   | .ref t => by
-    simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson]
+    simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson,
+      ofRepresentationParams, Option.bind_some, declOfRepresentation,
+      DeclarationId.ofWire]
     rw [dif_pos (UInt8.toNat_lt_size t)]
     simp [Ast.repNorm]
+  | .decl g p ps => by
+    cases g <;>
+      simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson,
+        DeclarationId.General.wire, DeclarationId.General.row,
+        DeclarationId.wire,
+        ofRepresentationParams_paramsToRepresentationJson ps,
+        Option.bind_some, declOfRepresentation, DeclarationId.ofWire,
+        generalDeclOf, DeclPayload.ofJson_toJson p, Option.map_some,
+        Ast.repNorm]
+
+theorem ofRepresentationParams_paramsToRepresentationJson :
+    ∀ (ps : List Ast),
+      ofRepresentationParams (paramsToRepresentationJson ps) =
+        some (repNormParams ps)
+  | [] => rfl
+  | a :: as => by
+    simp only [paramsToRepresentationJson, ofRepresentationParams,
+      ofRepresentationJson_toRepresentationJson a,
+      ofRepresentationParams_paramsToRepresentationJson as,
+      Option.bind_some, Option.map_some, repNormParams]
 
 theorem ofRepresentationProperties_fieldsToRepresentationJson :
     ∀ (fs : List (String × Bool × Ast)),

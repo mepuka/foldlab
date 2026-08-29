@@ -1,3 +1,4 @@
+import Cas.Schema.Declarations
 import Cas.Schema.Ast
 import Cas.Schema.El
 import Cas.Schema.Codec
@@ -59,7 +60,27 @@ Named increments, in order:
 - **Ingestion** — LANDED (Slice B): `Ingest` is the door. `ingest`
   normalizes, decodes the revision-1 envelope, and gates on `Ast.wf`,
   with named refusals (`notASchema`/`illFormed`/`wrongRevision`/
-  `nonEmptyReferences`), soundness (`ingest_wf`) and exactness on the
-  canonical image (`ingest_envelope`). `ingestLegacy` keeps the
-  retired revision-0 spelling readable.
+  `nonEmptyReferences`/`unknownDeclaration`), soundness (`ingest_wf`)
+  and exactness on the canonical image (`ingest_envelope`).
+  `ingestLegacy` keeps the retired revision-0 spelling readable.
+- **Custom declarations** — LANDED (increment C-decl, stipulation S3):
+  `Declarations` is the ALLOWLIST as first-order data
+  (`DeclarationId`, row zero `foldlab/cas/ref`), and `Ast.decl` is the
+  general declaration code — a registry id, a first-order
+  `DeclPayload`, and the type parameters, in Effect's persisted shape.
+  Admission is BY CONSTRUCTION (`DeclarationId.General` is the carrier's
+  index), the row's own discipline — payload shape, arity — is what
+  `Ast.WF` reads off the registry, and `declOfRepresentation` is the
+  single registry-driven gate every persisted `Declaration` passes
+  through. Every revision-1 law extends arm-wise with its STATEMENT
+  UNCHANGED, and `Ast.repNorm_decl`/`decl_wire_ne_casRef` say why: the
+  general code cannot spell row zero, so it adds no second collapse.
+  Named obligation, deliberately parked: the general declaration's
+  DENOTATION. `El` of a `.decl` is `Empty` — the rows are admitted as
+  CONTENT, and Lean has no carrier for their instances yet — so every
+  value-plane law holds over the grown carrier vacuously rather than
+  falsely, and the codec's own arms never fire. `Cas/Schema/El.lean`
+  carries the design note: a typeclass cannot serve here (`El` consumes
+  a runtime id), so the denotation wants a carrier table, as its own
+  increment.
 -/
