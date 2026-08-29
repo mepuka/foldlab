@@ -57,6 +57,7 @@ deleted.
 | [.staging/operational-structure/BUILD-SEMANTICS.md](../.staging/operational-structure/BUILD-SEMANTICS.md) | build semantics | Study (2026-08-29, decision 14): Nix/mise/Bazel mapped onto the estate; measured ≥67s recoverable per check via mise sources/outputs (BS1 slice, 9 ruling asks); verdict — no build system needed, three declarations + one already-made ruling (R10 = spawn_strategy); the address is the certificate, no signing plane |
 | [.staging/operational-structure/BUILD-MODELING-AUDIT.md](../.staging/operational-structure/BUILD-MODELING-AUDIT.md) | build/speculation semantics | Deep-modeling audit (2026-08-29, saved VERBATIM per ruling 19): build time HAVE-BY-COMPOSITION; speculation OWED with SPEC-1 false-as-designed (the word pollutes) and SPEC-2 the scoped rescue; multi-runtime HAVE except the runtime memo fact (Persistable's seat); §4 proof-obligation list is the lane's ledger; MS-1 commissioned |
 | [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
+| [.staging/research-backlog/telemetry-hoover.md](../.staging/research-backlog/telemetry-hoover.md) | telemetry/logging | Backlog research (decision 20): telemetry + logging hoovers that speak the language; the word IS the trace; Defun envelope-vs-word analysis as periodic health checking |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -227,3 +228,13 @@ records the 2026-08-29 session rulings that cut across specs.
     FRAME-1, SPEC-1 false-as-designed / SPEC-2 scoped, RESID-1,
     CUT-1, CANON-1) is CRITICAL and is the lane's ledger; MS-1 (the
     hash-determination boundary) is the commissioned first slice.
+20. **The telemetry and logging hoovers** (2026-08-29 late night,
+    backlog research —
+    [telemetry-hoover](../.staging/research-backlog/telemetry-hoover.md)):
+    hoovers that speak the language; internal introspection and a
+    semantic layer; ALL agents able to look into logs and see event
+    order. Research: applying Defun trace analysis (the
+    envelope-against-the-word relation) for periodic health checking
+    and system self-awareness. *Why: the word is already the trace;
+    self-awareness is the police lane applied to the running
+    estate.*
