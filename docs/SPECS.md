@@ -333,3 +333,16 @@ records the 2026-08-29 session rulings that cut across specs.
     register, the defect named, the fix named — "we do not accept
     anything less than A-level work, period."** A non-A answer is a
     named framework blocker, never an accepted grade.
+26. **Three Fable agents authorized** (2026-08-29 night, cautious,
+    per-instance per the standing ceiling): focused high-value
+    development, non-overlapping, for the hardest challenges where
+    redesign may be needed — "no compromises, we get this system up
+    no matter the cost." Seats: (1) the PRODUCTION SERVING SPINE —
+    the daemon bind (cas-http/0 + MCP-over-HTTP), telemetry export,
+    structured logging, crash/restart hardening: everything that
+    touches LLMs and MCP proved with our lives; (2) the PRODUCTION
+    PACKAGE — build, dist, publish posture, CI running check:ci on a
+    fresh clone, the admission register completed: rock solid,
+    production level; (3) CAS_WORD — the receipts/history spine
+    (WordSig, since, the three theorems, the CLI surface): the last
+    unwired critical-path semantics.
