@@ -1,0 +1,292 @@
+import Cas.Schema.System
+import Cas.Backend.Target
+import Cas.Backend.Ts
+import Cas.Codec.NodeCodec
+import Cas.Codec.Sha256
+
+/-!
+# Layer emission — a described topology as TypeScript
+
+`Cas/Schema/System.lean` says what a service topology IS; this module
+says what it LOOKS LIKE in the target language. Nothing new is minted
+on the way: the expressions are `Ts.Expr.call` over a (possibly
+dotted) `Ts.Expr.ident`, the declared type is `Target.LayerType.lower`,
+and the module is the same `Ts.Module` every other emitter builds. The
+ratified claim that layer generation needs ZERO new fragment forms is
+executed here rather than restated.
+
+## The three things that are DERIVED
+
+- **The expression.** One arm, one call: `Layer.provide`,
+  `Layer.provideMerge`, `Layer.mergeAll`, `Layer.fresh`, or the bare
+  constructor reference for a leaf. Generated code does not imitate the
+  hand-written `.pipe(…)` style and is not meant to — the acceptance is
+  behavioural, not textual.
+- **The declared type.** `Layer.Layer<ROut, E, RIn>` where `ROut` is the
+  keys the topology answers with and `RIn` is what it still demands,
+  both computed by the fold below. A wrong fold is a TypeScript
+  compile error in the generated module, which is the cheapest gate in
+  the chain.
+- **The import list.** Every code reference names its module; the
+  imported name is the FIRST DOTTED SEGMENT of the reference, so
+  `AddressScheme.layerSha256` imports `AddressScheme` and
+  `Crypto.Crypto` imports `Crypto`. A dotted reference therefore
+  requires its first segment to be a real named export — the rule is
+  stated because it is a real constraint on what a topology may name.
+
+## The fold, and what it is not
+
+`residualOf` computes what a node answers with and what it still
+demands, in Effect's own algebra: `provide` keeps the outer's answers
+and discharges the outer's demands against the inner's answers;
+`provideMerge` keeps both sides' answers and discharges the same way;
+`mergeAll` unions both; `fresh` changes neither. Sets are kept
+deduplicated by key and sorted by key, so the derived type and the
+derived table are one order and the bytes are stable.
+
+The fold is over a TABLE built children-first, never over the term:
+children are store addresses, so a node cannot be resolved without the
+content its addresses name. That is the whole reason the carrier needs
+no fixpoint, and it is why `emitModule` takes an ordered binding list
+rather than a tree.
+
+## What this module does NOT do
+
+It never RECOVERS a topology from TypeScript. Effect memoizes a layer
+by object reference, a description shares by digest, and the two
+disagree about how many instances exist — so recovery is a correctness
+question this lane does not open (`EFFECT-AST-PLACEMENT.md` §3a).
+Generation is one-way here by ruling, not by omission. It also emits no
+error channel (`E` is always `never`) and no constructor arguments: a
+leaf names a layer VALUE, never a layer-returning function. Both are
+growth with a consumer, not gaps to be filled speculatively.
+-/
+
+namespace Cas.Backend
+
+open Cas.Schema Cas.Backend.Ts
+
+/-! ## The node, and the address it resides at -/
+
+/-- The node one system term resides at: the landed projection bridge
+(`Projection.putNode`) at the system kind, revision 1. -/
+def systemNodeOf (n : SystemNode) : Option Cas.Node :=
+  Cas.Schema.putNode Cas.Grammar.schemeVersion systemKindTag 1 n
+
+/-- Its content address under the production digest — the identity the
+store answers when this topology is admitted, and the identity a
+parent's `StoreRef` names. -/
+def systemAddressOf (n : SystemNode) : Option Addr32 :=
+  (systemNodeOf n).map fun node => Cas.sha256Addr (Cas.encodeNode node)
+
+/-! ## Bindings — a topology as an ordered, addressed list -/
+
+/-- One exported layer: the name it is exported under, its prose, the
+system node it is, and the address that node resides at. -/
+structure Binding where
+  name : String
+  doc : List String
+  node : SystemNode
+  addr : Addr32
+
+/-- Bind one node to an exported name, computing its address. `none` is
+the projection's own reserved-key refusal travelling out. -/
+def bind (name : String) (doc : List String) (node : SystemNode) :
+    Option Binding :=
+  (systemAddressOf node).map fun addr =>
+    { name := name, doc := doc, node := node, addr := addr }
+
+/-! ## The residual fold -/
+
+/-- What a node answers with, and what it still demands. Both lists are
+deduplicated by key and sorted by key. -/
+structure Residual where
+  provides : List ServiceRef
+  requires : List ServiceRef
+
+private def hasKey (xs : List ServiceRef) (s : ServiceRef) : Bool :=
+  xs.any fun x => x.key == s.key
+
+private def dedup : List ServiceRef → List ServiceRef
+  | [] => []
+  | s :: rest =>
+    let tail := dedup rest
+    if hasKey tail s then tail else s :: tail
+
+private def normalize (xs : List ServiceRef) : List ServiceRef :=
+  (dedup xs).mergeSort fun a b => decide (a.key ≤ b.key)
+
+private def without (xs ys : List ServiceRef) : List ServiceRef :=
+  xs.filter fun x => !hasKey ys x
+
+private def residual (provides requires : List ServiceRef) : Residual :=
+  { provides := normalize provides, requires := normalize requires }
+
+/-- One resolved binding: its address, its exported name, its
+residual. Built children-first, so a lookup never recurses. -/
+abbrev Resolved := List (Addr32 × String × Residual)
+
+private def find? (t : Resolved) (a : Addr32) : Option (String × Residual) :=
+  (t.find? fun row => row.1.val == a.val).map (·.2)
+
+/-- What a node answers with and demands, resolved against the
+children already bound. -/
+def residualOf (t : Resolved) : SystemNode → Option Residual
+  | .service _ p r => some (residual [p] r)
+  | .backing _ p r => some (residual p r)
+  | .«opaque» _ _ p r => some (residual p r)
+  | .fresh inner => (find? t inner.addr).map (·.2)
+  | .merge parts => do
+    let rows ← parts.mapM fun p => (find? t p.addr).map (·.2)
+    pure (residual (rows.flatMap (·.provides)) (rows.flatMap (·.requires)))
+  | .provide inner outer => do
+    let ri ← (find? t inner.addr).map (·.2)
+    let ro ← (find? t outer.addr).map (·.2)
+    pure (residual ro.provides (ri.requires ++ without ro.requires ri.provides))
+  | .provideMerge inner outer => do
+    let ri ← (find? t inner.addr).map (·.2)
+    let ro ← (find? t outer.addr).map (·.2)
+    pure (residual (ro.provides ++ ri.provides)
+      (ri.requires ++ without ro.requires ri.provides))
+
+/-! ## The expression -/
+
+private def nameAt (t : Resolved) (a : Addr32) : Option Ts.Expr :=
+  (find? t a).map fun row => .ident row.1
+
+/-- One arm, one call. A leaf is the bare constructor reference; every
+edge is `Layer.<combinator>(…)` over the exported names of its
+children. -/
+def exprOf (t : Resolved) : SystemNode → Option Ts.Expr
+  | .service c _ _ => some (.ident c.name)
+  | .backing c _ _ => some (.ident c.name)
+  | .«opaque» c _ _ _ => some (.ident c.name)
+  | .fresh inner => do
+    let i ← nameAt t inner.addr
+    pure (.call (.ident "Layer.fresh") [i])
+  | .merge parts => do
+    let ps ← parts.mapM fun p => nameAt t p.addr
+    pure (.call (.ident "Layer.mergeAll") ps)
+  | .provide inner outer => do
+    let i ← nameAt t inner.addr
+    let o ← nameAt t outer.addr
+    pure (.call (.ident "Layer.provide") [o, i])
+  | .provideMerge inner outer => do
+    let i ← nameAt t inner.addr
+    let o ← nameAt t outer.addr
+    pure (.call (.ident "Layer.provideMerge") [o, i])
+
+/-! ## The declared type -/
+
+private def qualified (name : String) :
+    Cas.Schema.Foreign.TypeScript.QualifiedName :=
+  match name.splitOn "." with
+  | [] => ⟨[name], by simp⟩
+  | part :: parts => ⟨part :: parts, by simp⟩
+
+private def unionOf (xs : List ServiceRef) :
+    Cas.Schema.Foreign.TypeScript.TypeExpr :=
+  match xs with
+  | [] => .never
+  | [one] => .named (qualified one.name)
+  | many => .union (many.map fun s => .named (qualified s.name))
+
+/-- `Layer.Layer<ROut, E, RIn>` for a residual, through the hand-seeded
+target row. The error channel is `never`: this fragment emits no
+failing constructor. -/
+def layerTypeOf (r : Residual) : String :=
+  (LayerType.lower
+    { provides := unionOf r.provides
+    , requires := unionOf r.requires }).render
+
+/-! ## The import list -/
+
+private def rootOf (name : String) : String :=
+  (name.splitOn ".").headD name
+
+private def refsOf : SystemNode → List (String × String)
+  | .service c p r =>
+    (c.path, rootOf c.name) :: ((p :: r).map fun s => (s.path, rootOf s.name))
+  | .backing c p r =>
+    (c.path, rootOf c.name) :: ((p ++ r).map fun s => (s.path, rootOf s.name))
+  | .«opaque» c _ p r =>
+    (c.path, rootOf c.name) :: ((p ++ r).map fun s => (s.path, rootOf s.name))
+  | _ => []
+
+private def insertSorted (x : String) : List String → List String
+  | [] => [x]
+  | y :: ys =>
+    if x == y then y :: ys
+    else if x < y then x :: y :: ys
+    else y :: insertSorted x ys
+
+private def addRef :
+    List (String × List String) → String × String →
+      List (String × List String)
+  | [], (path, name) => [(path, [name])]
+  | (p, ns) :: rest, (path, name) =>
+    if p == path then (p, insertSorted name ns) :: rest
+    else (p, ns) :: addRef rest (path, name)
+
+/-- Every module the topology names, with the names it takes from it —
+paths and names both sorted, so the header is a function of the
+description alone. `Layer` from `effect` is always taken: every
+emitted module declares layer types even when it emits no edge. -/
+def importsOf (bs : List Binding) : List Ts.Import :=
+  let pairs := ("effect", "Layer") :: bs.flatMap fun b => refsOf b.node
+  let grouped := pairs.foldl addRef []
+  let sorted := grouped.mergeSort fun a b => decide (a.1 ≤ b.1)
+  sorted.map fun (path, names) => .named names path
+
+/-! ## The module -/
+
+/-- The resolved table for a binding list, children-first. `none` when
+a child address names nothing already bound — which is the acyclicity
+check, paid for by the ordering rather than by a traversal. -/
+def resolveAll (bs : List Binding) : Option Resolved :=
+  bs.foldlM (init := ([] : Resolved)) fun t b => do
+    let r ← residualOf t b.node
+    pure (t ++ [(b.addr, b.name, r)])
+
+/-- One exported layer: its prose, its derived type, its expression. -/
+def declOf (t : Resolved) (b : Binding) : Option Ts.Decl := do
+  let e ← exprOf t b.node
+  let row ← find? t b.addr
+  pure (.const
+    { doc := b.doc
+    , name := b.name
+    , value := e
+    , type := some (layerTypeOf row.2) })
+
+/-- The differential's own table: every REQUIREMENT-FREE binding beside
+the key set the topology says it answers with. A layer that still
+demands services cannot be built without provision, so it is exported
+as a const and left out of the table — the gate covers what it can
+actually run. -/
+def tableDecl (t : Resolved) (bs : List Binding) : Ts.Decl :=
+  let rows := bs.filterMap fun b =>
+    match find? t b.addr with
+    | some (name, r) =>
+      if r.requires.isEmpty then
+        some (Ts.Expr.objectML [
+          ("name", .str name),
+          ("keys", .arr (r.provides.map fun s => .str s.key)),
+          ("layer", .ident name)])
+      else none
+    | none => none
+  .const {
+    doc := ["Every requirement-free topology beside the service keys it",
+            "declares — what the Context-key-set differential compares."]
+    name := "topology"
+    value := .arr rows }
+
+/-- The whole generated module: header, derived imports, one exported
+const per binding, and the differential's table. -/
+def emitModule (header : List String) (bs : List Binding) :
+    Option Ts.Module := do
+  let t ← resolveAll bs
+  let decls ← bs.mapM (declOf t)
+  pure { header := header, imports := importsOf bs,
+         decls := decls ++ [tableDecl t bs] }
+
+end Cas.Backend

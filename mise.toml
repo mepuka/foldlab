@@ -12,6 +12,7 @@ run = [
   "mise run gen:backend-wire",
   "mise run gen:backend-gate",
   "mise run gen:backend-programs",
+  "mise run gen:backend-layers",
   "mise run gen:backend-mcp",
   "mise run gen:backend-materialize",
   "mise run gen:effects-materialize",
@@ -83,6 +84,11 @@ description = "Regenerate the straight-line Effect programs of the registered gr
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitprograms"
 
+[tasks."gen:backend-layers"]
+description = "Regenerate the Effect layers lowered from the authored service topology (G6-a)"
+dir = "{{config_root}}/library/cas"
+run = "lake exe emitlayers"
+
 [tasks."gen:backend-mcp"]
 description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
 dir = "{{config_root}}/library/cas"
@@ -114,7 +120,7 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, admission-table, program, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -124,6 +130,7 @@ run = [
   "lake exe emitwire --check",
   "lake exe emitgate --check",
   "lake exe emitprograms --check",
+  "lake exe emitlayers --check",
   "lake exe materialize --check",
   "lake exe mcpspec --check",
   "lake exe emitlift --check",
