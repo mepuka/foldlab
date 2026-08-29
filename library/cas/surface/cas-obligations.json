@@ -150,14 +150,14 @@
     },
     {
       "declaration": "Cas.Json.renderPlain_injective",
-      "excerpt": "THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocke…",
+      "excerpt": "…proved rather than assumed. THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocke…",
       "keyword": "OBLIGATION",
       "module": "Cas.Values.JsonParse",
       "state": "obligation"
     },
     {
       "declaration": "Cas.Json.renderPlain_injective",
-      "excerpt": "THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocker B7): bytes…",
+      "excerpt": "…er than assumed. THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocker B7): bytes…",
       "keyword": "DISCHARGED",
       "module": "Cas.Values.JsonParse",
       "state": "discharged"

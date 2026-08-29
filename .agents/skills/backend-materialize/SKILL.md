@@ -21,6 +21,7 @@ runs from `library/cas` unless noted.
 | `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) | `--check` in `check:cas` |
 | `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
 | `lake exe obligations` | `surface/cas-obligations.json` (the obligation ledger: the named obligations written in the docstrings, plus the health counters) | `--check` and `--self-test` in `check:cas` |
+| `lake exe laws` | `surface/cas-laws.json` (the law index: the ruling registry joined to the `LAW SM-<n>:` lines the enforcing declarations carry) | `--check` and `--self-test` in `check:cas` |
 | `lake exe envledger` | `docs/lab-core/ENVIRONMENT.json` (the configuration plane: mise tool pins and task graph, every `lean-toolchain` pin, each `[[lean_exe]]` joined to the task driving it and the `--check` line gating it) | `--check` in `check:cas` |
 
 `mise run gen` runs all regenerations; `mise run check` asserts a

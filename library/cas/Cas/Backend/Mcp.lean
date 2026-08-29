@@ -69,7 +69,10 @@ cas_struct RunInstruction where
   payloadHex : String
   refs : List RunRef
 
-/-- The run tool's params: a self-contained straight-line program. -/
+/-- LAW SM-22: this spells the puts-with-answer-indices sub-fragment
+and not the whole program table.
+
+The run tool's params: a self-contained straight-line program. -/
 cas_struct RunParams where
   instructions : List RunInstruction
 

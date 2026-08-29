@@ -42,7 +42,10 @@ inductive LitVal where
   | str (s : String)
   deriving DecidableEq
 
-/-- An enum member's VALUE. Effect's `Enum` admits exactly two value
+/-- LAW SM-15: the number row is bounded because the value plane has
+no float term.
+
+An enum member's VALUE. Effect's `Enum` admits exactly two value
 types and no others — `Schema.Union([StringValueCodec, NumberValueCodec])`
 (`SchemaRepresentation.ts:1015-1022`) — so the carrier is those two rows
 and nothing else. It is deliberately NOT `LitVal`: a null or boolean

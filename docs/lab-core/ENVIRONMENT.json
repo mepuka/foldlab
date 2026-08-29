@@ -91,6 +91,17 @@
       "supportInterpreter": false
     },
     {
+      "drivenBy": "gen:cas-laws",
+      "gatedBy": {
+        "command": "lake exe laws --check",
+        "task": "check:cas"
+      },
+      "name": "laws",
+      "root": "Laws",
+      "srcDir": "tools",
+      "supportInterpreter": true
+    },
+    {
       "drivenBy": "gen:backend-materialize",
       "gatedBy": {
         "command": "lake exe materialize --check",
@@ -221,7 +232,7 @@
       "residenceReason": "all inputs tracked"
     },
     {
-      "commands": ["lake --wfail build", "lake exe vectors --check", "lake exe schemas --check", "lake exe verdicts --check", "lake exe admissionmap --check", "lake exe emitwire --check", "lake exe emitgate --check", "lake exe emitprograms --check", "lake exe emitlayers --check", "lake exe materialize --check", "lake exe mcpspec --check", "lake exe emitlift --check", "lake exe emitgrammar --check", "lake exe surface --check", "lake exe obligations --self-test", "lake exe obligations --check", "lake exe envledger --check"],
+      "commands": ["lake --wfail build", "lake exe vectors --check", "lake exe schemas --check", "lake exe verdicts --check", "lake exe admissionmap --check", "lake exe emitwire --check", "lake exe emitgate --check", "lake exe emitprograms --check", "lake exe emitlayers --check", "lake exe materialize --check", "lake exe mcpspec --check", "lake exe emitlift --check", "lake exe emitgrammar --check", "lake exe surface --check", "lake exe obligations --self-test", "lake exe obligations --check", "lake exe laws --self-test", "lake exe laws --check", "lake exe envledger --check"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "check:cas",
@@ -325,7 +336,7 @@
       "residenceReason": "all inputs tracked"
     },
     {
-      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:env-ledger", "mise run gen:ledger"],
+      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:cas-laws", "mise run gen:env-ledger", "mise run gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen",
@@ -385,6 +396,14 @@
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-admission-map",
+      "residence": "portable",
+      "residenceReason": "all inputs tracked"
+    },
+    {
+      "commands": ["lake exe laws"],
+      "dir": "{{config_root}}/library/cas",
+      "inChain": true,
+      "name": "gen:cas-laws",
       "residence": "portable",
       "residenceReason": "all inputs tracked"
     },

@@ -785,7 +785,10 @@ theorem renderPlain_inj {v w : Value} (h : renderPlain v = renderPlain w) :
   rw [h, parse_renderPlain w] at hv
   exact (Option.some.inj hv).symm
 
-/-- THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11,
+/-- LAW SM-11: the canonical rendering is injective, proved rather
+than assumed.
+
+THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11,
 survey blocker B7): bytes determine the canonical value. -/
 theorem renderPlain_injective : RenderPlainInjective :=
   fun _ _ _ _ h => renderPlain_inj h

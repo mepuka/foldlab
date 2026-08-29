@@ -25,6 +25,12 @@ implementation-formatted.
 
 namespace Cas.Json
 
+/-- LAW SM-15: the value plane has no float term, which is the ceiling
+every schema-plane refusal of a float is measured against.
+
+The canonical value model: null, booleans, the two integer
+constructors, strings, arrays and objects. Numbers are integers only —
+the one textual rendering that is language-neutral. -/
 inductive Value where
   | null
   | bool (b : Bool)

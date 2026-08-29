@@ -284,7 +284,10 @@ structure Clause where
   refusal : IngestRefusal
   detail : String
 
-/-- THE clause table. -/
+/-- LAW SM-19: the two doors are held in agreement by this table,
+interpreted into the TypeScript gate rather than restated there.
+
+THE clause table. -/
 def clauses : List Clause := [
   { clause := "notAnObject", refusal := .notASchema,
     detail := "{path} is not an object" },
