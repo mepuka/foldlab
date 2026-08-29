@@ -311,8 +311,8 @@ const registerBlobSuite = (
 
 }
 
-<<<<<<< HEAD
-=======
+
+
 const registerRemoteFixtures = (
   test: Vitest.MethodsNonLive<
     CasBlob.Service | CasStore | CasTransfer | BlobLane
