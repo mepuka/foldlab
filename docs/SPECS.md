@@ -55,6 +55,7 @@ deleted.
 | [.staging/operational-structure/D1-OPTION-A-SCOPING.md](../.staging/operational-structure/D1-OPTION-A-SCOPING.md) | grammar pin | Scoping report (2026-08-29): Option A's premise refuted — pin is upstream HEAD; D1b discovered (Schema.ts unparseable at any pin under tree-sitter); A′ fork recipe + 6 re-ruling asks. Superseded in urgency by ruling 13 — OXC is the capability instrument; tree-sitter defects gate only the tree-sitter legs. Census run (2026-08-29) measured the variance-annotations stratum EMPTY (192 of 140,583 corpus decls, ~0 in the stratum's own projects) — the D1 evidence stratum cannot supply evidence as materialized |
 | [.staging/operational-structure/EFFECT-AST-PLACEMENT.md](../.staging/operational-structure/EFFECT-AST-PLACEMENT.md) | program/layer carriers | Placement study (2026-08-29): seat check + corpus measurement; G6-a commissioned from it (decision 9); program half ruled to stay L-A + classification |
 | [.staging/operational-structure/BUILD-SEMANTICS.md](../.staging/operational-structure/BUILD-SEMANTICS.md) | build semantics | Study (2026-08-29, decision 14): Nix/mise/Bazel mapped onto the estate; measured ≥67s recoverable per check via mise sources/outputs (BS1 slice, 9 ruling asks); verdict — no build system needed, three declarations + one already-made ruling (R10 = spawn_strategy); the address is the certificate, no signing plane |
+| [.staging/operational-structure/BUILD-MODELING-AUDIT.md](../.staging/operational-structure/BUILD-MODELING-AUDIT.md) | build/speculation semantics | Deep-modeling audit (2026-08-29, saved VERBATIM per ruling 19): build time HAVE-BY-COMPOSITION; speculation OWED with SPEC-1 false-as-designed (the word pollutes) and SPEC-2 the scoped rescue; multi-runtime HAVE except the runtime memo fact (Persistable's seat); §4 proof-obligation list is the lane's ledger; MS-1 commissioned |
 | [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
@@ -189,3 +190,40 @@ records the 2026-08-29 session rulings that cut across specs.
     carries the content-keyed regime the estate's semantics need;
     aligning with it beats minting one.* Relayed to the G6-a
     SystemNode lane and the build-semantics study on ruling.
+16. **Code-mode MCP is the default register** (2026-08-29 night):
+    the MCP lane may need a ground-up re-look — the server's primary
+    register is CODE SUBMISSION with in-house DSL and TypeScript
+    support; the granular tools are the floor, not the interface.
+    Safe because the gates carry all trust: submitted documents pass
+    the existing doors (ingest, decodeLift, admission at put, word
+    equality). Defun is what turns code mode from sandbox+trust into
+    admission+proof (the envelope is the pre-execution audit; the
+    fragment tower is the capability ladder; encodeProg makes a
+    submission its own cacheable identity).
+17. **Services architecture** (2026-08-29 night): look into custom
+    high-performance Rust/Go MCP/services to layer functionality and
+    boost performance; SEPARATE services when possible — configurable
+    and piecemeal deployable; easy self-host AND cloud setup guides
+    accompany the in-house semantics. *Why: "the world is going
+    cloud — we must speak cloud."*
+18. **The MCP speaks our language** (2026-08-29 night, after the
+    host's first slice): "good first slice BUT WE CAN DO BETTER — the
+    MCP will speak our language as we will speak all languages."
+    Direction: the tool register IS a signature (McpTool params and
+    results are already Ast codes); tools become operations, code-
+    mode plans become store-resident programs over that signature,
+    and every host language's typed surface is MATERIALIZED from the
+    same codes — which also closes the host lane's named
+    carrier-vs-mirror gap.
+19. **LLM IN THE PATH for speculative JIT builds — THE PATH**
+    (2026-08-29 night, on reading the Defun audit): the audit's
+    regime split is ratified in the direction of regime 2 — floating-
+    output build steps summed in and oracled in `handleLlm`'s exact
+    shape, trace store at Persistable. "The user supplies the LLM;
+    the system builds with what they have; CAPABILITIES BECOME
+    LANGUAGE." The audit
+    ([BUILD-MODELING-AUDIT](../.staging/operational-structure/BUILD-MODELING-AUDIT.md))
+    is saved verbatim; its §4 proof-obligation list (HD-1, HD-2,
+    FRAME-1, SPEC-1 false-as-designed / SPEC-2 scoped, RESID-1,
+    CUT-1, CANON-1) is CRITICAL and is the lane's ledger; MS-1 (the
+    hash-determination boundary) is the commissioned first slice.

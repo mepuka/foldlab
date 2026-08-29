@@ -106,6 +106,7 @@ def residence : List (String × String × String) := [
   ("check:fips202", "portable", "all inputs tracked"),
   ("check:ledger", "portable", "committed bun lockfile pins every dependency"),
   ("check:machine", "portable", "all inputs tracked"),
+  ("check:workbench", "host-local", "experiments/workbench is not yet committed"),
   ("gen", "portable", "all inputs tracked"),
   ("gen:inventory", "portable", "reads the vendored pinned Effect sources"),
   ("gen:backend-gate", "portable", "all inputs tracked"),
