@@ -66,6 +66,7 @@ deleted.
 | [.staging/operational-structure/FRONTEND.md](../.staging/operational-structure/FRONTEND.md) | front end | Design (2026-08-29, decision 21): tier-1 read-only browser store; components-as-projections mechanics (zero new Ts forms); BYOA matrix (4 MCP clients + pi-gets-the-CLI); FE-1 emitagents commissioned-ask; 11 ruling asks incl. rc.112 and cas_word |
 | [.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md](../.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md) | store semantics + hygiene | Ruling prep (2026-08-29): projection is TWO things (kind→component = emitted manifest, seat taken; value↔view = Annotation two fields short); published programs unspellable until items 22/23 + host step/cont codec; paperwork defects D1-D11 incl. the SECURITY item and the sessions convention |
 | [.staging/operational-structure/BACKEND-ROBUSTNESS.md](../.staging/operational-structure/BACKEND-ROBUSTNESS.md) | server robustness | Probed sweep (2026-08-29): store crash-safe by construction (2097/2097 verified post-SIGKILL); host NOT live-safe — oversized frames silently lost, SQLite busy = whole-process stall; BS-1 slice specified; adopt-vs-build table per Rust/Go ruling; hashing centralized-as-service is a virtue, scheme identification the real gap; 6 ruling asks |
+| [.staging/operational-structure/DOGFOOD.md](../.staging/operational-structure/DOGFOOD.md) | dogfooding | The wave plan (decision 24): five personalities, successive release, capability baseline, rules of engagement |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -309,3 +310,13 @@ records the 2026-08-29 session rulings that cut across specs.
     identity; Addr32 stands (under-identified not under-sized —
     R5's cheap half only); new kinds yes (three arm-additive), new
     sorts NO — the sort registry's stillness is the discipline.
+24. **The dogfood phase** (2026-08-29 night): the final stage of the
+    hard build push — successive dogfood agents with defined
+    personalities stress the system for REAL use, released one wave
+    at a time, never all at once
+    ([DOGFOOD](../.staging/operational-structure/DOGFOOD.md): the
+    newcomer, the apprentice, the composer, the adversary, the
+    reader). CLI audit runs first. Law: we do not panic when
+    something breaks and we do not ignore hard work when it
+    surfaces; BROKEN-SILENT is the only alarm category. *"Have fun,
+    be proud of what you've built — let's get this thing working."*
