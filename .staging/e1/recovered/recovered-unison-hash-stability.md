@@ -1,0 +1,1 @@
+I'll explore the Unison repo for hash stability evidence. Let me start with parallel searches.

@@ -1,0 +1,1 @@
+Major finding: `Heap<T>` exists and enables recursive ADTs. Let me check its extent and how the real AST examples represent trees.

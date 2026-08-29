@@ -2,6 +2,19 @@
 
 Operator-ordered, 2026-08-28.
 
+## The spec corpus for this lane
+
+Indexed with decision record in [docs/SPECS.md](../../docs/SPECS.md).
+Binding here: [EFFECTS-BACKEND.md](EFFECTS-BACKEND.md) (R1–R15) and
+[SCHEMA-MATERIALIZATION.md](SCHEMA-MATERIALIZATION.md) (S1–S5 + the
+ruling queue). Ratified designs:
+[REIFICATION-SUBSTRATE](../../.staging/operational-structure/REIFICATION-SUBSTRATE.md)
+(P0–P8, G0–G8). Greenlit lanes:
+[PLAIN-LANGUAGE](../../.staging/operational-structure/PLAIN-LANGUAGE.md),
+[LANGUAGE-POLICE](../../.staging/operational-structure/LANGUAGE-POLICE.md).
+Check a spec's category and open asks in SPECS.md before building
+from it.
+
 ## The two-minute rule
 
 If you cannot make progress on a proof for two minutes, STOP. Do not
