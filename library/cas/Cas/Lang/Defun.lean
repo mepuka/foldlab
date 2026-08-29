@@ -63,12 +63,14 @@ Proved below:
   hash-lattice Level 0: line nodes carry no references and the table
   node's references resolve against the line bindings laid down first.
 
+- `readPIn_exact`, `readPRef_exact`, `readLine_exact`, `decodeLine_exact`
+  — EXACTNESS (owed item, discharged 2026-08-29): the decoder accepts
+  nothing outside the encoder's image, in the style of the codec's
+  `readFrame_exact`. A successful read proves its input was an encoding
+  AND proves the well-formedness the forward direction demands.
+
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
-- exactness of `readLine` (the decoder accepts nothing outside the
-  encoder's image), in the style of the codec's `readFrame_exact`;
-- the table-level decoder `Word → Option PProg` with its round trip
-  against `encodeProg` (recovering the program from content);
 - registry rows for wire tags 14/15 land with the registry agent; the
   literals here mirror that reservation.
 -/
@@ -605,6 +607,183 @@ theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
       have := readPIn_encodePIn src h []
       simpa using this
     exact readLine_load_of h1
+
+/-! ### Exactness — the decoder accepts nothing outside the image
+
+The second direction, in the style of the codec's `readFrame_exact` and
+`parseNode_exact`: a successful read PROVES its input was an encoding,
+and proves the well-formedness the forward direction demands. Together
+with the round trips above this is what "one byte representation per
+code point" means for the step sort.
+
+`readN_exact_of` is the exactness dual of `readN_encode_of` and is
+carried for the same reason: the codec's `readN_exact` recovers the
+splitting but drops the per-element property, and a line's admission
+condition quantifies over its operand references. -/
+
+/-- `readN` under a membership-relative exactness: the counted reader
+recovers the splitting, the count, AND the reader's per-element
+property. The dual of `readN_encode_of`. -/
+theorem readN_exact_of {α : Type} {p : Bytes → Option (α × Bytes)}
+    {e : α → Bytes} {P : α → Prop}
+    (hp : ∀ b a rest, p b = some (a, rest) → b = e a ++ rest ∧ P a) :
+    ∀ (n : Nat) (b : Bytes) (as : List α) (rest : Bytes),
+      readN p n b = some (as, rest) →
+      b = (as.map e).flatten ++ rest ∧ as.length = n ∧ ∀ a ∈ as, P a := by
+  intro n
+  induction n with
+  | zero =>
+    intro b as rest h
+    simp only [readN, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨has, hrest⟩ := h
+    subst has; subst hrest
+    simp
+  | succ k ih =>
+    intro b as rest h
+    unfold readN at h
+    split at h
+    next a b' hpb =>
+      split at h
+      next as' b'' hrn =>
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨has, hrest⟩ := h
+        obtain ⟨hb', hlen, hall⟩ := ih b' as' b'' hrn
+        obtain ⟨hb, hPa⟩ := hp b a b' hpb
+        subst has; subst hrest
+        refine ⟨by rw [hb, hb']; simp [List.append_assoc], by simp [hlen], ?_⟩
+        intro x hx
+        rcases List.mem_cons.mp hx with rfl | hx
+        · exact hPa
+        · exact hall x hx
+      next => simp at h
+    next => simp at h
+
+/-- Operand exactness: a successful operand read proves its input was an
+operand encoding, and proves the operand well-formed. -/
+theorem readPIn_exact {b : Bytes} {x : PIn} {rest : Bytes}
+    (h : readPIn b = some (x, rest)) : b = encodePIn x ++ rest ∧ x.WF := by
+  match b with
+  | [] => simp [readPIn] at h
+  | c :: r =>
+    by_cases h0 : c = 0
+    · subst h0
+      rw [readPIn_zero] at h
+      split at h
+      next cc rr hc =>
+        split at h
+        next hlen =>
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hx, hrest⟩ := h
+          subst hx; subst hrest
+          exact ⟨by rw [(readChunk_exact hc).1]; rfl, trivial⟩
+        next => simp at h
+      next => simp at h
+    · by_cases h1 : c = 1
+      · subst h1
+        rw [readPIn_one] at h
+        split at h
+        next i rr hi =>
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hx, hrest⟩ := h
+          subst hx; subst hrest
+          obtain ⟨hb, hlt⟩ := readNat32_some _ _ _ hi
+          exact ⟨by rw [hb]; rfl, hlt⟩
+        next => simp at h
+      · rw [show readPIn (c :: r) = none from by
+          simp only [readPIn, if_neg h0, if_neg h1]] at h
+        simp at h
+
+/-- Typed-reference exactness. -/
+theorem readPRef_exact {b : Bytes} {r : UInt8 × PIn} {rest : Bytes}
+    (h : readPRef b = some (r, rest)) :
+    b = encodePRef r ++ rest ∧ r.2.WF := by
+  match b with
+  | [] => simp [readPRef] at h
+  | t :: rr =>
+    rw [show readPRef (t :: rr)
+        = match readPIn rr with
+          | some (x, rest') => some ((t, x), rest')
+          | none => none from rfl] at h
+    split at h
+    next x rest' hx =>
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hr, hrest⟩ := h
+      subst hr; subst hrest
+      obtain ⟨hb, hwf⟩ := readPIn_exact hx
+      exact ⟨by rw [hb]; rfl, hwf⟩
+    next => simp at h
+
+/-- READLINE EXACTNESS (owed item, discharged): a successful line read
+proves its input was a line encoding, and proves the line well-formed.
+The decoder's image is exactly the encoder's. -/
+theorem readLine_exact {b : Bytes} {l : PLine} (h : readLine b = some l) :
+    b = encodeLineBody l ∧ l.WF := by
+  match b with
+  | [] => simp [readLine] at h
+  | c :: r =>
+    by_cases h0 : c = 0
+    · subst h0
+      match r with
+      | [] => simp [readLine] at h
+      | [_] => simp [readLine] at h
+      | v :: t :: body =>
+        rw [show readLine (0 :: v :: t :: body)
+            = match readFrame body with
+              | some (payload, r1) =>
+                match readNat32 r1 with
+                | some (cnt, r2) =>
+                  match readN readPRef cnt r2 with
+                  | some (refs, []) => some (PLine.put v t payload refs)
+                  | _ => none
+                | none => none
+              | none => none from rfl] at h
+        split at h
+        next payload r1 hf =>
+          split at h
+          next cnt r2 hn =>
+            split at h
+            next refs hrn =>
+              simp only [Option.some.injEq] at h
+              subst h
+              obtain ⟨hb1, hplen⟩ := readFrame_exact hf
+              obtain ⟨hb2, hclt⟩ := readNat32_some _ _ _ hn
+              obtain ⟨hb3, hlen, hall⟩ :=
+                readN_exact_of (fun _b _a _rest hh => readPRef_exact hh)
+                  cnt r2 refs [] hrn
+              subst hlen
+              refine ⟨?_, ?_, ?_, hall⟩
+              · rw [hb1, hb2, hb3]
+                simp [encodeLineBody]
+              · exact hplen
+              · omega
+            next => simp at h
+          next => simp at h
+        next => simp at h
+    · by_cases h1 : c = 1
+      · subst h1
+        rw [show readLine (1 :: r)
+            = match readPIn r with
+              | some (src, []) => some (PLine.load src)
+              | _ => none from rfl] at h
+        split at h
+        next src hs =>
+          simp only [Option.some.injEq] at h
+          subst h
+          obtain ⟨hb, hwf⟩ := readPIn_exact hs
+          exact ⟨by rw [hb]; simp [encodeLineBody], hwf⟩
+        next => simp at h
+      · rw [show readLine (c :: r) = none from by
+          simp only [readLine, if_neg h0, if_neg h1]] at h
+        simp at h
+
+/-- Step-node exactness, lifted to the node: `decodeLine` accepts only
+step nodes carrying a line encoding. -/
+theorem decodeLine_exact {n : Node} {l : PLine} (h : decodeLine n = some l) :
+    n.tag = stepWireTag ∧ n.payload = encodeLineBody l ∧ l.WF := by
+  unfold decodeLine at h
+  split at h
+  next ht => exact ⟨ht, (readLine_exact h).1, (readLine_exact h).2⟩
+  next => simp at h
 
 /-! ## The table as a word — the program IS content -/
 
