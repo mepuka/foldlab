@@ -1,11 +1,11 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 200,
-    "Core": 256,
+    "Codec": 217,
+    "Core": 263,
     "Grammar": 46,
-    "IR": 90,
-    "Lang": 142,
+    "IR": 94,
+    "Lang": 160,
     "Lift": 37,
     "Schema": 458,
     "Values": 364,
@@ -13,29 +13,29 @@
   },
   "axiomCensus": {
     "Classical.choice": 188,
-    "Quot.sound": 306,
-    "propext": 420
+    "Quot.sound": 318,
+    "propext": 438
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 121,
-    "Cas.Binding": 35,
+    "Cas.Addr32": 127,
+    "Cas.Binding": 36,
     "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 35,
     "Cas.Lang.Handler": 15,
     "Cas.Lang.Prog": 71,
     "Cas.Lang.Refusal": 14,
     "Cas.Lang.Sig": 42,
-    "Cas.Lang.Status": 40,
+    "Cas.Lang.Status": 41,
     "Cas.Lang.interpret": 6,
-    "Cas.Node": 64,
+    "Cas.Node": 67,
     "Cas.Schema.Ast": 284,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
-    "Cas.Word": 68
+    "Cas.Word": 70
   },
-  "declarations": 1314,
-  "documented": 644,
+  "declarations": 1333,
+  "documented": 663,
   "library": "Cas",
   "modules": [
     {
@@ -2662,10 +2662,19 @@
       ]
     },
     {
-      "declarations": 43,
-      "documented": 35,
+      "declarations": 62,
+      "documented": 54,
       "module": "Cas.Lang.Defun",
       "surface": [
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.ObsEq_decodeProg_encodeProg",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → l.WF) → (∀ (l : Cas.Lang.PLine), l ∈ p → ∀ (l' : Cas.Lang.PLine), l' ∈ p → Cas.Lang.lineAddr H l = Cas.Lang.lineAddr H l' → l = l') → ∀ {q : Cas.Lang.PProg}, Cas.Lang.decodeProg (Cas.Lang.encodeProg H p) = some q → Cas.Lang.ObsEq H (Cas.Lang.embed q) (Cas.Lang.embed p)",
+          "touches": ["Codec", "Core", "Lang"]
+        },
         {
           "axioms": ["propext"],
           "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
@@ -2758,6 +2767,40 @@
           "touches": ["Core", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.decodeLine_encodeLine",
+          "signature": "∀ (l : Cas.Lang.PLine), l.WF → Cas.Lang.decodeLine (Cas.Lang.encodeLine l) = some l",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.decodeLine_exact",
+          "signature": "∀ {n : Cas.Node} {l : Cas.Lang.PLine}, Cas.Lang.decodeLine n = some l → n.tag = Cas.Lang.stepWireTag ∧ n.payload = Cas.Lang.encodeLineBody l ∧ l.WF",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.decodeProg",
+          "signature": "Cas.Word → Option Cas.Lang.PProg",
+          "touches": ["IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.decodeProg_encodeProg",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → l.WF) → (∀ (l : Cas.Lang.PLine), l ∈ p → ∀ (l' : Cas.Lang.PLine), l' ∈ p → Cas.Lang.lineAddr H l = Cas.Lang.lineAddr H l' → l = l') → Cas.Lang.decodeProg (Cas.Lang.encodeProg H p) = some p",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
           "carriers": ["Cas.Addr32", "Cas.Lang.Prog"],
           "documented": true,
           "kind": "def",
@@ -2820,6 +2863,24 @@
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Node"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.find_encodeProg",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → ∀ (l' : Cas.Lang.PLine), l' ∈ p → Cas.Lang.lineAddr H l = Cas.Lang.lineAddr H l' → l = l') → ∀ (l : Cas.Lang.PLine), l ∈ p → (Cas.Lang.encodeProg H p).find (Cas.Lang.lineAddr H l) = some (Cas.Lang.encodeLine l)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.find_lineAddr",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → ∀ (l' : Cas.Lang.PLine), l' ∈ p → Cas.Lang.lineAddr H l = Cas.Lang.lineAddr H l' → l = l') → ∀ (l : Cas.Lang.PLine), l ∈ p → Cas.Word.find (List.map (fun l => { address := Cas.Lang.lineAddr H l, node := Cas.Lang.encodeLine l }) p) (Cas.Lang.lineAddr H l) = some (Cas.Lang.encodeLine l)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
           "documented": false,
           "kind": "instance",
           "name": "Cas.Lang.instDecidableEqPIn",
@@ -2856,6 +2917,15 @@
           "touches": ["Codec", "Core", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.mapM_lineRefs",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (f : Cas.Ref → Option Cas.Lang.PLine) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → f { expectedTag := Cas.Lang.stepWireTag, addr := Cas.Lang.lineAddr H l } = some l) → List.mapM f (List.map (fun l => { expectedTag := Cas.Lang.stepWireTag, addr := Cas.Lang.lineAddr H l }) p) = some p",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
           "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
           "documented": true,
           "kind": "def",
@@ -2871,11 +2941,43 @@
           "touches": ["Codec", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readLine_exact",
+          "signature": "∀ {b : Cas.Bytes} {l : Cas.Lang.PLine}, Cas.Lang.readLine b = some l → b = Cas.Lang.encodeLineBody l ∧ l.WF",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readLine_load_of",
+          "signature": "∀ {r : Cas.Bytes} {src : Cas.Lang.PIn}, Cas.Lang.readPIn r = some (src, []) → Cas.Lang.readLine (1 :: r) = some (Cas.Lang.PLine.load src)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readLine_put_of",
+          "signature": "∀ (v t : UInt8) {body payload r1 r2 : Cas.Bytes} {cnt : Nat} {refs : List (UInt8 × Cas.Lang.PIn)}, Cas.readFrame body = some (payload, r1) → Cas.readNat32 r1 = some (cnt, r2) → Cas.readN Cas.Lang.readPRef cnt r2 = some (refs, []) → Cas.Lang.readLine (0 :: v :: t :: body) = some (Cas.Lang.PLine.put v t payload refs)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
           "axioms": ["propext"],
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Lang.readN_encode_of",
           "signature": "∀ {α : Type} {p : Cas.Bytes → Option (α × Cas.Bytes)} {e : α → Cas.Bytes} {P : α → Prop}, (∀ (a : α), P a → ∀ (rest : Cas.Bytes), p (e a ++ rest) = some (a, rest)) → ∀ (xs : List α), (∀ (a : α), a ∈ xs → P a) → ∀ (rest : Cas.Bytes), Cas.readN p xs.length ((List.map e xs).flatten ++ rest) = some (xs, rest)",
+          "touches": ["Codec"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readN_exact_of",
+          "signature": "∀ {α : Type} {p : Cas.Bytes → Option (α × Cas.Bytes)} {e : α → Cas.Bytes} {P : α → Prop}, (∀ (b : Cas.Bytes) (a : α) (rest : Cas.Bytes), p b = some (a, rest) → b = e a ++ rest ∧ P a) → ∀ (n : Nat) (b : Cas.Bytes) (as : List α) (rest : Cas.Bytes), Cas.readN p n b = some (as, rest) → b = (List.map e as).flatten ++ rest ∧ as.length = n ∧ ∀ (a : α), a ∈ as → P a",
           "touches": ["Codec"]
         },
         {
@@ -2886,10 +2988,58 @@
           "touches": ["Codec", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPIn_encodePIn",
+          "signature": "∀ (x : Cas.Lang.PIn), x.WF → ∀ (rest : Cas.Bytes), Cas.Lang.readPIn (Cas.Lang.encodePIn x ++ rest) = some (x, rest)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPIn_exact",
+          "signature": "∀ {b : Cas.Bytes} {x : Cas.Lang.PIn} {rest : Cas.Bytes}, Cas.Lang.readPIn b = some (x, rest) → b = Cas.Lang.encodePIn x ++ rest ∧ x.WF",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPIn_one",
+          "signature": "∀ (r : Cas.Bytes),\u000a  Cas.Lang.readPIn (1 :: r) =\u000a    match Cas.readNat32 r with\u000a    | some (i, rest') => some (Cas.Lang.PIn.ans i, rest')\u000a    | none => none",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPIn_zero",
+          "signature": "∀ (r : Cas.Bytes),\u000a  Cas.Lang.readPIn (0 :: r) =\u000a    match Cas.readChunk 32 r with\u000a    | some (c, rest') => if h : List.length c = 32 then some (Cas.Lang.PIn.lit ⟨c, h⟩, rest') else none\u000a    | none => none",
+          "touches": ["Codec", "Lang"]
+        },
+        {
           "documented": true,
           "kind": "def",
           "name": "Cas.Lang.readPRef",
           "signature": "Cas.Bytes → Option ((UInt8 × Cas.Lang.PIn) × Cas.Bytes)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPRef_encodePRef",
+          "signature": "∀ (r : UInt8 × Cas.Lang.PIn), r.snd.WF → ∀ (rest : Cas.Bytes), Cas.Lang.readPRef (Cas.Lang.encodePRef r ++ rest) = some (r, rest)",
+          "touches": ["Codec", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.readPRef_exact",
+          "signature": "∀ {b : Cas.Bytes} {r : UInt8 × Cas.Lang.PIn} {rest : Cas.Bytes}, Cas.Lang.readPRef b = some (r, rest) → b = Cas.Lang.encodePRef r ++ rest ∧ r.snd.WF",
           "touches": ["Codec", "Lang"]
         },
         {
@@ -2932,6 +3082,15 @@
           "kind": "theorem",
           "name": "Cas.Lang.runPFrom_halts",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), (Cas.Lang.runPFrom H env p w).fst.isRunning = false",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runP_decodeProg_encodeProg",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg), (∀ (l : Cas.Lang.PLine), l ∈ p → l.WF) → (∀ (l : Cas.Lang.PLine), l ∈ p → ∀ (l' : Cas.Lang.PLine), l' ∈ p → Cas.Lang.lineAddr H l = Cas.Lang.lineAddr H l' → l = l') → ∀ {q : Cas.Lang.PProg}, Cas.Lang.decodeProg (Cas.Lang.encodeProg H p) = some q → ∀ (w : Cas.Word), Cas.Lang.runP H q w = Cas.Lang.runP H p w",
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
@@ -10547,10 +10706,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 670,
+    "def": 671,
     "inductive": 34,
     "instance": 59,
     "structure": 36,
-    "theorem": 512
+    "theorem": 530
   }
 }

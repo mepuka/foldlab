@@ -69,6 +69,18 @@ Proved below:
   `readFrame_exact`. A successful read proves its input was an encoding
   AND proves the well-formedness the forward direction demands.
 
+- `decodeProg` / `decodeProg_encodeProg` — THE TABLE-LEVEL DECODER
+  (owed item, discharged 2026-08-29): `Word → Option PProg`, reading the
+  word `encodeProg` laid down back to exactly the table. Two premises,
+  both triaged at the decoder's section note: `hwf` (the encodability
+  condition the line round trip already carries) and `hsep` (the address
+  function separates the table's lines — NECESSARY, not convenient, and
+  strictly weaker than `Function.Injective H`).
+- `runP_decodeProg_encodeProg`, `ObsEq_decodeProg_encodeProg` — THE
+  CAPABILITY ROUND TRIP: a table stored as content and recovered from
+  that content runs identically, and denotes an observationally equal
+  program. The program IS content, as one theorem.
+
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
 - registry rows for wire tags 14/15 land with the registry agent; the
@@ -850,5 +862,149 @@ theorem encodeProg_wf (H : Bytes → Addr32) (p : PProg) :
       rw [← hnode]
       rfl
     exact Word.resolvesIn_iff.mpr ⟨m, hf, htag⟩
+
+/-! ## The table-level decoder — the program recovered from content
+
+The missing direction of the applicative capability. `encodeProg` lays a
+table down as a word; `decodeProg` reads one back. The word's LAST
+binding is the table node (that is how `encodeProg` builds it), its
+references name the step nodes in program order, and each one resolves
+through `Word.find` and decodes through `decodeLine`.
+
+### The premise, triaged
+
+`encodeProg_wf` needs no premise on `H` at all — admission is Level 0.
+RECOVERY is not, and the reason is worth stating plainly rather than
+importing `Function.Injective H` out of habit:
+
+    hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l'
+
+— the address function SEPARATES the table's lines. This premise is not
+a convenience of the proof; it is NECESSARY. If two distinct lines of
+`p` share an address, `encodeProg` lays down two bindings at that one
+address, both of the table node's references name it, and `Word.find`
+answers the FIRST for both — so the recovered table repeats one line
+where `p` had two, and cannot equal `p`. The store has genuinely lost
+the distinction: deduplication is content-addressing working as
+designed, and no decoder can undo it.
+
+It is stated at the table's lines rather than as `Function.Injective H`
+deliberately, per CAS-003: it is strictly weaker (it constrains `H` only
+on the finitely many preimages this table actually lays down, and is
+vacuous for tables of fewer than two lines), and it is exactly where the
+obligation bites. `Function.Injective H` discharges it, but nothing here
+needs the full strength.
+
+`hwf : ∀ l ∈ p, l.WF` is the other premise, and it is the same admission
+condition `decodeLine_encodeLine` already carries — a line whose fields
+overflow their wire scalars was never encodable. -/
+
+/-- Recover a table from a word: the last binding must be a table node,
+and each of its references must resolve to a decodable step node. -/
+def decodeProg (w : Word) : Option PProg :=
+  match w.getLast? with
+  | some b =>
+    if b.node.tag = contWireTag then
+      b.node.refs.mapM fun r => (Word.find w r.addr).bind decodeLine
+    else none
+  | none => none
+
+/-- Under separation, each line's binding is what `find` answers at that
+line's address within the step-node prefix. -/
+theorem find_lineAddr (H : Bytes → Addr32) :
+    ∀ p : PProg,
+      (∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') →
+      ∀ l ∈ p,
+        Word.find (p.map fun l => Binding.mk (lineAddr H l) (encodeLine l))
+          (lineAddr H l) = some (encodeLine l) := by
+  intro p
+  induction p with
+  | nil => intro _ l hl; simp at hl
+  | cons a rest ih =>
+    intro hsep l hl
+    by_cases hae : lineAddr H l = lineAddr H a
+    · have hla : l = a := hsep l hl a List.mem_cons_self hae
+      subst hla
+      simp [Word.find]
+    · have hlr : l ∈ rest := by
+        rcases List.mem_cons.mp hl with rfl | hm
+        · exact absurd rfl hae
+        · exact hm
+      simp only [List.map_cons, Word.find, if_neg hae]
+      exact ih (fun x hx y hy =>
+        hsep x (List.mem_cons_of_mem a hx) y (List.mem_cons_of_mem a hy)) l hlr
+
+/-- The same lookup inside the whole encoded word: the step bindings come
+first, so the table binding appended after them cannot shadow one. -/
+theorem find_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') :
+    ∀ l ∈ p,
+      Word.find (encodeProg H p) (lineAddr H l) = some (encodeLine l) :=
+  fun l hl => Word.find_append_of_some _ (find_lineAddr H p hsep l hl)
+
+/-- The table node's reference list, read elementwise, is the table. -/
+theorem mapM_lineRefs (H : Bytes → Addr32) (f : Ref → Option PLine) :
+    ∀ p : PProg, (∀ l ∈ p, f ⟨stepWireTag, lineAddr H l⟩ = some l) →
+      (p.map fun l => (⟨stepWireTag, lineAddr H l⟩ : Ref)).mapM f = some p := by
+  intro p
+  induction p with
+  | nil => intro _; rfl
+  | cons a rest ih =>
+    intro h
+    simp only [List.map_cons, List.mapM_cons, h a List.mem_cons_self,
+      ih (fun x hx => h x (List.mem_cons_of_mem a hx))]
+    rfl
+
+/-- THE PROGRAM IS RECOVERABLE FROM CONTENT (owed item, discharged): the
+word `encodeProg` lays down reads back to exactly the table it encoded.
+Both premises are triaged in the section note above — `hwf` is the
+encodability condition `decodeLine_encodeLine` already carries, and
+`hsep` is NECESSARY, not convenient. -/
+theorem decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l') :
+    decodeProg (encodeProg H p) = some p := by
+  have hlast : (encodeProg H p).getLast?
+      = some (Binding.mk (H (encodeNode (tableNode H p))) (tableNode H p)) :=
+    List.getLast?_concat
+  rw [show decodeProg (encodeProg H p)
+      = (if (tableNode H p).tag = contWireTag then
+          (tableNode H p).refs.mapM fun r =>
+            (Word.find (encodeProg H p) r.addr).bind decodeLine
+        else none) from by rw [decodeProg, hlast],
+    if_pos (show (tableNode H p).tag = contWireTag from rfl)]
+  exact mapM_lineRefs H _ p fun l hl => by
+    rw [find_encodeProg H p hsep l hl, Option.bind_some,
+      decodeLine_encodeLine l (hwf l hl)]
+
+/-! ## The capability round trip — a stored program runs identically
+
+The sentence the product vision speaks, as one theorem: a table put into
+the store and recovered from it is the same program, so it computes the
+same thing. `decodeProg_encodeProg` composed with the direct
+interpreter — cheap, because the recovery is an EQUALITY of tables, not
+a simulation between them. -/
+
+/-- THE CAPABILITY ROUND TRIP: a table stored as content and recovered
+from that content runs identically — same status, same final word, at
+every starting word. -/
+theorem runP_decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l')
+    {q : PProg} (hq : decodeProg (encodeProg H p) = some q) (w : Word) :
+    runP H q w = runP H p w := by
+  rw [decodeProg_encodeProg H p hwf hsep] at hq
+  exact congrArg (fun r => runP H r w) (Option.some.inj hq).symm
+
+/-- The same statement at stratum 3: a stored-and-recovered table denotes
+an OBSERVATIONALLY EQUAL program. R14's equation, reached through the
+word gate — the program is content, and the content is the program. -/
+theorem ObsEq_decodeProg_encodeProg (H : Bytes → Addr32) (p : PProg)
+    (hwf : ∀ l ∈ p, l.WF)
+    (hsep : ∀ l ∈ p, ∀ l' ∈ p, lineAddr H l = lineAddr H l' → l = l')
+    {q : PProg} (hq : decodeProg (encodeProg H p) = some q) :
+    ObsEq H (embed q) (embed p) :=
+  ObsEq_embed_of_runP H fun w =>
+    runP_decodeProg_encodeProg H p hwf hsep hq w
 
 end Cas.Lang
