@@ -152,6 +152,44 @@ pure wire-decision law, and the status tables are all data
 (`Server.Request`, `Server.decide`, `Server.renderOutcome`), so a
 deployment topology is a choice of layers and nothing else.
 
+## Speaking MCP
+
+`cas serve` is the MCP host: newline-delimited JSON-RPC over stdio,
+against whichever store the usual resolution order finds.
+
+```jsonc
+// .mcp.json — the client launches the server as a child process
+{
+  "mcpServers": {
+    "cas": {
+      "command": "bun",
+      "args": ["library/effects/bin/cas.ts", "serve", "--store", "/path/to/.cas"]
+    }
+  }
+}
+```
+
+The tool table is not this package's. It is read at startup from
+`library/cas/mcp/cas-tools.json` — the versioned, self-describing
+manifest `lake exe emitmcp` generates from `Cas/Backend/Mcp.lean` — and
+compared against the table the host serves, name for name, description
+for description, canonical schema code for canonical schema code. A
+host that would answer `tools/list` with anything else refuses to start.
+The five tools are `cas_put`, `cas_load`, `cas_run`,
+`cas_publish_root`, and `cas_list_roots`, and they are the shell verbs'
+own semantics: fail-closed loads, load-before-publish, admission as the
+only gate.
+
+stdout is the protocol, so the host prints nothing there. Everything it
+has to say is a structured log line on stderr, at the level
+`--log-level` names.
+
+Of the `ServePolicy` `cas init` writes into every store's
+`config.json`, stdio honors `maxNodeBytes`; `port` and `maxBatchKeys`
+are reported at startup as inapplicable (stdio binds nothing and serves
+no batch read), and a policy whose reads require a credential is
+refused outright rather than served without one.
+
 ## Runtime surface
 
 - `Cas` — node vocabulary and clause-named errors (`Cas.ErrorTag`,
