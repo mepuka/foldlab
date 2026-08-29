@@ -1,4 +1,4 @@
-import Cas.Lang.Interp
+import Cas.Lang.Representation
 import Cas.Grammar.Sorts
 
 /-!
@@ -16,10 +16,10 @@ Three faces, tied by theorems:
   that resolves `ans i` against the growing answer history and refuses
   (`failWith`) on a dangling index or an empty table;
 - `runP` is the DIRECT interpreter: it walks the table over the word
-  calling the SAME machinery `step` uses — `putWord` is the
-  interpreter's put case as a function (it calls `Cas.put`, the proved
-  judgment; admission is never re-derived), and load is `Word.find`,
-  exactly `step`'s load case;
+  calling the SAME machinery `step` uses — `putWord` is now literally
+  the reference handler's `put` clause under a local name (R10: meaning
+  lives in one place, so the clause is not spelled twice), and load is
+  `Word.find`, exactly `step`'s load case;
 - `encodeLine`/`decodeLine` put the code points INTO the store: a line
   is a `Node` at wire tag 14 (step nodes; tag 15 is the table node) —
   the reserved registry rows another agent is landing — and `encodeProg`
@@ -30,9 +30,10 @@ Three faces, tied by theorems:
 
 Proved below:
 
-- `step_put_putWord` — the bridge: `putWord` is definitionally the
-  interpreter's put case, so the direct interpreter cannot drift from
-  `step` on puts.
+- `step_put_putWord` — a corollary of `step_handle` (`Handler.lean`)
+  since the handler bridge landed: `putWord` IS the reference handler's
+  put clause, so the direct interpreter cannot drift from `step` on
+  puts, by construction rather than by a coincidence of two bodies.
 - `runPFrom_embedFrom` — the packaged induction: over any word and any
   answer history, running the embedding with fuel `p.length + 1` equals
   the direct interpreter, status AND word.
@@ -146,35 +147,34 @@ section Interp
 
 variable (H : Bytes → Addr32)
 
-/-- The interpreter's put case, as a function over the word: the
-decidable well-formedness gate, then `Cas.put` — the proved judgment —
-with its outcomes mapped onto the word exactly as `step` maps them.
-Admission is called, never re-derived. -/
+/-- The interpreter's put case as a function over the word — the NAME
+of the reference handler's `put` clause, not a second spelling of it.
+Meaning lives in exactly one place (R10, `Handler.lean`), so the
+duplicated body that used to stand here retired with the bridge; what
+remains is a local abbreviation for the table walker's benefit. -/
 def putWord (n : Node) (w : Word) : Except Refusal (Addr32 × Word) :=
-  if h : n.WF then
-    match _root_.Cas.put H (Word.toStore w) ⟨n, h⟩ with
-    | .error e => .error (.ofAdmission e)
-    | .ok (.fresh a _) => .ok (a, w ++ [Binding.mk a n])
-    | .ok (.duplicate a) => .ok (a, w)
-    | .ok (.conflict a _) => .error (.collision a)
-  else .error .notWellFormed
+  (referenceHandler H).handle (.put n) w
 
-/-- The bridge: `putWord` IS `step`'s put case — same gate, same
-judgment, same outcome map. The direct interpreter cannot drift from
-the interpreter on puts. -/
+/-- The bridge, now a corollary: `putWord` IS `step`'s put case,
+because both are the reference handler's clause (`step_handle` at
+`op = .put n`). The direct interpreter cannot drift from the
+interpreter on puts — by construction rather than by coincidence. -/
 theorem step_put_putWord {A} (n : Node) (k : Addr32 → Prog CasSig A)
     (w : Word) :
     step H (.vis (.put n) k) w
       = match putWord H n w with
         | .ok (a, w') => (.running (k a), w')
         | .error r => (.refused r, w) := by
+  have h := step_handle H (.put n) k w
   unfold putWord
-  by_cases h : n.WF
-  · simp only [dif_pos h]
-    cases hp : _root_.Cas.put H (Word.toStore w) ⟨n, h⟩ with
-    | error e => simp [step, dif_pos h, hp]
-    | ok o => cases o <;> simp [step, dif_pos h, hp]
-  · simp [step, dif_neg h]
+  cases hh : (referenceHandler H).handle (CasE.put n) w with
+  | ok aw =>
+    obtain ⟨a, w'⟩ := aw
+    simp only [hh] at h ⊢
+    exact h
+  | error r =>
+    simp only [hh] at h ⊢
+    exact h
 
 /-- The direct interpreter, answer history explicit: execute each line
 over the word through `putWord` (puts) and `Word.find` (loads —

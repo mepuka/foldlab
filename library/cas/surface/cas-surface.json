@@ -1,11 +1,11 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 188,
-    "Core": 244,
+    "Codec": 194,
+    "Core": 250,
     "Grammar": 46,
-    "IR": 78,
-    "Lang": 129,
+    "IR": 84,
+    "Lang": 135,
     "Lift": 37,
     "Schema": 458,
     "Values": 364,
@@ -13,29 +13,29 @@
   },
   "axiomCensus": {
     "Classical.choice": 188,
-    "Quot.sound": 302,
-    "propext": 408
+    "Quot.sound": 304,
+    "propext": 414
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 109,
+    "Cas.Addr32": 115,
     "Cas.Binding": 35,
     "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 35,
     "Cas.Lang.Handler": 15,
-    "Cas.Lang.Prog": 62,
-    "Cas.Lang.Refusal": 7,
+    "Cas.Lang.Prog": 68,
+    "Cas.Lang.Refusal": 13,
     "Cas.Lang.Sig": 41,
-    "Cas.Lang.Status": 28,
+    "Cas.Lang.Status": 33,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
     "Cas.Schema.Ast": 284,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
-    "Cas.Word": 56
+    "Cas.Word": 62
   },
-  "declarations": 1301,
-  "documented": 631,
+  "declarations": 1307,
+  "documented": 637,
   "library": "Cas",
   "modules": [
     {
@@ -2969,8 +2969,8 @@
       ]
     },
     {
-      "declarations": 9,
-      "documented": 8,
+      "declarations": 15,
+      "documented": 14,
       "module": "Cas.Lang.Handler",
       "surface": [
         {
@@ -3020,6 +3020,33 @@
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpretRef_of_run_done",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (fuel : Nat) {p : Cas.Lang.Prog Cas.Lang.CasSig A} {w w' : Cas.Word} {a : A}, Cas.Lang.run H fuel p w = (Cas.Lang.Status.done a, w') → Cas.Lang.interpretRef H p w = Except.ok (a, w')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpretRef_of_run_refused",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (fuel : Nat) {p : Cas.Lang.Prog Cas.Lang.CasSig A} {w w' : Cas.Word} {r : Cas.Lang.Refusal}, Cas.Lang.run H fuel p w = (Cas.Lang.Status.refused r, w') → Cas.Lang.interpretRef H p w = Except.error r",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.interpretRef_vis",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (op : Cas.Lang.CasSig.Op) (k : Cas.Lang.CasSig.Ans op → Cas.Lang.Prog Cas.Lang.CasSig A) (w : Cas.Word),\u000a  Cas.Lang.interpretRef H (Cas.Lang.Prog.vis op k) w =\u000a    match (Cas.Lang.referenceHandler H).handle op w with\u000a    | Except.ok (ans, w') => Cas.Lang.interpretRef H (k ans) w'\u000a    | Except.error r => Except.error r",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
           "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Lang.Handler", "Cas.Lang.Prog", "Cas.Lang.Sig", "Cas.Lang.interpret"],
           "documented": true,
@@ -3043,6 +3070,33 @@
           "name": "Cas.Lang.replayHandler",
           "signature": "Cas.Lang.Handler Cas.Lang.CasSig (StateT Cas.Word (Except Cas.Lang.Refusal))",
           "touches": ["IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.run_interpretRef_agree",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) (w : Cas.Word), ∃ fuel, ∀ (f : Nat), fuel ≤ f → (∀ (a : A) (w' : Cas.Word), Cas.Lang.run H f p w = (Cas.Lang.Status.done a, w') ↔ Cas.Lang.interpretRef H p w = Except.ok (a, w')) ∧ ∀ (r : Cas.Lang.Refusal), (∃ w', Cas.Lang.run H f p w = (Cas.Lang.Status.refused r, w')) ↔ Cas.Lang.interpretRef H p w = Except.error r",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.run_of_interpretRef",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (p : Cas.Lang.Prog Cas.Lang.CasSig A) (w : Cas.Word),\u000a  ∃ fuel,\u000a    ∀ (f : Nat),\u000a      fuel ≤ f →\u000a        match Cas.Lang.interpretRef H p w with\u000a        | Except.ok (a, w') => Cas.Lang.run H f p w = (Cas.Lang.Status.done a, w')\u000a        | Except.error r => ∃ w', Cas.Lang.run H f p w = (Cas.Lang.Status.refused r, w')",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Prog", "Cas.Lang.Refusal", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.step_handle",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {A : Type} (op : Cas.Lang.CasSig.Op) (k : Cas.Lang.CasSig.Ans op → Cas.Lang.Prog Cas.Lang.CasSig A) (w : Cas.Word),\u000a  Cas.Lang.step H (Cas.Lang.Prog.vis op k) w =\u000a    match (Cas.Lang.referenceHandler H).handle op w with\u000a    | Except.ok (ans, w') => (Cas.Lang.Status.running (k ans), w')\u000a    | Except.error r => (Cas.Lang.Status.refused r, w)",
+          "touches": ["Codec", "Core", "IR", "Lang"]
         }
       ]
     },
@@ -10435,6 +10489,6 @@
     "inductive": 34,
     "instance": 59,
     "structure": 36,
-    "theorem": 500
+    "theorem": 506
   }
 }
