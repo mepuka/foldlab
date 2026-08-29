@@ -261,6 +261,29 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
 14. **Union refusal taxonomy**: empty `types` refuses as `illFormed`,
     unknown `mode` as `notASchema` — both `#guard`-pinned. A separate
     `emptyUnion` name would be a taxonomy change, available on order.
+15. **THE FLOAT CEILING** (surfaced late from the 2026-08-25
+    expressibility dossier, `A-expressibility.md:73` — belongs at the
+    top of any "any Effect Schema" conversation): `Value` has no float
+    (`Cas/Core/Node`-plane `Core.lean:30-32`). Effect's bare `Number`
+    cannot type `1.5`, `Literal(1.5)` has no term, and non-integral
+    check parameters (`greaterThan(1.5)`) are unwritable. This is
+    rejection, not collapse — admission must turn such schemas away
+    until a float ruling exists (representation, canonical spelling of
+    doubles, NaN/±0/precision — a value-plane commission question, far
+    upstream of the schema plane). Bounds what "full Effect Schema
+    coverage" can ever mean; decide posture explicitly.
+16. **Materializer-lane blocker, half-discharged**: the tree-sitter
+    materializer lane (`.staging/treesitter/MATERIALIZER-LANE.md`) was
+    blocked on union AND `mu`/named references. Union landed (C1);
+    recursion/references (C6, ruling 2) is the remaining half.
+17. **Materialized-source compile gate**: `Materialize.source` output
+    is byte-pinned but never typechecked as a module; a `tsc`
+    round-trip on materialized output is the natural next gate (same
+    shape as the estate-native byte gate).
+18. **The estate-native second register**: P6's differential requires
+    the Lean-owned `EmitAst`/`Ts` printer as `Materialize.source`'s
+    counterpart; only the Effect-native register exists on the TS
+    side today.
 
 ## Defect register (found in passing, not part of the plan)
 
