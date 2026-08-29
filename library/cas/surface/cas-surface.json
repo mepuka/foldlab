@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 288,
-    "Values": 211,
+    "Schema": 307,
+    "Values": 218,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 76,
-    "Quot.sound": 172,
-    "propext": 235
+    "Classical.choice": 81,
+    "Quot.sound": 179,
+    "propext": 247
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 142,
+    "Cas.Schema.Ast": 161,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 21,
     "Cas.Word": 56
   },
-  "declarations": 1036,
-  "documented": 443,
+  "declarations": 1055,
+  "documented": 454,
   "library": "Cas",
   "modules": [
     {
@@ -4193,8 +4193,8 @@
       ]
     },
     {
-      "declarations": 32,
-      "documented": 7,
+      "declarations": 34,
+      "documented": 9,
       "module": "Cas.Schema.Ast",
       "surface": [
         {
@@ -4414,6 +4414,14 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.WFMembers",
+          "signature": "List Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.WFParams",
           "signature": "List Cas.Schema.Ast → Prop",
           "touches": ["Schema"]
@@ -4445,6 +4453,15 @@
           "kind": "theorem",
           "name": "Cas.Schema.sorted_names_nodup",
           "signature": "∀ {fs : List (String × Bool × Cas.Schema.Ast)}, List.Pairwise (fun a b => a.fst < b.fst) fs → (List.map (fun f => f.fst) fs).Nodup",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.union_nil_not_wf",
+          "signature": "∀ (m : Cas.Schema.UnionMode), ¬(Cas.Schema.Ast.union [] m).WF",
           "touches": ["Schema"]
         }
       ]
@@ -5806,8 +5823,8 @@
       ]
     },
     {
-      "declarations": 22,
-      "documented": 12,
+      "declarations": 24,
+      "documented": 13,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -5975,6 +5992,23 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.wfMembers",
+          "signature": "List Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.wfMembers_iff",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.wfMembers ms = true ↔ Cas.Schema.WFMembers ms",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.wfParams",
           "signature": "List Cas.Schema.Ast → Bool",
           "touches": ["Schema"]
@@ -5991,8 +6025,8 @@
       ]
     },
     {
-      "declarations": 70,
-      "documented": 52,
+      "declarations": 85,
+      "documented": 60,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
         {
@@ -6100,6 +6134,15 @@
           "kind": "theorem",
           "name": "Cas.Schema.Ast.repNorm_repNormal",
           "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.RepNormal",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_union",
+          "signature": "∀ (ms : List Cas.Schema.Ast) (m : Cas.Schema.UnionMode), (Cas.Schema.Ast.union ms m).repNorm = Cas.Schema.Ast.union (Cas.Schema.repNormMembers ms) m",
           "touches": ["Schema"]
         },
         {
@@ -6276,6 +6319,49 @@
           "signature": "Nat"
         },
         {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.membersToJson",
+          "signature": "List Cas.Schema.Ast → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.membersToJson_canonical",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.WFMembers ms → Cas.Json.CanonicalItems (Cas.Schema.membersToJson ms)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.membersToRepresentationJson",
+          "signature": "List Cas.Schema.Ast → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.membersToRepresentationJson_canonical",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Json.CanonicalItems (Cas.Schema.membersToRepresentationJson ms)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.membersToRepresentationJson_repNorm",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.membersToRepresentationJson (Cas.Schema.repNormMembers ms) = Cas.Schema.membersToRepresentationJson ms",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
@@ -6308,6 +6394,23 @@
           "kind": "theorem",
           "name": "Cas.Schema.ofJsonFields_fieldsToJson",
           "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.ofJsonFields (Cas.Schema.fieldsToJson fs) = some fs",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.ofJsonMembers",
+          "signature": "List Cas.Json.Value → Option (List Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofJsonMembers_membersToJson",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.ofJsonMembers (Cas.Schema.membersToJson ms) = some ms",
           "touches": ["Schema"]
         },
         {
@@ -6361,6 +6464,23 @@
           "kind": "theorem",
           "name": "Cas.Schema.ofRepresentationJson_toRepresentationJson'",
           "signature": "∀ {a : Cas.Schema.Ast}, a.RepNormal → Cas.Schema.Ast.ofRepresentationJson a.toRepresentationJson = some a",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ofRepresentationMembers",
+          "signature": "List Cas.Json.Value → Option (List Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationMembers_membersToRepresentationJson",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.ofRepresentationMembers (Cas.Schema.membersToRepresentationJson ms) = some (Cas.Schema.repNormMembers ms)",
           "touches": ["Schema"]
         },
         {
@@ -6474,6 +6594,50 @@
           "kind": "theorem",
           "name": "Cas.Schema.repNormFields_wf",
           "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.WFFields fs → Cas.Schema.WFFields (Cas.Schema.repNormFields fs)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.repNormMembers",
+          "signature": "List Cas.Schema.Ast → List Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormMembers_idem",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.repNormMembers (Cas.Schema.repNormMembers ms) = Cas.Schema.repNormMembers ms",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormMembers_length",
+          "signature": "∀ (ms : List Cas.Schema.Ast), (Cas.Schema.repNormMembers ms).length = ms.length",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormMembers_ne_nil",
+          "signature": "∀ {ms : List Cas.Schema.Ast}, ms ≠ [] → Cas.Schema.repNormMembers ms ≠ []",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormMembers_wf",
+          "signature": "∀ (ms : List Cas.Schema.Ast), Cas.Schema.WFMembers ms → Cas.Schema.WFMembers (Cas.Schema.repNormMembers ms)",
           "touches": ["Schema"]
         },
         {
@@ -8230,10 +8394,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 588,
+    "def": 595,
     "inductive": 32,
     "instance": 56,
     "structure": 36,
-    "theorem": 321
+    "theorem": 333
   }
 }

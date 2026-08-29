@@ -24,6 +24,7 @@ def astBeq : Ast → Ast → Bool
   | .struct fs, .struct gs => fieldsBeq fs gs
   | .ref a, .ref b => a == b
   | .decl i p ps, .decl j q qs => i == j && p == q && paramsBeq ps qs
+  | .union ms m, .union ns n => m == n && membersBeq ms ns
   | _, _ => false
 
 def fieldsBeq :
@@ -36,6 +37,14 @@ def fieldsBeq :
 def paramsBeq : List Ast → List Ast → Bool
   | [], [] => true
   | a :: as, b :: bs => astBeq a b && paramsBeq as bs
+  | _, _ => false
+
+/-- Members compare POSITIONWISE: two unions are equal only if their
+members agree in order, which is what order-is-identity means for the
+sharing environment too. -/
+def membersBeq : List Ast → List Ast → Bool
+  | [], [] => true
+  | a :: as, b :: bs => astBeq a b && membersBeq as bs
   | _, _ => false
 
 end
@@ -78,6 +87,16 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
     | .decl .date _ _ => schema "Date"
     | .decl .url _ _ => schema "URL"
     | .decl .option _ ps => .call (schema "Option") (constructorParams env ps)
+    -- `Schema.Union([…], { mode })` — Effect's own constructor
+    -- (`Schema.ts:4912`), members in the code's order, and the mode
+    -- ALWAYS spelled. Effect's `toCodeDocument` elides `anyOf` because
+    -- it is the constructor's default; the estate does not, because a
+    -- spelling that depends on a default is a spelling the reader has
+    -- to know a default to check (D4).
+    | .union members mode =>
+      .call (schema "Union") [
+        .arr (constructorMembers env members),
+        .object [("mode", .str mode.wire)]]
 
 private def constructorFields (env : List (String × Ast)) :
     List (String × Bool × Ast) → List (String × Expr)
@@ -91,6 +110,11 @@ private def constructorParams (env : List (String × Ast)) :
     List Ast → List Expr
   | [] => []
   | code :: rest => constructorGo env false code :: constructorParams env rest
+
+private def constructorMembers (env : List (String × Ast)) :
+    List Ast → List Expr
+  | [] => []
+  | code :: rest => constructorGo env false code :: constructorMembers env rest
 
 end
 

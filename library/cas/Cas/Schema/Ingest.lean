@@ -45,6 +45,15 @@ it read as a shape failure. The gate `Ast.wf` grew the row's own
 discipline with it — payload shape and type-parameter count, read off
 the registry — so `ingest_wf` and `ingest_envelope` hold over the grown
 carrier with their statements unchanged.
+
+The union code (increment C1) is gated the same way and needs no new
+refusal. Its ONE discipline is nonemptiness — the empty union is
+`Never`, which is not admitted — so an empty `types` array decodes as a
+shape and is refused `illFormed` by the gate, exactly as an unsorted
+struct is. A `mode` outside the table is not a union spelling at all
+and dies in the decoder as `notASchema`. Member ORDER is never tested,
+because order is the identity: there is no canonical arrangement to
+demand and nothing on this path sorts.
 -/
 
 namespace Cas.Schema
@@ -89,6 +98,7 @@ def Ast.wf : Ast → Bool
   | .struct fs => pairwiseNames fs && wfFields fs
   | .decl id p ps =>
     id.payloadWf p && decide (ps.length = id.arity) && wfParams ps
+  | .union ms _ => !ms.isEmpty && wfMembers ms
   | _ => true
 
 def wfFields : List (String × Bool × Ast) → Bool
@@ -99,6 +109,12 @@ def wfFields : List (String × Bool × Ast) → Bool
 def wfParams : List Ast → Bool
   | [] => true
   | a :: as => a.wf && wfParams as
+
+/-- Boolean twin of `WFMembers`. Order is not tested — there is
+nothing to test, order is the identity. -/
+def wfMembers : List Ast → Bool
+  | [] => true
+  | a :: as => a.wf && wfMembers as
 
 end
 
@@ -125,6 +141,13 @@ theorem Ast.wf_iff : ∀ (a : Ast), a.wf = true ↔ a.WF
   | .decl id p ps => by
     simp [Ast.wf, Ast.WF, DeclarationId.General.payloadWf_iff id p,
       wfParams_iff ps, and_assoc]
+  | .union ms _ => by
+    simp [Ast.wf, Ast.WF, wfMembers_iff ms]
+
+theorem wfMembers_iff : ∀ ms, wfMembers ms = true ↔ WFMembers ms
+  | [] => by simp [wfMembers, WFMembers]
+  | a :: as => by
+    simp [wfMembers, WFMembers, Ast.wf_iff a, wfMembers_iff as]
 
 theorem wfFields_iff : ∀ fs, wfFields fs = true ↔ WFFields fs
   | [] => by simp [wfFields, WFFields]
@@ -288,6 +311,62 @@ private def optionOfString : Ast := .decl .option .null [.str]
 -- refusal: the allowlist passed, the row's own discipline did not.
 #guard (match ingest (Ast.decl .date (.str "not a null payload") []).envelope with
         | .error .illFormed => true
+        | _ => false)
+
+/-! ## Order is identity at the door — worked, at elaboration
+
+The ratified identity calls for the union code (C1), run through the
+door so the carrier's behaviour is visible in the source rather than
+only stated in a docstring. -/
+
+/-- Two unions over the same members in different orders. -/
+private def zebraFirst : Ast :=
+  .union [.lit (.str "zebra"), .lit (.str "alpha")] .oneOf
+
+private def alphaFirst : Ast :=
+  .union [.lit (.str "alpha"), .lit (.str "zebra")] .oneOf
+
+-- ORDER IS IDENTITY: reordering the members is a DIFFERENT code with
+-- DIFFERENT payload bytes. Nothing sorts on the way in or out.
+#guard zebraFirst.payload != alphaFirst.payload
+
+-- Both survive the door as themselves, in the order they were written.
+#guard (match ingest zebraFirst.envelope, ingest alphaFirst.envelope with
+        | .ok a, .ok b => a.payload == zebraFirst.payload &&
+            b.payload == alphaFirst.payload
+        | _, _ => false)
+
+-- THE MODE IS DATA: the same members under the two modes are two
+-- codes, and both are admitted immediately (open ruling 2, resolved as
+-- proposed — carriage is faithful, validation semantics are staged).
+#guard (Ast.union [.str, .bool] .anyOf).payload !=
+  (Ast.union [.str, .bool] .oneOf).payload
+
+#guard (match ingest (Ast.union [.str, .bool] .anyOf).envelope,
+              ingest (Ast.union [.str, .bool] .oneOf).envelope with
+        | .ok _, .ok _ => true
+        | _, _ => false)
+
+-- NO FLATTENING: a nested union is not its flattening.
+#guard (Ast.union [.str, .union [.bool, .int] .anyOf] .anyOf).payload !=
+  (Ast.union [.str, .bool, .int] .anyOf).payload
+
+-- THE EMPTY UNION IS REFUSED at the gate — it is `Never`, and `Never`
+-- is not admitted. The decoder reads its shape; the discipline is what
+-- turns it away.
+#guard (match ingest (Ast.union [] .anyOf).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- A mode that is no row of the table is not a union at all: the
+-- spelling dies in the decoder, so the value is not a schema.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Union"), ("checks", .arr []),
+              ("mode", .str "allOf"),
+              ("types", .arr [(Ast.str).toRepresentationJson])])])]) with
+        | .error .notASchema => true
         | _ => false)
 
 end Cas.Schema

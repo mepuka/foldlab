@@ -83,4 +83,22 @@ Named increments, in order:
   carries the design note: a typeclass cannot serve here (`El` consumes
   a runtime id), so the denotation wants a carrier table, as its own
   increment.
+- **Union, stage 1 — carriage** — LANDED (increment C1, `UNION-DESIGN.md`,
+  operator-ratified 2026-08-29): `Union` is the two modes as a registry
+  table (`UnionMode`, wire spellings `anyOf`/`oneOf` verbatim), and
+  `Ast.union` is the code — an ORDERED member list and the mode.
+  **ORDER IS IDENTITY**: members are never sorted, never flattened,
+  never deduplicated, so `union [a, b]` and `union [b, a]` are two
+  codes at two addresses. `WF` asks for nonemptiness and well-formed
+  members and nothing about the order (`union_nil_not_wf` states the
+  empty union's refusal — that is `Never`'s job, and `Never` is not
+  admitted). Every revision-1 law extends arm-wise with its STATEMENT
+  UNCHANGED, and `Ast.repNorm_union` says why: the normal form rewrites
+  the members positionwise and leaves mode, count, and order alone, so
+  no third collapse is owed. Stage 1 is CARRIAGE: `El` of a union is
+  `Empty`, and `Cas/Schema/El.lean` names the staged obligation —
+  the DISCRIMINATED-union denotation, joined with deriving for
+  inductives, per Effect's own sentinel insight. Stage 3, `oneOf`
+  uniqueness as a checkable property, belongs to the validation-gen
+  lane and owes a statement only when a gate consumes it.
 -/

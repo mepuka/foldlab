@@ -58,6 +58,10 @@ def Ast.toJson : Ast → Json.Value
       ("id", .str id.wire),
       ("payload", p.toJson),
       ("typeParameters", .arr (paramsToJson ps))]
+  | .union ms m => .obj [
+      ("_tag", .str "Union"),
+      ("members", .arr (membersToJson ms)),
+      ("mode", .str m.wire)]
 
 /-- One record entry per struct field: `name ↦ {optional, schema}`. -/
 def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
@@ -69,6 +73,12 @@ def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
 def paramsToJson : List Ast → List Json.Value
   | [] => []
   | a :: as => a.toJson :: paramsToJson as
+
+/-- A union's members, in order — the order they were written, which
+is the order they are stored in and read back in. -/
+def membersToJson : List Ast → List Json.Value
+  | [] => []
+  | a :: as => a.toJson :: membersToJson as
 
 end
 
@@ -143,6 +153,11 @@ def Ast.toRepresentationJson : Ast → Json.Value
         ("id", .str id.wire),
         ("payload", p.toJson)]),
       ("typeParameters", .arr (paramsToRepresentationJson ps))]
+  | .union ms m => .obj [
+      ("_tag", .str "Union"),
+      ("checks", .arr []),
+      ("mode", .str m.wire),
+      ("types", .arr (membersToRepresentationJson ms))]
 
 /-- Effect property-signature representations, preserving canonical field order. -/
 def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Value
@@ -158,6 +173,13 @@ def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Valu
 def paramsToRepresentationJson : List Ast → List Json.Value
   | [] => []
   | a :: as => a.toRepresentationJson :: paramsToRepresentationJson as
+
+/-- A union's member representations, in order. The emitter has no
+sort: `types` comes out in exactly the order the code holds, which is
+what makes the payload bytes carry the identity. -/
+def membersToRepresentationJson : List Ast → List Json.Value
+  | [] => []
+  | a :: as => a.toRepresentationJson :: membersToRepresentationJson as
 
 end
 
@@ -270,6 +292,16 @@ theorem toJson_canonical : ∀ (a : Ast), a.WF → a.toJson.Canonical
           List.Pairwise (· < ·) ["_tag", "id", "payload", "typeParameters"]),
       trivial, trivial, DeclPayload.toJson_canonical p,
       paramsToJson_canonical ps hps, trivial⟩
+  | .union ms _, ⟨_, hms⟩ => by
+    refine ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "members", "mode"]),
+      trivial, membersToJson_canonical ms hms, trivial, trivial⟩
+
+theorem membersToJson_canonical :
+    ∀ (ms : List Ast), WFMembers ms → CanonicalItems (membersToJson ms)
+  | [], _ => trivial
+  | a :: as, ⟨ha, has⟩ =>
+    ⟨toJson_canonical a ha, membersToJson_canonical as has⟩
 
 theorem paramsToJson_canonical :
     ∀ (ps : List Ast), WFParams ps → CanonicalItems (paramsToJson ps)
@@ -348,6 +380,10 @@ def Ast.ofJson : Json.Value → Option Ast
     | some g =>
       (DeclPayload.ofJson p).bind fun pay =>
       (ofJsonParams tps).map fun ps => .decl g pay ps
+  | .obj [("_tag", .str "Union"), ("members", .arr ms), ("mode", .str w)] =>
+    match UnionMode.ofWire w with
+    | none => none
+    | some m => (ofJsonMembers ms).map fun bs => .union bs m
   | _ => none
 
 def ofJsonFields :
@@ -363,6 +399,12 @@ def ofJsonParams : List Json.Value → Option (List Ast)
   | v :: vs =>
     (Ast.ofJson v).bind fun a =>
     (ofJsonParams vs).map fun as => a :: as
+
+def ofJsonMembers : List Json.Value → Option (List Ast)
+  | [] => some []
+  | v :: vs =>
+    (Ast.ofJson v).bind fun a =>
+    (ofJsonMembers vs).map fun as => a :: as
 
 end
 
@@ -388,6 +430,17 @@ theorem ofJson_toJson : ∀ (a : Ast), Ast.ofJson a.toJson = some a
     simp only [Ast.toJson, Ast.ofJson, DeclarationId.General.ofWire_wire g,
       DeclPayload.ofJson_toJson p, ofJsonParams_paramsToJson ps,
       Option.bind_some, Option.map_some]
+  | .union ms m => by
+    cases m <;>
+      simp only [Ast.toJson, Ast.ofJson, UnionMode.wire, UnionMode.ofWire,
+        ofJsonMembers_membersToJson ms, Option.map_some]
+
+theorem ofJsonMembers_membersToJson :
+    ∀ (ms : List Ast), ofJsonMembers (membersToJson ms) = some ms
+  | [] => rfl
+  | a :: as => by
+    simp only [membersToJson, ofJsonMembers, ofJson_toJson a,
+      ofJsonMembers_membersToJson as, Option.bind_some, Option.map_some]
 
 theorem ofJsonFields_fieldsToJson :
     ∀ (fs : List (String × Bool × Ast)),
@@ -456,7 +509,19 @@ It introduces NO new identification: `Ast.repNorm_decl` shows the
 normal form rewrites only the type parameters, and
 `decl_wire_ne_casRef` shows why nothing more is owed — the general code
 cannot spell row zero (`foldlab/cas/ref`), which keeps the dedicated
-code `.ref` the unique spelling of its own representation. -/
+code `.ref` the unique spelling of its own representation.
+
+### The union code adds no third collapse either
+
+Increment C1 grows `Ast.union` (an ordered member list and the mode).
+Its key set is alphabetical like every other node's
+(`_tag < checks < mode < types`), so the unconditional canonicality
+theorem extends with no premise; `Ast.repNorm_union` shows the normal
+form rewrites the members positionwise and touches neither the mode nor
+the order, so the projection identifies no two unions that differ in
+mode, member count, or member order. ORDER IS IDENTITY, ratified: there
+is no sort anywhere on this path — not in the encoder, not in the
+decoder, not in the normal form. -/
 
 open Cas.Json
 
@@ -526,6 +591,24 @@ theorem toRepresentationJson_canonical :
       ⟨List.pairwise_map.mp (by decide : List.Pairwise (· < ·) ["id", "payload"]),
         trivial, DeclPayload.toJson_canonical p, trivial⟩,
       paramsToRepresentationJson_canonical ps, trivial⟩
+  | .union ms _ =>
+    ⟨List.pairwise_map.mp
+        (by decide :
+          List.Pairwise (· < ·) ["_tag", "checks", "mode", "types"]),
+      trivial, trivial, trivial,
+      membersToRepresentationJson_canonical ms, trivial⟩
+
+/-- A union's member representations are canonically spelled. The
+union's own key set (`_tag < checks < mode < types`) is alphabetical
+like every other node's, so the unconditional canonicality theorem
+extends over the new arm with no premise about the members' order —
+which is the point: there is no order to be premised on. -/
+theorem membersToRepresentationJson_canonical :
+    ∀ (ms : List Ast), CanonicalItems (membersToRepresentationJson ms)
+  | [] => trivial
+  | a :: as =>
+    ⟨toRepresentationJson_canonical a,
+      membersToRepresentationJson_canonical as⟩
 
 /-- A declaration's type-parameter representations are canonically
 spelled — like every other representation, by construction. -/
@@ -585,6 +668,7 @@ def Ast.repNorm : Ast → Ast
   | .arr a => .arr a.repNorm
   | .struct fs => .struct (repNormFields fs)
   | .decl id p ps => .decl id p (repNormParams ps)
+  | .union ms m => .union (repNormMembers ms) m
   | a => a
 
 def repNormFields :
@@ -603,6 +687,16 @@ makes. -/
 def repNormParams : List Ast → List Ast
   | [] => []
   | a :: as => a.repNorm :: repNormParams as
+
+/-- The union code adds NO collapse of its own either: this rewrites
+the members POSITION BY POSITION, so the list's length and order are
+untouched and the mode is not read at all. `union [x, lit null]`
+normalizes to `union [x, null]` — which is Effect's own `NullOr`, and
+is the existing R13 identification firing inside a member, not a new
+one. -/
+def repNormMembers : List Ast → List Ast
+  | [] => []
+  | a :: as => a.repNorm :: repNormMembers as
 
 end
 
@@ -623,6 +717,14 @@ theorem Ast.repNorm_idem : ∀ (a : Ast), a.repNorm.repNorm = a.repNorm
     simp only [Ast.repNorm, repNormFields_idem fs]
   | .decl _ _ ps => by
     simp only [Ast.repNorm, repNormParams_idem ps]
+  | .union ms _ => by
+    simp only [Ast.repNorm, repNormMembers_idem ms]
+
+theorem repNormMembers_idem :
+    ∀ (ms : List Ast), repNormMembers (repNormMembers ms) = repNormMembers ms
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormMembers, Ast.repNorm_idem a, repNormMembers_idem as]
 
 theorem repNormFields_idem :
     ∀ (fs : List (String × Bool × Ast)),
@@ -661,6 +763,16 @@ theorem decl_wire_ne_casRef (g : DeclarationId.General) :
     g.wire ≠ DeclarationId.casRef.wire := by
   cases g <;> decide
 
+/-- THE no-new-collapse statement for increment C1: on a union the
+normal form rewrites the members POSITIONWISE and NOTHING else — the
+mode survives verbatim, the length survives, and the order survives.
+So the union code identifies no two unions that differ in mode, in
+member count, or in member order: `union [a, b] ≠ union [b, a]` stays
+two codes at two addresses, and the literal-null identification
+(register R13) remains the only two-to-one map revision 1 makes. -/
+theorem Ast.repNorm_union (ms : List Ast) (m : UnionMode) :
+    (Ast.union ms m).repNorm = .union (repNormMembers ms) m := rfl
+
 mutual
 
 /-- Normalization is invisible to the projection: the collapse is
@@ -679,6 +791,18 @@ theorem toRepresentationJson_repNorm :
   | .decl _ _ ps => by
     simp only [Ast.repNorm, Ast.toRepresentationJson,
       paramsToRepresentationJson_repNorm ps]
+  | .union ms _ => by
+    simp only [Ast.repNorm, Ast.toRepresentationJson,
+      membersToRepresentationJson_repNorm ms]
+
+theorem membersToRepresentationJson_repNorm :
+    ∀ (ms : List Ast),
+      membersToRepresentationJson (repNormMembers ms) =
+        membersToRepresentationJson ms
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormMembers, membersToRepresentationJson,
+      toRepresentationJson_repNorm a, membersToRepresentationJson_repNorm as]
 
 theorem fieldsToRepresentationJson_repNorm :
     ∀ (fs : List (String × Bool × Ast)),
@@ -708,6 +832,22 @@ theorem repNormParams_length :
   | a :: as => by
     simp only [repNormParams, List.length_cons, repNormParams_length as]
 
+/-- Normalization preserves a union's member count — it rewrites the
+members in place, so the arity of the union is not something the
+normal form can change. -/
+theorem repNormMembers_length :
+    ∀ (ms : List Ast), (repNormMembers ms).length = ms.length
+  | [] => rfl
+  | a :: as => by
+    simp only [repNormMembers, List.length_cons, repNormMembers_length as]
+
+/-- In particular a nonempty union stays nonempty: the `WF` clause the
+empty union is refused by survives normalization. -/
+theorem repNormMembers_ne_nil :
+    ∀ {ms : List Ast}, ms ≠ [] → repNormMembers ms ≠ []
+  | [], h => absurd rfl h
+  | _ :: _, _ => by simp [repNormMembers]
+
 mutual
 
 /-- Well-formedness survives normalization: the collapse rewrites leaves
@@ -724,6 +864,13 @@ theorem Ast.repNorm_wf : ∀ (a : Ast), a.WF → a.repNorm.WF
     exact List.pairwise_map.mp (hkeys ▸ List.pairwise_map.mpr hsorted)
   | .decl _ _ ps, ⟨hp, harity, hps⟩ =>
     ⟨hp, (repNormParams_length ps).trans harity, repNormParams_wf ps hps⟩
+  | .union ms _, ⟨hne, hms⟩ =>
+    ⟨repNormMembers_ne_nil hne, repNormMembers_wf ms hms⟩
+
+theorem repNormMembers_wf :
+    ∀ (ms : List Ast), WFMembers ms → WFMembers (repNormMembers ms)
+  | [], _ => trivial
+  | a :: as, ⟨ha, has⟩ => ⟨Ast.repNorm_wf a ha, repNormMembers_wf as has⟩
 
 theorem repNormFields_wf :
     ∀ (fs : List (String × Bool × Ast)), WFFields fs → WFFields (repNormFields fs)
@@ -820,6 +967,11 @@ def Ast.ofRepresentationJson : Json.Value → Option Ast
       ("representation", .obj [("id", .str w), ("payload", p)]),
       ("typeParameters", .arr tps)] =>
     (ofRepresentationParams tps).bind fun ps => declOfRepresentation w p ps
+  | .obj [("_tag", .str "Union"), ("checks", .arr []), ("mode", .str w),
+      ("types", .arr ts)] =>
+    match UnionMode.ofWire w with
+    | none => none
+    | some m => (ofRepresentationMembers ts).map fun ms => .union ms m
   | _ => none
 
 /-- The property-signature list decoder, preserving order verbatim. -/
@@ -839,6 +991,19 @@ def ofRepresentationParams : List Json.Value → Option (List Ast)
   | v :: vs =>
     (Ast.ofRepresentationJson v).bind fun a =>
     (ofRepresentationParams vs).map fun as => a :: as
+
+/-- The union-member list decoder, preserving order verbatim. There is
+no sort on the way in either: the decoder answers the members in the
+order the bytes carry them, which is the only reading that agrees with
+order-is-identity. An EMPTY `types` array decodes — to `union [] m`,
+which the door then refuses at the gate (`Ast.wf`), exactly the way an
+unsorted struct decodes and is then refused. Shape is the decoder's
+question; discipline is the gate's. -/
+def ofRepresentationMembers : List Json.Value → Option (List Ast)
+  | [] => some []
+  | v :: vs =>
+    (Ast.ofRepresentationJson v).bind fun a =>
+    (ofRepresentationMembers vs).map fun as => a :: as
 
 end
 
@@ -899,6 +1064,23 @@ theorem ofRepresentationJson_toRepresentationJson :
         Option.bind_some, declOfRepresentation, DeclarationId.ofWire,
         generalDeclOf, DeclPayload.ofJson_toJson p, Option.map_some,
         Ast.repNorm]
+  | .union ms m => by
+    cases m <;>
+      simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson,
+        UnionMode.wire, UnionMode.ofWire,
+        ofRepresentationMembers_membersToRepresentationJson ms,
+        Option.map_some, Ast.repNorm]
+
+theorem ofRepresentationMembers_membersToRepresentationJson :
+    ∀ (ms : List Ast),
+      ofRepresentationMembers (membersToRepresentationJson ms) =
+        some (repNormMembers ms)
+  | [] => rfl
+  | a :: as => by
+    simp only [membersToRepresentationJson, ofRepresentationMembers,
+      ofRepresentationJson_toRepresentationJson a,
+      ofRepresentationMembers_membersToRepresentationJson as,
+      Option.bind_some, Option.map_some, repNormMembers]
 
 theorem ofRepresentationParams_paramsToRepresentationJson :
     ∀ (ps : List Ast),

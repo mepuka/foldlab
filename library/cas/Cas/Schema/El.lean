@@ -46,6 +46,34 @@ obligation:
     declEl : the carrier table for the admitted general rows, with
              `El (.decl id p ps) = declEl id p ps` and the codec arms
              that follow from it.
+
+## The union's denotation — the same honest route, staged
+
+`El (.union ms m) = Empty`: increment C1 is CARRIAGE only, by the
+ratified design, and `Empty` is what carriage without denotation
+truthfully says. A union is store content — mintable, addressable,
+re-emittable, and materializable into a live Effect validator through
+`fromRepresentation` — while Lean holds no values of it, so every
+value-plane law about the code holds vacuously rather than falsely.
+
+The design call this parks, so the next slice does not rediscover it:
+a general union's denotation is a dependent sum with TRY-ORDER
+semantics, and for `anyOf` with overlapping members the decode side is
+not extensional — two members can both accept a value, and which one
+the sum records is a function of the order, not of the value. Effect's
+own answer is the sentinel insight (`SchemaAST.ts:2574`): make the
+union DISCRIMINATED — every member a struct carrying the same
+literal-tagged field — and decoding becomes deterministic tag
+dispatch, at which point the exactness laws are tractable. That is
+also exactly the shape `deriving Described` emits for an inductive, so
+the denotation and the deriving growth are ONE slice. Named
+obligation:
+
+    unionEl : the discriminated-union denotation — `El` of a union of
+              tag-carrying structs as the tagged sum, with the value
+              codec dispatching on the tag, joined with deriving for
+              inductives. General-union denotation stays a named
+              obligation until a consumer demands it.
 -/
 
 mutual
@@ -61,6 +89,7 @@ def El : Ast → Type
   | .struct fs => ElFields fs
   | .ref t => StoreRef t
   | .decl _ _ _ => Empty
+  | .union _ _ => Empty
 
 /-- Field components, right-nested: `(first, rest)`. -/
 def ElFields : List (String × Bool × Ast) → Type

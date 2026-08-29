@@ -66,6 +66,22 @@ inductive Ast where
   ruling, recorded and not taken. -/
   | decl (id : DeclarationId.General) (payload : DeclPayload)
       (typeParameters : List Ast)
+  /-- The union code (increment C1): Effect's `Union` as content — an
+  ORDERED list of member codes and the mode, exactly the persisted
+  shape (`SchemaRepresentation.ts:395-398`).
+
+  **Order is identity** (operator-ratified 2026-08-29). Members are
+  never sorted, never flattened, never deduplicated, so
+  `union [a, b] ≠ union [b, a]` and `union [a, union [b, c]] ≠
+  union [a, b, c]`: the ordered tree IS the identity, and two reordered
+  unions are two codes at two addresses. This is the estate's own
+  TypeScript normalizer read into the carrier ("union, tuple, check,
+  and reference order remain semantic and are never rearranged"), and
+  it is the contrast case to `.struct`, whose fields DO sort.
+
+  The mode is always spelled — `UnionMode` is a constructor argument,
+  not an option with a default. -/
+  | union (members : List Ast) (mode : UnionMode)
 
 mutual
 
@@ -79,11 +95,18 @@ On a declaration this is the registry's own discipline read off the
 row: the payload is one the id admits and the type parameters are as
 many as the id takes. WHICH ids exist is not asked here — that is
 settled by the carrier (`DeclarationId.General`); this clause asks only
-whether the row's contract is honoured. -/
+whether the row's contract is honoured.
+
+On a union it is NONEMPTINESS and nothing else about the shape of the
+list: every member well-formed, in whatever order they were written.
+The empty union is refused — that is `Never`'s job, and `Never` is not
+admitted — and order is deliberately not constrained, because order is
+the identity (ratified). -/
 def Ast.WF : Ast → Prop
   | .arr a => a.WF
   | .struct fs => List.Pairwise (fun a b => a.1 < b.1) fs ∧ WFFields fs
   | .decl id p ps => id.PayloadWF p ∧ ps.length = id.arity ∧ WFParams ps
+  | .union ms _ => ms ≠ [] ∧ WFMembers ms
   | _ => True
 
 def WFFields : List (String × Bool × Ast) → Prop
@@ -95,7 +118,20 @@ def WFParams : List Ast → Prop
   | [] => True
   | a :: as => a.WF ∧ WFParams as
 
+/-- A union's members are codes, each well-formed. Nothing is asked
+about the ORDER — order is the identity, so there is no canonical
+arrangement to demand. -/
+def WFMembers : List Ast → Prop
+  | [] => True
+  | a :: as => a.WF ∧ WFMembers as
+
 end
+
+/-- The empty union is refused at `WF`: it is `Never`, and `Never` is
+not an admitted code. Stated once so the refusal is a theorem and not
+just a clause. -/
+theorem union_nil_not_wf (m : UnionMode) : ¬ (Ast.union [] m).WF :=
+  fun h => h.1 rfl
 
 /-- Strictly sorted field names never repeat. -/
 theorem sorted_names_nodup {fs : List (String × Bool × Ast)}
