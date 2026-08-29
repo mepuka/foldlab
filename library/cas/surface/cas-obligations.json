@@ -1,9 +1,9 @@
 {
   "counters": {
-    "discharged": 18,
+    "discharged": 20,
     "emptyDenotations": 4,
     "formless": 0,
-    "owed": 10,
+    "owed": 11,
     "parked": 4,
     "pinPending": 1
   },
@@ -20,6 +20,13 @@
       "excerpt": "…e the triage note above. `hresident` is discharged from that hypothesis at every `load`, so CAS-003's empty Le…",
       "keyword": "discharged",
       "module": "Cas.Lang.Auth",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Lang.PLine.hashDetermined",
+      "excerpt": "**HD-1, DISCHARGED: every operation of `CasSig` is hash-determined.** A STATEM…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Lang.Defun",
       "state": "discharged"
     },
     {
@@ -232,6 +239,12 @@
       "state": "obligation"
     },
     {
+      "excerpt": "…racled away in `handleLlm`'s shape, and owed `(out, deps, recipe)` from `Persistable`. The two regimes a…",
+      "keyword": "owed",
+      "module": "Cas.Lang.Defun",
+      "state": "owed"
+    },
+    {
       "excerpt": "…VED, not assumed; one is proved, one is owed, and the note says which. ### L-A — the table (applicative…",
       "keyword": "owed",
       "module": "Cas.Lang.Fragments",
@@ -242,6 +255,12 @@
       "keyword": "obligation",
       "module": "Cas.Lang.Fragments",
       "state": "obligation"
+    },
+    {
+      "excerpt": "…and a boundary: `PLine.HashDetermined`, discharged for every `CasSig` operation by `PLine.hashDetermined`. A…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Fragments",
+      "state": "discharged"
     },
     {
       "excerpt": "…form and free construction. **CORPUS PIN PENDING** — SAF is not yet G0-pinned in `.reference/provenance/pa…",

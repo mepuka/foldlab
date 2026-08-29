@@ -98,6 +98,24 @@ Proved below:
 - `envelope_decodeProg_encodeProg` — the store content determines the
   envelope: a table recovered from its own bytes analyses identically.
 
+- `PLine.HashDetermined` and `PLine.hashDetermined` — HD-1
+  (2026-08-29): the BOUNDARY, named. The property `PLine.answer`
+  already computes — a total function from an operation's arguments to
+  the address it answers that no handler may contradict — defined, and
+  discharged for `CasSig` out of `putWord_answer` (put half, Level 0)
+  and `PIn.resolve` (load half, `rfl`). The definition's docstring
+  carries the ruling the boundary decides: inside it, no trace store;
+  outside it, `(out, deps, recipe)` from `Persistable`. The closing
+  witness of this module exhibits the outside.
+- `PProg.answersFrom_prefix`, `runPFrom_append_done`,
+  `runPFrom_frame_sound`, `runP_frame_sound` — FRAME-1 (2026-08-29):
+  the frame condition for EVERY run and not only `done` ones, which is
+  what `Fragments.lean`'s interop claim 1 states. The history a run
+  reaches a line in is `answersFrom` up to that line
+  (`runPFrom_append_done`), that history is a prefix of the whole
+  table's (`answersFrom_prefix`), and so every address any reached line
+  consults lies in `reads ∪ answersFrom` — refusing runs included.
+
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
 - (discharged 2026-08-29) wire tags 14/15 were registry RESERVATIONS
@@ -1427,6 +1445,86 @@ theorem putWord_word {n : Node} {w w' : Word} {a : Addr32}
       | conflict b m => rw [hp] at h; simp at h
   · simp only [dif_neg hn] at h; simp at h
 
+/-- **HASH-DETERMINED OPERATION** (HD-1) — the boundary, named. The
+property `PLine.answer` has been computing all along, stated so it can
+be a decided line rather than a habit of the proofs.
+
+An operation is *hash-determined* when a total function from its
+arguments to its answer exists that no handler may contradict. Here the
+arguments are the line and the answer history it is reached in, the
+answer is the address the line contributes to that history, and
+`PLine.answer H` is the function. The quantifier over `w` is the whole
+content: at EVERY word the direct interpreter answers what
+`PLine.answer` computed, so the store may decide WHETHER the answer
+arrives — a refusal — but never WHICH answer arrives.
+
+**THE BOUNDARY RULING.** An operation INSIDE this line needs no trace
+store. Its answer is recomputable from the operation itself, so
+recording `(out, deps, recipe)` would only write down what a pure
+function already returns, and the envelope, the sandwich and
+`answersFrom` all survive untouched: a build step that DECLARES its
+output address rides L-A exactly as `put` does, and the handler's job
+is to check the declaration (`SPECS.md` ruling 19, first regime).
+
+An operation OUTSIDE this line needs `(out, deps, recipe)` — under
+`Hash v = k` that is three addresses and a list — and gets it from
+`Persistable`/`PersistedCache` (`SPECS.md` decision 15), never from a
+newly minted kind. Such an operation is summed into the signature and
+interpreted away by an oracle in `Prog.handleLlm`'s exact shape
+(ruling 19, second regime, and the ratified direction); the price is
+the envelope for the summed program, which is correct and is said out
+loud rather than hidden. `LlmSig.infer` (`Ops.lean`) is the estate's
+live operation outside the boundary and `Prog.handleLlm`
+(`Interp.lean`) is its discharge — the closing witness of this module
+exhibits both. -/
+def PLine.HashDetermined (l : PLine) : Prop :=
+  ∀ (env : List Addr32) (w w' : Word) (b : Addr32),
+    runPFrom H env [l] w = (.done b, w') → PLine.answer H env l = some b
+
+/-- **HD-1, DISCHARGED: every operation of `CasSig` is
+hash-determined.** A STATEMENT slice and not a proof slice — both
+halves were landed before the property had a name, and are cited here
+rather than re-argued. The put half is `putWord_answer`: hash-lattice
+Level 0, no premise on `H`, fresh and duplicate alike. The load half is
+`PIn.resolve`, where the equation is definitional because the entry a
+load contributes to the history IS its resolved source address (the
+node it reads is the store's contribution and is not an answer of the
+dataflow). Where the definition is the composition the theorem may be
+near-`rfl` and is still worth stating: this is the line every
+downstream lane trips over, and it now has a name to cite. The
+run-level consequence is `runPFrom_done_answers`. -/
+theorem PLine.hashDetermined (l : PLine) : PLine.HashDetermined H l := by
+  intro env w w' b h
+  cases l with
+  | put v t payload refs =>
+    cases hr : resolveRefs env refs with
+    | none => simp [runPFrom, hr] at h
+    | some rs =>
+      cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+      | error e => simp [runPFrom, hr, hp] at h
+      | ok aw =>
+        obtain ⟨c, w''⟩ := aw
+        have hcb : c = b := by
+          simp only [runPFrom, hr, hp, List.getLast?_concat, Prod.mk.injEq,
+            Status.done.injEq] at h
+          exact h.1
+        subst hcb
+        simp only [PLine.answer, hr, Option.map_some]
+        exact congrArg some (putWord_answer H hp).symm
+  | load src =>
+    cases hs : src.resolve env with
+    | none => simp [runPFrom, hs] at h
+    | some c =>
+      cases hf : Word.find w c with
+      | none => simp [runPFrom, hs, hf] at h
+      | some n =>
+        have hcb : c = b := by
+          simp only [runPFrom, hs, hf, List.getLast?_concat, Prod.mk.injEq,
+            Status.done.injEq] at h
+          exact h.1
+        subst hcb
+        exact hs
+
 /-- HASH-DETERMINED DATAFLOW, AS A THEOREM (DESIGN.md §2.1): on a run that
 reports `done`, the answer history the direct interpreter threaded is
 exactly the one the table determines from `H` alone, and the designated
@@ -1744,6 +1842,137 @@ theorem runP_absent_sound (p : PProg) (w : Word) {r : Refusal} {w' : Word}
     a ∈ PProg.reads p ∨ a ∈ PProg.answersFrom H [] p := by
   simpa using runPFrom_absent_sound H [] p w h ha
 
+/-! ### FRAME-1 — the frame condition, for EVERY run
+
+`runPFrom_absent_sound` states `actual ⊆ possible` at the observable: it
+covers the addresses a REFUSAL names. `PProg.touches_sound` states it per
+line, but against an arbitrary history, so on its own it says nothing
+about the histories a run is actually in. `Fragments.lean`'s interop
+claim 1 — "no run of the table from any word touches an address outside
+`reads ∪ answers`" — is the conjunction, and it needs the missing middle:
+*which* histories a run can reach a line in.
+
+That middle is `runPFrom_append_done`: a run that reaches a line reaches
+it at `env` extended by the history the table DETERMINED for the lines
+before it — the store decided only whether the run got there.
+`answersFrom_prefix` then says that determined history is a prefix of the
+whole table's, including when `answersFrom` stops early, because it stops
+only where an operand dangles and that is where the run refuses too. With
+those two the claim holds for every run, refusing runs included, and the
+overclaim the audit flagged is closed rather than softened. -/
+
+/-- The determined history of a prefix is a PREFIX of the determined
+history of the whole table — for every table and every extension. The
+early stop is not an exception: `answersFrom` halts at the first line
+whose operands dangle, and a longer table cannot un-dangle it. -/
+theorem PProg.answersFrom_prefix (env : List Addr32) (p q : PProg) :
+    (PProg.answersFrom H env p).IsPrefix (PProg.answersFrom H env (p ++ q)) := by
+  induction p generalizing env with
+  | nil => simp [PProg.answersFrom]
+  | cons l rest ih =>
+    cases ha : PLine.answer H env l with
+    | none => simp [PProg.answersFrom, ha]
+    | some a =>
+      obtain ⟨t, ht⟩ := ih (env ++ [a])
+      refine ⟨t, ?_⟩
+      simp only [List.cons_append, PProg.answersFrom, ha]
+      simpa using ht
+
+/-- THE HISTORY AT A REACHED LINE, IDENTIFIED: when the run of a prefix
+completes, the run of the whole table continues from exactly the history
+that prefix DETERMINED — `env ++ answersFrom H env pre` — at whatever
+word the prefix left. This is the carrier FRAME-1 was missing: it turns
+"the run is somewhere in the table" into a named history, without a
+reachability predicate and without a second spelling of the walk. -/
+theorem runPFrom_append_done :
+    ∀ (env : List Addr32) (pre post : PProg) (w : Word) {b : Addr32} {w' : Word},
+      runPFrom H env pre w = (.done b, w') →
+        runPFrom H env (pre ++ post) w
+          = runPFrom H (env ++ PProg.answersFrom H env pre) post w' := by
+  intro env pre
+  induction pre generalizing env with
+  | nil =>
+    intro post w b w' h
+    cases hg : env.getLast? with
+    | none => simp [runPFrom, hg] at h
+    | some c =>
+      simp only [runPFrom, hg, Prod.mk.injEq, Status.done.injEq] at h
+      obtain ⟨_, hw⟩ := h
+      subst hw
+      simp [PProg.answersFrom]
+  | cons l rest ih =>
+    intro post w b w' h
+    cases l with
+    | put v t payload refs =>
+      cases hr : resolveRefs env refs with
+      | none => simp [runPFrom, hr] at h
+      | some rs =>
+        cases hp : putWord H ⟨v, t, payload, rs⟩ w with
+        | error e => simp [runPFrom, hr, hp] at h
+        | ok aw =>
+          obtain ⟨c, w''⟩ := aw
+          simp only [runPFrom, hr, hp] at h
+          have hc : c = H (encodeNode ⟨v, t, payload, rs⟩) := putWord_answer H hp
+          have hans : PLine.answer H env (PLine.put v t payload refs) = some c := by
+            simp only [PLine.answer, hr, Option.map_some, ← hc]
+          rw [PProg.answersFrom_cons_of H hans rest]
+          have hstep := ih (env ++ [c]) post w'' h
+          simp only [List.cons_append, runPFrom, hr, hp]
+          rw [hstep]
+          simp
+    | load src =>
+      cases hs : src.resolve env with
+      | none => simp [runPFrom, hs] at h
+      | some c =>
+        cases hf : Word.find w c with
+        | none => simp [runPFrom, hs, hf] at h
+        | some n =>
+          simp only [runPFrom, hs, hf] at h
+          have hans : PLine.answer H env (PLine.load src) = some c := hs
+          rw [PProg.answersFrom_cons_of H hans rest]
+          have hstep := ih (env ++ [c]) post w h
+          simp only [List.cons_append, runPFrom, hs, hf]
+          rw [hstep]
+          simp
+
+/-- **FRAME-1 — THE FRAME CONDITION.** At the history a run reaches a
+line in — the one `runPFrom_append_done` names — every address that line
+consults lies in the table's enveloped literal reads together with the
+table's own determined answers. No `done` premise, so refusing runs are
+covered: the bound is on the addresses CONSULTED, and a run that refuses
+consulted a subset of what a run that continues would. -/
+theorem runPFrom_frame_sound (env : List Addr32) (pre : PProg) (l : PLine)
+    (post : PProg) :
+    ∀ a ∈ PLine.touches (env ++ PProg.answersFrom H env pre) l,
+      a ∈ PProg.reads (pre ++ l :: post)
+        ∨ a ∈ env ++ PProg.answersFrom H env (pre ++ l :: post) := by
+  intro a ha
+  have hl : l ∈ pre ++ l :: post := by simp
+  rcases PProg.touches_sound hl (env ++ PProg.answersFrom H env pre) a ha with h | h
+  · exact Or.inl h
+  · right
+    rcases List.mem_append.mp h with h' | h'
+    · exact List.mem_append_left _ h'
+    · exact List.mem_append_right _
+        ((PProg.answersFrom_prefix H env pre (l :: post)).subset h')
+
+/-- **FRAME-1 AT THE TABLE — the interop claim, whole.** For a table
+split at any line: if the run reaches that line, it reaches it at the
+determined history, and every address the line consults is one the
+envelope accounts for. This is the theorem `Fragments.lean`'s interop
+claim 1 cites — the frame condition a scheduler computes read/write sets
+from and a grant is checked against, decided before anything runs. -/
+theorem runP_frame_sound (pre : PProg) (l : PLine) (post : PProg) (w : Word)
+    {b : Addr32} {w' : Word} (hreach : runPFrom H [] pre w = (.done b, w')) :
+    runP H (pre ++ l :: post) w
+        = runPFrom H (PProg.answersFrom H [] pre) (l :: post) w'
+      ∧ ∀ a ∈ PLine.touches (PProg.answersFrom H [] pre) l,
+          a ∈ PProg.reads (pre ++ l :: post)
+            ∨ a ∈ PProg.answersFrom H [] (pre ++ l :: post) := by
+  refine ⟨?_, ?_⟩
+  · simpa [runP] using runPFrom_append_done H [] pre (l :: post) w hreach
+  · simpa using runPFrom_frame_sound H [] pre l post
+
 /-! ### THE SANDWICH (b) — necessity, and where it stops
 
 The lower bound, stated so it is not vacuous. A load line that executes
@@ -1926,5 +2155,46 @@ example :
     [.put 0 0 [] [], .put 0 0 [] []], ?_, ?_, rfl⟩
   · rfl
   · rfl
+
+/-! ### THE BOUNDARY, EXHIBITED — the operation on the other side
+
+HD-2. Everything above this line holds because `PLine.answer` exists.
+This witness is the other side of `PLine.HashDetermined`, in the same
+style: the estate's live NON-hash-determined operation, `LlmSig.infer`
+(`Ops.lean`), inside the estate's live discharge for it,
+`Prog.handleLlm` (`Interp.lean`). The witness decides.
+
+Read it against `putWord_answer`. That theorem says a store operation's
+answer moves with nothing — not the word, not the store, not a premise
+on `H`. Here the program, the starting word and `H` all stand still and
+the answer history moves anyway, because the answer is the oracle's and
+the oracle is not a function of the operation. No `PLine.answer` can be
+written for `infer`, at any effort, and that is not a gap in the
+analysis: it is the definition of being outside the boundary.
+
+So this witness is what makes the ruling in `PLine.HashDetermined`'s
+docstring load-bearing rather than decorative. A build step whose output
+address is DECLARED is a `put` — hash-determined, envelope intact, no
+trace store. A build step whose output FLOATS is this witness — summed
+in, oracled away in `handleLlm`'s shape, and owed `(out, deps, recipe)`
+from `Persistable`. The two regimes are not a style choice; the line
+between them is `PLine.HashDetermined`, and this program is on the far
+side of it. -/
+
+/-- THE COUNTER-WITNESS: one program over `AgentSig`, one starting word,
+one address function, two oracles — two different answer histories. The
+put line's payload is a function of the inference answer, so the address
+it admits (the binding `putWord_word` appends, which IS the entry the
+run writes into its history) moves with the oracle alone. A table over
+`CasSig` cannot do this: `PLine.hashDetermined` forbids it. -/
+example :
+    ∃ (H : Bytes → Addr32) (p : Prog AgentSig Addr32) (o₁ o₂ : String → String),
+      (runAgent H o₁ 2 p []).2.map Binding.address
+        ≠ (runAgent H o₂ 2 p []).2.map Binding.address := by
+  refine ⟨fun bs => ⟨List.replicate 32 (UInt8.ofNat bs.length), by simp⟩,
+    (do
+      let answer ← infer "how many?"
+      liftCas (put ⟨0, 0, List.replicate answer.length 7, []⟩)),
+    (fun _ => ""), (fun _ => "!"), by decide⟩
 
 end Cas.Lang

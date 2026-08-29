@@ -2,11 +2,11 @@
   "areaCensus": {
     "Architecture": 34,
     "Backend": 122,
-    "Codec": 261,
-    "Core": 341,
+    "Codec": 267,
+    "Core": 347,
     "Grammar": 130,
-    "IR": 135,
-    "Lang": 285,
+    "IR": 137,
+    "Lang": 291,
     "Lift": 77,
     "Schema": 623,
     "Values": 456,
@@ -14,12 +14,12 @@
   },
   "axiomCensus": {
     "Classical.choice": 236,
-    "Quot.sound": 403,
-    "propext": 562
+    "Quot.sound": 407,
+    "propext": 567
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 184,
+    "Cas.Addr32": 190,
     "Cas.Binding": 54,
     "Cas.Grammar.Tree": 30,
     "Cas.Grammar.Ty": 42,
@@ -27,16 +27,16 @@
     "Cas.Lang.Prog": 78,
     "Cas.Lang.Refusal": 40,
     "Cas.Lang.Sig": 42,
-    "Cas.Lang.Status": 53,
+    "Cas.Lang.Status": 55,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 93,
     "Cas.Schema.Ast": 336,
     "Cas.Schema.Described": 41,
     "Cas.Schema.El": 42,
-    "Cas.Word": 109
+    "Cas.Word": 111
   },
-  "declarations": 1910,
-  "documented": 948,
+  "declarations": 1916,
+  "documented": 954,
   "library": "Cas",
   "modules": [
     {
@@ -4994,8 +4994,8 @@
       ]
     },
     {
-      "declarations": 122,
-      "documented": 99,
+      "declarations": 128,
+      "documented": 105,
       "module": "Cas.Lang.Defun",
       "surface": [
         {
@@ -5155,6 +5155,14 @@
           "signature": "Type"
         },
         {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.PLine.HashDetermined",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.PLine → Prop",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
           "documented": true,
           "kind": "def",
           "name": "Cas.Lang.PLine.WF",
@@ -5182,6 +5190,15 @@
           "name": "Cas.Lang.PLine.ctorElimType",
           "signature": "{motive : Cas.Lang.PLine → Sort u} → Nat → Sort (max 1 u)",
           "touches": ["Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.PLine.hashDetermined",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (l : Cas.Lang.PLine), Cas.Lang.PLine.HashDetermined H l",
+          "touches": ["Codec", "Core", "Lang"]
         },
         {
           "documented": true,
@@ -5226,6 +5243,15 @@
           "kind": "theorem",
           "name": "Cas.Lang.PProg.answersFrom_cons_of",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {l : Cas.Lang.PLine} {env : List Cas.Addr32} {b : Cas.Addr32}, Cas.Lang.PLine.answer H env l = some b → ∀ (rest : Cas.Lang.PProg), Cas.Lang.PProg.answersFrom H env (l :: rest) = b :: Cas.Lang.PProg.answersFrom H (env ++ [b]) rest",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.PProg.answersFrom_prefix",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p q : Cas.Lang.PProg), Cas.Lang.PProg.answersFrom H env p <+: Cas.Lang.PProg.answersFrom H env (p ++ q)",
           "touches": ["Codec", "Core", "Lang"]
         },
         {
@@ -5799,6 +5825,15 @@
           "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Lang.runPFrom_append_done",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (pre post : Cas.Lang.PProg) (w : Cas.Word) {b : Cas.Addr32} {w' : Cas.Word}, Cas.Lang.runPFrom H env pre w = (Cas.Lang.Status.done b, w') → Cas.Lang.runPFrom H env (pre ++ post) w = Cas.Lang.runPFrom H (env ++ Cas.Lang.PProg.answersFrom H env pre) post w'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Lang.runPFrom_done_answers",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word) {a : Cas.Addr32} {w' : Cas.Word}, Cas.Lang.runPFrom H env p w = (Cas.Lang.Status.done a, w') → (Cas.Lang.PProg.answersFrom H env p).length = List.length p ∧ (env ++ Cas.Lang.PProg.answersFrom H env p).getLast? = some a",
           "touches": ["Codec", "Core", "IR", "Lang"]
@@ -5811,6 +5846,15 @@
           "name": "Cas.Lang.runPFrom_embedFrom",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), Cas.Lang.run H (List.length p + 1) (Cas.Lang.embedFrom env p) w = Cas.Lang.runPFrom H env p w",
           "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runPFrom_frame_sound",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (env : List Cas.Addr32) (pre : Cas.Lang.PProg) (l : Cas.Lang.PLine) (post : Cas.Lang.PProg) (a : Cas.Addr32), a ∈ Cas.Lang.PLine.touches (env ++ Cas.Lang.PProg.answersFrom H env pre) l → a ∈ (pre ++ l :: post).reads ∨ a ∈ env ++ Cas.Lang.PProg.answersFrom H env (pre ++ l :: post)",
+          "touches": ["Codec", "Core", "Lang"]
         },
         {
           "axioms": ["propext"],
@@ -5882,6 +5926,15 @@
           "kind": "theorem",
           "name": "Cas.Lang.runP_embed_agree",
           "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (p : Cas.Lang.PProg) (w : Cas.Word), Cas.Lang.run H (List.length p + 1) (Cas.Lang.embed p) w = Cas.Lang.runP H p w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Status", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.runP_frame_sound",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (pre : Cas.Lang.PProg) (l : Cas.Lang.PLine) (post : Cas.Lang.PProg) (w : Cas.Word) {b : Cas.Addr32} {w' : Cas.Word}, Cas.Lang.runPFrom H [] pre w = (Cas.Lang.Status.done b, w') → Cas.Lang.runP H (pre ++ l :: post) w = Cas.Lang.runPFrom H (Cas.Lang.PProg.answersFrom H [] pre) (l :: post) w' ∧ ∀ (a : Cas.Addr32), a ∈ Cas.Lang.PLine.touches (Cas.Lang.PProg.answersFrom H [] pre) l → a ∈ (pre ++ l :: post).reads ∨ a ∈ Cas.Lang.PProg.answersFrom H [] (pre ++ l :: post)",
           "touches": ["Codec", "Core", "IR", "Lang"]
         },
         {
@@ -15061,10 +15114,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1023,
+    "def": 1024,
     "inductive": 47,
     "instance": 104,
     "structure": 63,
-    "theorem": 669
+    "theorem": 674
   }
 }

@@ -49,7 +49,8 @@ one is proved, one is owed, and the note says which.
   (every address consulted is an enveloped literal or an answer the table
   itself determined), `runPFrom_load_absent`/`runPFrom_load_present` (the
   lower bound: a load line's outcome is a function of the word at exactly
-  its address).
+  its address), and `runP_frame_sound` (the frame condition closed for
+  every run, refusing ones included — FRAME-1).
 - **Why static analysis is possible here, and the reason usually given is
   wrong.** A free applicative is analysable because no later effect may
   depend on an earlier RESULT. `PLine`'s `ans i` IS such a dependence, so
@@ -59,7 +60,13 @@ one is proved, one is owed, and the note says which.
   its source, so given `H` the whole answer environment is a pure
   recursion on the table (`PProg.answersFrom`,
   `runPFrom_done_answers`). The estate's R4/Level-0 addressing discipline
-  does the work the applicative restriction does elsewhere.
+  does the work the applicative restriction does elsewhere. That property
+  now has a name and a boundary: `PLine.HashDetermined`, discharged for
+  every `CasSig` operation by `PLine.hashDetermined`. An operation
+  outside it — `LlmSig.infer` is the estate's live one — keeps none of
+  this rung's guarantees and is owed a trace store instead; read that
+  definition's docstring before adding an operation to any signature a
+  table speaks.
 - **Where the over-approximation is, exactly.** Two sources, both
   exhibited by witnesses at the end of `Defun.lean`, and there are no
   others: (1) the SUFFIX AFTER THE FIRST REFUSAL — lines the run never
@@ -69,9 +76,14 @@ one is proved, one is owed, and the note says which.
   that DESIGN.md §3.1's table calls this rung "exact:
   `over = under = actual`"; that is refuted, and the witnesses are the
   refutation.
-- **Store encoding: YES.** Wire tags 14 (`step`) and 15 (`cont`),
-  RESERVED rows pinned to `REGISTRY.md` by `#guard` and deliberately
-  spelled outside `Cas.Grammar.Ty` until the grammar grill ratifies them.
+- **Store encoding: YES.** Wire tags 14 and 15 ARE the `Ty.step` and
+  `Ty.cont` sorts — ratified by G3 on 2026-08-29, with forms in
+  `Cas.Grammar.manifestV0` witnessed by `encodeLine` and `tableNode`, and
+  `Ty.wireTag` the only place either number is written. The reservation
+  this line used to describe — bare literals pinned to `REGISTRY.md` by
+  `#guard` and deliberately spelled outside `Cas.Grammar.Ty` until the
+  grammar grill ratified them — is discharged, and `Defun.lean`'s
+  reconciliation note records how.
   `encodeProg` lays a table down children-first; `encodeProg_wf` says it
   admits for EVERY address function (hash-lattice Level 0, no
   injectivity). `decodeProg` reads it back, under two triaged premises —
@@ -117,8 +129,11 @@ one is proved, one is owed, and the note says which.
 - **Static analysis: over ⊋ under, genuinely.** This is the rung where
   the sandwich stops being nearly tight: the arm not taken is possible
   and not necessary. L-A's two gaps remain and a third appears.
-- **Store encoding: one additive tag (16, to be reserved with the
-  registry agent), arms held BY REFERENCE so identical arms deduplicate
+- **Store encoding: FORMS on the step and cont sorts, never a third
+  tag.** Ruling P6 (`EFFECT-AST-PLACEMENT.md`) supersedes the tag-16
+  reservation this line used to carry: a guarded table grows tags 14/15
+  by adding forms, so no registry row is reserved and no number is
+  minted. Arms are held BY REFERENCE so identical arms deduplicate
   through `put`'s duplicate outcome. The children-first layout and the
   Level-0 admission argument extend unchanged.
 - **Handler set: all of R10, unchanged.** Authenticated computation is a
@@ -132,14 +147,18 @@ one is proved, one is owed, and the note says which.
   that belongs in the statements, not in a footnote: SAF's free
   construction is free for RIGID selective functors only (`Over` is
   rigid, `Under` is not).
-- **THE RULING ASK — the first consumer.** L-S is not built until a
-  consumer is named. The named candidate is `cas_run`: `RunParams`
-  (`Cas/Backend/Mcp.lean`) today carries a list of instructions with
-  index-named references and no conditional, so it speaks L-A exactly.
-  Growing it to L-S is an additive params change PLUS a
-  `manifestVersion` bump (currently `0`), which is bumped only by ruling.
-  That ruling — name the consumer, reserve tag 16, bump the manifest — is
-  what unblocks the rung.
+- **The first consumer, NAMED.** L-S is not built until a consumer is
+  named, and ruling P7 (`EFFECT-AST-PLACEMENT.md`) named one:
+  **`agentStep`** — already a program of the language
+  (`examples/CasExamples/AgentStep.lean`), whose `require` on a loaded
+  node's tag is exactly an L-S scrutinee: a decidable test on what a
+  `load` returned. `cas_run` is the SURFACE that would carry it, not the
+  consumer: `RunParams` (`Cas/Backend/Mcp.lean`) today carries a list of
+  instructions with index-named references and no conditional, so it
+  speaks L-A exactly, and growing it to L-S is an additive params change
+  PLUS a `manifestVersion` bump (currently `0`), which is bumped only by
+  ruling. What is still open is that bump and the forms on tags 14/15 —
+  not a tag reservation, and no longer the consumer.
 
 ### L-P — the free monad (monadic strength). LANDED.
 
@@ -180,10 +199,17 @@ on without reading a proof, and what you may not.
 1. **The read set is finite, known, and bounded by the envelope.** Every
    address the run consults is either a literal the table names or an
    address the table itself computed. Concretely: no run of the table
-   from any word touches an address outside `reads ∪ answers`. This is a
-   frame condition, so a scheduler may compute read/write sets and a
-   grant may be checked *before* execution — a proposed program is
-   refused when its envelope exceeds the grant, decided without running.
+   from any word touches an address outside `reads ∪ answers` — proved
+   as `runP_frame_sound`, for EVERY run and not only completing ones,
+   out of `runPFrom_append_done` (a run reaches a line at exactly the
+   history the table determined for the lines before it) and
+   `PProg.answersFrom_prefix` (that history is a prefix of the whole
+   table's, early stop included). The refusal half is stated separately
+   at the observable, where the run itself names the address:
+   `runP_absent_sound`. This is a frame condition, so a scheduler may
+   compute read/write sets and a grant may be checked *before*
+   execution — a proposed program is refused when its envelope exceeds
+   the grant, decided without running.
 2. **The write set is bounded by the declared put shapes, in order.** No
    run admits a node whose (version, tag, payload, reference-kind) shape
    is outside the table's declared list, and the order of what is
