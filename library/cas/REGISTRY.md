@@ -17,8 +17,8 @@ on every wire.
 | 11        | 0x0B      | `file`     | RATIFIED core | Named file over a blob manifest |
 | 12        | 0x0C      | `entry`    | RATIFIED core | Journal entry / genesis |
 | 13        | 0x0D      | `context`  | RATIFIED core | Context node: typed edges, no payload |
-| 14        | 0x0E      | `step`     | RESERVED | F3 defunctionalized code point (in flight, separate actor) |
-| 15        | 0x0F      | `cont`     | RESERVED | F3 continuation (in flight, separate actor) |
+| 14        | 0x0E      | `step`     | RESERVED | F3 defunctionalized code point. Spelled as the bare def `Cas.Lang.stepWireTag`, outside `Ty`, and pinned against this row by `#guard` in `Cas/Lang/Defun.lean` |
+| 15        | 0x0F      | `cont`     | RESERVED | F3 continuation. Spelled as the bare def `Cas.Lang.contWireTag`, outside `Ty`, and pinned against this row by `#guard` in `Cas/Lang/Defun.lean` |
 | 83        | 0x53      | `schema`   | RATIFIED (opaque-payload revision 1) | Payload = the canonical JSON envelope of Effect's persistent `SchemaRepresentation` document; refs remain empty. Revision 0's tagged projection is read-compatible. The cross-runtime byte pin is gated; the revision-1 byte theorem remains pending. Typed schema-to-schema edges ($defs as real CAS references) are the named follow-up |
 
 Rows 1 and 11–13 were previously marked "illustrative"; ruling 2
@@ -26,3 +26,11 @@ ratifies all seven data sorts into core. Consumer extension (profiles,
 the GrammarSpec registration pattern) is a named follow-up, not
 retrofitted here; a new tag enters only through the grill with a real
 consumer.
+
+Rows 14 and 15 carry a reconciliation debt on purpose: they are used by
+`Cas/Lang/Defun.lean` but are NOT `Ty` constructors, because growing
+`Ty` is F3's own slice (a measured five-file amplification). The debt is
+machine-visible rather than prose-only — `Defun.lean` guards both
+literals against this table AND guards that `Ty.ofTag` still refuses
+both tags, so ratifying either row into `Ty` turns that build red and
+names the site that must follow.
