@@ -121,3 +121,89 @@ Instruments-per-fact update: every fact family in the table above is now
 double-derived (typescript@5.9.2 and lean4-tree-sitter @ `3a57f55e` agree
 byte-for-byte on the inventory body); provenance is unchanged — git blob
 SHA-1 verified pre-parse, name-table facts still name-table.
+
+## Addendum — 2026-08-29: the third instrument reads the WHOLE surface
+
+The pinned rc.111 schema surface is six files. Until today the lane could read
+two of them with two instruments, and had no instrument at all for the two the
+tree-sitter twin cannot parse. `src/oxc-extract.ts` is a third leg over the
+already-admitted `oxc-parser@0.147.0` — the same in-process chassis the lift
+harness uses — and it parses **all six with zero errors**, `Schema.ts` and
+`SchemaTransformation.ts` included.
+
+The gate is `mise run check:extract-oxc` (`src/oxc-check.ts`, six steps):
+
+| | asserts |
+|---|---|
+| G1 pin | all six files match their recorded git blob (`SURFACE_PINS`) |
+| G2 coverage | the surface pins cover the inventory's own two, digests equal |
+| G3 parse | **zero parse errors across all six** — the readability claim itself |
+| G4 agreement | enumerations A–E agree: 21 / 21 / 21 / 22 / 22, no failures |
+| G5 instrument | the oxc inventory is byte-identical to the committed one, normalizing only `extractor.instrument` / `instrumentVersion` |
+| G6 surface | the committed `oxc-surface.json` is byte-identical to a fresh survey |
+
+G5 is the twin gate's discipline pointed at a third instrument, and the vitest
+suite runs it twice: once against the committed `inventory.json`, once against a
+**live** compiler-API extraction. Three instruments now agree on the inventory
+body. The compiler-API leg is the OFFLINE differential — it is imported by the
+suite and by nothing on the hot path, which carries one parser. Whether the tsc
+leg is retained as a gate-time second instrument is an operator ruling; classic
+`tsc` is banned from production hot paths and this leg observes that, without
+pre-empting the ruling.
+
+The two legs share DATA and no walking code. `src/contract.ts` now holds what
+both read — the pins, the declared name tables, the inventory record shapes, the
+cross-check predicate, the canonical emit — and `extract.ts` re-exports it, so
+its published surface is unchanged. The move was verified byte-neutral: a fresh
+compiler-API extraction is still identical to the committed `inventory.json`.
+
+### What is newly readable
+
+`oxc-surface.json` is the census, regenerable by `mise run gen:oxc-surface`. It
+records, per file, parse cleanliness, the top-level declaration histogram, and
+every declaration carrying a construct the pinned tree-sitter grammar has no
+rule for. **Sixteen variance-annotated declarations, carrying 61 variance-marked
+type parameters:**
+
+| file | declarations |
+|---|---|
+| `SchemaAST.ts` | `Filter` :3207, `FilterGroup` :3255 — the two already held as ERROR nodes |
+| `SchemaTransformation.ts` | `Middleware` :71, `Transformation` :143 (`in out T`, `in out E`) |
+| `Schema.ts` | `BottomWithoutNew` :151, `Bottom` :283, `BottomLazyWithoutNew` :345, `BottomLazy` :394, `ConstraintCodec` :824, `ConstraintDecoder` :848, `ConstraintEncoder` :867, `Schema` :941, `Codec` :1041, `Decoder` :1064, `Encoder` :1087, `Optic` :1141 |
+
+**Correction to the harness map.** `INGESTION-HARNESS.md:105` records eight
+variance sites in `Schema.ts`. Measured here: **twelve**. The four the table
+misses are the `Bottom` family, whose `in out TypeParameters` sits inside a
+multi-line type-parameter list — presumably why a line-oriented count skipped
+them. The eight it names are all present at exactly the lines it names, and the
+`SchemaAST.ts` and `SchemaTransformation.ts` rows are exact.
+
+The second defect, **D1b** — newline-separated generic call-signature overloads
+inside an object type, which no reachable tree-sitter pin parses — is read here
+too: nine object types in `Schema.ts` hold two or more call signatures with at
+least one generic, at `:6235`, `:6250`, `:6421`, `:6430`, `:14391`, `:14661`,
+`:14721`, `:14781`, `:14842`. This counts SHAPES, not the 237 residual ERROR
+sites `D1-OPTION-A-SCOPING.md` measured under PR #364; the two numbers answer
+different questions and neither replaces the other.
+
+### What this does and does not settle
+
+It settles readability: `Schema.ts` — the R8 public surface — now has an
+instrument. It does **not** settle D1. The tree-sitter defect is unchanged, the
+twin's ERROR nodes are unchanged, and nothing here argues for or against the
+grammar fork. What it removes is the premise that the surface is unreadable:
+that was an instrument fact about tree-sitter, and this lane now has an
+instrument for which it is not true.
+
+It also does not yet extract anything FROM the two newly-readable files. The
+inventory is still derived from `SchemaAST.ts` and `SchemaRepresentation.ts`,
+because that is what the frozen generator contract (`INVENTORY-SCHEMA.md`)
+names. Extending the inventory to the R8 public surface is a contract change and
+is not taken here.
+
+**Still host-local.** `check:extract-oxc` is out of the default `check` chain
+for the lane's standing reason: `.staging/e2/src-cache` is gitignored and has no
+bootstrap (M1, grill item 1). `src/contract.ts`'s `resolveSrcDir` searches
+`E2_SRC_CACHE` and then each ancestor for `.staging/e2/src-cache`, and refuses
+by name when it finds nothing — which makes the gate runnable from a worktree
+and honest about what it needs, not portable.

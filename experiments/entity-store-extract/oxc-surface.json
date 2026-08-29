@@ -1,0 +1,396 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "Effect-TS/effect",
+    "commit": "0dd7825e4da4d3a00fa9bd410a1d55f3d4874d07",
+    "package": "effect@4.0.0-rc.111"
+  },
+  "extractor": {
+    "name": "e2-extract-oxc",
+    "instrument": "oxc-parser",
+    "instrumentVersion": "0.147.0",
+    "mode": "syntax-only"
+  },
+  "totals": {
+    "files": 6,
+    "parseErrors": 0,
+    "varianceSites": 16,
+    "genericOverloadSites": 9
+  },
+  "files": [
+    {
+      "file": "JsonSchema.ts",
+      "gitBlobSha1": "054b8e6b650dd9149517557b744e566e2835b0fa",
+      "bytes": 55005,
+      "lines": 1646,
+      "parseErrors": 0,
+      "topLevelStatements": 80,
+      "declarations": {
+        "FunctionDeclaration": 44,
+        "ImportDeclaration": 3,
+        "TSInterfaceDeclaration": 7,
+        "TSTypeAliasDeclaration": 6,
+        "VariableDeclaration": 20
+      },
+      "varianceSites": [],
+      "genericOverloadSites": []
+    },
+    {
+      "file": "Schema.ts",
+      "gitBlobSha1": "2924d92fcd5b397ab1e0d0635bd661dfa453f11b",
+      "bytes": 526080,
+      "lines": 17105,
+      "parseErrors": 0,
+      "topLevelStatements": 731,
+      "declarations": {
+        "ClassDeclaration": 1,
+        "FunctionDeclaration": 203,
+        "ImportDeclaration": 56,
+        "TSDeclareFunction": 8,
+        "TSInterfaceDeclaration": 170,
+        "TSModuleDeclaration": 10,
+        "TSTypeAliasDeclaration": 40,
+        "VariableDeclaration": 242
+      },
+      "varianceSites": [
+        {
+          "file": "Schema.ts",
+          "declaration": "BottomWithoutNew",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 151,
+          "typeParameters": [
+            "out T",
+            "out E",
+            "out RD",
+            "out RE",
+            "out Ast extends SchemaAST.AST",
+            "out Rebuild extends Top",
+            "out TypeMakeIn = T",
+            "out Iso = T",
+            "in out TypeParameters extends ReadonlyArray<Constraint> = readonly []",
+            "out TypeMake = TypeMakeIn",
+            "out TypeMutability extends Mutability = \"readonly\"",
+            "out TypeOptionality extends Optionality = \"required\"",
+            "out TypeConstructorDefault extends ConstructorDefault = \"no-default\"",
+            "out EncodedMutability extends Mutability = \"readonly\"",
+            "out EncodedOptionality extends Optionality = \"required\""
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Bottom",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 283,
+          "typeParameters": [
+            "out T",
+            "out E",
+            "out RD",
+            "out RE",
+            "out Ast extends SchemaAST.AST",
+            "out Rebuild extends Top",
+            "out TypeMakeIn = T",
+            "out Iso = T",
+            "in out TypeParameters extends ReadonlyArray<Constraint> = readonly []",
+            "out TypeMake = TypeMakeIn",
+            "out TypeMutability extends Mutability = \"readonly\"",
+            "out TypeOptionality extends Optionality = \"required\"",
+            "out TypeConstructorDefault extends ConstructorDefault = \"no-default\"",
+            "out EncodedMutability extends Mutability = \"readonly\"",
+            "out EncodedOptionality extends Optionality = \"required\""
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "BottomLazyWithoutNew",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 345,
+          "typeParameters": [
+            "out Ast extends SchemaAST.AST",
+            "out Rebuild extends Top",
+            "in out TypeParameters extends ReadonlyArray<Constraint> = readonly []",
+            "out TypeMutability extends Mutability = \"readonly\"",
+            "out TypeOptionality extends Optionality = \"required\"",
+            "out TypeConstructorDefault extends ConstructorDefault = \"no-default\"",
+            "out EncodedMutability extends Mutability = \"readonly\"",
+            "out EncodedOptionality extends Optionality = \"required\""
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "BottomLazy",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 394,
+          "typeParameters": [
+            "out Ast extends SchemaAST.AST",
+            "out Rebuild extends Top",
+            "in out TypeParameters extends ReadonlyArray<Constraint> = readonly []",
+            "out TypeMutability extends Mutability = \"readonly\"",
+            "out TypeOptionality extends Optionality = \"required\"",
+            "out TypeConstructorDefault extends ConstructorDefault = \"no-default\"",
+            "out EncodedMutability extends Mutability = \"readonly\"",
+            "out EncodedOptionality extends Optionality = \"required\""
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "ConstraintCodec",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 824,
+          "typeParameters": [
+            "out T",
+            "out E = T",
+            "out RD = never",
+            "out RE = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "ConstraintDecoder",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 848,
+          "typeParameters": [
+            "out T",
+            "out RD = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "ConstraintEncoder",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 867,
+          "typeParameters": [
+            "out E",
+            "out RE = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Schema",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 941,
+          "typeParameters": [
+            "out T"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Codec",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 1041,
+          "typeParameters": [
+            "out T",
+            "out E = T",
+            "out RD = never",
+            "out RE = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Decoder",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 1064,
+          "typeParameters": [
+            "out T",
+            "out RD = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Encoder",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 1087,
+          "typeParameters": [
+            "out E",
+            "out RE = never"
+          ]
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Optic",
+          "declarationKind": "TSInterfaceDeclaration",
+          "declLine": 1141,
+          "typeParameters": [
+            "out T",
+            "out Iso"
+          ]
+        }
+      ],
+      "genericOverloadSites": [
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedUnionUtils",
+          "declLine": 6235,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedUnionUtils",
+          "declLine": 6250,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedUnion",
+          "declLine": 6421,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedUnion",
+          "declLine": 6430,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Class",
+          "declLine": 14391,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Class",
+          "declLine": 14661,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedClass",
+          "declLine": 14721,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "Error",
+          "declLine": 14781,
+          "signatures": 2,
+          "genericSignatures": 2
+        },
+        {
+          "file": "Schema.ts",
+          "declaration": "TaggedError",
+          "declLine": 14842,
+          "signatures": 2,
+          "genericSignatures": 2
+        }
+      ]
+    },
+    {
+      "file": "SchemaAST.ts",
+      "gitBlobSha1": "e99d7f473b4ecc0e6ba919ddbc98bb0dace8fe40",
+      "bytes": 130916,
+      "lines": 4418,
+      "parseErrors": 0,
+      "topLevelStatements": 230,
+      "declarations": {
+        "ClassDeclaration": 28,
+        "FunctionDeclaration": 73,
+        "ImportDeclaration": 20,
+        "TSDeclareFunction": 2,
+        "TSInterfaceDeclaration": 2,
+        "TSTypeAliasDeclaration": 16,
+        "VariableDeclaration": 86
+      },
+      "varianceSites": [
+        {
+          "file": "SchemaAST.ts",
+          "declaration": "Filter",
+          "declarationKind": "ClassDeclaration",
+          "declLine": 3207,
+          "typeParameters": [
+            "in E"
+          ]
+        },
+        {
+          "file": "SchemaAST.ts",
+          "declaration": "FilterGroup",
+          "declarationKind": "ClassDeclaration",
+          "declLine": 3255,
+          "typeParameters": [
+            "in E"
+          ]
+        }
+      ],
+      "genericOverloadSites": []
+    },
+    {
+      "file": "SchemaParser.ts",
+      "gitBlobSha1": "7cc35ebffe58a9a51476c238308c8aa34b2b4f42",
+      "bytes": 44973,
+      "lines": 1220,
+      "parseErrors": 0,
+      "topLevelStatements": 61,
+      "declarations": {
+        "FunctionDeclaration": 30,
+        "ImportDeclaration": 12,
+        "TSInterfaceDeclaration": 2,
+        "VariableDeclaration": 17
+      },
+      "varianceSites": [],
+      "genericOverloadSites": []
+    },
+    {
+      "file": "SchemaRepresentation.ts",
+      "gitBlobSha1": "6282ab9cbf5c7a50b79580065881b5a6c5799aae",
+      "bytes": 38517,
+      "lines": 1335,
+      "parseErrors": 0,
+      "topLevelStatements": 117,
+      "declarations": {
+        "FunctionDeclaration": 17,
+        "ImportDeclaration": 12,
+        "TSInterfaceDeclaration": 41,
+        "TSModuleDeclaration": 2,
+        "TSTypeAliasDeclaration": 7,
+        "VariableDeclaration": 38
+      },
+      "varianceSites": [],
+      "genericOverloadSites": []
+    },
+    {
+      "file": "SchemaTransformation.ts",
+      "gitBlobSha1": "e90c1a653ca5362871e612e6e4569e6470be8218",
+      "bytes": 57699,
+      "lines": 1947,
+      "parseErrors": 0,
+      "topLevelStatements": 70,
+      "declarations": {
+        "ClassDeclaration": 2,
+        "FunctionDeclaration": 20,
+        "ImportDeclaration": 11,
+        "TSDeclareFunction": 4,
+        "TSTypeAliasDeclaration": 1,
+        "VariableDeclaration": 32
+      },
+      "varianceSites": [
+        {
+          "file": "SchemaTransformation.ts",
+          "declaration": "Middleware",
+          "declarationKind": "ClassDeclaration",
+          "declLine": 71,
+          "typeParameters": [
+            "in out T",
+            "in out E"
+          ]
+        },
+        {
+          "file": "SchemaTransformation.ts",
+          "declaration": "Transformation",
+          "declarationKind": "ClassDeclaration",
+          "declLine": 143,
+          "typeParameters": [
+            "in out T",
+            "in out E"
+          ]
+        }
+      ],
+      "genericOverloadSites": []
+    }
+  ]
+}
