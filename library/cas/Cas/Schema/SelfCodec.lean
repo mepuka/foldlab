@@ -170,10 +170,16 @@ namespace Cas.Schema
 /-! ## The revision-0 projection's laws — canonical spelling, decode, round trip
 
 The self-codec inherits the plane's discipline: under `WF` the
-projection is canonically spelled (so `payload` hides no sort —
-`payload_renderPlain`), and `ofJson` is its strict decoder with the
-round trip proved, making the projection injective: one code per
-payload value. -/
+retired tagged projection is canonically spelled
+(`toJson_canonical`, `legacyEnvelope_canonical`,
+`legacyEnvelope_renderPlain`), and `ofJson` is its strict decoder
+with the round trip proved (`ofJson_toJson`), making the projection
+injective (`toJson_inj`): one code per projection value. Every law
+below is about revision 0. The live revision-1 representation
+(`toRepresentationJson`/`envelope`/`payload`) has no canonicality
+theorem, no decoder, and no round trip yet — it is held by the
+cross-runtime byte pin alone, and its laws are the named open
+obligation of this module. -/
 
 open Cas.Json
 
