@@ -284,4 +284,10 @@ private def optionOfString : Ast := .decl .option .null [.str]
         | .error .unknownDeclaration => true
         | _ => false)
 
+-- An admitted id with a payload its row does not admit is a different
+-- refusal: the allowlist passed, the row's own discipline did not.
+#guard (match ingest (Ast.decl .date (.str "not a null payload") []).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
 end Cas.Schema
