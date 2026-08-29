@@ -914,6 +914,113 @@
     },
     {
       "denotes": true,
+      "name": "exchange",
+      "note": "the exchange kind: prompt, answer, and a subject union whose arms address the schema plane (0x53) and the exchange plane (0x58)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"answer\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"prompt\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]}]}}]}}}",
+      "values": [
+        {
+          "label": "on-schema",
+          "value": {
+            "answer": "a struct of three fields",
+            "prompt": "what does this schema describe?",
+            "subject": {
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "on-exchange",
+          "value": {
+            "answer": "because the seam is symmetric",
+            "prompt": "why?",
+            "subject": {
+              "_tag": "exchange",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 88
+                }
+              }
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "subject-arm-tag-swapped",
+          "value": {
+            "answer": "a",
+            "prompt": "p",
+            "subject": {
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 88
+                }
+              }
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "subject-unknown-arm",
+          "value": {
+            "answer": "a",
+            "prompt": "p",
+            "subject": {
+              "_tag": "program",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "subject-untagged",
+          "value": {
+            "answer": "a",
+            "prompt": "p",
+            "subject": {
+              "$link": {
+                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                "tag": 83
+              }
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "answer-missing",
+          "value": {
+            "prompt": "p",
+            "subject": {
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            }
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
       "name": "refuse-struct-unsorted",
       "note": "struct fields out of strict name order — the sortedness clause of Ast.wf",
       "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
@@ -1175,12 +1282,12 @@
     }
   ],
   "counts": {
-    "acceptValues": 34,
-    "admittedCodes": 38,
-    "codes": 67,
-    "refuseValues": 55,
+    "acceptValues": 36,
+    "admittedCodes": 39,
+    "codes": 68,
+    "refuseValues": 59,
     "refusedCodes": 29,
-    "values": 89
+    "values": 95
   },
   "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],
   "revision": 1

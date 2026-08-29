@@ -37,6 +37,10 @@
     {
       "address": "5f281a876efdf63c43a61c07a1422bf4311ed68efb65806a160db7bc80c5e942",
       "name": "tuple-pin"
+    },
+    {
+      "address": "80f7a642c632bf435bd1a30de1466624abd1c3b69cfc1d96ef75d2bff752daf4",
+      "name": "exchange"
     }
   ]
 }

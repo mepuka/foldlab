@@ -1,6 +1,7 @@
 import Cas
 import Cas.Vectors.Schema
 import Cas.Schema.Annotation
+import Cas.Schema.Exchange
 import Cas.Schema.Notation
 import Gate
 
@@ -24,7 +25,9 @@ the generator's own pin for `deriving Described` over constructor
 alternatives, the enum pin — both member value rows, orders a sort
 would reorder, and the alias TypeScript admits — and the tuple pin,
 which carries every shape the grown `Arrays` node reaches beside the
-plain array whose bytes must not move. The TypeScript side asserts
+plain array whose bytes must not move, and the exchange kind
+(`Cas.Schema.Exchange`) — the stored form of an R15 recording, whose
+subject is a tagged union of addressed planes. The TypeScript side asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -156,7 +159,8 @@ def registry : List (String × Ast) := [
   ("union-pin", unionPin),
   ("tagged-pin", TaggedPin.schemaCode),
   ("enum-pin", enumPin),
-  ("tuple-pin", tuplePin)
+  ("tuple-pin", tuplePin),
+  ("exchange", Exchange.schemaCode)
 ]
 
 /-! ## Emission -/

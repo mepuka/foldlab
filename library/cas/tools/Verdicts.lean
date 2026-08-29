@@ -1,5 +1,6 @@
 import Cas
 import Cas.Schema.Annotation
+import Cas.Schema.Exchange
 import Cas.Schema.Notation
 import Gate
 
@@ -402,6 +403,44 @@ def corpus : List Case := [
         ("subject", sentinel sampleAddr schemaKindTag.toNat),
         ("value", .str "v"),
         ("zextra", .bool true)])] },
+  -- ## The exchange kind (interactions as content, R15)
+  { name := "exchange",
+    note := "the exchange kind: prompt, answer, and a subject union whose arms address the schema plane (0x53) and the exchange plane (0x58)",
+    source := .code Exchange.schemaCode,
+    values := [
+      ("on-schema", .obj [
+        ("answer", .str "a struct of three fields"),
+        ("prompt", .str "what does this schema describe?"),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)])]),
+      ("on-exchange", .obj [
+        ("answer", .str "because the seam is symmetric"),
+        ("prompt", .str "why?"),
+        ("subject", .obj [
+          ("_tag", .str "exchange"),
+          ("address", sentinel sampleAddr exchangeKindTag.toNat)])]),
+      ("subject-arm-tag-swapped", .obj [
+        ("answer", .str "a"),
+        ("prompt", .str "p"),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr exchangeKindTag.toNat)])]),
+      ("subject-unknown-arm", .obj [
+        ("answer", .str "a"),
+        ("prompt", .str "p"),
+        ("subject", .obj [
+          ("_tag", .str "program"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)])]),
+      ("subject-untagged", .obj [
+        ("answer", .str "a"),
+        ("prompt", .str "p"),
+        ("subject", sentinel sampleAddr schemaKindTag.toNat)]),
+      ("answer-missing", .obj [
+        ("prompt", .str "p"),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)])])] },
   -- ## Refused codes — one row per `Ast.wf` clause
   { name := "refuse-struct-unsorted",
     note := "struct fields out of strict name order — the sortedness clause of Ast.wf",

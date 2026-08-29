@@ -45,6 +45,11 @@
       "byteLength": 1971,
       "file": "tuple-pin.json",
       "name": "tuple-pin"
+    },
+    {
+      "byteLength": 1385,
+      "file": "exchange.json",
+      "name": "exchange"
     }
   ]
 }
