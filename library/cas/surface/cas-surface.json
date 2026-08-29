@@ -3,12 +3,12 @@
     "Architecture": 34,
     "Codec": 227,
     "Core": 274,
-    "Grammar": 119,
+    "Grammar": 126,
     "IR": 102,
     "Lang": 169,
     "Lift": 37,
     "Schema": 458,
-    "Values": 371,
+    "Values": 372,
     "Vectors": 65
   },
   "axiomCensus": {
@@ -20,8 +20,8 @@
   "carrierCensus": {
     "Cas.Addr32": 137,
     "Cas.Binding": 40,
-    "Cas.Grammar.Tree": 27,
-    "Cas.Grammar.Ty": 39,
+    "Cas.Grammar.Tree": 26,
+    "Cas.Grammar.Ty": 38,
     "Cas.Lang.Handler": 17,
     "Cas.Lang.Prog": 71,
     "Cas.Lang.Refusal": 18,
@@ -34,8 +34,8 @@
     "Cas.Schema.El": 27,
     "Cas.Word": 77
   },
-  "declarations": 1432,
-  "documented": 697,
+  "declarations": 1441,
+  "documented": 702,
   "library": "Cas",
   "modules": [
     {
@@ -1960,8 +1960,8 @@
       ]
     },
     {
-      "declarations": 87,
-      "documented": 22,
+      "declarations": 96,
+      "documented": 27,
       "module": "Cas.Grammar.Manifest",
       "surface": [
         {
@@ -2155,8 +2155,8 @@
         {
           "documented": false,
           "kind": "def",
-          "name": "Cas.Grammar.Form.slots",
-          "signature": "Cas.Grammar.Form → List Cas.Grammar.Slot",
+          "name": "Cas.Grammar.Form.refs",
+          "signature": "Cas.Grammar.Form → Cas.Grammar.RefDiscipline",
           "touches": ["Grammar"]
         },
         {
@@ -2167,11 +2167,10 @@
           "touches": ["Grammar", "Values"]
         },
         {
-          "carriers": ["Cas.Grammar.Tree", "Cas.Grammar.Ty"],
           "documented": false,
           "kind": "def",
           "name": "Cas.Grammar.Form.witness",
-          "signature": "Cas.Grammar.Form → (t : Cas.Grammar.Ty) × Cas.Grammar.Tree t",
+          "signature": "Cas.Grammar.Form → Cas.Grammar.Witness",
           "touches": ["Grammar"]
         },
         {
@@ -2276,6 +2275,47 @@
           "name": "Cas.Grammar.Prose.plain",
           "signature": "Cas.Grammar.Prose → String",
           "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Grammar.RefDiscipline",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.RefDiscipline.ctorElim",
+          "signature": "{motive : Cas.Grammar.RefDiscipline → Sort u} → (ctorIdx : Nat) → (t : Cas.Grammar.RefDiscipline) → ctorIdx = t.ctorIdx → Cas.Grammar.RefDiscipline.ctorElimType ctorIdx → motive t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.RefDiscipline.ctorElimType",
+          "signature": "{motive : Cas.Grammar.RefDiscipline → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.RefDiscipline.kind",
+          "signature": "Cas.Grammar.RefDiscipline → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.RefDiscipline.slots",
+          "signature": "Cas.Grammar.RefDiscipline → List Cas.Grammar.Slot",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.RefDiscipline.toValue",
+          "signature": "Cas.Grammar.RefDiscipline → Cas.Json.Value",
+          "touches": ["Grammar", "Values"]
         },
         {
           "documented": true,
@@ -2457,6 +2497,26 @@
           "kind": "def",
           "name": "Cas.Grammar.Ty.sortName",
           "signature": "Cas.Grammar.Ty → String",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Grammar.Witness",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Witness.ctorElim",
+          "signature": "{motive : Cas.Grammar.Witness → Sort u} → (ctorIdx : Nat) → (t : Cas.Grammar.Witness) → ctorIdx = t.ctorIdx → Cas.Grammar.Witness.ctorElimType ctorIdx → motive t",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Grammar.Witness.ctorElimType",
+          "signature": "{motive : Cas.Grammar.Witness → Sort u} → Nat → Sort (max 1 u)",
           "touches": ["Grammar"]
         },
         {
@@ -11425,8 +11485,8 @@
   ],
   "totals": {
     "class": 3,
-    "def": 742,
-    "inductive": 37,
+    "def": 749,
+    "inductive": 39,
     "instance": 66,
     "structure": 42,
     "theorem": 542
