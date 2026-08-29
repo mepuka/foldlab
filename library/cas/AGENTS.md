@@ -11,7 +11,16 @@ ruling queue). Ratified designs:
 [REIFICATION-SUBSTRATE](../../.staging/operational-structure/REIFICATION-SUBSTRATE.md)
 (P0–P8, G0–G8). Greenlit lanes:
 [PLAIN-LANGUAGE](../../.staging/operational-structure/PLAIN-LANGUAGE.md),
-[LANGUAGE-POLICE](../../.staging/operational-structure/LANGUAGE-POLICE.md).
+[LANGUAGE-POLICE](../../.staging/operational-structure/LANGUAGE-POLICE.md),
+[BOOTSTRAP](../../.staging/operational-structure/BOOTSTRAP.md).
+Design records for this lane:
+[operational-structure/DESIGN](../../.staging/operational-structure/DESIGN.md)
+(selective/λ• theory) and the
+[schema-materialization set](../../.staging/schema-materialization/)
+(ADMISSION-MAP, DERIVING-DESIGN, JIT-SUBSTRATE-SURVEY,
+TOOLS-DX-REVIEW, SALVAGE-DOSSIER); the verbal register draft
+([REGISTER.md](../../.staging/verbal-register/REGISTER.md)) is
+DO-NOT-RATIFY-AS-WRITTEN per PLAIN-LANGUAGE.md.
 Check a spec's category and open asks in SPECS.md before building
 from it.
 

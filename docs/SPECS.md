@@ -25,6 +25,15 @@ deleted.
 | [.staging/product-sphere/VISION.md](../.staging/product-sphere/VISION.md) | product | The grilled product thesis: one task, dual output, prose/Linear/work-as-content pillars, critical path |
 | [docs/entity-store/RULINGS.md](entity-store/RULINGS.md) | entity store | The entity-store ruling series (prior era, still binding where cited) |
 | [docs/lab-core/TOOLS.md](lab-core/TOOLS.md) | tool trust | Tool register: admissions and trust statements |
+| [CHARTER.md](../CHARTER.md) | lab | Thesis, tower, principles P1–P4, roadmap |
+| [CONTEXT-MAP.md](../CONTEXT-MAP.md) | vocabulary | Which context owns which vocabulary |
+| [docs/effect-typescript-semantics/CLAIM-GATES.md](effect-typescript-semantics/CLAIM-GATES.md) | claims | Claim ladder G0–G6 |
+| [docs/effect-typescript-semantics/IMPLEMENTATION-PLAN.md](effect-typescript-semantics/IMPLEMENTATION-PLAN.md) | effect semantics | Lane implementation plan |
+| [docs/lab-core/KINDS.md](lab-core/KINDS.md) | artifact kinds | Artifact-kind ledger |
+| [docs/DEVELOPMENT-INVARIANTS.md](DEVELOPMENT-INVARIANTS.md) | formal core | Code invariants I-001–I-005 |
+| [library/machine/MACHINE-ALGEBRA.md](../library/machine/MACHINE-ALGEBRA.md) | machine algebra | The machine-algebra spec |
+| [library/effects/IMPLEMENTATION-PLAN.md](../library/effects/IMPLEMENTATION-PLAN.md) | effects host | Effects library implementation plan |
+| [experiments/lift-harness/docs/differential-testing-spec.md](../experiments/lift-harness/docs/differential-testing-spec.md) | lift harness | R1–R12 differential-testing rulings (landed 7d8dda24) |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 
@@ -42,7 +51,8 @@ deleted.
 | [.staging/libfree/dsl-proposal.md](../.staging/libfree/dsl-proposal.md) | libfree/DSL | "Proceed cautiously" 2026-08-29; D1 ruled Option A; D2–D10 await the second grill |
 | [.staging/treesitter/MATERIALIZER-LANE.md](../.staging/treesitter/MATERIALIZER-LANE.md) | grammar materializer | Union half unblocked (landed); recursion half (Suspend/Reference, GROW C6) stands |
 | [.staging/verbal-register/REGISTER.md](../.staging/verbal-register/REGISTER.md) | verbal register | DO-NOT-RATIFY-AS-WRITTEN (PLAIN-LANGUAGE.md verdict): wrong plane; regenerate over `Ast` with witnesses |
-| [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked |
+| [.staging/operational-structure/BOOTSTRAP.md](../.staging/operational-structure/BOOTSTRAP.md) | bootstrap semantics | Pre-grade design (2026-08-29): env ledger, AGENTS-as-projection gates, MCP setup story; 9 ruling asks; honest limit — "Lean owns the descriptions; mise owns the execution; the doctor for the Lean plane is not Lean" |
+| [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
