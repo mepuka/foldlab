@@ -100,8 +100,10 @@ Proved below:
 
 Owed (stated, not yet proved — named follow-ups, not weakened):
 
-- registry rows for wire tags 14/15 land with the registry agent; the
-  literals here mirror that reservation.
+- (discharged 2026-08-29) wire tags 14/15 were registry RESERVATIONS
+  mirrored here as literals. They are now the `Ty.step` and `Ty.cont`
+  sorts, with forms in `Cas.Grammar.manifestV0` witnessed by
+  `encodeLine` and `tableNode`; this module writes the sorts' own tags.
 
 This module is the APPLICATIVE-STRENGTH rung of the fragment tower.
 `Cas/Lang/Fragments.lean` states the whole ladder and the interop
@@ -113,42 +115,33 @@ namespace Cas.Lang
 
 open Cas.Grammar (schemeVersion)
 
-/-- Wire tag of a step (code-point) node — `REGISTRY.md` row 14
-(`step`, 0x0E, RESERVED). -/
-def stepWireTag : UInt8 := 14
+/-- Wire tag of a step (code-point) node — `REGISTRY.md` row 14,
+the `step` sort, 0x0E. An abbreviation for `Ty.step.wireTag`, kept so
+this module's theorem statements read in its own vocabulary. -/
+abbrev stepWireTag : UInt8 := Cas.Grammar.Ty.step.wireTag
 
-/-- Wire tag of a table (continuation) node — `REGISTRY.md` row 15
-(`cont`, 0x0F, RESERVED). -/
-def contWireTag : UInt8 := 15
+/-- Wire tag of a table (continuation) node — `REGISTRY.md` row 15,
+the `cont` sort, 0x0F. An abbreviation for `Ty.cont.wireTag`. -/
+abbrev contWireTag : UInt8 := Cas.Grammar.Ty.cont.wireTag
 
-/-! ### The reconciliation debt, made machine-visible
+/-! ### The reconciliation debt, DISCHARGED 2026-08-29
 
-Rows 14 and 15 are spelled here as bare `UInt8` defs, OUTSIDE
-`Cas.Grammar.Ty`'s registry, and deliberately so: growing `Ty` is F3's
-own slice (a measured five-file amplification — the inductive, the two
-tag functions, the round trip, and every exhaustive match downstream),
-so the rows stay reserved rather than ratified early. That leaves a
-debt, and the guards below are its machine-visible half.
+Rows 14 and 15 were spelled here as bare `UInt8` defs, OUTSIDE
+`Cas.Grammar.Ty`'s registry, while growing `Ty` was still F3's own
+unscheduled slice. Two guards held the reservation open: they pinned
+the literals against `REGISTRY.md`, and they pinned `Ty.ofTag`'s
+REFUSAL of both tags, so that the day the rows were ratified this
+file's build would go red and this would be the site that had to
+follow.
 
-The first two pin the literals against `REGISTRY.md`'s rows. The second
-two pin the RESERVATION itself: `Ty.ofTag` must still refuse both tags,
-so the day the grammar grill ratifies rows 14/15 into `Ty`, this file's
-build goes red and this is the site that has to follow. The debt cannot
-be paid silently in either direction. -/
-
--- `REGISTRY.md` row 14 — `step`, tag 0x0E.
-#guard stepWireTag == 14
-
--- `REGISTRY.md` row 15 — `cont`, tag 0x0F.
-#guard contWireTag == 15
-
--- Row 14 is RESERVED, not ratified: `Ty.ofTag` refuses it. This guard
--- goes red exactly when the row enters `Ty`, and the definitions here
--- must then be replaced by the sort.
-#guard (Cas.Grammar.Ty.ofTag stepWireTag).isNone
-
--- Row 15 is RESERVED, not ratified — same contract as row 14.
-#guard (Cas.Grammar.Ty.ofTag contWireTag).isNone
+That day was 2026-08-29 (G3 of the reification-substrate growth order).
+The rows are sorts: `Ty.step` and `Ty.cont`, with forms in
+`Cas.Grammar.manifestV0` witnessed by `encodeLine` and `tableNode`
+below. The refusal guards went red exactly as designed and are gone —
+a reservation cannot be pinned once it is spent. The names survive as
+abbreviations of the sorts' own tags, so nothing downstream churns and
+no literal is written twice: `Ty.wireTag` is now the only place either
+number appears. -/
 
 /-- A positional operand: a literal address, or the i-th earlier
 answer. No binders — the Reynolds defunctionalization keeps every code

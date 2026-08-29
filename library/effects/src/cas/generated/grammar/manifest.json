@@ -1,5 +1,5 @@
 {
-  "closing": ["Rows 1 and 11–13 were previously marked \"illustrative\"; ruling 2 ratifies all seven data sorts into core. Consumer extension (profiles, the GrammarSpec registration pattern) is a named follow-up, not retrofitted here; a new tag enters only through the grill with a real consumer.", "Rows 14 and 15 carry a reconciliation debt on purpose: they are used by Cas/Lang/Defun.lean but are NOT Ty constructors, because growing Ty is F3's own slice (a measured five-file amplification). The debt is machine-visible rather than prose-only — Defun.lean guards both literals against this table AND guards that Ty.ofTag still refuses both tags, so ratifying either row into Ty turns that build red and names the site that must follow."],
+  "closing": ["Rows 1 and 11–13 were previously marked \"illustrative\"; ruling 2 ratifies all seven data sorts into core. Consumer extension (profiles, the GrammarSpec registration pattern) is a named follow-up, not retrofitted here; a new tag enters only through the grill with a real consumer.", "Rows 14 and 15 carried a reconciliation debt on purpose: they were used by Cas/Lang/Defun.lean but were NOT Ty constructors, and Defun.lean guarded both literals against this table AND guarded that Ty.ofTag still REFUSED both tags. That debt is DISCHARGED: the rows were ratified 2026-08-29 and are the Ty.step and Ty.cont sorts. The refusal guards went red exactly as designed and were removed with the reservation they pinned; the two names survive in Defun.lean as abbreviations of the sorts' own tags, so neither number is now written twice.", "No row is RESERVED today, and no row is formless. The registry keeps both notions anyway — a row id that is a bare tag, a status that says so, and the guards that tie the two together — because the next reservation should cost a red build rather than a silent drift, and the machinery is cheaper kept than re-derived."],
   "envelope": {
     "fields": [
       {
@@ -345,21 +345,126 @@
     },
     {
       "exemplar": null,
-      "forms": [],
+      "forms": [
+        {
+          "discipline": {
+            "kind": "fixed"
+          },
+          "fields": [
+            {
+              "bytes": 1,
+              "encoding": "u8",
+              "meaning": "0x00 — this code point admits a node",
+              "minBytes": 1,
+              "name": "form"
+            },
+            {
+              "bytes": 1,
+              "encoding": "u8",
+              "meaning": "the scheme version of the node the line admits",
+              "minBytes": 1,
+              "name": "version"
+            },
+            {
+              "bytes": 1,
+              "encoding": "u8",
+              "meaning": "the wire kind tag of the node the line admits",
+              "minBytes": 1,
+              "name": "tag"
+            },
+            {
+              "encoding": "framed-u32",
+              "meaning": "the admitted node's payload bytes, self-delimiting",
+              "minBytes": 4,
+              "name": "payload"
+            },
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "how many typed operand records follow",
+              "minBytes": 4,
+              "name": "operandCount"
+            },
+            {
+              "encoding": "opaque",
+              "meaning": "operandCount records, each an expected-tag byte then an operand (0x00 and a 32-byte address, or 0x01 and a 32-bit answer index)",
+              "minBytes": 0,
+              "name": "operands"
+            }
+          ],
+          "meaning": "A code point that admits a node whose references name operands.",
+          "name": "put",
+          "payloadMinBytes": 11,
+          "refs": []
+        },
+        {
+          "discipline": {
+            "kind": "fixed"
+          },
+          "fields": [
+            {
+              "bytes": 1,
+              "encoding": "u8",
+              "meaning": "0x01 — this code point loads an operand",
+              "minBytes": 1,
+              "name": "form"
+            },
+            {
+              "bytes": 1,
+              "encoding": "u8",
+              "meaning": "0x00 a literal address, 0x01 an earlier answer",
+              "minBytes": 1,
+              "name": "operandKind"
+            },
+            {
+              "encoding": "opaque",
+              "meaning": "the operand's bytes: 32 address bytes under 0x00, a 32-bit big-endian index under 0x01",
+              "minBytes": 0,
+              "name": "operand"
+            }
+          ],
+          "meaning": "A code point that loads an operand.",
+          "name": "load",
+          "payloadMinBytes": 2,
+          "refs": []
+        }
+      ],
       "name": "step",
-      "notes": "F3 defunctionalized code point. Spelled as the bare def Cas.Lang.stepWireTag, outside Ty, and pinned against this row by #guard in Cas/Lang/Defun.lean.",
-      "reserved": true,
-      "status": "RESERVED",
+      "notes": "One code point of a defunctionalized program (F3). Ratified 2026-08-29 out of a reservation this registry carried since the defunctionalization landed: the tag was spelled as the bare def Cas.Lang.stepWireTag outside Ty, pinned in both directions by #guard, until Ty.step made the pin unnecessary — the name survives as an abbreviation of the sort's own tag. A step node carries NO references: its operands name earlier ANSWERS, which have no address until the table runs, so they live in the payload. The two forms are told apart by the leading discriminator byte, never by the tag. Cas.Lang.decodeLine recovers the code point from the node, and that round trip is what makes this layout a theorem.",
+      "reserved": false,
+      "status": "RATIFIED core",
       "tag": 14,
       "tagHex": "0x0E"
     },
     {
       "exemplar": null,
-      "forms": [],
+      "forms": [
+        {
+          "discipline": {
+            "kind": "free",
+            "meaning": "One edge per code point, in program order, any number of them — a program's length is not a slot list. Every edge expects the step tag, which is stronger than the free law this discipline states; what the law itself forbids is a table edge at an unratified tag.",
+            "name": "line"
+          },
+          "fields": [
+            {
+              "bytes": 4,
+              "encoding": "be-u32",
+              "meaning": "how many code points the table holds",
+              "minBytes": 4,
+              "name": "lineCount"
+            }
+          ],
+          "meaning": "A defunctionalized program: the line count, and one edge per code point in order.",
+          "name": "cont",
+          "payloadBytes": 4,
+          "payloadMinBytes": 4,
+          "refs": []
+        }
+      ],
       "name": "cont",
-      "notes": "F3 continuation. Spelled as the bare def Cas.Lang.contWireTag, outside Ty, and pinned against this row by #guard in Cas/Lang/Defun.lean.",
-      "reserved": true,
-      "status": "RESERVED",
+      "notes": "A whole defunctionalized program as one node (F3) — the sort that makes a PROGRAM CONTENT. Ratified 2026-08-29 out of the same reservation as row 14, and spelled until then as Cas.Lang.contWireTag. The table node names its lines by address, so Cas.Lang.encodeProg lays a program out children-first: every step node, then the cont node referencing them all. Cas.Lang.decodeProg_encodeProg is the landing that earned the row: a table stored as content and recovered from that content is the same table, so it runs identically and denotes an observationally equal program. That is why a program is a sort and not a convention over the value plane.",
+      "reserved": false,
+      "status": "RATIFIED core",
       "tag": 15,
       "tagHex": "0x0F"
     },

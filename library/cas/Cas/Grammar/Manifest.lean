@@ -23,10 +23,13 @@ it.
 A witness has two arms, because a sort can be real on the wire without
 having a `Tree` constructor: `.tree` is a grammar term, elaborated by
 `Tree.node`; `.node` is the node itself, for a sort whose only writers
-sit at the node layer. `context` is the one such sort today — a
-ratified tag with real consumers (`CasExamples.AgentStep.contextNode`)
-and no constructor — so it states its form as a literal node rather
-than through a fake constructor.
+sit at the node layer. `context`, `step`, and `cont` are those sorts —
+ratified tags with real writers and no constructor — so each states its
+forms as literal nodes rather than through a fake constructor. The
+program sorts' writers are `Cas/Lang/Defun.lean`'s `encodeLine` and
+`tableNode`, which this module may not import (layer 3 sits above layer
+2); the literal nodes here are that layout spelled at layer 2, and
+`decodeProg`'s round trip is what holds them to it.
 
 A form's references are a DISCIPLINE, not always a list. `.fixed` names
 the slots exactly — the discipline of every grammar constructor.
@@ -35,11 +38,12 @@ through `Ty.ofTag`, so a free node may not carry an unratified tag.
 `context` is the free one, because a context is whatever was folded,
 and a slot list would be a lie in the shape of a table.
 
-The only rows that carry no form are the RESERVED ones: 14/15
-(`step`/`cont`) are code points spelled outside `Ty` by
-`Cas/Lang/Defun.lean`. That exception is pinned, so ratifying a
-reserved tag into `Ty` turns this file red and names the site that must
-follow.
+EVERY row now carries a form. Rows 14/15 were the last exception —
+code points spelled outside `Ty` while their sorts were only reserved —
+and they were ratified 2026-08-29. The `.reserved` row id and status
+arms remain, unpopulated, for the next reservation: their guards below
+are what makes the exception cost a red build rather than a silent
+drift, and they are cheaper kept than re-derived.
 -/
 
 namespace Cas.Grammar
@@ -143,6 +147,8 @@ def Ty.sortName : Ty → String
   | .file => "file"
   | .entry => "entry"
   | .context => "context"
+  | .step => "step"
+  | .cont => "cont"
   | .schema => "schema"
   | .git => "git"
 
@@ -333,6 +339,48 @@ value-tag edge stands for the list. -/
 private def wContext : Node :=
   ⟨schemeVersion, Ty.context.wireTag, [], [⟨Ty.value.wireTag, noAddr⟩]⟩
 
+/-! ### The program witnesses
+
+`Cas/Lang/Defun.lean` writes the `step` and `cont` sorts and this
+module may not import it — layer 3 sits above layer 2 — so the three
+witnesses below spell that layout at layer 2, through the same byte
+primitives the encoder uses. `tools/EmitGrammar.lean` sits above both
+and is where the two are pinned against each other; the round trip
+(`decodeProg_encodeProg`) is what makes the layout a theorem rather
+than a convention. -/
+
+/-- A `put` code point as a node — `Cas.Lang.encodeLine` of a
+`PLine.put`. The body leads with the `0x00` put discriminator, then the
+version and tag of the node the line admits, its framed payload, the
+operand-reference count, and one record per operand. This witness
+admits a three-byte `value` node whose single reference names the
+zeroth earlier answer: `0x00 ‖ 0 ‖ 1 ‖ frame [7,7,7] ‖ nat32 1 ‖ (1 ‖
+0x01 ‖ nat32 0)`. The node's own references are EMPTY, and that is the
+sort's whole point: a line's operands name answers, which have no
+address until the table runs. -/
+private def wStepPut : Node :=
+  ⟨schemeVersion, Ty.step.wireTag,
+    0 :: schemeVersion :: Ty.value.wireTag ::
+      (Cas.frame [7, 7, 7] ++
+        (Cas.nat32 1 ++ (Ty.value.wireTag :: 1 :: Cas.nat32 0))),
+    []⟩
+
+/-- A `load` code point as a node — `Cas.Lang.encodeLine` of a
+`PLine.load`. The body leads with the `0x01` load discriminator, then
+one operand: a kind byte (`0x00` a literal 32-byte address, `0x01` an
+earlier answer) and its bytes. This witness loads the zeroth earlier
+answer: `0x01 ‖ 0x01 ‖ nat32 0`. -/
+private def wStepLoad : Node :=
+  ⟨schemeVersion, Ty.step.wireTag, 1 :: 1 :: Cas.nat32 0, []⟩
+
+/-- A table as a node — `Cas.Lang.tableNode`. The payload is the line
+count and nothing else; the lines themselves are the edges, one per
+code point in program order, each expecting the `step` tag. One edge
+stands for the table. -/
+private def wCont : Node :=
+  ⟨schemeVersion, Ty.cont.wireTag, Cas.nat32 1,
+    [⟨Ty.step.wireTag, noAddr⟩]⟩
+
 def envelopeV0 : Envelope where
   fields := [
     { name := "version", enc := .u8,
@@ -511,20 +559,73 @@ this sort — so the row's witness is the NODE itself, the shape ",
 empty payload, one typed edge per folded item, the edge tags read off \
 whatever was loaded. A ", .code "Tree.context", .text " constructor \
 remains its own slice; the form does not wait on it."] },
-    { id := .reserved 14, name := "step", status := .reserved
+    { id := .sort .step, name := "step", status := .core
       exemplar := none
-      forms := []
-      notes := [.text "F3 defunctionalized code point. Spelled as the \
-bare def ", .code "Cas.Lang.stepWireTag", .text ", outside ", .code "Ty",
-        .text ", and pinned against this row by ", .code "#guard",
-        .text " in ", .code "Cas/Lang/Defun.lean", .text "."] },
-    { id := .reserved 15, name := "cont", status := .reserved
+      forms := [
+        { name := "put", witness := .node wStepPut
+          fields := [
+            { name := "form", enc := .u8,
+              meaning := "0x00 — this code point admits a node" },
+            { name := "version", enc := .u8,
+              meaning := "the scheme version of the node the line admits" },
+            { name := "tag", enc := .u8,
+              meaning := "the wire kind tag of the node the line admits" },
+            { name := "payload", enc := .framed,
+              meaning := "the admitted node's payload bytes, self-delimiting" },
+            { name := "operandCount", enc := .beU32,
+              meaning := "how many typed operand records follow" },
+            { name := "operands", enc := .opaque,
+              meaning := "operandCount records, each an expected-tag byte then an operand (0x00 and a 32-byte address, or 0x01 and a 32-bit answer index)" }]
+          refs := .fixed []
+          meaning := "A code point that admits a node whose references name operands." },
+        { name := "load", witness := .node wStepLoad
+          fields := [
+            { name := "form", enc := .u8,
+              meaning := "0x01 — this code point loads an operand" },
+            { name := "operandKind", enc := .u8,
+              meaning := "0x00 a literal address, 0x01 an earlier answer" },
+            { name := "operand", enc := .opaque,
+              meaning := "the operand's bytes: 32 address bytes under 0x00, a 32-bit big-endian index under 0x01" }]
+          refs := .fixed []
+          meaning := "A code point that loads an operand." }]
+      notes := [.text "One code point of a defunctionalized program \
+(F3). Ratified 2026-08-29 out of a reservation this registry carried \
+since the defunctionalization landed: the tag was spelled as the bare \
+def ", .code "Cas.Lang.stepWireTag", .text " outside ", .code "Ty",
+        .text ", pinned in both directions by ", .code "#guard",
+        .text ", until ", .code "Ty.step", .text " made the pin \
+unnecessary — the name survives as an abbreviation of the sort's own \
+tag. A step node carries NO references: its operands name earlier \
+ANSWERS, which have no address until the table runs, so they live in \
+the payload. The two forms are told apart by the leading discriminator \
+byte, never by the tag. ", .code "Cas.Lang.decodeLine",
+        .text " recovers the code point from the node, and that round \
+trip is what makes this layout a theorem."] },
+    { id := .sort .cont, name := "cont", status := .core
       exemplar := none
-      forms := []
-      notes := [.text "F3 continuation. Spelled as the bare def ",
-        .code "Cas.Lang.contWireTag", .text ", outside ", .code "Ty",
-        .text ", and pinned against this row by ", .code "#guard",
-        .text " in ", .code "Cas/Lang/Defun.lean", .text "."] },
+      forms := [
+        { name := "cont", witness := .node wCont
+          fields := [
+            { name := "lineCount", enc := .beU32,
+              meaning := "how many code points the table holds" }]
+          refs := .free "line"
+            "One edge per code point, in program order, any number of \
+them — a program's length is not a slot list. Every edge expects the \
+step tag, which is stronger than the free law this discipline states; \
+what the law itself forbids is a table edge at an unratified tag."
+          meaning := "A defunctionalized program: the line count, and one edge per code point in order." }]
+      notes := [.text "A whole defunctionalized program as one node \
+(F3) — the sort that makes a PROGRAM CONTENT. Ratified 2026-08-29 out \
+of the same reservation as row 14, and spelled until then as ",
+        .code "Cas.Lang.contWireTag", .text ". The table node names its \
+lines by address, so ", .code "Cas.Lang.encodeProg",
+        .text " lays a program out children-first: every step node, \
+then the cont node referencing them all. ",
+        .code "Cas.Lang.decodeProg_encodeProg",
+        .text " is the landing that earned the row: a table stored as \
+content and recovered from that content is the same table, so it runs \
+identically and denotes an observationally equal program. That is why \
+a program is a sort and not a convention over the value plane."] },
     { id := .sort .git, name := "git", status := .core
       exemplar := some "git-pin-commit"
       forms := [
@@ -577,15 +678,22 @@ ruling 2 ratifies all seven data sorts into core. Consumer extension \
 (profiles, the GrammarSpec registration pattern) is a named follow-up, \
 not retrofitted here; a new tag enters only through the grill with a \
 real consumer."],
-    [.text "Rows 14 and 15 carry a reconciliation debt on purpose: they \
-are used by ", .code "Cas/Lang/Defun.lean", .text " but are NOT ",
-     .code "Ty", .text " constructors, because growing ", .code "Ty",
-     .text " is F3's own slice (a measured five-file amplification). The \
-debt is machine-visible rather than prose-only — ", .code "Defun.lean",
-     .text " guards both literals against this table AND guards that ",
-     .code "Ty.ofTag", .text " still refuses both tags, so ratifying \
-either row into ", .code "Ty", .text " turns that build red and names \
-the site that must follow."]
+    [.text "Rows 14 and 15 carried a reconciliation debt on purpose: \
+they were used by ", .code "Cas/Lang/Defun.lean", .text " but were NOT ",
+     .code "Ty", .text " constructors, and ", .code "Defun.lean",
+     .text " guarded both literals against this table AND guarded that ",
+     .code "Ty.ofTag", .text " still REFUSED both tags. That debt is \
+DISCHARGED: the rows were ratified 2026-08-29 and are the ",
+     .code "Ty.step", .text " and ", .code "Ty.cont",
+     .text " sorts. The refusal guards went red exactly as designed and \
+were removed with the reservation they pinned; the two names survive in ",
+     .code "Defun.lean", .text " as abbreviations of the sorts' own \
+tags, so neither number is now written twice."],
+    [.text "No row is RESERVED today, and no row is formless. The \
+registry keeps both notions anyway — a row id that is a bare tag, a \
+status that says so, and the guards that tie the two together — \
+because the next reservation should cost a red build rather than a \
+silent drift, and the machinery is cheaper kept than re-derived."]
   ]
 
 /-! ## The completeness guards
@@ -616,8 +724,9 @@ theorem manifestV0_rows_complete (t : Ty) :
 #guard decide ((manifestV0.rows.map Row.name).Nodup)
 
 -- Rows agree with `ofTag`: a sort row round-trips its tag, and a
--- reserved row is exactly a tag `ofTag` still refuses (the Defun
--- guards' other half, restated where the table lives).
+-- reserved row is exactly a tag `ofTag` still refuses. The reserved
+-- half is unpopulated since 14/15 were ratified; it is what a future
+-- reservation is held to, and what turns its ratification red.
 #guard manifestV0.rows.all fun r =>
   match r.id with
   | .sort t => decide (Ty.ofTag r.id.wireTag = some t)
@@ -627,10 +736,11 @@ theorem manifestV0_rows_complete (t : Ty) :
 #guard manifestV0.rows.all fun r =>
   (match r.id with | .reserved _ => true | .sort _ => false) == r.status.isReserved
 
--- A row carries no form exactly when it is RESERVED. That is now the
--- only exception: every sort of the grammar states a form, whether the
--- grammar has a constructor for it or not. Ratifying 14/15 into `Ty`
--- turns this red and names the site that must follow.
+-- A row carries no form exactly when it is RESERVED. No row is
+-- reserved today (14/15 were the last, ratified 2026-08-29), so this
+-- reads: every row states a form, whether the grammar has a
+-- constructor for it or not. The guard is kept for the next
+-- reservation, which it holds to the same bargain.
 #guard manifestV0.rows.all fun r => r.forms.isEmpty == r.status.isReserved
 
 -- Elaboration stamps the row's tag. This is what ties a form to its
@@ -840,11 +950,13 @@ def Manifest.toMarkdown (m : Manifest) : String :=
     [.h2 "Payload layout and reference discipline",
      .p [.text "One section per node form, read off a witness term — a \
 grammar term of ", .code "Cas/Grammar/Tree.lean", .text ", or the node \
-itself for a sort the grammar has no constructor for. Rows with no \
-form: ",
-         .text (if formless.isEmpty then "none"
-           else String.intercalate ", " (formless.map Row.name)),
-         .text " — see their notes above."]] ++
+itself for a sort the grammar has no constructor for. ",
+         .text (if formless.isEmpty then
+             "Every row states a form."
+           else
+             "Rows with no form: " ++
+             String.intercalate ", " (formless.map Row.name) ++
+             " — see their notes above.")]] ++
     (m.rows.flatMap fun r => r.forms.flatMap (formBlocks r))
 
 /-- The rendered projections — the bytes of the generated artifacts. -/
