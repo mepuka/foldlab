@@ -708,6 +708,75 @@
     },
     {
       "denotes": false,
+      "name": "tuple-pair",
+      "note": "a two-element tuple — admitted as content, El is Empty (corpus restriction 7), and position is identity",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isOptional\":false,\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}],\"rest\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "tuple-pair-swapped",
+      "note": "the same two element types in the other order — a DIFFERENT code at a different address",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "tuple-optional-element",
+      "note": "a trailing optional element — the optionality bit is carried, never collapsed; whether an optional element may sit anywhere but last is a DENOTATION question, not an admission one",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isOptional\":true,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "tuple-with-rest",
+      "note": "Schema.TupleWithRest: one element and a rest type — the rest is an Option in the carrier, so at most one is structural",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "tuple-nested",
+      "note": "a tuple inside an array inside a tuple — nesting like any other code",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}]}},{\"isOptional\":false,\"type\":{\"_tag\":\"Null\",\"checks\":[]}}],\"rest\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "array-plain-still-array",
+      "note": "the plain array, unchanged by the Arrays completion: {elements:[], rest:[t]} has NO tuple spelling, because Ast.tuple takes a first element — which is what keeps the revision-1 projection injective with no second collapse",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"String\",\"checks\":[]}]}}}",
+      "values": [
+        {
+          "label": "empty",
+          "value": [],
+          "verdict": "accept"
+        },
+        {
+          "label": "strings",
+          "value": ["a", "b"],
+          "verdict": "accept"
+        },
+        {
+          "label": "wrong-item",
+          "value": [1],
+          "verdict": "refuse"
+        },
+        {
+          "label": "not-an-array",
+          "value": "a",
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
       "name": "enum-string",
       "note": "a string enum spelled Up before Down — admitted as content, El is Empty (corpus restriction 6), and the order is Object.keys order, which is source order",
       "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"Up\",{\"type\":\"string\",\"value\":\"Up\"}],[\"Down\",{\"type\":\"string\",\"value\":\"Down\"}]]}}}",
@@ -1052,9 +1121,27 @@
     },
     {
       "denotes": false,
-      "name": "refuse-tuple-elements",
-      "note": "an Arrays node with positional elements — the admitted subset carries the plain array only (tuples are Slice C2)",
-      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}}}",
+      "name": "refuse-tuple-empty",
+      "note": "the EMPTY tuple, {elements:[], rest:[]} — Schema.Tuple([]) has no spelling in the carrier and had none before the Arrays completion either, so nothing is retired by refusing it",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-tuple-rest-two",
+      "note": "an Arrays node with TWO rest types — the trailing-rest semantics the admission map defers; the carrier holds an Option, so the refusal is structural rather than a clause that could drift",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]},{\"_tag\":\"Boolean\",\"checks\":[]}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-tuple-element-annotated",
+      "note": "an element carrying an annotation bag — annotations are GROW(C-ann), on elements as everywhere else",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"annotations\":{\"title\":\"first\"},\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}}}",
       "refusal": "notASchema",
       "values": [],
       "verdict": "refuse"
@@ -1088,13 +1175,13 @@
     }
   ],
   "counts": {
-    "acceptValues": 32,
-    "admittedCodes": 32,
-    "codes": 59,
-    "refuseValues": 53,
-    "refusedCodes": 27,
-    "values": 85
+    "acceptValues": 34,
+    "admittedCodes": 38,
+    "codes": 67,
+    "refuseValues": 55,
+    "refusedCodes": 29,
+    "values": 89
   },
-  "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only"],
+  "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],
   "revision": 1
 }

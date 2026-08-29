@@ -123,6 +123,30 @@ export const enumPin = Schema.Struct({
   mixed: Schema.optionalKey(Schema.Enum({ Name: "name", Zero: 0 })),
 })
 
+/** Lean `SchemasMain.tuplePin`, hand-mirrored in Effect Schema.
+ *
+ * Every shape the grown `Arrays` node reaches, beside the plain array
+ * whose bytes the Arrays completion must NOT move. `plain` is there for
+ * exactly that: `Schema.Array(t)` is `{elements: [], rest: [t]}`, and the
+ * Lean carrier cannot spell that as a tuple, so the projection gains no
+ * second collapse and this row's bytes are unchanged by the increment.
+ *
+ * POSITION IS IDENTITY: `pair` spells String before Int on both sides on
+ * purpose. `withOptional` carries the optionality bit on a TRAILING
+ * element — whether an optional element may sit anywhere else is a
+ * denotation question, which the Lean side parks as `tupleEl`, not an
+ * admission one. */
+export const tuplePin = Schema.Struct({
+  nested: Schema.optionalKey(Schema.Tuple([
+    Schema.Array(Schema.Tuple([Schema.String])),
+    Schema.Null,
+  ])),
+  pair: Schema.Tuple([Schema.String, Schema.Int]),
+  plain: Schema.Array(Schema.String),
+  withOptional: Schema.Tuple([Schema.Int, Schema.optionalKey(Schema.String)]),
+  withRest: Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Int]),
+})
+
 /** The registry, name-for-name with `library/cas/tools/Schemas.lean`.
  *
  * `annotation` mirrors Lean `Cas.Schema.Annotation` through the library's
@@ -139,4 +163,5 @@ export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["union-pin", unionPin],
   ["tagged-pin", taggedPin],
   ["enum-pin", enumPin],
+  ["tuple-pin", tuplePin],
 ] as const

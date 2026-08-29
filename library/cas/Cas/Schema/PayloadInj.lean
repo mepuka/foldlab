@@ -205,6 +205,42 @@ theorem deNumNorm_numNorm_representation :
     simp only [Json.Value.numNorm, numNormFields, deNumNorm,
       deNumNormFields, reint, deNumNorm_numNorm_enumMembers ms]
     rfl
+  | .tuple e es r, ⟨he, hes, hr⟩ => by
+    show (Json.Value.obj _) = _
+    simp only [Json.Value.numNorm, numNormFields, numNormItems, deNumNorm,
+      deNumNormFields, deNumNormItems, reint,
+      deNumNorm_numNorm_element e he, deNumNorm_numNorm_elements es hes,
+      deNumNorm_numNorm_rest r hr]
+    rfl
+
+theorem deNumNorm_numNorm_element :
+    ∀ (e : Bool × Ast), WFElement e →
+      deNumNorm (Json.Value.numNorm (elementToRepresentationJson e))
+        = elementToRepresentationJson e
+  | (o, a), ha => by
+    show (Json.Value.obj _) = _
+    simp only [elementToRepresentationJson, Json.Value.numNorm, numNormFields,
+      deNumNorm, deNumNormFields, reint, ite_self,
+      deNumNorm_numNorm_representation a ha]
+    rfl
+
+theorem deNumNorm_numNorm_elements :
+    ∀ (es : List (Bool × Ast)), WFElements es →
+      deNumNormItems (numNormItems (elementsToRepresentationJson es))
+        = elementsToRepresentationJson es
+  | [], _ => rfl
+  | e :: es, ⟨he, hes⟩ => by
+    simp only [elementsToRepresentationJson, numNormItems, deNumNormItems,
+      deNumNorm_numNorm_element e he, deNumNorm_numNorm_elements es hes]
+
+theorem deNumNorm_numNorm_rest :
+    ∀ (r : Option Ast), WFRest r →
+      deNumNormItems (numNormItems (restToRepresentationJson r))
+        = restToRepresentationJson r
+  | none, _ => rfl
+  | some a, ha => by
+    simp only [restToRepresentationJson, numNormItems, deNumNormItems,
+      deNumNorm_numNorm_representation a ha]
 
 theorem deNumNorm_numNorm_fields :
     ∀ (fs : List (String × Bool × Ast)), WFFields fs →

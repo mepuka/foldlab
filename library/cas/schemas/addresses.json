@@ -33,6 +33,10 @@
     {
       "address": "845c3cfccb9fe60e6bdc4976e3e7e111ec57f2f88ee3bbfb47a7ae447490f15e",
       "name": "enum-pin"
+    },
+    {
+      "address": "5f281a876efdf63c43a61c07a1422bf4311ed68efb65806a160db7bc80c5e942",
+      "name": "tuple-pin"
     }
   ]
 }

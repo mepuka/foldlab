@@ -155,4 +155,30 @@ Named increments, in order:
   rather than of the value — the general union's pathology exactly, and
   it takes the same staged answer (`Cas/Schema/El.lean`, obligation
   `enumEl`).
+- **Arrays completion — tuples** — LANDED (increment C2): `Ast.tuple` is
+  Effect's `Arrays` node in its POSITIONAL form — a first element, the
+  rest of the elements, and an optional rest type — each element
+  carrying its own optionality bit, exactly the persisted shape.
+  Two calls the carrier makes STRUCTURAL rather than clausal, and each
+  is why a law did not have to move. Growing `.arr` would have been an
+  ARITY change to a landed code, so the increment is ADDITIVE: `.arr`
+  keeps its meaning and its bytes. And the tuple's element list is
+  nonempty BY CONSTRUCTION, because `{elements:[], rest:[t]}` is already
+  `.arr t`'s representation — a tuple able to spell it would be a SECOND
+  two-to-one map from codes to representations, and
+  `toRepresentationJson_inj`, which holds unconditionally up to the one
+  literal-null collapse, would become false as stated
+  (`Ast.repNorm_tuple` says what the normal form does instead: element
+  types positionwise, the rest type, and nothing else). The rest is an
+  `Option`, so "at most one rest type" is structural too, and the
+  trailing-rest semantics the admission map defers are refused by shape.
+  What stays out: `Schema.Tuple([])`, the empty tuple, has no spelling —
+  it had none before this increment either, so nothing is retired.
+  Named obligation, deliberately parked: the tuple's DENOTATION. `El` of
+  a `.tuple` is `Empty`, because an absent optional element SHORTENS a
+  JSON array rather than leaving a hole in it, so a non-trailing optional
+  has no positional encoding at all and the round trip would be false on
+  a code `WF` admits. That is the general union's situation exactly and
+  takes the ratified answer — a boolean guard in `El`, not a new clause
+  in `WF` (`Cas/Schema/El.lean`, obligation `tupleEl`).
 -/

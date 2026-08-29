@@ -21,9 +21,10 @@ deriving handler does not reach, the sidecar annotation kind
 modes, a nested union, and members a sort would reorder, so
 order-is-identity is held by the bytes — the DERIVED tagged union,
 the generator's own pin for `deriving Described` over constructor
-alternatives, and the enum pin — both member value rows, orders a sort
-would reorder, and the alias TypeScript admits. The TypeScript side
-asserts
+alternatives, the enum pin — both member value rows, orders a sort
+would reorder, and the alias TypeScript admits — and the tuple pin,
+which carries every shape the grown `Arrays` node reaches beside the
+plain array whose bytes must not move. The TypeScript side asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -97,6 +98,30 @@ def enumPin : Ast := .struct [
     ("Zero", .int ⟨0, by decide⟩)])
 ]
 
+/-- The tuple spellings, hand-composed (increment C2, the Arrays
+completion): every shape the grown `Arrays` node reaches, beside the
+plain array whose bytes this increment must NOT move.
+
+- `plain` — `Ast.arr`, unchanged: `{elements:[], rest:[t]}`. It is in
+  the fixture so that the one collision this increment could have made
+  is held by the bytes — a tuple cannot spell this, because `Ast.tuple`
+  takes a first element;
+- `pair` — a two-element tuple, positions in a written order a sort
+  would reorder;
+- `withOptional` — a trailing optional element, so the optionality bit
+  rides the wire;
+- `withRest` — `Schema.TupleWithRest`: one element and a rest type;
+- `nested` — a tuple inside an array inside a tuple, on an optional
+  field, so the code rides both key positions. -/
+def tuplePin : Ast := .struct [
+  ("nested", true,
+    .tuple (false, .arr (.tuple (false, .str) [] none)) [(false, .null)] none),
+  ("pair", false, .tuple (false, .str) [(false, .int)] none),
+  ("plain", false, .arr .str),
+  ("withOptional", false, .tuple (false, .int) [(true, .str)] none),
+  ("withRest", false, .tuple (false, .str) [] (some .int))
+]
+
 /-- The DERIVED tagged union (increment C1, stage 2), authored through
 `cas_union`: the `Described` instance is what the deriving handler
 generates, so these bytes are the GENERATOR's output and not a
@@ -130,7 +155,8 @@ def registry : List (String × Ast) := [
   ("annotation", Annotation.schemaCode),
   ("union-pin", unionPin),
   ("tagged-pin", TaggedPin.schemaCode),
-  ("enum-pin", enumPin)
+  ("enum-pin", enumPin),
+  ("tuple-pin", tuplePin)
 ]
 
 /-! ## Emission -/

@@ -29,6 +29,23 @@ def astBeq : Ast → Ast → Bool
   -- identity, so two enums over the same pairs in different orders are
   -- different codes and must not share a name.
   | .enum ms, .enum ns => ms == ns
+  -- Elements compare POSITIONWISE, optionality bit included: a tuple's
+  -- positions are its identity.
+  | .tuple e es r, .tuple f fs s =>
+    elementBeq e f && elementsBeq es fs && restBeq r s
+  | _, _ => false
+
+def elementBeq : Bool × Ast → Bool × Ast → Bool
+  | (o, a), (p, b) => o == p && astBeq a b
+
+def elementsBeq : List (Bool × Ast) → List (Bool × Ast) → Bool
+  | [], [] => true
+  | e :: es, f :: fs => elementBeq e f && elementsBeq es fs
+  | _, _ => false
+
+def restBeq : Option Ast → Option Ast → Bool
+  | none, none => true
+  | some a, some b => astBeq a b
   | _, _ => false
 
 def fieldsBeq :
@@ -124,6 +141,33 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
     -- the literal; see the note below the emitter for why.
     | .enum members =>
       .call (schema "Enum") [.object (enumEntries members)]
+    -- `Schema.Tuple([…])`, and `Schema.TupleWithRest(Schema.Tuple([…]),
+    -- [rest])` when there is a rest type — Effect's own printer's two
+    -- shapes verbatim (`toCodeDocument.ts:486-504`), including
+    -- `Schema.optionalKey` on an optional element. The third shape that
+    -- printer has, `Schema.Array(item)` for the elementless case, is
+    -- `.arr`'s lowering and stays there: the carrier cannot spell an
+    -- elementless tuple, so this arm never has to choose.
+    | .tuple first more rest =>
+      let elements :=
+        .arr (constructorElement env first :: constructorElements env more)
+      match rest with
+      | none => .call (schema "Tuple") [elements]
+      | some item =>
+        .call (schema "TupleWithRest") [
+          .call (schema "Tuple") [elements],
+          .arr [constructorGo env false item]]
+
+private def constructorElement (env : List (String × Ast)) :
+    Bool × Ast → Expr
+  | (opt, code) =>
+    if opt then .call (schema "optionalKey") [constructorGo env false code]
+    else constructorGo env false code
+
+private def constructorElements (env : List (String × Ast)) :
+    List (Bool × Ast) → List Expr
+  | [] => []
+  | e :: es => constructorElement env e :: constructorElements env es
 
 private def constructorFields (env : List (String × Ast)) :
     List (String × Bool × Ast) → List (String × Expr)
@@ -229,5 +273,33 @@ literal does not declare). -/
 -- members emits different text, because it is a different code.
 #guard renderedConstructor (.enum [("Down", .str "Down"), ("Up", .str "Up")]) ==
   "Schema.Enum({ \"Down\": \"Down\", \"Up\": \"Up\" })"
+
+/-! ## The tuple lowering, pinned
+
+Effect's printer's own two shapes (`toCodeDocument.ts:486-504`), and its
+`Schema.optionalKey` on an optional element. Its third shape,
+`Schema.Array(item)` for `{elements:[], rest:[t]}`, is `.arr`'s lowering
+and stays there — the carrier cannot spell an elementless tuple, so the
+choice never arises on this arm. -/
+
+#guard renderedConstructor (.tuple (false, .str) [(false, .int)] none) ==
+  "Schema.Tuple([Schema.String, Schema.Int])"
+
+#guard renderedConstructor (.tuple (false, .str) [(true, .int)] none) ==
+  "Schema.Tuple([Schema.String, Schema.optionalKey(Schema.Int)])"
+
+#guard renderedConstructor (.tuple (false, .str) [] (some .bool)) ==
+  "Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Boolean])"
+
+-- Position is identity out to the emitted source: swapping two elements
+-- emits different text, because it is a different code.
+#guard renderedConstructor (.tuple (false, .int) [(false, .str)] none) ==
+  "Schema.Tuple([Schema.Int, Schema.String])"
+
+-- A tuple nests like any other code, and a plain array is still a plain
+-- array beside it.
+#guard renderedConstructor
+    (.arr (.tuple (false, .str) [(false, .arr .int)] none)) ==
+  "Schema.Array(Schema.Tuple([Schema.String, Schema.Array(Schema.Int)]))"
 
 end Cas.Backend

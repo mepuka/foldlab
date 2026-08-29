@@ -40,6 +40,11 @@
       "byteLength": 785,
       "file": "enum-pin.json",
       "name": "enum-pin"
+    },
+    {
+      "byteLength": 1971,
+      "file": "tuple-pin.json",
+      "name": "tuple-pin"
     }
   ]
 }
