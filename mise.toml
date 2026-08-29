@@ -12,6 +12,7 @@ run = [
   "mise run gen:backend-wire",
   "mise run gen:backend-programs",
   "mise run gen:backend-mcp",
+  "mise run gen:backend-materialize",
   "mise run gen:lift-manifest",
   "mise run gen:cas-surface",
   "mise run gen:ledger",
@@ -84,13 +85,18 @@ description = "Regenerate the effect-lift rule manifest (JSON + Markdown project
 dir = "{{config_root}}/library/cas"
 run = "lake exe emitlift"
 
+[tasks."gen:backend-materialize"]
+description = "Regenerate the estate-native materialized modules (P6's second register) from the committed schema payloads"
+dir = "{{config_root}}/library/cas"
+run = "lake exe materialize"
+
 [tasks."gen:cas-surface"]
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
 dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, program, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, program, materialization, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
@@ -99,6 +105,7 @@ run = [
   "lake exe verdicts --check",
   "lake exe emitwire --check",
   "lake exe emitprograms --check",
+  "lake exe materialize --check",
   "lake exe mcpspec --check",
   "lake exe emitlift --check",
   "lake exe surface --check",

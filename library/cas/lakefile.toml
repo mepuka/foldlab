@@ -96,3 +96,15 @@ supportInterpreter = true
 name = "emitlift"
 srcDir = "tools"
 root = "EmitLift"
+
+# The estate-native materializer: `lake exe materialize` reads the
+# committed schema payloads back through the ingestion door and prints
+# each one as a provenance-stamped TypeScript module under the effects
+# package's test tree — the second register of the P6 differential
+# (`Cas.Materialize.source` is the first). A bare fixture name selects
+# one; `--all` (or nothing) is every registered fixture; `--check` is
+# the byte-identity gate.
+[[lean_exe]]
+name = "materialize"
+srcDir = "tools"
+root = "Materialize"

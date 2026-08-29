@@ -178,18 +178,28 @@ structure Options where
   check : Bool := false
   json : Bool := false
   help : Bool := false
+  /-- `--all`, accepted only by the selecting entry point: the explicit
+  spelling of the default, so a caller can say "every fixture" out
+  loud instead of by omission. -/
+  all : Bool := false
+  /-- The positional word. A PATH for `mainAt` (a re-pointed artifact)
+  and a fixture NAME for `mainSelect`; the grammar is the same either
+  way, and only the entry point knows which it means. -/
   target : Option System.FilePath := none
 
-private def parseArgs (allowTarget : Bool) :
+private def parseArgs (allowTarget allowAll : Bool) :
     List String → Options → Option Options
   | [], o => some o
-  | "--check" :: rest, o => if o.check then none else parseArgs allowTarget rest { o with check := true }
-  | "--json" :: rest, o => if o.json then none else parseArgs allowTarget rest { o with json := true }
+  | "--check" :: rest, o => if o.check then none else parseArgs allowTarget allowAll rest { o with check := true }
+  | "--json" :: rest, o => if o.json then none else parseArgs allowTarget allowAll rest { o with json := true }
+  | "--all" :: rest, o =>
+    if !allowAll || o.all || o.target.isSome then none
+    else parseArgs allowTarget allowAll rest { o with all := true }
   | "--help" :: _, o => some { o with help := true }
   | "-h" :: _, o => some { o with help := true }
   | a :: rest, o =>
-    if allowTarget && !a.startsWith "-" && o.target.isNone then
-      parseArgs allowTarget rest { o with target := some ⟨a⟩ }
+    if allowTarget && !a.startsWith "-" && o.target.isNone && !o.all then
+      parseArgs allowTarget allowAll rest { o with target := some ⟨a⟩ }
     else none
 
 /-- The usage line, in the order the parser actually accepts: flags
@@ -197,6 +207,11 @@ first, the optional target last. -/
 def usage (regen : String) (allowTarget : Bool) : String :=
   s!"usage: {regen} [--check] [--json]" ++
     (if allowTarget then " [<path>]" else "")
+
+/-- The selecting tool's usage line: `--all` and a bare fixture name are
+alternatives, and omitting both means `--all`. -/
+def usageSelect (regen : String) : String :=
+  s!"usage: {regen} [--check] [--json] [--all | <fixture>]"
 
 /-- The tool's own name — the last word of the regeneration command,
 which is what `{tool}` reports in `--json`. -/
@@ -220,7 +235,7 @@ def run (regen : String) (fixtures : IO (List Fixture)) (o : Options) :
 regeneration command every message names as the fix. -/
 def main (regen : String) (fixtures : IO (List Fixture))
     (args : List String) : IO Unit := do
-  match parseArgs false args {} with
+  match parseArgs false false args {} with
   | none => throw (IO.userError (usage regen false))
   | some o =>
     if o.help then IO.println (usage regen false) else run regen fixtures o
@@ -231,10 +246,24 @@ requirement. -/
 def mainAt (regen : String)
     (fixtures : Option System.FilePath → IO (List Fixture))
     (args : List String) : IO Unit := do
-  match parseArgs true args {} with
+  match parseArgs true false args {} with
   | none => throw (IO.userError (usage regen true))
   | some o =>
     if o.help then IO.println (usage regen true)
     else run regen (fixtures o.target) o
+
+/-- The entry point of a tool whose fixtures are a REGISTRY: the
+positional word selects one registered name, and `--all` (or nothing at
+all) is every one of them. `none` is handed to the fixture action for
+the whole registry, `some name` for the single selection; the action
+owns the refusal when the name is no row. -/
+def mainSelect (regen : String)
+    (fixtures : Option String → IO (List Fixture))
+    (args : List String) : IO Unit := do
+  match parseArgs true true args {} with
+  | none => throw (IO.userError (usageSelect regen))
+  | some o =>
+    if o.help then IO.println (usageSelect regen)
+    else run regen (fixtures (o.target.map (·.toString))) o
 
 end Gate

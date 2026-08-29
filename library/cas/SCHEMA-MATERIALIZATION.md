@@ -380,10 +380,13 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     is byte-pinned but never typechecked as a module; a `tsc`
     round-trip on materialized output is the natural next gate (same
     shape as the estate-native byte gate).
-18. **The estate-native second register**: P6's differential requires
-    the Lean-owned `EmitAst`/`Ts` printer as `Materialize.source`'s
-    counterpart; only the Effect-native register exists on the TS
-    side today.
+18. **The estate-native second register — CLOSED 2026-08-29**
+    (`tools/Materialize.lean`): `lake exe materialize` reads each
+    committed schema payload back through `ingestBytes` and prints the
+    recovered code with the Lean printer into a provenance-stamped
+    module per fixture under
+    `library/effects/test/generated/materialized/estate/`, byte-gated by
+    `--check` in `check:cas`.
 19. **THE TWO DOORS DISAGREE** (JIT-substrate survey B8,
     `.staging/schema-materialization/JIT-SUBSTRATE-SURVEY.md`,
     2026-08-29): a stored schema Lean's `ingest` refuses `illFormed`

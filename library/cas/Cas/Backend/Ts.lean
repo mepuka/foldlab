@@ -193,9 +193,12 @@ def import_ (style : Style) : Import → String
       quoted style path ++ "\n"
 
 /-- The whole module, house layout: header block, imports, one blank
-line between declarations. -/
+line between declarations. An empty header line prints as a bare `" *"`
+— the house look has no trailing whitespace, so a paragraph break in a
+header block cannot smuggle any in. -/
 def module (style : Style) (m : Module) : String :=
-  "/**\n" ++ String.intercalate "\n" (m.header.map (" * " ++ ·)) ++
+  "/**\n" ++ String.intercalate "\n"
+      (m.header.map fun line => if line.isEmpty then " *" else " * " ++ line) ++
     "\n */\n" ++
     String.join (m.imports.map (import_ style)) ++ "\n" ++
     String.intercalate "\n" (m.decls.map (decl style))
