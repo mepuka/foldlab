@@ -18,7 +18,7 @@ runs from `library/cas` unless noted.
 | `lake exe schemas` | `schemas/*.json` (schema payloads) | `--check` in `check:cas` |
 | `lake exe emitwire` | generated wire mirrors in effects `src/cas/generated/` | `--check` in `check:cas` |
 | `lake exe emitprograms` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
-| `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) | `--check` in `check:cas` |
+| `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) and `McpToolCodes.ts` in effects `src/cas/generated/` (the same rows as the typed table `bin/mcp/tools.ts` serves) | `--check` in `check:cas` |
 | `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
 | `lake exe obligations` | `surface/cas-obligations.json` (the obligation ledger: the named obligations written in the docstrings, plus the health counters) | `--check` and `--self-test` in `check:cas` |
 | `lake exe envledger` | `docs/lab-core/ENVIRONMENT.json` (the configuration plane: mise tool pins and task graph, every `lean-toolchain` pin, each `[[lean_exe]]` joined to the task driving it and the `--check` line gating it) | `--check` in `check:cas` |
@@ -41,6 +41,15 @@ never an obstacle to bypass.
   side.
 - **Wire mirror**: add to `tools/EmitWire.lean`'s registry; emission
   order is sharing order (later codes factor through earlier names).
+- **MCP tool**: add the row to `Cas/Backend/Mcp.lean`'s `tools` and
+  bump `manifestVersion`; `lake exe mcpspec` emits the JSON manifest
+  and the typed TS table together, so the host gains the row by
+  regenerating. Its params/result codes must stay inside the fragment
+  `tools/EmitMcp.lean` lowers (null, boolean, integer, string, array,
+  struct) — a code outside it fails that tool's `#guard` rather than
+  emitting a module whose declared type is a lie. On the host side,
+  only the CARRIER (the Effect Schema and the handler) is written by
+  hand.
 
 ## Fragment and printer rules
 

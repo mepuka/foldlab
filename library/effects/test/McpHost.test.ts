@@ -6,7 +6,7 @@
  * protocol, over a real store on disk.
  *
  * Two claims are under test and they are different claims. The first
- * is AGREEMENT: what this host serves is what `lake exe emitmcp`
+ * is AGREEMENT: what this host serves is what `lake exe mcpspec`
  * emitted, name for name and code for code — and the tripwire trips
  * when it is not. The second is BEHAVIOUR: the tools are the store's
  * own verbs, so a node admitted through `cas_put` loads back through
