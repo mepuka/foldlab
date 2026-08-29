@@ -98,6 +98,31 @@ export const taggedPin = Schema.Union([
   }),
 ], { mode: "oneOf" })
 
+/** Lean `SchemasMain.enumPin`, hand-mirrored in Effect Schema.
+ *
+ * ORDER IS IDENTITY here too, and for a reason visible in Effect's own
+ * constructor: `Schema.Enum` reads its members as
+ * `Object.keys(enums).filter(...).map(key => [key, enums[key]])`, so the
+ * persisted order is insertion order — source order for a TypeScript
+ * `enum`, literal order for the objects below. `direction` therefore
+ * spells `Up` before `Down` on both sides on purpose; any sort moves the
+ * payload bytes and the address, and the pin goes red.
+ *
+ * `level` carries an ALIAS — `Warn` and `Warning` at the same value —
+ * which is content TypeScript spells and the Lean `WF` deliberately
+ * admits: the member NAME is the identity, the value is not.
+ *
+ * These are object literals rather than `enum` declarations because a
+ * TypeScript `enum` is the one construct that cannot be written in a
+ * `.ts` module under `erasableSyntaxOnly`, and because the two build the
+ * same `SchemaAST.Enum`: an object literal has no reverse mappings, so
+ * the constructor's reverse-mapping filter is a no-op on it. */
+export const enumPin = Schema.Struct({
+  direction: Schema.Enum({ Up: "Up", Down: "Down" }),
+  level: Schema.Enum({ Debug: -1, Warn: 1, Warning: 1 }),
+  mixed: Schema.optionalKey(Schema.Enum({ Name: "name", Zero: 0 })),
+})
+
 /** The registry, name-for-name with `library/cas/tools/Schemas.lean`.
  *
  * `annotation` mirrors Lean `Cas.Schema.Annotation` through the library's
@@ -113,4 +138,5 @@ export const registry: ReadonlyArray<readonly [string, Schema.Top]> = [
   ["annotation", Annotations.Annotation],
   ["union-pin", unionPin],
   ["tagged-pin", taggedPin],
+  ["enum-pin", enumPin],
 ] as const

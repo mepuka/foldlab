@@ -46,6 +46,64 @@ def LitVal.toJson : LitVal → Json.Value
   | .int i => .int i.val
   | .str s => .str s
 
+/-! ### The enum's member list — one spelling, both revisions
+
+An enum member carries no code, so its projection is not part of the
+recursion over `Ast` and lives outside the mutual blocks. There is ONE
+spelling of a member pair, and both revisions use it: Effect's own
+`[name, {type, value}]`. Revision 0 is a read-compatibility arm and has
+no legacy enum bytes to be compatible with — inventing a second
+spelling for it would be a second thing to keep in step, for nothing. -/
+
+/-- An enum member's value, in Effect's typed-value spelling
+(`makeValueSchema`, `SchemaRepresentation.ts:990-999`). -/
+def EnumValue.toJson : EnumValue → Json.Value
+  | .str s => .obj [("type", .str "string"), ("value", .str s)]
+  | .int i => .obj [("type", .str "number"), ("value", .int i.val)]
+
+/-- One enum member: the positional `[name, value]` pair Effect
+persists. -/
+def enumMemberToJson (m : String × EnumValue) : Json.Value :=
+  .arr [.str m.1, m.2.toJson]
+
+/-- An enum's members, in order — the order they were written, which is
+`Object.keys` order on Effect's side and therefore SOURCE order. There
+is no sort here, on the way in or out. -/
+def enumMembersToJson : List (String × EnumValue) → List Json.Value
+  | [] => []
+  | m :: ms => enumMemberToJson m :: enumMembersToJson ms
+
+/-- The strict decoder of a member value: exactly the two spellings
+`EnumValue.toJson` emits. -/
+def EnumValue.ofJson : Json.Value → Option EnumValue
+  | .obj [("type", .str "string"), ("value", .str s)] => some (.str s)
+  | .obj [("type", .str "number"), ("value", .int i)] =>
+    if h : i.natAbs ≤ maxSafeNat then some (.int ⟨i, h⟩) else none
+  | _ => none
+
+/-- The member-list decoder, preserving order verbatim. -/
+def enumMembersOfJson : List Json.Value → Option (List (String × EnumValue))
+  | [] => some []
+  | .arr [.str n, v] :: rest =>
+    (EnumValue.ofJson v).bind fun ev =>
+    (enumMembersOfJson rest).map fun ms => (n, ev) :: ms
+  | _ => none
+
+theorem EnumValue.ofJson_toJson (v : EnumValue) :
+    EnumValue.ofJson v.toJson = some v := by
+  cases v with
+  | int i => simp only [EnumValue.toJson, EnumValue.ofJson, dif_pos i.property]
+  | str _ => rfl
+
+theorem enumMembersOfJson_toJson :
+    ∀ (ms : List (String × EnumValue)),
+      enumMembersOfJson (enumMembersToJson ms) = some ms
+  | [] => rfl
+  | (n, v) :: ms => by
+    simp only [enumMembersToJson, enumMemberToJson, enumMembersOfJson,
+      EnumValue.ofJson_toJson v, enumMembersOfJson_toJson ms,
+      Option.bind_some, Option.map_some]
+
 mutual
 
 /-- The retired revision-0 tagged JSON projection of a code (`_tag`
@@ -69,6 +127,9 @@ def Ast.toJson : Ast → Json.Value
       ("_tag", .str "Union"),
       ("members", .arr (membersToJson ms)),
       ("mode", .str m.wire)]
+  | .enum ms => .obj [
+      ("_tag", .str "Enum"),
+      ("members", .arr (enumMembersToJson ms))]
 
 /-- One record entry per struct field: `name ↦ {optional, schema}`. -/
 def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
@@ -165,6 +226,10 @@ def Ast.toRepresentationJson : Ast → Json.Value
       ("checks", .arr []),
       ("mode", .str m.wire),
       ("types", .arr (membersToRepresentationJson ms))]
+  | .enum ms => .obj [
+      ("_tag", .str "Enum"),
+      ("checks", .arr []),
+      ("enums", .arr (enumMembersToJson ms))]
 
 /-- Effect property-signature representations, preserving canonical field order. -/
 def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Value
@@ -238,6 +303,24 @@ open Cas.Json
 theorem LitVal.toJson_canonical (v : LitVal) : v.toJson.Canonical := by
   cases v <;> trivial
 
+/-- An enum member value's image is canonically spelled
+(`"type" < "value"`). -/
+theorem EnumValue.toJson_canonical (v : EnumValue) : v.toJson.Canonical := by
+  cases v <;>
+    exact ⟨List.pairwise_map.mp (by decide : List.Pairwise (· < ·) ["type", "value"]),
+      trivial, trivial, trivial⟩
+
+/-- An enum's member list is canonically spelled. There is no premise
+about the ORDER — the pairs are array items, not object keys, so no
+sort has anything to say about them, which is the point. -/
+theorem enumMembersToJson_canonical :
+    ∀ (ms : List (String × EnumValue)),
+      CanonicalItems (enumMembersToJson ms)
+  | [] => trivial
+  | (_, v) :: ms =>
+    ⟨⟨trivial, EnumValue.toJson_canonical v, trivial⟩,
+      enumMembersToJson_canonical ms⟩
+
 /-- The field record preserves the struct's key list verbatim. -/
 theorem fieldsToJson_keys (fs : List (String × Bool × Ast)) :
     (fieldsToJson fs).map (·.1) = fs.map (fun f => f.1) := by
@@ -303,6 +386,10 @@ theorem toJson_canonical : ∀ (a : Ast), a.WF → a.toJson.Canonical
     refine ⟨List.pairwise_map.mp
         (by decide : List.Pairwise (· < ·) ["_tag", "members", "mode"]),
       trivial, membersToJson_canonical ms hms, trivial, trivial⟩
+  | .enum ms, _ => by
+    refine ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "members"]),
+      trivial, enumMembersToJson_canonical ms, trivial⟩
 
 theorem membersToJson_canonical :
     ∀ (ms : List Ast), WFMembers ms → CanonicalItems (membersToJson ms)
@@ -391,6 +478,8 @@ def Ast.ofJson : Json.Value → Option Ast
     match UnionMode.ofWire w with
     | none => none
     | some m => (ofJsonMembers ms).map fun bs => .union bs m
+  | .obj [("_tag", .str "Enum"), ("members", .arr ms)] =>
+    (enumMembersOfJson ms).map .enum
   | _ => none
 
 def ofJsonFields :
@@ -441,6 +530,9 @@ theorem ofJson_toJson : ∀ (a : Ast), Ast.ofJson a.toJson = some a
     cases m <;>
       simp only [Ast.toJson, Ast.ofJson, UnionMode.wire, UnionMode.ofWire,
         ofJsonMembers_membersToJson ms, Option.map_some]
+  | .enum ms => by
+    simp only [Ast.toJson, Ast.ofJson, enumMembersOfJson_toJson ms,
+      Option.map_some]
 
 theorem ofJsonMembers_membersToJson :
     ∀ (ms : List Ast), ofJsonMembers (membersToJson ms) = some ms
@@ -528,7 +620,20 @@ form rewrites the members positionwise and touches neither the mode nor
 the order, so the projection identifies no two unions that differ in
 mode, member count, or member order. ORDER IS IDENTITY, ratified: there
 is no sort anywhere on this path — not in the encoder, not in the
-decoder, not in the normal form. -/
+decoder, not in the normal form.
+
+### The enum code adds no collapse at all
+
+Increment C4 grows `Ast.enum` (an ordered `(name, value)` member list).
+Its key set is alphabetical like every other node's
+(`_tag < checks < enums`), so the unconditional canonicality theorem
+extends with no premise; and it is a FIXED POINT of the normal form
+(`Ast.repNorm_enum`) because it carries no sub-code for the literal-null
+identification to reach. Order is identity here too — Effect's own
+constructor reads `Object.keys` order, which is source order
+(`Schema.ts:3021-3030`) — and the member pairs are ARRAY ITEMS rather
+than object keys, so no canonical rendering has anything to say about
+their arrangement. -/
 
 open Cas.Json
 
@@ -604,6 +709,10 @@ theorem toRepresentationJson_canonical :
           List.Pairwise (· < ·) ["_tag", "checks", "mode", "types"]),
       trivial, trivial, trivial,
       membersToRepresentationJson_canonical ms, trivial⟩
+  | .enum ms =>
+    ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "checks", "enums"]),
+      trivial, trivial, enumMembersToJson_canonical ms, trivial⟩
 
 /-- A union's member representations are canonically spelled. The
 union's own key set (`_tag < checks < mode < types`) is alphabetical
@@ -715,7 +824,7 @@ mutual
 
 /-- The normal form is a normal form. -/
 theorem Ast.repNorm_idem : ∀ (a : Ast), a.repNorm.repNorm = a.repNorm
-  | .null | .bool | .int | .str | .ref _ => rfl
+  | .null | .bool | .int | .str | .ref _ | .enum _ => rfl
   | .lit .null => rfl
   | .lit (.bool _) | .lit (.int _) | .lit (.str _) => rfl
   | .arr a => by
@@ -780,13 +889,22 @@ two codes at two addresses, and the literal-null identification
 theorem Ast.repNorm_union (ms : List Ast) (m : UnionMode) :
     (Ast.union ms m).repNorm = .union (repNormMembers ms) m := rfl
 
+/-- THE no-new-collapse statement for increment C4: the enum code is a
+FIXED POINT of the normal form — it carries no sub-code, so there is
+nothing under it for the literal-null identification to reach, and the
+normal form has no arm of its own to add. Two enums that differ in
+member count, in member order, in a name, or in a value are two codes
+at two addresses. -/
+theorem Ast.repNorm_enum (ms : List (String × EnumValue)) :
+    (Ast.enum ms).repNorm = .enum ms := rfl
+
 mutual
 
 /-- Normalization is invisible to the projection: the collapse is
 exactly what the encoder already performs. -/
 theorem toRepresentationJson_repNorm :
     ∀ (a : Ast), a.repNorm.toRepresentationJson = a.toRepresentationJson
-  | .null | .bool | .int | .str | .ref _ => rfl
+  | .null | .bool | .int | .str | .ref _ | .enum _ => rfl
   | .lit .null => rfl
   | .lit (.bool _) | .lit (.int _) | .lit (.str _) => rfl
   | .arr a => by
@@ -860,7 +978,7 @@ mutual
 /-- Well-formedness survives normalization: the collapse rewrites leaves
 only, so no struct's field names move. -/
 theorem Ast.repNorm_wf : ∀ (a : Ast), a.WF → a.repNorm.WF
-  | .null, h | .bool, h | .int, h | .str, h | .ref _, h => h
+  | .null, h | .bool, h | .int, h | .str, h | .ref _, h | .enum _, h => h
   | .lit .null, _ => trivial
   | .lit (.bool _), h | .lit (.int _), h | .lit (.str _), h => h
   | .arr a, h => Ast.repNorm_wf a h
@@ -979,6 +1097,8 @@ def Ast.ofRepresentationJson : Json.Value → Option Ast
     match UnionMode.ofWire w with
     | none => none
     | some m => (ofRepresentationMembers ts).map fun ms => .union ms m
+  | .obj [("_tag", .str "Enum"), ("checks", .arr []), ("enums", .arr ms)] =>
+    (enumMembersOfJson ms).map .enum
   | _ => none
 
 /-- The property-signature list decoder, preserving order verbatim. -/
@@ -1077,6 +1197,9 @@ theorem ofRepresentationJson_toRepresentationJson :
         UnionMode.wire, UnionMode.ofWire,
         ofRepresentationMembers_membersToRepresentationJson ms,
         Option.map_some, Ast.repNorm]
+  | .enum ms => by
+    simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson,
+      enumMembersOfJson_toJson ms, Option.map_some, Ast.repNorm]
 
 theorem ofRepresentationMembers_membersToRepresentationJson :
     ∀ (ms : List Ast),

@@ -25,6 +25,10 @@ def astBeq : Ast → Ast → Bool
   | .ref a, .ref b => a == b
   | .decl i p ps, .decl j q qs => i == j && p == q && paramsBeq ps qs
   | .union ms m, .union ns n => m == n && membersBeq ms ns
+  -- Members compare POSITIONWISE here too: an enum's order is its
+  -- identity, so two enums over the same pairs in different orders are
+  -- different codes and must not share a name.
+  | .enum ms, .enum ns => ms == ns
   | _, _ => false
 
 def fieldsBeq :
@@ -60,6 +64,21 @@ def litExpr : LitVal → Expr
   | .bool b => .bool b
   | .int i => .int i.val
   | .str s => .str s
+
+/-- One enum member as an object-literal entry. The key is the member
+NAME, quoted the way `Ts.Expr.str` quotes — so a name and a string
+literal come out spelled identically, and there is one quoting rule in
+this emitter rather than two. -/
+private def enumEntry (m : String × EnumValue) : String × Expr :=
+  ("\"" ++ m.1 ++ "\"",
+    match m.2 with
+    | .str s => .str s
+    | .int i => .int i.val)
+
+/-- An enum's members as object-literal entries, in the code's order. -/
+private def enumEntries : List (String × EnumValue) → List (String × Expr)
+  | [] => []
+  | m :: ms => enumEntry m :: enumEntries ms
 
 mutual
 
@@ -97,6 +116,14 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
       .call (schema "Union") [
         .arr (constructorMembers env members),
         .object [("mode", .str mode.wire)]]
+    -- `Schema.Enum(<enum-like object>)` — Effect's own constructor
+    -- (`Schema.ts:3021`), whose parameter type is
+    -- `{ [x: string]: string | number }`: a TypeScript `enum` object
+    -- and an object LITERAL are both inhabitants, and both build the
+    -- same `SchemaAST.Enum` from `Object.keys` order. The estate emits
+    -- the literal; see the note below the emitter for why.
+    | .enum members =>
+      .call (schema "Enum") [.object (enumEntries members)]
 
 private def constructorFields (env : List (String × Ast)) :
     List (String × Bool × Ast) → List (String × Expr)
@@ -163,5 +190,44 @@ private def renderedConstructor (a : Ast) : String :=
 #guard renderedConstructor (.union [.null, .union [.arr .str, .bool] .oneOf] .anyOf) ==
   "Schema.Union([Schema.Null, Schema.Union([Schema.Array(Schema.String), " ++
     "Schema.Boolean], { mode: \"oneOf\" })], { mode: \"anyOf\" })"
+
+/-! ## The enum lowering, pinned — and a recorded deviation
+
+Effect's own printer (`toCodeDocument.ts:454-469`) emits an ARTIFACT —
+`enum _Enum0 { "Up" = "Up", … }` as a separate declaration — and refers
+to it as `Schema.Enum(_Enum0)`. The estate emits the enum-like object
+INLINE: `Schema.Enum({ "Up": "Up", … })`.
+
+The call this records (A-1): the two texts build the SAME schema.
+`Schema.Enum` takes any `{ [x: string]: string | number }`
+(`Schema.ts:3021`) and reads its members as
+`Object.keys(enums).filter(key => typeof enums[enums[key]] !== "number")
+.map(key => [key, enums[key]])` — insertion order, with the numeric
+enum's reverse mappings filtered out. An object literal has no reverse
+mappings, so the filter is a no-op on it and the member list is
+identical, in identical order.
+
+What the estate gains by deviating: the lowering stays a FUNCTION of the
+code alone. Effect's spelling needs a fresh identifier per enum, which
+means a counter threaded through the recursion and a second output
+channel for the artifacts — plumbing this emitter does not have, and
+plumbing whose only purpose would be to reproduce a name that carries no
+meaning. The emitted expression is self-contained, so a code's lowering
+does not depend on where in a module it appears. Growing the artifact
+channel is a backend increment, owed when a consumer wants the named
+`enum` declaration itself (a TypeScript `enum` TYPE, which the object
+literal does not declare). -/
+
+#guard renderedConstructor (.enum [("Up", .str "Up"), ("Down", .str "Down")]) ==
+  "Schema.Enum({ \"Up\": \"Up\", \"Down\": \"Down\" })"
+
+#guard renderedConstructor (.enum [("One", .int ⟨1, by decide⟩),
+    ("MinusOne", .int ⟨-1, by decide⟩)]) ==
+  "Schema.Enum({ \"One\": 1, \"MinusOne\": -1 })"
+
+-- Order is identity out to the emitted source here too: reversing the
+-- members emits different text, because it is a different code.
+#guard renderedConstructor (.enum [("Down", .str "Down"), ("Up", .str "Up")]) ==
+  "Schema.Enum({ \"Down\": \"Down\", \"Up\": \"Up\" })"
 
 end Cas.Backend

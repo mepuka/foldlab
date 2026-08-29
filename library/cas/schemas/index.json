@@ -35,6 +35,11 @@
       "byteLength": 1630,
       "file": "tagged-pin.json",
       "name": "tagged-pin"
+    },
+    {
+      "byteLength": 785,
+      "file": "enum-pin.json",
+      "name": "enum-pin"
     }
   ]
 }

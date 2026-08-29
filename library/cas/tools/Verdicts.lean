@@ -103,6 +103,7 @@ def denotesValues : Ast → Bool
   | .struct fs => denotesFields fs
   | .decl _ _ _ => false
   | .union ms _ => discriminatedB ms && denotesMembers ms
+  | .enum _ => false
   | _ => true
 
 def denotesFields : List (String × Bool × Ast) → Bool
@@ -322,6 +323,22 @@ def corpus : List Case := [
   { name := "union-nested",
     note := "a union whose second member is a union — the no-flattening rule, admitted",
     source := .code (.union [.null, .union [.arr .str, .bool] .oneOf] .anyOf) },
+  -- ## Enums: CODES only, no Lean value verdict
+  { name := "enum-string",
+    note := "a string enum spelled Up before Down — admitted as content, El is Empty (corpus restriction 6), and the order is Object.keys order, which is source order",
+    source := .code (.enum [("Up", .str "Up"), ("Down", .str "Down")]) },
+  { name := "enum-string-reversed",
+    note := "the same two members in the other order — a DIFFERENT code at a different address: order is identity for enums as it is for unions",
+    source := .code (.enum [("Down", .str "Down"), ("Up", .str "Up")]) },
+  { name := "enum-number-alias",
+    note := "a numeric enum with a negative member and an ALIAS (two names at one value) — admitted, because the NAME is the member's identity and TypeScript spells aliases",
+    source := .code (.enum [
+      ("Debug", .int ⟨-1, by decide⟩),
+      ("Warn", .int ⟨1, by decide⟩),
+      ("Warning", .int ⟨1, by decide⟩)]) },
+  { name := "struct-with-enum",
+    note := "an enum under a struct field: the struct's own El is uninhabited too, so it carries no value triples",
+    source := .code (.struct [("dir", false, .enum [("Up", .str "Up")])]) },
   -- ## Declarations: CODES only, no Lean value verdict
   { name := "decl-date",
     note := "effect/schema/Date, arity 0, null payload — admitted as content; El is Empty, so no value triples exist (corpus restriction 4)",
@@ -379,6 +396,15 @@ def corpus : List Case := [
   { name := "refuse-union-empty-member",
     note := "an empty union as a member of a well-formed union",
     source := .code (.union [.str, .union [] .anyOf] .anyOf) },
+  { name := "refuse-enum-empty",
+    note := "the empty enum — like the empty union it admits nothing, which is Never, and Never is not admitted",
+    source := .code (.enum []) },
+  { name := "refuse-enum-duplicate-name",
+    note := "an enum declaring the same member name twice — the name IS the member's identity, so it cannot repeat (values may, and do: see enum-number-alias)",
+    source := .code (.enum [("A", .str "x"), ("A", .str "y")]) },
+  { name := "refuse-enum-empty-nested",
+    note := "the empty enum under a struct field",
+    source := .code (.struct [("e", false, .enum [])]) },
   { name := "refuse-decl-payload",
     note := "effect/schema/Date carrying a string payload — the row admits null only",
     source := .code (.decl .date (.str "not a null payload") []) },
@@ -489,6 +515,13 @@ def corpus : List Case := [
         ("isOptional", .bool false),
         ("type", Ast.str.toRepresentationJson)]]),
       ("rest", .arr [])])) },
+  { name := "refuse-enum-boolean-member",
+    note := "an Enum whose member value is a boolean — Effect's Enum persists string and number values only, so this is not an enum spelling at all",
+    source := .raw (rawEnvelope (.obj [
+      ("_tag", .str "Enum"),
+      ("checks", .arr []),
+      ("enums", .arr [.arr [.str "A",
+        .obj [("type", .str "boolean"), ("value", .bool true)]]])])) },
   { name := "refuse-index-signature",
     note := "an Objects node with an index signature — records are Slice C3, not admitted yet",
     source := .raw (rawEnvelope (.obj [
@@ -573,7 +606,8 @@ def restrictions : List String := [
   "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)",
   "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only",
   "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only",
-  "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test"
+  "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test",
+  "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only"
 ]
 
 def documentValue : Except String Json.Value := do

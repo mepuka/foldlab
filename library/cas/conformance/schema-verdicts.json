@@ -708,6 +708,38 @@
     },
     {
       "denotes": false,
+      "name": "enum-string",
+      "note": "a string enum spelled Up before Down — admitted as content, El is Empty (corpus restriction 6), and the order is Object.keys order, which is source order",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"Up\",{\"type\":\"string\",\"value\":\"Up\"}],[\"Down\",{\"type\":\"string\",\"value\":\"Down\"}]]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "enum-string-reversed",
+      "note": "the same two members in the other order — a DIFFERENT code at a different address: order is identity for enums as it is for unions",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"Down\",{\"type\":\"string\",\"value\":\"Down\"}],[\"Up\",{\"type\":\"string\",\"value\":\"Up\"}]]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "enum-number-alias",
+      "note": "a numeric enum with a negative member and an ALIAS (two names at one value) — admitted, because the NAME is the member's identity and TypeScript spells aliases",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"Debug\",{\"type\":\"number\",\"value\":-1}],[\"Warn\",{\"type\":\"number\",\"value\":1}],[\"Warning\",{\"type\":\"number\",\"value\":1}]]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "struct-with-enum",
+      "note": "an enum under a struct field: the struct's own El is uninhabited too, so it carries no value triples",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dir\"},\"type\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"Up\",{\"type\":\"string\",\"value\":\"Up\"}]]}}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
       "name": "decl-date",
       "note": "effect/schema/Date, arity 0, null payload — admitted as content; El is Empty, so no value triples exist (corpus restriction 4)",
       "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":null},\"typeParameters\":[]}}}",
@@ -867,6 +899,33 @@
     },
     {
       "denotes": false,
+      "name": "refuse-enum-empty",
+      "note": "the empty enum — like the empty union it admits nothing, which is Never, and Never is not admitted",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-enum-duplicate-name",
+      "note": "an enum declaring the same member name twice — the name IS the member's identity, so it cannot repeat (values may, and do: see enum-number-alias)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"A\",{\"type\":\"string\",\"value\":\"x\"}],[\"A\",{\"type\":\"string\",\"value\":\"y\"}]]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-enum-empty-nested",
+      "note": "the empty enum under a struct field",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"e\"},\"type\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[]}}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
       "name": "refuse-decl-payload",
       "note": "effect/schema/Date carrying a string payload — the row admits null only",
       "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":\"not a null payload\"},\"typeParameters\":[]}}}",
@@ -1002,6 +1061,15 @@
     },
     {
       "denotes": false,
+      "name": "refuse-enum-boolean-member",
+      "note": "an Enum whose member value is a boolean — Effect's Enum persists string and number values only, so this is not an enum spelling at all",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Enum\",\"checks\":[],\"enums\":[[\"A\",{\"type\":\"boolean\",\"value\":true}]]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
       "name": "refuse-index-signature",
       "note": "an Objects node with an index signature — records are Slice C3, not admitted yet",
       "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[{\"parameter\":{\"_tag\":\"String\",\"checks\":[]},\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"propertySignatures\":[]}}}",
@@ -1021,12 +1089,12 @@
   ],
   "counts": {
     "acceptValues": 32,
-    "admittedCodes": 28,
-    "codes": 51,
+    "admittedCodes": 32,
+    "codes": 59,
     "refuseValues": 53,
-    "refusedCodes": 23,
+    "refusedCodes": 27,
     "values": 85
   },
-  "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test"],
+  "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only"],
   "revision": 1
 }

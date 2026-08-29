@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 351,
-    "Values": 308,
+    "Schema": 371,
+    "Values": 317,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 148,
-    "Quot.sound": 251,
-    "propext": 339
+    "Classical.choice": 151,
+    "Quot.sound": 257,
+    "propext": 349
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 204,
+    "Cas.Schema.Ast": 205,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
     "Cas.Word": 56
   },
-  "declarations": 1190,
-  "documented": 565,
+  "declarations": 1211,
+  "documented": 579,
   "library": "Cas",
   "modules": [
     {
@@ -4193,8 +4193,8 @@
       ]
     },
     {
-      "declarations": 34,
-      "documented": 9,
+      "declarations": 41,
+      "documented": 12,
       "module": "Cas.Schema.Ast",
       "surface": [
         {
@@ -4379,6 +4379,26 @@
         {
           "documented": true,
           "kind": "inductive",
+          "name": "Cas.Schema.EnumValue",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ctorElim",
+          "signature": "{motive : Cas.Schema.EnumValue → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.EnumValue) → ctorIdx = t.ctorIdx → Cas.Schema.EnumValue.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ctorElimType",
+          "signature": "{motive : Cas.Schema.EnumValue → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
           "name": "Cas.Schema.LitVal",
           "signature": "Type"
         },
@@ -4424,6 +4444,36 @@
           "kind": "def",
           "name": "Cas.Schema.WFParams",
           "signature": "List Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enum_names_nodup",
+          "signature": "∀ {ms : List (String × Cas.Schema.EnumValue)}, List.Pairwise (fun a b => a.fst ≠ b.fst) ms → (List.map (fun x => x.fst) ms).Nodup",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enum_nil_not_wf",
+          "signature": "¬(Cas.Schema.Ast.enum []).WF",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqEnumValue",
+          "signature": "DecidableEq Cas.Schema.EnumValue",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqEnumValue.decEq",
+          "signature": "(x x_1 : Cas.Schema.EnumValue) → Decidable (x = x_1)",
           "touches": ["Schema"]
         },
         {
@@ -6079,8 +6129,8 @@
       ]
     },
     {
-      "declarations": 28,
-      "documented": 17,
+      "declarations": 30,
+      "documented": 18,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -6126,6 +6176,21 @@
           "kind": "theorem",
           "name": "Cas.Schema.IngestRefusal.ofNat_ctorIdx",
           "signature": "∀ (x : Cas.Schema.IngestRefusal), Cas.Schema.IngestRefusal.ofNat x.ctorIdx = x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.distinctEnumNames",
+          "signature": "List (String × Cas.Schema.EnumValue) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.distinctEnumNames_iff",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.distinctEnumNames ms = true ↔ List.Pairwise (fun a b => a.fst ≠ b.fst) ms",
           "touches": ["Schema"]
         },
         {
@@ -6316,8 +6381,8 @@
       ]
     },
     {
-      "declarations": 16,
-      "documented": 11,
+      "declarations": 18,
+      "documented": 13,
       "module": "Cas.Schema.PayloadInj",
       "surface": [
         {
@@ -6348,6 +6413,22 @@
           "name": "Cas.Schema.deNumNorm_decl_payload",
           "signature": "∀ {g : Cas.Schema.DeclarationId.General} {p : Cas.Schema.DeclPayload}, g.PayloadWF p → p = Cas.Schema.DeclPayload.null",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_enumMembers",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.deNumNormItems (Cas.Json.numNormItems (Cas.Schema.enumMembersToJson ms)) = Cas.Schema.enumMembersToJson ms",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_enumValue",
+          "signature": "∀ (v : Cas.Schema.EnumValue), Cas.Schema.deNumNorm v.toJson.numNorm = v.toJson",
+          "touches": ["Schema", "Values"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6458,8 +6539,8 @@
       ]
     },
     {
-      "declarations": 85,
-      "documented": 60,
+      "declarations": 95,
+      "documented": 68,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
         {
@@ -6556,6 +6637,15 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_enum",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), (Cas.Schema.Ast.enum ms).repNorm = Cas.Schema.Ast.enum ms",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Schema.Ast.repNorm_idem",
           "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.repNorm = a.repNorm",
           "touches": ["Schema"]
@@ -6612,6 +6702,36 @@
           "touches": ["Schema", "Values"]
         },
         {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ofJson",
+          "signature": "Cas.Json.Value → Option Cas.Schema.EnumValue",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.EnumValue.ofJson_toJson",
+          "signature": "∀ (v : Cas.Schema.EnumValue), Cas.Schema.EnumValue.ofJson v.toJson = some v",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.toJson",
+          "signature": "Cas.Schema.EnumValue → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.EnumValue.toJson_canonical",
+          "signature": "∀ (v : Cas.Schema.EnumValue), v.toJson.Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.LitVal.ofJson",
@@ -6656,6 +6776,43 @@
           "name": "Cas.Schema.decl_wire_ne_casRef",
           "signature": "∀ (g : Cas.Schema.DeclarationId.General), g.wire ≠ Cas.Schema.DeclarationId.casRef.wire",
           "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMemberToJson",
+          "signature": "String × Cas.Schema.EnumValue → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMembersOfJson",
+          "signature": "List Cas.Json.Value → Option (List (String × Cas.Schema.EnumValue))",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.enumMembersOfJson_toJson",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.enumMembersOfJson (Cas.Schema.enumMembersToJson ms) = some ms",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMembersToJson",
+          "signature": "List (String × Cas.Schema.EnumValue) → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enumMembersToJson_canonical",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Json.CanonicalItems (Cas.Schema.enumMembersToJson ms)",
+          "touches": ["Schema", "Values"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -9495,10 +9652,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 634,
-    "inductive": 33,
-    "instance": 57,
+    "def": 642,
+    "inductive": 34,
+    "instance": 59,
     "structure": 36,
-    "theorem": 427
+    "theorem": 437
   }
 }

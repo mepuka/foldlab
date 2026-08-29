@@ -57,6 +57,14 @@ struct is. A `mode` outside the table is not a union spelling at all
 and dies in the decoder as `notASchema`. Member ORDER is never tested,
 because order is the identity: there is no canonical arrangement to
 demand and nothing on this path sorts.
+
+The enum code (increment C4) is gated the same way and needs no new
+refusal either. Its discipline is nonemptiness and pairwise-distinct
+member NAMES, both `illFormed` at the gate; a member value outside the
+two rows Effect can persist — string and number — is not an enum
+spelling at all and dies in the decoder as `notASchema`. Member VALUES
+are deliberately unconstrained, because TypeScript aliases are content
+the source language spells, and order is again never tested.
 -/
 
 namespace Cas.Schema
@@ -92,6 +100,14 @@ def pairwiseNames : List (String × Bool × Ast) → Bool
   | [] => true
   | f :: fs => fs.all (fun g => decide (f.1 < g.1)) && pairwiseNames fs
 
+/-- Boolean twin of the enum's distinct-names clause — the `Pairwise`
+shape verbatim, like `pairwiseNames`. It asks for DISTINCTNESS and not
+for order: an enum's members are never sorted, because their order is
+their identity. -/
+def distinctEnumNames : List (String × EnumValue) → Bool
+  | [] => true
+  | m :: ms => ms.all (fun n => decide (m.1 ≠ n.1)) && distinctEnumNames ms
+
 mutual
 
 /-- Boolean twin of `Ast.WF` — the runtime gate of the ingestion
@@ -102,6 +118,7 @@ def Ast.wf : Ast → Bool
   | .decl id p ps =>
     id.payloadWf p && decide (ps.length = id.arity) && wfParams ps
   | .union ms _ => !ms.isEmpty && wfMembers ms
+  | .enum ms => !ms.isEmpty && distinctEnumNames ms
   | _ => true
 
 def wfFields : List (String × Bool × Ast) → Bool
@@ -128,6 +145,13 @@ theorem pairwiseNames_iff : ∀ fs, pairwiseNames fs = true ↔
     simp [pairwiseNames, List.pairwise_cons, List.all_eq_true,
       pairwiseNames_iff fs]
 
+theorem distinctEnumNames_iff : ∀ ms, distinctEnumNames ms = true ↔
+    List.Pairwise (fun a b : String × EnumValue => a.1 ≠ b.1) ms
+  | [] => by simp [distinctEnumNames]
+  | m :: ms => by
+    simp [distinctEnumNames, List.pairwise_cons, List.all_eq_true,
+      distinctEnumNames_iff ms]
+
 mutual
 
 /-- The gate decides exactly the canonical-fields discipline. -/
@@ -146,6 +170,8 @@ theorem Ast.wf_iff : ∀ (a : Ast), a.wf = true ↔ a.WF
       wfParams_iff ps, and_assoc]
   | .union ms _ => by
     simp [Ast.wf, Ast.WF, wfMembers_iff ms]
+  | .enum ms => by
+    simp [Ast.wf, Ast.WF, distinctEnumNames_iff ms]
 
 theorem wfMembers_iff : ∀ ms, wfMembers ms = true ↔ WFMembers ms
   | [] => by simp [wfMembers, WFMembers]
@@ -372,6 +398,60 @@ private def alphaFirst : Ast :=
         | .error .notASchema => true
         | _ => false)
 
+/-! ## The enum at the door — worked, at elaboration
+
+The C4 calls, run through the door so the carrier's behaviour is in the
+source and not only in a docstring. -/
+
+private def direction : Ast :=
+  .enum [("Up", .str "Up"), ("Down", .str "Down")]
+
+private def directionReversed : Ast :=
+  .enum [("Down", .str "Down"), ("Up", .str "Up")]
+
+-- ORDER IS IDENTITY: reordering the members is a DIFFERENT code with
+-- DIFFERENT payload bytes. Effect reads `Object.keys` order, which is
+-- source order, and nothing on this path sorts.
+#guard direction.payload != directionReversed.payload
+
+-- Both survive the door as themselves, in the order they were written.
+#guard (match ingest direction.envelope, ingest directionReversed.envelope with
+        | .ok a, .ok b => a.payload == direction.payload &&
+            b.payload == directionReversed.payload
+        | _, _ => false)
+
+-- A numeric enum, including the alias TypeScript admits: two members at
+-- one value, which `WF` deliberately does NOT refuse — the name is the
+-- identity, the value is not.
+#guard (match ingest (Ast.enum [("A", .int ⟨1, by decide⟩),
+          ("B", .int ⟨1, by decide⟩)]).envelope with
+        | .ok _ => true
+        | .error _ => false)
+
+-- THE EMPTY ENUM IS REFUSED at the gate — like the empty union, it
+-- admits nothing, which is `Never`, which is not admitted.
+#guard (match ingest (Ast.enum []).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- REPEATED NAMES are refused: the name is the member's identity, so two
+-- members cannot share one.
+#guard (match ingest (Ast.enum [("A", .str "x"), ("A", .str "y")]).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- A member value outside the two admitted rows — a BOOLEAN, which
+-- Effect's `Enum` cannot persist — is not an enum spelling at all and
+-- dies in the decoder.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Enum"), ("checks", .arr []),
+              ("enums", .arr [.arr [.str "A",
+                .obj [("type", .str "boolean"), ("value", .bool true)]]])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
 /-! ## The bytes-in door
 
 `ingest` takes a VALUE. Everything that arrives from outside — a stored
@@ -452,6 +532,14 @@ theorem ingestBytes_payload' {a : Ast} (ha : a.WF) (hn : a.RepNormal) :
 -- `Value.int 7`, and `deNumNorm` is what puts it back.
 #guard (match ingestBytes (Ast.lit (.int ⟨7, by decide⟩)).payload with
         | .ok a => a.payload == (Ast.lit (.int ⟨7, by decide⟩)).payload
+        | .error _ => false)
+
+-- The enum through the BYTES door, including the number member the
+-- collapse would otherwise break.
+#guard (match ingestBytes (Ast.enum [("A", .int ⟨1, by decide⟩),
+          ("B", .str "b")]).payload with
+        | .ok a => a.payload ==
+            (Ast.enum [("A", .int ⟨1, by decide⟩), ("B", .str "b")]).payload
         | .error _ => false)
 
 -- Bytes that are no canonical rendering die at the parser, by name.

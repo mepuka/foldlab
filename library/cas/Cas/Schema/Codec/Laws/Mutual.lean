@@ -444,6 +444,10 @@ private theorem roundtrip_all :
     | ref t => exact False.elim (href t rfl)
     | decl _ _ _ => exact x.elim
     | union ms mode => exact False.elim (hunion ms mode rfl)
+    -- The enum denotes `Empty` (the named `enumEl` obligation), so this
+    -- arm closes the way the general declaration's does: there is no
+    -- value to have encoded, and the law is vacuous rather than false.
+    | enum _ => exact x.elim
   case case16 => intro v hd hwf x _; exact Empty.elim x
   case case17 => intro a v ihv hd hwf x hv; exact ihv hwf.1 x hv
   case case18 =>

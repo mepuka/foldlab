@@ -19,9 +19,11 @@ hand-composed literal pin covering the `Literal` spellings the
 deriving handler does not reach, the sidecar annotation kind
 (`Cas.Schema.Annotation`, stipulation S2), the union pin — both
 modes, a nested union, and members a sort would reorder, so
-order-is-identity is held by the bytes — and the DERIVED tagged union,
+order-is-identity is held by the bytes — the DERIVED tagged union,
 the generator's own pin for `deriving Described` over constructor
-alternatives. The TypeScript side asserts
+alternatives, and the enum pin — both member value rows, orders a sort
+would reorder, and the alias TypeScript admits. The TypeScript side
+asserts
 `CanonicalSchema.payloadOf` over the same codes answers these bytes —
 the canonical-schema pin the implementation plan holds open.
 -/
@@ -72,6 +74,29 @@ def unionPin : Ast := .struct [
   ("nested", true, .union [.null, .union [.arr .str, .bool] .oneOf] .anyOf)
 ]
 
+/-- The enum spellings, hand-composed (increment C4): both member value
+rows, member orders a sort WOULD REORDER, and the alias TypeScript
+admits — so order-is-identity and value-freedom are held by the
+committed bytes and not only by a docstring.
+
+- `direction` — a string enum spelled `Up` before `Down`. Any sort of
+  the members changes these bytes and the fixture goes red;
+- `level` — a numeric enum carrying a negative member and an ALIAS
+  (`Warn` and `Warning` at one value), which `WF` admits because the
+  NAME is the member's identity and the value is not;
+- `mixed` — one row of each kind, on an optional field, so the enum
+  rides both key positions. -/
+def enumPin : Ast := .struct [
+  ("direction", false, .enum [("Up", .str "Up"), ("Down", .str "Down")]),
+  ("level", false, .enum [
+    ("Debug", .int ⟨-1, by decide⟩),
+    ("Warn", .int ⟨1, by decide⟩),
+    ("Warning", .int ⟨1, by decide⟩)]),
+  ("mixed", true, .enum [
+    ("Name", .str "name"),
+    ("Zero", .int ⟨0, by decide⟩)])
+]
+
 /-- The DERIVED tagged union (increment C1, stage 2), authored through
 `cas_union`: the `Described` instance is what the deriving handler
 generates, so these bytes are the GENERATOR's output and not a
@@ -104,7 +129,8 @@ def registry : List (String × Ast) := [
   ("literal-pin", literalPin),
   ("annotation", Annotation.schemaCode),
   ("union-pin", unionPin),
-  ("tagged-pin", TaggedPin.schemaCode)
+  ("tagged-pin", TaggedPin.schemaCode),
+  ("enum-pin", enumPin)
 ]
 
 /-! ## Emission -/

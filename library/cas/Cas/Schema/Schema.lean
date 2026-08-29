@@ -134,4 +134,25 @@ Named increments, in order:
   the note). Stage 3, `oneOf` uniqueness as a checkable property,
   belongs to the validation-gen lane and owes a statement only when a
   gate consumes it.
+- **Enum** — LANDED (increment C4): `Ast.enum` is Effect's `Enum` as
+  content — an ORDERED list of `(name, value)` members over `EnumValue`,
+  the two value rows Effect can persist (string, number) and no others.
+  **ORDER IS IDENTITY** here for a reason visible in Effect's own
+  constructor: `Schema.Enum` reads its members as `Object.keys` order
+  (`Schema.ts:3021-3030`), which for a TypeScript enum is SOURCE order,
+  and the wire carries them as a positional array rather than a keyed
+  record, so no canonical rendering has anything to say about their
+  arrangement. `WF` asks for nonemptiness and pairwise-distinct member
+  NAMES (`enum_nil_not_wf`, `enum_names_nodup`) and deliberately NOT for
+  distinct values: TypeScript spells alias members, Effect persists
+  them, and refusing them here would retire content the source language
+  has. Every revision-1 law extends arm-wise with its STATEMENT
+  UNCHANGED, and `Ast.repNorm_enum` says why nothing more is owed: the
+  enum carries no sub-code, so it is a FIXED POINT of the normal form
+  and adds no collapse at all. Named obligation, deliberately parked:
+  the enum's DENOTATION. `El` of an `.enum` is `Empty`, because under
+  aliasing the index a value carries would be a function of member ORDER
+  rather than of the value — the general union's pathology exactly, and
+  it takes the same staged answer (`Cas/Schema/El.lean`, obligation
+  `enumEl`).
 -/

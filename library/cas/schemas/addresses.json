@@ -29,6 +29,10 @@
     {
       "address": "90208f8ffb27351f48346c096e93869c633ec58840c91456b7b533f70c65c8d9",
       "name": "tagged-pin"
+    },
+    {
+      "address": "845c3cfccb9fe60e6bdc4976e3e7e111ec57f2f88ee3bbfb47a7ae447490f15e",
+      "name": "enum-pin"
     }
   ]
 }

@@ -42,6 +42,23 @@ inductive LitVal where
   | str (s : String)
   deriving DecidableEq
 
+/-- An enum member's VALUE. Effect's `Enum` admits exactly two value
+types and no others — `Schema.Union([StringValueCodec, NumberValueCodec])`
+(`SchemaRepresentation.ts:1015-1022`) — so the carrier is those two rows
+and nothing else. It is deliberately NOT `LitVal`: a null or boolean
+enum member is not a spelling Effect can persist, and reusing `LitVal`
+would put two unspellable rows under the code and make the decoder
+carry a shape gate the type can carry instead.
+
+The number row is `SafeInt`, the same bound every other number in this
+plane obeys (CAS-004) — Effect's own field is `Schema.Number`, whose
+float range the value plane has no term for (the float ceiling,
+ruling 15). -/
+inductive EnumValue where
+  | str (s : String)
+  | int (i : SafeInt)
+  deriving DecidableEq
+
 /-- The codes. A struct field is `(name, optional, code)`. -/
 inductive Ast where
   | null
@@ -82,6 +99,28 @@ inductive Ast where
   The mode is always spelled — `UnionMode` is a constructor argument,
   not an option with a default. -/
   | union (members : List Ast) (mode : UnionMode)
+  /-- The enum code (increment C4): Effect's `Enum` as content — an
+  ORDERED list of `(name, value)` members, exactly the persisted shape
+  (`SchemaRepresentation.ts:1015-1022`).
+
+  **Order is identity**, for the same reason it is on `.union`, and with
+  a second reason of its own. Effect builds the member list as
+  `Object.keys(enums).filter(…).map(key => [key, enums[key]])`
+  (`Schema.ts:3021-3030`): `Object.keys` order, which for a TypeScript
+  enum is SOURCE order. Nothing in Effect's constructor, its
+  representation codec, or the estate's normalizer rearranges it, and
+  the array in the wire is positional, not a keyed record — so the
+  written order is the order stored, read back, and re-emitted, and
+  `enum [("A", …), ("B", …)] ≠ enum [("B", …), ("A", …)]`.
+
+  What `WF` asks is nonemptiness and pairwise-distinct NAMES. The name
+  is the member's identity (`E.A` is how a member is written), so two
+  members cannot share one. VALUES are deliberately unconstrained:
+  TypeScript admits alias members (`enum E { A = 1, B = 1 }`), Effect
+  persists both rows, and refusing them here would retire content the
+  source language spells. That freedom is exactly why the denotation is
+  parked — see `Cas/Schema/El.lean`, obligation `enumEl`. -/
+  | enum (members : List (String × EnumValue))
 
 mutual
 
@@ -101,12 +140,21 @@ On a union it is NONEMPTINESS and nothing else about the shape of the
 list: every member well-formed, in whatever order they were written.
 The empty union is refused — that is `Never`'s job, and `Never` is not
 admitted — and order is deliberately not constrained, because order is
-the identity (ratified). -/
+the identity (ratified).
+
+On an enum it is nonemptiness and pairwise-distinct member NAMES. The
+empty enum is refused for the same reason the empty union is: it admits
+nothing, which is `Never`, which is not admitted. Names are distinct
+because the name IS the member's identity. Order is again not
+constrained — it is the identity — and neither are the VALUES, which
+TypeScript is free to alias. -/
 def Ast.WF : Ast → Prop
   | .arr a => a.WF
   | .struct fs => List.Pairwise (fun a b => a.1 < b.1) fs ∧ WFFields fs
   | .decl id p ps => id.PayloadWF p ∧ ps.length = id.arity ∧ WFParams ps
   | .union ms _ => ms ≠ [] ∧ WFMembers ms
+  | .enum ms =>
+    ms ≠ [] ∧ List.Pairwise (fun a b : String × EnumValue => a.1 ≠ b.1) ms
   | _ => True
 
 def WFFields : List (String × Bool × Ast) → Prop
@@ -132,6 +180,18 @@ not an admitted code. Stated once so the refusal is a theorem and not
 just a clause. -/
 theorem union_nil_not_wf (m : UnionMode) : ¬ (Ast.union [] m).WF :=
   fun h => h.1 rfl
+
+/-- The empty enum is refused at `WF` for the same reason: an enum with
+no members admits no value, which is `Never`, which is not admitted. -/
+theorem enum_nil_not_wf : ¬ (Ast.enum []).WF :=
+  fun h => h.1 rfl
+
+/-- Distinct member names never repeat — the `Nodup` reading of the
+enum's own clause, stated once so the discipline is citable. -/
+theorem enum_names_nodup {ms : List (String × EnumValue)}
+    (h : List.Pairwise (fun a b : String × EnumValue => a.1 ≠ b.1) ms) :
+    (ms.map (·.1)).Nodup :=
+  List.pairwise_map.mpr h
 
 /-- Strictly sorted field names never repeat. -/
 theorem sorted_names_nodup {fs : List (String × Bool × Ast)}
