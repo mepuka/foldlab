@@ -7,6 +7,7 @@ import Cas.Schema.Foreign
 import Cas.Schema.SelfCodec
 import Cas.Schema.PayloadInj
 import Cas.Schema.Ingest
+import Cas.Schema.Basis
 
 /-!
 # The schema plane — layer above the values, root of the hierarchy
