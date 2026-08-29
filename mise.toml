@@ -67,12 +67,12 @@ run = "lake exe verdicts"
 [tasks."gen:backend-wire"]
 description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
 dir = "{{config_root}}/library/cas"
-run = "lake exe emitwire ../effects/src/cas/generated/ConformanceVectorSchema.ts"
+run = "lake exe emitwire"
 
 [tasks."gen:backend-programs"]
 description = "Regenerate the straight-line Effect programs of the registered grammar terms"
 dir = "{{config_root}}/library/cas"
-run = "lake exe emitprograms ../effects/test/generated/VectorPrograms.ts"
+run = "lake exe emitprograms"
 
 [tasks."gen:backend-mcp"]
 description = "Regenerate the versioned CAS MCP tool manifest from the signatures"
@@ -82,7 +82,7 @@ run = "lake exe mcpspec"
 [tasks."gen:lift-manifest"]
 description = "Regenerate the effect-lift rule manifest (JSON + Markdown projections) from the Lean lift data (authority: Cas.Lift.manifestV0)"
 dir = "{{config_root}}/library/cas"
-run = "lake exe emitlift ../effects/src/cas/generated/lift/manifest.json"
+run = "lake exe emitlift"
 
 [tasks."gen:cas-surface"]
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
@@ -97,10 +97,10 @@ run = [
   "lake exe vectors --check",
   "lake exe schemas --check",
   "lake exe verdicts --check",
-  "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorSchema.ts",
-  "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
+  "lake exe emitwire --check",
+  "lake exe emitprograms --check",
   "lake exe mcpspec --check",
-  "lake exe emitlift --check ../effects/src/cas/generated/lift/manifest.json",
+  "lake exe emitlift --check",
   "lake exe surface --check",
 ]
 

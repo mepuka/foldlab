@@ -53,17 +53,19 @@ name = "verdicts"
 srcDir = "tools"
 root = "Verdicts"
 
-# The wire-mirror emitter: `lake exe emitwire <path>` regenerates the
-# effects package's generated canonical-schema mirrors; `--check` is
-# the byte-identity gate.
+# The wire-mirror emitter: `lake exe emitwire` regenerates the effects
+# package's generated canonical-schema mirrors at the target the tool
+# bakes in (a positional path overrides it); `--check` is the
+# byte-identity gate.
 [[lean_exe]]
 name = "emitwire"
 srcDir = "tools"
 root = "EmitWire"
 
-# The program emitter: `lake exe emitprograms <path>` regenerates the
-# straight-line Effect programs of the registered grammar terms;
-# `--check` is the byte-identity gate.
+# The program emitter: `lake exe emitprograms` regenerates the
+# straight-line Effect programs of the registered grammar terms at the
+# target the tool bakes in (a positional path overrides it); `--check`
+# is the byte-identity gate.
 [[lean_exe]]
 name = "emitprograms"
 srcDir = "tools"
@@ -86,9 +88,10 @@ srcDir = "tools"
 root = "Surface"
 supportInterpreter = true
 
-# The lift-manifest emitter: `lake exe emitlift <path>` regenerates the
+# The lift-manifest emitter: `lake exe emitlift` regenerates the
 # effect-lift lane's rule manifest (the R11 interchange document the
-# recognition engines consume); `--check` is the byte-identity gate.
+# recognition engines consume) at the target the tool bakes in (a
+# positional path overrides it); `--check` is the byte-identity gate.
 [[lean_exe]]
 name = "emitlift"
 srcDir = "tools"

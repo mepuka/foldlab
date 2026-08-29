@@ -16,8 +16,8 @@ runs from `library/cas` unless noted.
 |---|---|---|
 | `lake exe vectors` | `vectors/*.json` (store words) | `--check` in `check:cas` |
 | `lake exe schemas` | `schemas/*.json` (schema payloads) | `--check` in `check:cas` |
-| `lake exe emitwire <path>` | generated wire mirrors in effects `src/cas/generated/` | `--check` in `check:cas` |
-| `lake exe emitprograms <path>` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
+| `lake exe emitwire` | generated wire mirrors in effects `src/cas/generated/` | `--check` in `check:cas` |
+| `lake exe emitprograms` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
 | `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) | `--check` in `check:cas` |
 | `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
 

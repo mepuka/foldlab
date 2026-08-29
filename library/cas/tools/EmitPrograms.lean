@@ -1,5 +1,6 @@
 import Cas.Vectors.Registry
 import Cas.Backend.EmitProg
+import Gate
 
 /-!
 # The program emitter — `lake exe emitprograms`
@@ -85,23 +86,17 @@ def rendered : IO String := do
   let rows := pureRows ++ [← schemaRow]
   return Render.module house0 (programsModule rows)
 
-def emit (path : String) : IO Unit := do
-  let text ← rendered
-  IO.FS.writeFile path text
-  IO.println s!"wrote {path} ({text.toUTF8.size} bytes, {pureRows.length + 1} programs)"
+/-- Where the generated programs live in the effects package — the
+registry's own knowledge of its artifact. A positional argument
+overrides it. -/
+def defaultTarget : System.FilePath :=
+  "../effects/test/generated/VectorPrograms.ts"
 
-def check (path : String) : IO Unit := do
-  let expected ← rendered
-  let actual ← try IO.FS.readFile path
-    catch _ => throw (IO.userError s!"{path} missing — run `lake exe emitprograms`")
-  unless actual == expected do
-    throw (IO.userError s!"{path} differs from regeneration — run `lake exe emitprograms`")
-  IO.println s!"ok {path} ({pureRows.length + 1} programs)"
+def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) := do
+  let text ← rendered
+  return [⟨target.getD defaultTarget, text,
+    s!"{pureRows.length + 1} programs"⟩]
 
 end EmitProgramsMain
 
-def main (args : List String) : IO Unit :=
-  match args with
-  | [path] => EmitProgramsMain.emit path
-  | ["--check", path] => EmitProgramsMain.check path
-  | _ => throw (IO.userError "usage: lake exe emitprograms [--check] <path>")
+def main := Gate.mainAt "lake exe emitprograms" EmitProgramsMain.fixtures

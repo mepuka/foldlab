@@ -1,6 +1,7 @@
 import Cas
 import Cas.Vectors.Schema
 import Cas.Backend.EmitAst
+import Gate
 
 /-!
 # The wire-mirror emitter — `lake exe emitwire`
@@ -66,21 +67,15 @@ def wireModule : Ts.Module where
 
 def rendered : String := Render.module house0 wireModule
 
-def emit (path : String) : IO Unit := do
-  IO.FS.writeFile path rendered
-  IO.println s!"wrote {path} ({rendered.toUTF8.size} bytes, {registry.length} mirrors)"
+/-- Where the mirror module lives in the effects package — the
+registry's own knowledge of its artifact, so no caller has to carry
+the path. A positional argument overrides it. -/
+def defaultTarget : System.FilePath :=
+  "../effects/src/cas/generated/ConformanceVectorSchema.ts"
 
-def check (path : String) : IO Unit := do
-  let actual ← try IO.FS.readFile path
-    catch _ => throw (IO.userError s!"{path} missing — run `lake exe emitwire`")
-  unless actual == rendered do
-    throw (IO.userError s!"{path} differs from regeneration — run `lake exe emitwire`")
-  IO.println s!"ok {path} ({registry.length} mirrors)"
+def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
+  return [⟨target.getD defaultTarget, rendered, s!"{registry.length} mirrors"⟩]
 
 end EmitWireMain
 
-def main (args : List String) : IO Unit :=
-  match args with
-  | [path] => EmitWireMain.emit path
-  | ["--check", path] => EmitWireMain.check path
-  | _ => throw (IO.userError "usage: lake exe emitwire [--check] <path>")
+def main := Gate.mainAt "lake exe emitwire" EmitWireMain.fixtures

@@ -1,4 +1,5 @@
 import Cas.Lift.Manifest
+import Gate
 
 /-!
 # The lift-manifest emitter — `lake exe emitlift`
@@ -10,24 +11,21 @@ the human Markdown rendering (P4) beside it at the same path with the
 `md` extension. `--check` is the byte-identity gate over both.
 -/
 
-def main (args : List String) : IO Unit := do
-  match args with
-  | [path] =>
-    let md := (System.FilePath.mk path).withExtension "md"
-    if let some parent := (System.FilePath.mk path).parent then
-      IO.FS.createDirAll parent
-    IO.FS.writeFile path Cas.Lift.document
-    IO.FS.writeFile md Cas.Lift.markdown
-    IO.println s!"wrote {path} ({Cas.Lift.document.toUTF8.size} bytes, {Cas.Lift.manifestV0.rules.length} rules) + {md}"
-  | ["--check", path] =>
-    let md := (System.FilePath.mk path).withExtension "md"
-    let actual ← try IO.FS.readFile path
-      catch _ => throw (IO.userError s!"{path} missing — run `lake exe emitlift {path}`")
-    unless actual == Cas.Lift.document do
-      throw (IO.userError s!"{path} differs from regeneration — run `lake exe emitlift {path}`")
-    let actualMd ← try IO.FS.readFile md
-      catch _ => throw (IO.userError s!"{md} missing — run `lake exe emitlift {path}`")
-    unless actualMd == Cas.Lift.markdown do
-      throw (IO.userError s!"{md} differs from regeneration — run `lake exe emitlift {path}`")
-    IO.println s!"ok {path} + {md} ({Cas.Lift.manifestV0.rules.length} rules)"
-  | _ => throw (IO.userError "usage: lake exe emitlift [--check] <path>")
+namespace EmitLiftMain
+
+/-- Where the manifest lives in the effects package — the lane's own
+knowledge of its artifact. A positional argument overrides it, and the
+Markdown projection follows the JSON's path either way. -/
+def defaultTarget : System.FilePath :=
+  "../effects/src/cas/generated/lift/manifest.json"
+
+def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
+  let json := target.getD defaultTarget
+  let rules := s!"{Cas.Lift.manifestV0.rules.length} rules"
+  return [
+    ⟨json, Cas.Lift.document, rules⟩,
+    ⟨json.withExtension "md", Cas.Lift.markdown, s!"{rules}, Markdown"⟩]
+
+end EmitLiftMain
+
+def main := Gate.mainAt "lake exe emitlift" EmitLiftMain.fixtures
