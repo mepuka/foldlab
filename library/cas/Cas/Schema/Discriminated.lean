@@ -92,7 +92,10 @@ theorem discriminatedB_iff : ∀ (ms : List Ast),
           Bool.not_true, decide_eq_false_iff_not]
         exact ⟨hnot, (discriminatedB_iff rest).mpr hrest⟩
 
-instance : DecidablePred Discriminated := fun ms =>
+/-- Discrimination is decidable, through the boolean twin — so the
+property is checkable at a door, at elaboration, and in a proof by the
+same route, with no second definition to keep in step. -/
+instance instDecidableDiscriminated : DecidablePred Discriminated := fun ms =>
   decidable_of_iff _ (discriminatedB_iff ms)
 
 /-! ## Micro-lemmas — everything the denotation and its codec consume -/

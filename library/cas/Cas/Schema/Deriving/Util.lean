@@ -67,6 +67,34 @@ def fieldOfEl {ρ : Type v} {α : Type u} [d : FieldDescription α]
     (x : cond d.optional (Option (El d.code)) (El d.code)) : α :=
   d.ofEl x
 
+/-! ## Constructor alternatives — the inductive path
+
+A STRUCTURE field arrives with a getter, and the getter's return type
+is what names its `FieldDescription`. A CONSTRUCTOR field has no
+getter, so the native type is passed in directly. Same class, same
+instance, same three operations — one different way in, so the
+structure path's helpers stay byte-identical. -/
+
+/-- The code-level field triple for a constructor field, named by its
+type rather than by a getter. -/
+def altSpec (name : String) (α : Type u) [d : FieldDescription α] :
+    String × Bool × Ast :=
+  (name, d.optional, d.code)
+
+theorem altWF (α : Type u) [d : FieldDescription α] : d.code.WF := d.wf
+
+/-- The type is inferred from the constructor binder here: inside a
+generated match alternative the binder already carries it. -/
+def altToEl {α : Type u} [d : FieldDescription α] (x : α) :
+    cond d.optional (Option (El d.code)) (El d.code) :=
+  d.toEl x
+
+/-- The type is inferred from the constructor's argument position
+here — the constructor is what fixes it. -/
+def altOfEl {α : Type u} [d : FieldDescription α]
+    (x : cond d.optional (Option (El d.code)) (El d.code)) : α :=
+  d.ofEl x
+
 /-- Rebuild the right-nested product used by `ElFields`. This explicit
 identity traversal gives generated inverse proofs one stable lemma
 instead of a variable-length chain of product-eta rewrites. -/

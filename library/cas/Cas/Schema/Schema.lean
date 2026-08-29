@@ -95,10 +95,31 @@ Named increments, in order:
   admitted). Every revision-1 law extends arm-wise with its STATEMENT
   UNCHANGED, and `Ast.repNorm_union` says why: the normal form rewrites
   the members positionwise and leaves mode, count, and order alone, so
-  no third collapse is owed. Stage 1 is CARRIAGE: `El` of a union is
-  `Empty`, and `Cas/Schema/El.lean` names the staged obligation —
-  the DISCRIMINATED-union denotation, joined with deriving for
-  inductives, per Effect's own sentinel insight. Stage 3, `oneOf`
-  uniqueness as a checkable property, belongs to the validation-gen
-  lane and owes a statement only when a gate consumes it.
+  no third collapse is owed.
+- **Union, stage 2 — denotation, discriminated first** — LANDED
+  (`UNION-DESIGN.md`, joined with the deriving growth as ratified):
+  `Discriminated` is Effect's sentinel property as first-order data
+  (`discriminatedB`/`Discriminated`/`discriminatedB_iff`, the house
+  wf-idiom), and `El (.union ms m)` is `ElMembers ms` — the iterated
+  member sum — when the members are discriminated and `Empty` when they
+  are not. That guard is what keeps every stage-1 law TRUE over the
+  grown carrier rather than merely unchanged: an undiscriminated union
+  still denotes nothing, so its value-plane arms stay vacuous, while a
+  discriminated one gets tag dispatch (`encodeMembers`/`decodeMembers`)
+  whose forward law is a THEOREM because distinct `_tag` literals make
+  the members' images disjoint (`decode_head_encodeMembers_tail`).
+  Discrimination is deliberately NOT part of `Ast.WF`: `WF` is the
+  store's admission discipline and stage 1 already admits every union,
+  the pathological ones included. `deriving Described` grows the same
+  slice: a non-recursive, non-mutual, parameter-free inductive derives
+  as `Ast.union […] .oneOf` of per-constructor tagged structs, with
+  members ordered by tag (the ONE spelling a generator may pick — D1)
+  and `<T>.schemaDiscriminated` emitted beside the instance as the
+  proof that the code is discriminated. `cas_union` is the authoring
+  notation. Named obligation, deliberately parked: the GENERAL union's
+  denotation — the try-order dependent sum for undiscriminated members,
+  owed only when a consumer demands it (`Cas/Schema/El.lean` carries
+  the note). Stage 3, `oneOf` uniqueness as a checkable property,
+  belongs to the validation-gen lane and owes a statement only when a
+  gate consumes it.
 -/

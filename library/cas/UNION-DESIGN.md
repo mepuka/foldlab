@@ -75,9 +75,9 @@ no value-plane codec. This makes unions store content — mintable,
 addressable, materializable via Effect (`fromRepresentation` gives
 the live validator for free, including sentinel discrimination).
 
-**Stage 2 — denotation, discriminated first:** `El` for a general
-union is a dependent sum with try-order semantics — proof-heavy and
-semantically muddy for `anyOf` overlap. The staged answer follows
+**Stage 2 — denotation, discriminated first — LANDED:** `El` for a
+general union is a dependent sum with try-order semantics — proof-heavy
+and semantically muddy for `anyOf` overlap. The staged answer follows
 Effect's own sentinel insight: land `El`/value-codec/`Described` only
 for **discriminated unions** (every member a struct carrying the same
 literal-tagged field — the `TaggedUnion` shape), where decoding is
@@ -86,6 +86,34 @@ This is also precisely what `deriving Described` for inductives emits
 (DERIVING-DESIGN §2), so Stage 2 and the deriving growth are one
 slice. General-union denotation stays a named obligation until a
 consumer demands it.
+
+What landed, and the two calls it forced:
+
+- `El (.union ms m) = cond (discriminatedB ms) (ElMembers ms) Empty`.
+  Discrimination is a DENOTATION precondition and stays out of
+  `Ast.WF`, because `WF` is the store's admission discipline and
+  Stage 1 already admits every union. The guard is what keeps Stage
+  1's unconditional laws true rather than merely unchanged.
+- The tag field is `_tag` (Effect's `TaggedStruct` name), required,
+  string-literal, and FIRST — which the canonical-fields discipline
+  makes a deterministic position.
+- **D1, the generator's spelling.** Order is identity, so a GENERATOR
+  has to pick one member order, and `deriving Described` picks
+  ascending tag string rather than source order: shuffling an
+  inductive's constructors must not move its address. The carrier
+  still never rearranges anything; the sorting happens once, before a
+  code exists. **R17's register row owes this clause too** — order is
+  semantic to the carrier AND canonical at the generator.
+- The mode a derived union carries is `oneOf`, spelled: the members are
+  pairwise disjoint by construction, so the stronger reading is the
+  true one, and D4 forbids eliding it.
+
+Restrictions the constructor-alternative path enforces, each with its
+own refusal message: non-recursive, non-mutual, non-nested (as before),
+**parameter-free** (the union code has nowhere to spell type
+parameters — the structure path keeps its parameter support), every
+constructor field NAMED, no field named `_tag`, and no field whose JSON
+name sorts before `_tag`.
 
 **Stage 3 — validation semantics:** `oneOf` uniqueness as a checkable
 property (the `OneOf`-successes shape) belongs to the validation-gen

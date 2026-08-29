@@ -30,6 +30,11 @@
       "byteLength": 1171,
       "file": "union-pin.json",
       "name": "union-pin"
+    },
+    {
+      "byteLength": 1630,
+      "file": "tagged-pin.json",
+      "name": "tagged-pin"
     }
   ]
 }
