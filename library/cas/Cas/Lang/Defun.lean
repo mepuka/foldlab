@@ -49,10 +49,15 @@ Proved below:
   tables whose direct runs agree at every word denote observationally
   equal programs. R5's observation and R14's `ObsEq` are one thing,
   through the R10 bridge.
-- (ROLLED BACK, see below) `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
+- `readPIn_encodePIn`, `readPRef_encodePRef` — operand and typed-ref
   round trips over the shared byte primitives (`nat32`, `readChunk`).
-- (ROLLED BACK, see below) `decodeLine_encodeLine` — the code-point round trip:
-  `decodeLine (encodeLine l) = some l` for well-formed lines.
+  UN-PARKED 2026-08-29: rolled back on 2026-08-28 for kernel-memory
+  exhaustion, restored by staging the proofs against abstract byte
+  strings (see the staging note above `readPIn_zero`).
+- `decodeLine_encodeLine` — the code-point round trip:
+  `decodeLine (encodeLine l) = some l` for well-formed lines. UN-PARKED
+  2026-08-29 by the same decomposition; this is the theorem whose
+  monolithic proof caused the OOM-killed builds.
 - `encodeProg_wf` — the encoded table ADMITS as a word
   (`Word.wf (encodeProg H p) = true`) for EVERY address function `H`,
   hash-lattice Level 0: line nodes carry no references and the table
@@ -397,10 +402,47 @@ def readPIn : Bytes → Option (PIn × Bytes)
       | none => none
     else none
 
--- ROLLED BACK (C4, 2026-08-28): `readPIn_encodePIn` is unproven post-merge
--- (elaboration failures; original proof parked in
--- .staging/parser-experiments/defun-held-proofs.lean.txt). Un-ratified
--- machinery rolls back, never ships sorried in the graded tree.
+/-! ### The operand round trip, staged
+
+The 2026-08-28 rollback died of ONE cause, and `NodeCodec.lean` had
+already measured it: "two-stage proofs check instantly; three-stage
+exhausts the kernel". The parked proofs rewrote the byte primitives
+straight into the CONCRETE encoding term under a nested `match` motive,
+so every stage multiplied the motive the kernel re-checked.
+
+The cure is the same one the node codec uses: each `match` scrutinee is
+discharged against an ABSTRACT byte string in its own lemma, and the
+concrete encoding meets the reader only at the final `exact`. The
+motives stay one stage wide and the kernel never sees the composition. -/
+
+/-- The reader's literal-address arm, at an abstract tail. -/
+theorem readPIn_zero (r : Bytes) :
+    readPIn (0 :: r) =
+      match readChunk 32 r with
+      | some (c, rest') =>
+        if h : c.length = 32 then some (PIn.lit ⟨c, h⟩, rest') else none
+      | none => none := rfl
+
+/-- The reader's answer-index arm, at an abstract tail. -/
+theorem readPIn_one (r : Bytes) :
+    readPIn (1 :: r) =
+      match readNat32 r with
+      | some (i, rest') => some (PIn.ans i, rest')
+      | none => none := rfl
+
+/-- OPERAND ROUND TRIP (un-parked): the operand reader recovers a
+well-formed operand and consumes exactly its encoding. -/
+theorem readPIn_encodePIn (x : PIn) (h : x.WF) (rest : Bytes) :
+    readPIn (encodePIn x ++ rest) = some (x, rest) := by
+  cases x with
+  | lit a =>
+    show readPIn (0 :: (a.val ++ rest)) = _
+    rw [readPIn_zero, readChunk_append rest a.property]
+    dsimp only
+    rw [dif_pos a.property]
+  | ans i =>
+    show readPIn (1 :: (nat32 i ++ rest)) = _
+    rw [readPIn_one, readNat32_nat32 i h rest]
 
 /-- Encode one typed operand reference: the expected kind tag byte,
 then the operand. -/
@@ -414,8 +456,17 @@ def readPRef : Bytes → Option ((UInt8 × PIn) × Bytes)
     | some (i, rest') => some ((t, i), rest')
     | none => none
 
--- ROLLED BACK (C4, 2026-08-28): `readPRef_encodePRef` cites the rolled-back
--- `readPIn_encodePIn`; parked in the same file.
+/-- TYPED-REF ROUND TRIP (un-parked): the kind tag passes through and the
+operand round trip carries the rest. -/
+theorem readPRef_encodePRef (r : UInt8 × PIn) (h : r.2.WF) (rest : Bytes) :
+    readPRef (encodePRef r ++ rest) = some (r, rest) := by
+  obtain ⟨t, i⟩ := r
+  show readPRef (t :: (encodePIn i ++ rest)) = _
+  rw [show readPRef (t :: (encodePIn i ++ rest))
+      = match readPIn (encodePIn i ++ rest) with
+        | some (x, rest') => some ((t, x), rest')
+        | none => none from rfl,
+    readPIn_encodePIn i h rest]
 
 /-- `readN` under a membership-relative round trip: the counted-
 sequence reader recovers a list whose ELEMENTS satisfy the reader's
@@ -484,11 +535,76 @@ def encodeLine (l : PLine) : Node :=
 def decodeLine (n : Node) : Option PLine :=
   if n.tag = stepWireTag then readLine n.payload else none
 
--- ROLLED BACK (C4, 2026-08-28): `decodeLine_encodeLine` — the code-point
--- round-trip law — is unproven post-merge: its original proof exhausts
--- KERNEL memory (the cause of this morning's OOM-killed builds). Parked in
--- .staging/parser-experiments/defun-held-proofs.lean.txt; repair through
--- the llm-proof-loop lane, then restore all three together.
+/-! ### The code-point round trip, staged
+
+This is the theorem whose monolithic proof exhausted kernel memory on
+2026-08-28. `readLine`'s put arm is a FOUR-stage nested match (frame,
+count, counted refs, trailing-empty), and the parked proof drove all
+four stages simultaneously through the concrete encoding term in one
+`simp only`. Per `NodeCodec.lean`'s measured determination that is the
+shape that does not check.
+
+The two lemmas below are the decomposition: each takes its stage
+scrutinees as HYPOTHESES over abstract byte strings, so the match
+motives are one stage wide and mention no encoding at all. The concrete
+encoding is supplied once, at the call site, as three already-proved
+byte-primitive facts. -/
+
+/-- The line reader's put arm, driven by its three stage results over an
+abstract body. -/
+theorem readLine_put_of (v t : UInt8) {body payload r1 r2 : Bytes}
+    {cnt : Nat} {refs : List (UInt8 × PIn)}
+    (h1 : readFrame body = some (payload, r1))
+    (h2 : readNat32 r1 = some (cnt, r2))
+    (h3 : readN readPRef cnt r2 = some (refs, [])) :
+    readLine (0 :: v :: t :: body) = some (.put v t payload refs) := by
+  rw [show readLine (0 :: v :: t :: body)
+      = match readFrame body with
+        | some (payload, r1) =>
+          match readNat32 r1 with
+          | some (cnt, r2) =>
+            match readN readPRef cnt r2 with
+            | some (refs, []) => some (PLine.put v t payload refs)
+            | _ => none
+          | none => none
+        | none => none from rfl, h1]
+  dsimp only
+  rw [h2]
+  dsimp only
+  rw [h3]
+
+/-- The line reader's load arm, driven by its one stage result over an
+abstract body. -/
+theorem readLine_load_of {r : Bytes} {src : PIn}
+    (h : readPIn r = some (src, [])) :
+    readLine (1 :: r) = some (.load src) := by
+  rw [show readLine (1 :: r)
+      = match readPIn r with
+        | some (src, []) => some (PLine.load src)
+        | _ => none from rfl, h]
+
+/-- CODE-POINT ROUND TRIP (un-parked): a well-formed line, encoded as a
+step node, decodes back to itself. -/
+theorem decodeLine_encodeLine (l : PLine) (h : l.WF) :
+    decodeLine (encodeLine l) = some l := by
+  rw [show decodeLine (encodeLine l) = readLine (encodeLineBody l) from
+    if_pos rfl]
+  cases l with
+  | put v t payload refs =>
+    obtain ⟨hpay, hcnt, hrefs⟩ := h
+    have h3 : readN readPRef refs.length ((refs.map encodePRef).flatten)
+        = some (refs, []) := by
+      have := readN_encode_of
+        (fun a ha rest => readPRef_encodePRef a ha rest) refs hrefs []
+      simpa using this
+    exact readLine_put_of v t
+      (readFrame_frame payload hpay _)
+      (readNat32_nat32 refs.length hcnt _) h3
+  | load src =>
+    have h1 : readPIn (encodePIn src) = some (src, []) := by
+      have := readPIn_encodePIn src h []
+      simpa using this
+    exact readLine_load_of h1
 
 /-! ## The table as a word — the program IS content -/
 
