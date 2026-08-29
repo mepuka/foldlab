@@ -1,11 +1,11 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Codec": 200,
-    "Core": 256,
+    "Codec": 210,
+    "Core": 266,
     "Grammar": 46,
-    "IR": 90,
-    "Lang": 142,
+    "IR": 98,
+    "Lang": 151,
     "Lift": 37,
     "Schema": 458,
     "Values": 364,
@@ -13,29 +13,29 @@
   },
   "axiomCensus": {
     "Classical.choice": 188,
-    "Quot.sound": 306,
-    "propext": 420
+    "Quot.sound": 308,
+    "propext": 427
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 121,
-    "Cas.Binding": 35,
+    "Cas.Addr32": 131,
+    "Cas.Binding": 39,
     "Cas.Grammar.Tree": 26,
     "Cas.Grammar.Ty": 35,
-    "Cas.Lang.Handler": 15,
+    "Cas.Lang.Handler": 17,
     "Cas.Lang.Prog": 71,
-    "Cas.Lang.Refusal": 14,
+    "Cas.Lang.Refusal": 18,
     "Cas.Lang.Sig": 42,
     "Cas.Lang.Status": 40,
     "Cas.Lang.interpret": 6,
-    "Cas.Node": 64,
+    "Cas.Node": 68,
     "Cas.Schema.Ast": 284,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
-    "Cas.Word": 68
+    "Cas.Word": 75
   },
-  "declarations": 1314,
-  "documented": 644,
+  "declarations": 1326,
+  "documented": 656,
   "library": "Cas",
   "modules": [
     {
@@ -2658,6 +2658,112 @@
           "name": "Cas.instDecidableEqBinding.decEq",
           "signature": "(x x_1 : Cas.Binding) → Decidable (x = x_1)",
           "touches": ["IR"]
+        }
+      ]
+    },
+    {
+      "declarations": 12,
+      "documented": 12,
+      "module": "Cas.Lang.Auth",
+      "surface": [
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.HonestWord",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Word → Prop",
+          "touches": ["Codec", "Core", "IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.ProveM",
+          "signature": "Type → Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.VerifyM",
+          "signature": "Type → Type"
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.honestWord_find",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {w : Cas.Word} {a : Cas.Addr32} {n : Cas.Node}, Cas.Lang.HonestWord H w → w.find a = some n → ∃ h, Cas.addr H ⟨n, h⟩ = a",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.honestWord_nil",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32), Cas.Lang.HonestWord H []",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.honestWord_snoc",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {w : Cas.Word} {a : Cas.Addr32} {n : Cas.Node}, Cas.Lang.HonestWord H w → ∀ (h : n.WF), Cas.addr H ⟨n, h⟩ = a → Cas.Lang.HonestWord H (w ++ [{ address := a, node := n }])",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Handler"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.proveHandler",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.Handler Cas.Lang.CasSig Cas.Lang.ProveM",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.proveHandler_store_agree",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (op : Cas.Lang.CasSig.Op) (w π : Cas.Word), Except.map (fun r => (r.fst, r.snd.fst)) ((Cas.Lang.proveHandler H).handle op (w, π)) = (Cas.Lang.referenceHandler H).handle op w",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Lang.Refusal", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.referenceHandler_honest",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) (op : Cas.Lang.CasSig.Op) {w w' : Cas.Word} {ans : Cas.Lang.CasSig.Ans op}, Cas.Lang.HonestWord H w → (Cas.Lang.referenceHandler H).handle op w = Except.ok (ans, w') → Cas.Lang.HonestWord H w'",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Lang.Handler"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.verifyHandler",
+          "signature": "(Cas.Bytes → Cas.Addr32) → Cas.Lang.Handler Cas.Lang.CasSig Cas.Lang.VerifyM",
+          "touches": ["Codec", "Core", "Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_load_accept",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {a : Cas.Addr32} {π rest : Cas.Word} {m : Cas.Node}, (Cas.Lang.verifyHandler H).handle (Cas.Lang.CasE.load a) π = Except.ok (m, rest) → (∃ dec, π = { address := dec, node := m } :: rest) ∧ ∃ hm, Cas.addr H ⟨m, hm⟩ = a",
+          "touches": ["Codec", "Core", "IR", "Lang"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Lang.Refusal", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.verify_load_or_collision",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {w π rest : Cas.Word} {a : Cas.Addr32} {m n : Cas.Node}, Cas.Lang.HonestWord H w → w.find a = some n → (Cas.Lang.verifyHandler H).handle (Cas.Lang.CasE.load a) π = Except.ok (m, rest) → (∃ dec, π = { address := dec, node := m } :: rest) ∧ (m = n ∨ Cas.encodeNode m ≠ Cas.encodeNode n ∧ H (Cas.encodeNode m) = H (Cas.encodeNode n))",
+          "touches": ["Codec", "Core", "IR", "Lang"]
         }
       ]
     },
@@ -10547,10 +10653,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 670,
+    "def": 675,
     "inductive": 34,
     "instance": 59,
     "structure": 36,
-    "theorem": 512
+    "theorem": 519
   }
 }

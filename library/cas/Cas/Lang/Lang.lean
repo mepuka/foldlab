@@ -3,6 +3,7 @@ import Cas.Lang.Prog
 import Cas.Lang.Ops
 import Cas.Lang.Interp
 import Cas.Lang.Handler
+import Cas.Lang.Auth
 import Cas.Lang.Tower
 import Cas.Lang.Representation
 import Cas.Lang.Roots
@@ -23,5 +24,9 @@ and the rooted interpreter delegating Cas operations to `step`);
 `TreeProg` is layer 2 derived inside layer 3 — the grammar term as a
 store program, with `putTree_correct` (F1) proving the run computes
 exactly the elaboration's address and store, deduplicating shared
-subterms (F2).
+subterms (F2); `Auth` is authenticated computation as a handler pair —
+`proveHandler` records the LOAD trace onto a proof word, `verifyHandler`
+re-interprets the same program against a claimed proof word holding no
+store, and `verify_load_or_collision` is the one-operation
+ideal-or-collision disjunct at hash-lattice Level 0.
 -/
