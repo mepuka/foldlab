@@ -52,7 +52,8 @@ deleted.
 | [.staging/treesitter/MATERIALIZER-LANE.md](../.staging/treesitter/MATERIALIZER-LANE.md) | grammar materializer | Union half unblocked (landed); recursion half (Suspend/Reference, GROW C6) stands |
 | [.staging/verbal-register/REGISTER.md](../.staging/verbal-register/REGISTER.md) | verbal register | DO-NOT-RATIFY-AS-WRITTEN (PLAIN-LANGUAGE.md verdict): wrong plane; regenerate over `Ast` with witnesses |
 | [.staging/operational-structure/BOOTSTRAP.md](../.staging/operational-structure/BOOTSTRAP.md) | bootstrap semantics | Pre-grade design (2026-08-29): env ledger, AGENTS-as-projection gates, MCP setup story; 9 ruling asks; honest limit — "Lean owns the descriptions; mise owns the execution; the doctor for the Lean plane is not Lean" |
-| [.staging/operational-structure/D1-OPTION-A-SCOPING.md](../.staging/operational-structure/D1-OPTION-A-SCOPING.md) | grammar pin | Scoping report (2026-08-29): Option A's premise refuted — pin is upstream HEAD; D1b discovered (Schema.ts unparseable at any pin); A′ fork recipe + 6 re-ruling asks |
+| [.staging/operational-structure/D1-OPTION-A-SCOPING.md](../.staging/operational-structure/D1-OPTION-A-SCOPING.md) | grammar pin | Scoping report (2026-08-29): Option A's premise refuted — pin is upstream HEAD; D1b discovered (Schema.ts unparseable at any pin under tree-sitter); A′ fork recipe + 6 re-ruling asks. Superseded in urgency by ruling 13 — OXC is the capability instrument; tree-sitter defects gate only the tree-sitter legs |
+| [.staging/operational-structure/EFFECT-AST-PLACEMENT.md](../.staging/operational-structure/EFFECT-AST-PLACEMENT.md) | program/layer carriers | Placement study (2026-08-29): seat check + corpus measurement; G6-a commissioned from it (decision 9); program half ruled to stay L-A + classification |
 | [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
@@ -121,10 +122,22 @@ records the 2026-08-29 session rulings that cut across specs.
 8. **DSL proposal: proceed cautiously.** Everyone self-aware —
    understand what and why they're building, and BLOCK fast and
    early instead of producing work that gums up the future.
-9. **Effect program AST — inclined** ("may as well build"): Effect
-   program and Layer construction semantics are regular enough; at
-   minimum it is a CODEGEN-via-MCP workflow, one of the estate's
-   most powerful language expressions. Design first, not minted yet.
+9. **Effect program AST — SUPERSEDED same day** by the placement
+   study
+   ([EFFECT-AST-PLACEMENT](../.staging/operational-structure/EFFECT-AST-PLACEMENT.md)):
+   the question was already answered by ratified law. The layer half
+   IS G6 of REIFICATION-SUBSTRATE (unblocked — its blocker B-B,
+   `Projection.putNode`, landed with G4); the general-program half
+   is refuted by measurement (Layer vocabulary: top-5 members cover
+   92% of 10k corpus sites; Effect.gen bodies: only ~35% straight-
+   line — the noun is regular, the verb is not). Operator then
+   **commissioned G6-a verbatim** (SystemNode described kind → 
+   EmitLayer → Context-key-set differential, ~230 lines, zero new
+   abstraction) and ruled the **codegen-via-MCP floor a first-class
+   lane-1 priority** — the MCP host serving cas-tools.json plus the
+   cas_emit_layers verb. *Why: fluent service-level composition
+   generation, usable by the rest of the spectrum, is base server
+   infrastructure and needs robust engineering.*
 10. **Bootstrap semantics** (language-police scope growth): consider
     Lean owning ALL tooling, shipping detailed fixtures for building
     itself; config tooling + robust env awareness ship day 1. Flow:
@@ -140,3 +153,22 @@ records the 2026-08-29 session rulings that cut across specs.
     referenced from domain AGENTS.md files; decisions recorded with
     their why. *Why: the operator's decisions are estate content —
     untracked rationale is the same defect as untracked prose.*
+13. **TS-GO NATIVE / OXC IN-PROCESS** (2026-08-29 night): the estate
+    is TypeScript-7-native — tsgo everywhere; classic tsc is banned
+    from prod hot paths ("slow and completely unneeded anymore,
+    ignore all prior warnings"). OXC in-process is the parsing
+    instrument — fast TypeScript parsing with pattern matching.
+    **The 100%-fidelity mandate**: grammar-defect excuses (D1/D1b's
+    "Schema.ts unparseable") are rejected as claims about the
+    CAPABILITY — they are facts about the tree-sitter instrument
+    only; 100% fidelity to the pinned Effect fixtures from wildtype
+    code ingestion is achievable and is the standard. Build the
+    capability on OXC; an agent unwilling to build it is off the
+    lane.
+14. **Bootstrap builds cleared**: proceed with the recommended
+    builds (envledger EL1 first). Tuning direction: study real
+    build tools (Nix, mise); a dedicated CAS + performance tooling
+    for this build-out is probably worth it, with the CRUCIAL
+    determination that it has **fluent semantics for LOCAL,
+    SELF-HOSTED, and CLOUD resource handling**. May fold into the
+    G6/server-infra lane.
