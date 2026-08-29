@@ -292,3 +292,20 @@ records the 2026-08-29 session rulings that cut across specs.
     address is the certificate — a fast foreign host serving
     content-addressed bytes cannot lie. litestream (Go) is the
     standing precedent already in the estate.
+23. **The backend backlog — RATIFIED as three waves** (2026-08-29
+    night, operator: "RATIFIED"): Wave 1 — BS-1 (the host cannot
+    stall silently; precondition for every served surface), the
+    rc.112 move (closes C6, unlocks foldkit + the browser store),
+    the convergent naming ruling (Annotation.subject widened to a
+    union over addressable planes with typed store-content values;
+    CodeRef promoted to (file StoreRef, export) while stored
+    topologies number two), and the two ServePolicy fields (frame
+    cap, maxInFlight). Wave 2 — cas_word; published programs (queue
+    22→23, host step/cont codec, R7 stamp first); the daemon bind
+    AFTER BS-1; FE-1 emitagents. Wave 3 — mise sources/outputs,
+    litestream TOOLS row + lag metric, the working-tag register,
+    Persistable folding, the libsql/sqld scout, the code-mode
+    manifest row. Also ratified: names are annotations never
+    identity; Addr32 stands (under-identified not under-sized —
+    R5's cheap half only); new kinds yes (three arm-additive), new
+    sorts NO — the sort registry's stillness is the discipline.
