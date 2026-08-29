@@ -2,19 +2,19 @@
   "areaCensus": {
     "Architecture": 34,
     "Codec": 227,
-    "Core": 288,
+    "Core": 289,
     "Grammar": 119,
     "IR": 102,
     "Lang": 169,
     "Lift": 37,
-    "Schema": 475,
-    "Values": 400,
+    "Schema": 480,
+    "Values": 405,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 201,
-    "Quot.sound": 334,
-    "propext": 469
+    "Classical.choice": 205,
+    "Quot.sound": 338,
+    "propext": 474
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 41,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 74,
-    "Cas.Schema.Ast": 294,
+    "Cas.Schema.Ast": 299,
     "Cas.Schema.Described": 26,
-    "Cas.Schema.El": 33,
+    "Cas.Schema.El": 35,
     "Cas.Word": 77
   },
-  "declarations": 1468,
-  "documented": 720,
+  "declarations": 1473,
+  "documented": 723,
   "library": "Cas",
   "modules": [
     {
@@ -7985,10 +7985,37 @@
       ]
     },
     {
-      "declarations": 24,
-      "documented": 14,
+      "declarations": 29,
+      "documented": 17,
       "module": "Cas.Schema.Projection",
       "surface": [
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.canonRFields_elRFields",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)), Cas.Schema.WFFields fs → ∀ (x : Cas.Schema.ElFields fs), Cas.canonRFields (Cas.Schema.elRFields fs x) = Cas.Schema.elRFields fs x",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.canonR_elR",
+          "signature": "∀ (a : Cas.Schema.Ast), a.WF → ∀ (v : Cas.Schema.El a), Cas.canonR (Cas.Schema.elR a v) = Cas.Schema.elR a v",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.canonR_elRMembers",
+          "signature": "∀ (b : Bool) (ms : List Cas.Schema.Ast), Cas.Schema.WFMembers ms → ∀ (x : bif b then Cas.Schema.ElMembers ms else Empty), Cas.canonR (Cas.Schema.elRMembers b ms x) = Cas.Schema.elRMembers b ms x",
+          "touches": ["Schema", "Values"]
+        },
         {
           "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
           "documented": true,
@@ -8003,6 +8030,15 @@
           "kind": "def",
           "name": "Cas.Schema.elRFields",
           "signature": "(fs : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.ElFields fs → List (String × Cas.RValue)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.elRFields_keys_sublist",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)) (x : Cas.Schema.ElFields fs), (List.map (fun g => g.fst) (Cas.Schema.elRFields fs x)).Sublist (List.map (fun f => f.fst) fs)",
           "touches": ["Schema", "Values"]
         },
         {
@@ -8128,6 +8164,15 @@
           "name": "Cas.Schema.project",
           "signature": "Nat → (a : Cas.Schema.Ast) → Cas.Schema.El a → Option (String × List Cas.Ref)",
           "touches": ["Core", "Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.project_agreement",
+          "signature": "∀ {revision : Nat} {a : Cas.Schema.Ast}, a.WF → ∀ {v : Cas.Schema.El a} {text : String} {refs : List Cas.Ref}, Cas.Schema.project revision a v = some (text, refs) → refs = Cas.linksOf (Cas.Schema.elR a v) ∧ ∃ payload, Cas.lower (Cas.Schema.elR a v) = some (payload, refs) ∧ Cas.markerScan payload = some (List.range refs.length)",
+          "touches": ["Core", "Schema", "Values"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -11720,6 +11765,6 @@
     "inductive": 37,
     "instance": 66,
     "structure": 42,
-    "theorem": 563
+    "theorem": 568
   }
 }

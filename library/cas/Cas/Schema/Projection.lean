@@ -262,6 +262,134 @@ theorem eraseR_elRMembers :
 
 end
 
+/-! ## The fold is already canonical — where the agreement law lives
+
+`lower` canonicalizes before it assigns indexes, so on its own the
+coherence law says the reference array is the links of the CANONICALIZED
+tree. That is the honest general statement and it is not yet the one a
+projection wants, which is about the CODE's positions.
+
+Under `Ast.WF` the gap closes, and the reason is the admission
+discipline rather than luck: a struct's fields are STRICTLY SORTED by
+name in the code (`Ast.WF` on `.struct`), the fold emits them in code
+order, and dropping an absent optional field leaves a SUBLIST — which is
+still sorted. So the fold's image is a fixed point of `canonR`, the
+canonicalization step is the identity on it, and the marker indexes fall
+in the code's own field order. `canonR_elR` is that fact; the agreement
+law is its composition with the coherence law.
+
+The sublist formulation is what makes the order argument one line
+instead of a membership argument: a sublist of a pairwise-sorted list is
+pairwise-sorted, and that is exactly the relation "the emitted fields
+are the code's fields minus the absent optionals". -/
+
+private theorem canonR_jsonR_encInt (i : SafeInt) :
+    canonR (jsonR (encInt i)) = jsonR (encInt i) := by
+  unfold encInt
+  split <;> rfl
+
+private theorem canonR_jsonR_encLit (l : LitVal) :
+    canonR (jsonR (encLit l)) = jsonR (encLit l) := by
+  cases l with
+  | null => rfl
+  | bool _ => rfl
+  | int i => exact canonR_jsonR_encInt i
+  | str _ => rfl
+
+/-- The array arm's pointwise step, outside the mutual block for the
+same reason the erasure's is: the recursion is on the CODE. -/
+private theorem canonRItems_map_elR {a : Ast}
+    (ih : ∀ v : El a, canonR (elR a v) = elR a v) :
+    ∀ xs : List (El a),
+      Cas.canonRItems (xs.map (elR a)) = xs.map (elR a)
+  | [] => rfl
+  | x :: rest => by
+    simp only [List.map_cons, Cas.canonRItems, ih x, canonRItems_map_elR ih rest]
+
+/-- The emitted fields are the code's fields with the absent optionals
+dropped — a SUBLIST on keys, which is what carries the code's strict
+sort order onto the payload. -/
+theorem elRFields_keys_sublist :
+    ∀ (fs : List (String × Bool × Ast)) (x : ElFields fs),
+      List.Sublist ((elRFields fs x).map (fun g => g.1)) (fs.map (fun f => f.1))
+  | [], _ => List.Sublist.refl []
+  | (n, true, a) :: fs, (x, rest) => by
+    cases x with
+    | none =>
+      simp only [elRFields, List.nil_append, List.map_cons]
+      exact (elRFields_keys_sublist fs rest).cons n
+    | some v =>
+      simp only [elRFields, List.singleton_append, List.map_cons]
+      exact (elRFields_keys_sublist fs rest).cons_cons n
+  | (n, false, a) :: fs, (v, rest) => by
+    simp only [elRFields, List.map_cons]
+    exact (elRFields_keys_sublist fs rest).cons_cons n
+
+mutual
+
+/-- Under the admission discipline the fold's image is already
+canonical, so lowering reorders nothing. -/
+theorem canonR_elR : ∀ (a : Ast), a.WF → ∀ v : El a, canonR (elR a v) = elR a v
+  | .null, _, _ => rfl
+  | .bool, _, _ => rfl
+  | .int, _, i => canonR_jsonR_encInt i
+  | .str, _, _ => rfl
+  | .lit l, _, _ => canonR_jsonR_encLit l
+  | .ref _, _, _ => rfl
+  | .arr a, hwf, xs => by
+    simp only [elR, canonR]
+    exact congrArg RValue.arr
+      (canonRItems_map_elR (fun v => canonR_elR a hwf v) xs)
+  | .struct fs, hwf, x => by
+    obtain ⟨hsort, hfields⟩ := hwf
+    have hcan := canonRFields_elRFields fs hfields x
+    have hkeys : (fs.map (fun f => f.1)).Pairwise
+        (fun a b => decide (a ≤ b) = true) := by
+      rw [List.pairwise_map]
+      refine hsort.imp fun {a b} hlt => ?_
+      simp only [decide_eq_true_eq]
+      exact Std.le_of_not_ge fun hge => hge hlt
+    have hgk : ((elRFields fs x).map (fun g => g.1)).Pairwise
+        (fun a b => decide (a ≤ b) = true) :=
+      List.Pairwise.sublist (elRFields_keys_sublist fs x) hkeys
+    have hpair : (elRFields fs x).Pairwise
+        (fun a b => decide (a.1 ≤ b.1) = true) := by
+      rwa [List.pairwise_map] at hgk
+    simp only [elR, canonR, hcan, List.mergeSort_of_pairwise hpair]
+  | .union ms _, hwf, x => by
+    simp only [elR]
+    exact canonR_elRMembers (discriminatedB ms) ms hwf.2 x
+
+theorem canonRFields_elRFields :
+    ∀ (fs : List (String × Bool × Ast)), WFFields fs → ∀ x : ElFields fs,
+      Cas.canonRFields (elRFields fs x) = elRFields fs x
+  | [], _, _ => rfl
+  | (n, true, a) :: fs, hwf, (x, rest) => by
+    cases x with
+    | none =>
+      simp only [elRFields, List.nil_append,
+        canonRFields_elRFields fs hwf.2 rest]
+    | some v =>
+      simp only [elRFields, List.singleton_append, Cas.canonRFields,
+        canonR_elR a hwf.1 v, canonRFields_elRFields fs hwf.2 rest]
+  | (n, false, a) :: fs, hwf, (v, rest) => by
+    simp only [elRFields, Cas.canonRFields, canonR_elR a hwf.1 v,
+      canonRFields_elRFields fs hwf.2 rest]
+
+theorem canonR_elRMembers :
+    ∀ (b : Bool) (ms : List Ast), WFMembers ms →
+      ∀ x : cond b (ElMembers ms) Empty,
+        canonR (elRMembers b ms x) = elRMembers b ms x
+  | true, [], _, x => Empty.elim x
+  | true, [a], hwf, x => canonR_elR a hwf.1 x
+  | true, a :: b :: rest, hwf, x => by
+    match x with
+    | Sum.inl y => exact canonR_elR a hwf.1 y
+    | Sum.inr y => exact canonR_elRMembers true (b :: rest) hwf.2 y
+  | false, _, _, x => Empty.elim x
+
+end
+
 /-! ## The store node
 
 Three stages, in the runtime's own order: fold to a reference-bearing
@@ -343,6 +471,31 @@ theorem project_refs {revision : Nat} {a : Ast} {v : El a}
   obtain ⟨_, hr⟩ := heq
   subst hr
   exact (Cas.markerScan_lower hlow).1
+
+/-- **Marker/link agreement.** For a WELL-FORMED code the node's
+reference array is exactly the code's `StoreRef` positions in the
+code's own field order — not merely in the order some canonicalization
+happened to produce — and the payload's k-th marker reads k against it.
+
+Both halves are needed and neither implies the other: the forced-index
+law says the markers are a contiguous block, and the links half says
+WHICH references that block indexes into. `Ast.WF` is the whole content
+of the "code's own order" claim, through `canonR_elR`: the admission
+discipline already sorts a struct's fields, so lowering reorders
+nothing between the code's positions and the reference indexes. -/
+theorem project_agreement {revision : Nat} {a : Ast} (hwf : a.WF) {v : El a}
+    {text : String} {refs : List Ref}
+    (h : project revision a v = some (text, refs)) :
+    refs = Cas.linksOf (elR a v) ∧
+      ∃ payload, Cas.lower (elR a v) = some (payload, refs) ∧
+        Cas.markerScan payload = some (List.range refs.length) := by
+  simp only [project, Option.map_eq_some_iff] at h
+  obtain ⟨⟨payload, rs⟩, hlow, heq⟩ := h
+  simp only [Prod.mk.injEq] at heq
+  obtain ⟨_, hr⟩ := heq
+  subst hr
+  obtain ⟨hlinks, hscan⟩ := Cas.markerScan_lower hlow
+  exact ⟨by rw [hlinks, canonR_elR a hwf v], payload, hlow, hscan⟩
 
 /-! ## The read path — a named obligation, and why it is not forced here
 
