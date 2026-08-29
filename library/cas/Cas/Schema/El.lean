@@ -1,4 +1,4 @@
-import Cas.Schema.Ast
+import Cas.Schema.Discriminated
 
 /-!
 # The denotation — a code is a type
@@ -47,33 +47,40 @@ obligation:
              `El (.decl id p ps) = declEl id p ps` and the codec arms
              that follow from it.
 
-## The union's denotation — the same honest route, staged
+## The union's denotation — discriminated first (stage 2)
 
-`El (.union ms m) = Empty`: increment C1 is CARRIAGE only, by the
-ratified design, and `Empty` is what carriage without denotation
-truthfully says. A union is store content — mintable, addressable,
-re-emittable, and materializable into a live Effect validator through
-`fromRepresentation` — while Lean holds no values of it, so every
-value-plane law about the code holds vacuously rather than falsely.
+`El (.union ms m) = cond (discriminatedB ms) (ElMembers ms) Empty`: the
+denotation is REAL exactly where decoding is deterministic, and `Empty`
+everywhere else.
 
-The design call this parks, so the next slice does not rediscover it:
-a general union's denotation is a dependent sum with TRY-ORDER
-semantics, and for `anyOf` with overlapping members the decode side is
-not extensional — two members can both accept a value, and which one
-the sum records is a function of the order, not of the value. Effect's
-own answer is the sentinel insight (`SchemaAST.ts:2574`): make the
-union DISCRIMINATED — every member a struct carrying the same
-literal-tagged field — and decoding becomes deterministic tag
-dispatch, at which point the exactness laws are tractable. That is
-also exactly the shape `deriving Described` emits for an inductive, so
-the denotation and the deriving growth are ONE slice. Named
-obligation:
+This is the staged answer `UNION-DESIGN.md` ratified, and the split is
+not a convenience — it is what keeps every unconditional law of stage 1
+TRUE over the grown carrier. A general union's denotation is a
+dependent sum with TRY-ORDER semantics: for overlapping members two
+members can both accept a value, and which one the sum records is a
+function of the member order, not of the value, so the round trip is
+false. Under DISCRIMINATION — every member a struct whose first field
+is a required string-literal `_tag`, all tags distinct
+(`Cas/Schema/Discriminated.lean`) — the tags are pairwise disjoint
+evidence and the round trip is a theorem
+(`decodeMembers_encodeMembers`). A non-discriminated union keeps
+carriage without denotation: it is store content — mintable,
+addressable, re-emittable, materializable into a live Effect validator
+through `fromRepresentation` — while Lean holds no values of it, so its
+value-plane laws hold vacuously rather than falsely, exactly as in
+stage 1.
 
-    unionEl : the discriminated-union denotation — `El` of a union of
-              tag-carrying structs as the tagged sum, with the value
-              codec dispatching on the tag, joined with deriving for
-              inductives. General-union denotation stays a named
-              obligation until a consumer demands it.
+Discrimination stays OUT of `Ast.WF` on purpose: `WF` is the store's
+admission discipline and stage 1 already admits every union. `El`'s
+guard is a denotation precondition, and moving it into `WF` would
+retire content the store already carries.
+
+The general union's denotation therefore remains a named obligation:
+
+    generalUnionEl : the try-order denotation for undiscriminated
+                     unions, with whatever weaker-than-exactness law
+                     its consumer can live with. Owed only when a
+                     consumer demands it.
 -/
 
 mutual
@@ -89,13 +96,45 @@ def El : Ast → Type
   | .struct fs => ElFields fs
   | .ref t => StoreRef t
   | .decl _ _ _ => Empty
-  | .union _ _ => Empty
+  | .union ms _ => cond (discriminatedB ms) (ElMembers ms) Empty
 
 /-- Field components, right-nested: `(first, rest)`. -/
 def ElFields : List (String × Bool × Ast) → Type
   | [] => Unit
   | (_, opt, a) :: fs => (cond opt (Option (El a)) (El a)) × ElFields fs
 
+/-- Member components, right-nested: the iterated sum, with the LAST
+member carried bare rather than wrapped against a dead `Empty`
+summand. The empty list is unreachable under `Ast.WF` — the type
+function is total anyway, and answers `Empty`, which is the same thing
+the guard answers. -/
+def ElMembers : List Ast → Type
+  | [] => Empty
+  | [a] => El a
+  | a :: b :: rest => El a ⊕ ElMembers (b :: rest)
+
 end
+
+/-- The undiscriminated union denotes nothing — stage 1's statement,
+kept as a theorem so the vacuity every unconditional law leans on is
+citable rather than incidental. -/
+theorem El_union_undiscriminated {ms : List Ast} {m : UnionMode}
+    (h : discriminatedB ms = false) : El (.union ms m) = Empty := by
+  simp only [El, h, cond_false]
+
+/-- The discriminated union denotes the member sum. -/
+theorem El_union_discriminated {ms : List Ast} {m : UnionMode}
+    (h : discriminatedB ms = true) : El (.union ms m) = ElMembers ms := by
+  simp only [El, h, cond_true]
+
+/-- A union VALUE is itself the evidence that its code is discriminated
+— the undiscriminated arm is `Empty`, so holding one is impossible.
+This is what lets the value-plane laws take discrimination as a
+hypothesis without carrying it in `Ast.WF`. -/
+theorem discriminatedB_of_el {ms : List Ast} {m : UnionMode}
+    (x : El (.union ms m)) : discriminatedB ms = true := by
+  cases hb : discriminatedB ms with
+  | true => rfl
+  | false => exact Empty.elim (El_union_undiscriminated (m := m) hb ▸ x)
 
 end Cas.Schema
