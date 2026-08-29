@@ -34,7 +34,9 @@ import {
   decodedVersionedEnvelope,
   ProjectionCodecFailure,
   referenceRepresentation,
+  ReferenceRepresentationId,
   referenceRepresentationReviver,
+  type DecodedEnvelope,
   type ProjectionError,
 } from "./Value.ts"
 import { SchemaKindTag } from "../internal/kindTags.ts"
@@ -117,6 +119,7 @@ const documentFromJson = (
   ) {
     throw new TypeError("Canonical schema object fields are not in canonical order")
   }
+  refuseUnknownDeclarations(normalized)
   return deepFreeze(SchemaRepresentation.fromJson(normalized))
 }
 
@@ -124,6 +127,80 @@ const snapshotDocument = (
   document: SchemaRepresentation.Document,
 ): SchemaRepresentation.Document =>
   documentFromJson(SchemaRepresentation.toJson(document), false)
+
+/** One row of the declaration registry: a persistence identity and the
+ * number of type parameters the row takes. */
+export interface DeclarationRow {
+  readonly id: string
+  readonly arity: number
+}
+
+/** THE declaration registry, TypeScript side: every declaration id a
+ * persisted canonical schema may carry, row zero first.
+ *
+ * This table is the hand mirror of `Cas.Schema.DeclarationId` in
+ * `library/cas/Cas/Schema/Declarations.lean` — row for row, order for
+ * order, wire spelling for wire spelling, arity for arity. The two
+ * registries are checked against each other by eye (both are one small
+ * table with the same shape) and by test
+ * (`CanonicalSchemaDeclarations.test.ts` reads the Lean file and
+ * compares). Growing the set is adding a row HERE and in Lean; nothing
+ * else admits a declaration.
+ *
+ * | row | wire | arity | payload |
+ * |---|---|---|---|
+ * | row zero | `foldlab/cas/ref` | 0 | kind tag, `nat < 256` |
+ * | Date | `effect/schema/Date` | 0 | `null` |
+ * | URL | `effect/schema/URL` | 0 | `null` |
+ * | Option | `effect/schema/Option` | 1 | `null` |
+ *
+ * The three Effect rows are ADOPTED, not minted (PLAN P3/P4): each is a
+ * built-in already shipping the whole `{id, reviver, toCode,
+ * toArbitrary}` contract, so admitting them costs the estate no new
+ * identity and Effect's own revival and code generation apply
+ * unchanged. Their adoption is pending operator ratification
+ * (SCHEMA-MATERIALIZATION.md ruling-queue item 7), which is why they
+ * are three adjacent rows here, three adjacent revivers in `Revivers`,
+ * and nothing else: rejecting a row is deleting its two lines. */
+export const DeclarationRegistry: ReadonlyArray<DeclarationRow> = [
+  { arity: 0, id: ReferenceRepresentationId },
+  { arity: 0, id: "effect/schema/Date" },
+  { arity: 0, id: "effect/schema/URL" },
+  { arity: 1, id: "effect/schema/Option" },
+]
+
+const admittedDeclarationIds: ReadonlySet<string> = new Set(
+  DeclarationRegistry.map((row) => row.id),
+)
+
+/** The door's declaration gate, the counterpart of Lean
+ * `IngestRefusal.unknownDeclaration`: a structural walk of the
+ * normalized representation that refuses any `Declaration` node whose
+ * `representation.id` is not a registry row. Fail-closed — a
+ * declaration with no representation identity at all is refused too,
+ * because there is nothing to admit it by. */
+const refuseUnknownDeclarations = (input: Schema.Json): void => {
+  if (Array.isArray(input)) {
+    for (const item of input) refuseUnknownDeclarations(item)
+    return
+  }
+  if (!Predicate.isObject(input)) return
+  const node = input as Schema.JsonObject
+  if (node._tag === "Declaration") {
+    const representation = node.representation
+    const id = Predicate.isObject(representation)
+      ? (representation as Schema.JsonObject).id
+      : undefined
+    if (typeof id !== "string" || !admittedDeclarationIds.has(id)) {
+      throw new TypeError(
+        `unknown declaration ${canonicalJson(id ?? null)} — the canonical schema registry admits only ${
+          DeclarationRegistry.map((row) => row.id).join(", ")
+        }`,
+      )
+    }
+  }
+  for (const value of Object.values(node)) refuseUnknownDeclarations(value)
+}
 
 const nativeDocument = (schema: Schema.Top): SchemaRepresentation.Document =>
   snapshotDocument(SchemaRepresentation.toRepresentation(schema.ast))
@@ -150,14 +227,22 @@ export const representationOf = (
 }
 
 /** The estate's reviver registry: every declaration and check identity a
- * persisted canonical schema may carry. Built-in check ids are reused
- * verbatim, so Effect's own revival and code generation apply unchanged;
- * only `foldlab/cas/ref` is ours. */
+ * persisted canonical schema may carry. Built-in check ids and built-in
+ * declaration revivers are reused VERBATIM — nothing is minted here — so
+ * Effect's own revival, code generation, and instance generation apply
+ * unchanged; only `foldlab/cas/ref` is ours.
+ *
+ * The declaration arm is `DeclarationRegistry` row for row: row zero's
+ * reviver, then Effect's own `DateReviver`, `URLReviver`, and
+ * `OptionReviver` for the three adopted rows. */
 export const Revivers: ReadonlyArray<SchemaRepresentation.AnyReviver> = [
   Schema.isIntReviver,
   Schema.isBetweenReviver,
   Schema.isPatternReviver,
   referenceRepresentationReviver,
+  Schema.DateReviver,
+  Schema.URLReviver,
+  Schema.OptionReviver,
 ]
 
 /** Reconstruct a runtime Effect Schema from a persisted identity. */
@@ -182,6 +267,27 @@ export const fromAst = (ast: SchemaAST.AST): Schema.Top => {
 /** Strictly decode a persisted native representation document. */
 export const fromJson = (input: Schema.Json): SchemaRepresentation.Document =>
   documentFromJson(input)
+
+/** Project one decoded `{revision, value}` schema envelope into the
+ * canonical document. This is the SINGLE revision switch behind every
+ * door on the schema plane — `get` reads it from a loaded node and
+ * `Materialize` reads it from payload bytes in hand, so the two cannot
+ * come to disagree about what a stored revision means. Throws, and is
+ * therefore always called inside the caller's own failure channel. */
+export const fromEnvelope = (
+  envelope: DecodedEnvelope,
+): SchemaRepresentation.Document => {
+  switch (envelope.revision) {
+    case Revision:
+      return documentFromJson(envelope.value)
+    case LegacyRevision:
+      return nativeDocument(legacySchema(envelope.value))
+    default:
+      throw new TypeError(
+        `unsupported canonical schema revision ${envelope.revision}`,
+      )
+  }
+}
 
 /** A typed-reference declaration pinned to its expected resident kind tag. */
 export const ref = (tag: number) => referenceRepresentation(Byte.make(tag))
@@ -358,18 +464,7 @@ export const get: (
       }
       const envelope = yield* decodedVersionedEnvelope(node.payload, id)
       return yield* Effect.try({
-        try: () => {
-          switch (envelope.revision) {
-            case Revision:
-              return documentFromJson(envelope.value)
-            case LegacyRevision:
-              return nativeDocument(legacySchema(envelope.value))
-            default:
-              throw new TypeError(
-                `unsupported canonical schema revision ${envelope.revision}`,
-              )
-          }
-        },
+        try: () => fromEnvelope(envelope),
         catch: (issue) => projectionFailure(id, issue),
       })
     },
