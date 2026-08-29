@@ -2,19 +2,19 @@
   "areaCensus": {
     "Architecture": 34,
     "Codec": 227,
-    "Core": 282,
+    "Core": 288,
     "Grammar": 119,
     "IR": 102,
     "Lang": 169,
     "Lift": 37,
-    "Schema": 458,
-    "Values": 381,
+    "Schema": 475,
+    "Values": 400,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 199,
-    "Quot.sound": 332,
-    "propext": 460
+    "Classical.choice": 201,
+    "Quot.sound": 334,
+    "propext": 469
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -28,14 +28,14 @@
     "Cas.Lang.Sig": 42,
     "Cas.Lang.Status": 41,
     "Cas.Lang.interpret": 6,
-    "Cas.Node": 72,
-    "Cas.Schema.Ast": 284,
-    "Cas.Schema.Described": 23,
-    "Cas.Schema.El": 27,
+    "Cas.Node": 74,
+    "Cas.Schema.Ast": 294,
+    "Cas.Schema.Described": 26,
+    "Cas.Schema.El": 33,
     "Cas.Word": 77
   },
-  "declarations": 1444,
-  "documented": 706,
+  "declarations": 1468,
+  "documented": 720,
   "library": "Cas",
   "modules": [
     {
@@ -7985,6 +7985,203 @@
       ]
     },
     {
+      "declarations": 24,
+      "documented": 14,
+      "module": "Cas.Schema.Projection",
+      "surface": [
+        {
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elR",
+          "signature": "(a : Cas.Schema.Ast) → Cas.Schema.El a → Cas.RValue",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.elRFields",
+          "signature": "(fs : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.ElFields fs → List (String × Cas.RValue)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elRMembers",
+          "signature": "(b : Bool) → (ms : List Cas.Schema.Ast) → (bif b then Cas.Schema.ElMembers ms else Empty) → Cas.RValue",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.envelope",
+          "signature": "Nat → Cas.Json.Value → Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.eraseFields",
+          "signature": "List (String × Cas.RValue) → List (String × Cas.Json.Value)",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseFields_elRFields",
+          "signature": "∀ (fs : List (String × Bool × Cas.Schema.Ast)) (x : Cas.Schema.ElFields fs), Cas.Schema.eraseFields (Cas.Schema.elRFields fs x) = Cas.Schema.encodeFields fs x",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseFields_jsonRFields",
+          "signature": "∀ (fs : List (String × Cas.Json.Value)), Cas.Schema.eraseFields (Cas.Schema.jsonRFields fs) = fs",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.eraseItems",
+          "signature": "List Cas.RValue → List Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseItems_eq_map",
+          "signature": "∀ (l : List Cas.RValue), Cas.Schema.eraseItems l = List.map Cas.Schema.eraseR l",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseItems_jsonRItems",
+          "signature": "∀ (xs : List Cas.Json.Value), Cas.Schema.eraseItems (Cas.Schema.jsonRItems xs) = xs",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.eraseR",
+          "signature": "Cas.RValue → Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseR_elR",
+          "signature": "∀ (a : Cas.Schema.Ast) (v : Cas.Schema.El a), Cas.Schema.eraseR (Cas.Schema.elR a v) = Cas.Schema.encode a v",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseR_elRMembers",
+          "signature": "∀ (b : Bool) (ms : List Cas.Schema.Ast) (x : bif b then Cas.Schema.ElMembers ms else Empty), Cas.Schema.eraseR (Cas.Schema.elRMembers b ms x) = Cas.Schema.encodeMembers b ms x",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.eraseR_jsonR",
+          "signature": "∀ (v : Cas.Json.Value), Cas.Schema.eraseR (Cas.Schema.jsonR v) = v",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.jsonR",
+          "signature": "Cas.Json.Value → Cas.RValue",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.jsonRFields",
+          "signature": "List (String × Cas.Json.Value) → List (String × Cas.RValue)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.jsonRItems",
+          "signature": "List Cas.Json.Value → List Cas.RValue",
+          "touches": ["Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.project",
+          "signature": "Nat → (a : Cas.Schema.Ast) → Cas.Schema.El a → Option (String × List Cas.Ref)",
+          "touches": ["Core", "Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.project_refs",
+          "signature": "∀ {revision : Nat} {a : Cas.Schema.Ast} {v : Cas.Schema.El a} {text : String} {refs : List Cas.Ref}, Cas.Schema.project revision a v = some (text, refs) → refs = Cas.linksOf (Cas.canonR (Cas.Schema.elR a v))",
+          "touches": ["Core", "Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.project_wellRefIndexed",
+          "signature": "∀ {revision : Nat} {a : Cas.Schema.Ast} {v : Cas.Schema.El a} {text : String} {refs : List Cas.Ref}, Cas.Schema.project revision a v = some (text, refs) → ∃ payload, Cas.lower (Cas.Schema.elR a v) = some (payload, refs) ∧ Cas.wellRefIndexed payload refs.length = true",
+          "touches": ["Core", "Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Node", "Cas.Schema.Described"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.putNode",
+          "signature": "{α : Type u} → [d : Cas.Schema.Described α] → UInt8 → UInt8 → Nat → α → Option Cas.Node",
+          "touches": ["Core", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.putPayload",
+          "signature": "{α : Type u} → [d : Cas.Schema.Described α] → Nat → α → Option String",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.putRefs",
+          "signature": "{α : Type u} → [d : Cas.Schema.Described α] → Nat → α → Option (List Cas.Ref)",
+          "touches": ["Core", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Node", "Cas.Schema.Ast", "Cas.Schema.El"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.toNode",
+          "signature": "UInt8 → UInt8 → Nat → (a : Cas.Schema.Ast) → Cas.Schema.El a → Option Cas.Node",
+          "touches": ["Core", "Schema"]
+        }
+      ]
+    },
+    {
       "declarations": 133,
       "documented": 82,
       "module": "Cas.Schema.SelfCodec",
@@ -11519,10 +11716,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 742,
+    "def": 757,
     "inductive": 37,
     "instance": 66,
     "structure": 42,
-    "theorem": 554
+    "theorem": 563
   }
 }

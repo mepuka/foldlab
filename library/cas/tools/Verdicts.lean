@@ -651,8 +651,8 @@ def valueVerdict (a : Ast) (v : Json.Value) : String :=
 def valueJson (a : Ast) (label : String) (v : Json.Value) : Json.Value :=
   .obj [
     ("label", .str label),
-    ("value", canonValue v),
-    ("verdict", .str (valueVerdict a (canonValue v)))]
+    ("value", Json.canonValue v),
+    ("verdict", .str (valueVerdict a (Json.canonValue v)))]
 
 /-- One corpus row as JSON. The emitter refuses to write a row that
 attaches value triples where Lean holds no values — the corpus
@@ -704,7 +704,7 @@ def documentValue : Except String Json.Value := do
   let accepted := corpus.foldl (fun n c =>
     match c.source.ast? with
     | some a => n + (c.values.filter fun (_, v) =>
-        valueVerdict a (canonValue v) == "accept").length
+        valueVerdict a (Json.canonValue v) == "accept").length
     | none => n) 0
   pure (.obj [
     ("cases", .arr rows),

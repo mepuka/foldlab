@@ -1,4 +1,10 @@
 import Cas.Schema.Notation
+import Cas.Schema.Projection
+-- The scheme VERSION byte a node carries is the grammar's ratified
+-- constant, not a second spelling of `0` — `Cas/Grammar/Sorts.lean` is
+-- a leaf over `Cas.Core.Node`, so citing it here costs one edge and
+-- keeps the byte owned in one place.
+import Cas.Grammar.Sorts
 
 /-!
 # The exchange kind — interactions as content
@@ -81,5 +87,48 @@ cas_struct Exchange where
   answer : String
   prompt : String
   subject : ExchangeSubject
+
+/-! ## Put from Lean — the acceptance for the projection bridge
+
+The exchange is the first described kind Lean can PUT rather than only
+mint, and this is the pin that says so. The turn below is the exact one
+the effects suite records (`test/SchemaExchange.test.ts`), stored
+through the exact same projection — kind tag `0x58`, revision 1 — and
+the payload bytes are compared against that suite's own recorded string
+character for character.
+
+The comparison is honest at both ends. The subject's ADDRESS never
+reaches the payload: a typed reference lowers to the positional marker
+`{"$ref":0}` and rides the node's reference array instead. So the
+payload half of the pin is address-free and compares verbatim against
+the runtime's recording, while the reference half is what carries the
+address and the kind tag the store's admission law checks. -/
+
+/-- The pin's subject address. Its bytes reach the reference array and
+never the payload — which is why the payload pin below is a literal
+rather than a computation over this value. -/
+def pinSubject : Addr32 := ⟨List.replicate 32 0xab, by simp⟩
+
+/-- One recorded turn, the same one the effects suite stores. -/
+def pinExchange : Exchange :=
+  { answer := "a struct of seven fields, one of them a typed reference"
+  , prompt := "what does this schema describe?"
+  , subject := .schema ⟨pinSubject⟩ }
+
+-- The payload bytes agree with the runtime mirror's, envelope included:
+-- `SchemaExchange.test.ts` records this string for the same value.
+#guard putPayload 1 pinExchange == some
+  "{\"revision\":1,\"value\":{\"answer\":\"a struct of seven fields, one of them a typed reference\",\"prompt\":\"what does this schema describe?\",\"subject\":{\"_tag\":\"schema\",\"address\":{\"$ref\":0}}}}"
+
+-- One typed edge, at the schema kind, addressing the subject — the same
+-- reference array the suite asserts.
+#guard putRefs 1 pinExchange == some [⟨schemaKindTag, pinSubject⟩]
+
+-- The node itself: the exchange kind tag, that one edge, and the
+-- payload's UTF-8 bytes.
+#guard (putNode Cas.Grammar.schemeVersion exchangeKindTag 1 pinExchange).map
+    (fun n => (n.version, n.tag, n.refs))
+  == some (Cas.Grammar.schemeVersion, exchangeKindTag,
+      [⟨schemaKindTag, pinSubject⟩])
 
 end Cas.Schema

@@ -8,6 +8,7 @@ import Cas.Schema.SelfCodec
 import Cas.Schema.PayloadInj
 import Cas.Schema.Ingest
 import Cas.Schema.Basis
+import Cas.Schema.Projection
 
 /-!
 # The schema plane — layer above the values, root of the hierarchy
@@ -182,4 +183,22 @@ Named increments, in order:
   a code `WF` admits. That is the general union's situation exactly and
   takes the ratified answer — a boolean guard in `El`, not a new clause
   in `WF` (`Cas/Schema/El.lean`, obligation `tupleEl`).
+- **Projection — a described VALUE to a store node** — LANDED
+  (`Projection`): the path `El a → RValue → (payload, refs) → Node`,
+  which is what makes a described kind PUTTABLE from Lean rather than
+  only mintable. Before it, the `$link` sentinel and the typed-DAG
+  layer's `RValue` never met, and every reification target was a
+  generator Lean could not drive. `elR` is `encode` with exactly one
+  arm changed — `.ref` yields a LINK, not a sentinel — and
+  `eraseR_elR` proves the bridge factors through the ratified
+  projection, so it cannot fork the wire shape. `project` renders the
+  runtime's own `{revision, value}` envelope; the scheme VERSION byte
+  is a parameter, because a value node's version is the store's fact
+  and this plane has never reached across to the grammar's. The
+  forced-index law comes for free from `Cas.markerScan_lower` and is
+  restated at this grain (`project_wellRefIndexed`, `project_refs`) so
+  no projection has to guard it per kind. Named obligation: the READ
+  path — `Node → RValue → El a`, needing an inverse to `lower` this
+  model does not yet carry (`Cas/Schema/Projection.lean` states its
+  signature and what it owes).
 -/
