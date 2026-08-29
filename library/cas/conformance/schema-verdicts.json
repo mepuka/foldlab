@@ -1,0 +1,1032 @@
+{
+  "cases": [
+    {
+      "denotes": true,
+      "name": "null",
+      "note": "the null keyword",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Null\",\"checks\":[]}}}",
+      "values": [
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "accept"
+        },
+        {
+          "label": "false",
+          "value": false,
+          "verdict": "refuse"
+        },
+        {
+          "label": "zero",
+          "value": 0,
+          "verdict": "refuse"
+        },
+        {
+          "label": "empty-string",
+          "value": "",
+          "verdict": "refuse"
+        },
+        {
+          "label": "empty-object",
+          "value": {},
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "bool",
+      "note": "the boolean keyword",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Boolean\",\"checks\":[]}}}",
+      "values": [
+        {
+          "label": "true",
+          "value": true,
+          "verdict": "accept"
+        },
+        {
+          "label": "false",
+          "value": false,
+          "verdict": "accept"
+        },
+        {
+          "label": "string-true",
+          "value": "true",
+          "verdict": "refuse"
+        },
+        {
+          "label": "zero",
+          "value": 0,
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "int",
+      "note": "the integer keyword — Number + effect/schema/isInt, gated Lean-side by the safe-integer bound (SafeInt)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}}",
+      "values": [
+        {
+          "label": "zero",
+          "value": 0,
+          "verdict": "accept"
+        },
+        {
+          "label": "positive",
+          "value": 42,
+          "verdict": "accept"
+        },
+        {
+          "label": "negative",
+          "value": -7,
+          "verdict": "accept"
+        },
+        {
+          "label": "max-safe",
+          "value": 9007199254740991,
+          "verdict": "accept"
+        },
+        {
+          "label": "above-max-safe",
+          "value": 9007199254740992,
+          "verdict": "refuse"
+        },
+        {
+          "label": "below-min-safe",
+          "value": -9007199254740992,
+          "verdict": "refuse"
+        },
+        {
+          "label": "string",
+          "value": "7",
+          "verdict": "refuse"
+        },
+        {
+          "label": "bool",
+          "value": true,
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "str",
+      "note": "the string keyword",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
+      "values": [
+        {
+          "label": "hello",
+          "value": "hello",
+          "verdict": "accept"
+        },
+        {
+          "label": "empty",
+          "value": "",
+          "verdict": "accept"
+        },
+        {
+          "label": "escapes",
+          "value": "line\u000abreak \"quoted\" \\ backslash",
+          "verdict": "accept"
+        },
+        {
+          "label": "number",
+          "value": 7,
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "lit-bool",
+      "note": "the boolean literal `true`",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"boolean\",\"value\":true}}}}",
+      "values": [
+        {
+          "label": "true",
+          "value": true,
+          "verdict": "accept"
+        },
+        {
+          "label": "false",
+          "value": false,
+          "verdict": "refuse"
+        },
+        {
+          "label": "string-true",
+          "value": "true",
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "lit-int",
+      "note": "the integer literal `-7`",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"number\",\"value\":-7}}}}",
+      "values": [
+        {
+          "label": "exact",
+          "value": -7,
+          "verdict": "accept"
+        },
+        {
+          "label": "other",
+          "value": 7,
+          "verdict": "refuse"
+        },
+        {
+          "label": "string",
+          "value": "-7",
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "lit-str",
+      "note": "the string literal `pinned`",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"pinned\"}}}}",
+      "values": [
+        {
+          "label": "exact",
+          "value": "pinned",
+          "verdict": "accept"
+        },
+        {
+          "label": "other",
+          "value": "unpinned",
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "lit-null",
+      "note": "the null literal — projects onto the Null keyword (register R13, the one collapse revision 1 makes)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Null\",\"checks\":[]}}}",
+      "values": [
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "accept"
+        },
+        {
+          "label": "false",
+          "value": false,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "arr-str",
+      "note": "an array of strings",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"String\",\"checks\":[]}]}}}",
+      "values": [
+        {
+          "label": "empty",
+          "value": [],
+          "verdict": "accept"
+        },
+        {
+          "label": "two",
+          "value": ["a", "b"],
+          "verdict": "accept"
+        },
+        {
+          "label": "mixed",
+          "value": ["a", 1],
+          "verdict": "refuse"
+        },
+        {
+          "label": "scalar",
+          "value": "a",
+          "verdict": "refuse"
+        },
+        {
+          "label": "object",
+          "value": {},
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "arr-arr-int",
+      "note": "a nested array of integer arrays",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}]}]}}}",
+      "values": [
+        {
+          "label": "nested",
+          "value": [
+            [1],
+            []
+          ],
+          "verdict": "accept"
+        },
+        {
+          "label": "flat",
+          "value": [1],
+          "verdict": "refuse"
+        },
+        {
+          "label": "wrong-leaf",
+          "value": [
+            [true]
+          ],
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "struct",
+      "note": "a struct with one required and one optional field, sorted",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isMutable\":false,\"isOptional\":true,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
+      "values": [
+        {
+          "label": "both",
+          "value": {
+            "a": 1,
+            "b": "x"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "optional-absent",
+          "value": {
+            "a": 1
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "required-absent",
+          "value": {
+            "b": "x"
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "wrong-type",
+          "value": {
+            "a": 1,
+            "b": 2
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "excess",
+          "value": {
+            "a": 1,
+            "b": "x",
+            "c": true
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "empty",
+          "value": {},
+          "verdict": "refuse"
+        },
+        {
+          "label": "array",
+          "value": [],
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "struct-empty",
+      "note": "the empty struct",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[]}}}",
+      "values": [
+        {
+          "label": "empty",
+          "value": {},
+          "verdict": "accept"
+        },
+        {
+          "label": "excess",
+          "value": {
+            "a": 1
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "struct-nested",
+      "note": "a struct carrying a struct and an array",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"inner\"},\"type\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"k\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"items\"},\"type\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"Boolean\",\"checks\":[]}]}}]}}}",
+      "values": [
+        {
+          "label": "ok",
+          "value": {
+            "inner": {
+              "k": "v"
+            },
+            "items": [true]
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "inner-wrong",
+          "value": {
+            "inner": {
+              "k": 1
+            },
+            "items": []
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "inner-missing",
+          "value": {
+            "items": []
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "ref",
+      "note": "a typed store reference at kind tag 9",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":9},\"typeParameters\":[]}}}",
+      "values": [
+        {
+          "label": "sentinel",
+          "value": {
+            "$link": {
+              "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "tag": 9
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "wrong-tag",
+          "value": {
+            "$link": {
+              "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "tag": 10
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "short-id",
+          "value": {
+            "$link": {
+              "id": "00ff",
+              "tag": 9
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "non-hex-id",
+          "value": {
+            "$link": {
+              "id": "zz112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "tag": 9
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "bare-string",
+          "value": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+          "verdict": "refuse"
+        },
+        {
+          "label": "null",
+          "value": null,
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "ref-schema",
+      "note": "a typed store reference at the schema kind tag (0x53) — the annotation subject's code",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}}",
+      "values": [
+        {
+          "label": "sentinel",
+          "value": {
+            "$link": {
+              "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "tag": 83
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "wrong-tag",
+          "value": {
+            "$link": {
+              "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "tag": 9
+            }
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "union-discriminated-oneof",
+      "note": "a discriminated union in oneOf mode: three tagged members, tags distinct",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"move\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dx\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dy\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"say\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"body\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":true,\"name\":{\"type\":\"string\",\"value\":\"note\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"stop\"}}}]}]}}}",
+      "values": [
+        {
+          "label": "move",
+          "value": {
+            "_tag": "move",
+            "dx": 1,
+            "dy": -2
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "say-full",
+          "value": {
+            "_tag": "say",
+            "body": "hi",
+            "note": "n"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "say-optional-absent",
+          "value": {
+            "_tag": "say",
+            "body": "hi"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "stop",
+          "value": {
+            "_tag": "stop"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "unknown-tag",
+          "value": {
+            "_tag": "jump"
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "no-tag",
+          "value": {
+            "body": "hi"
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "member-wrong-type",
+          "value": {
+            "_tag": "move",
+            "dx": "1",
+            "dy": 2
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "scalar",
+          "value": "move",
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "union-discriminated-anyof",
+      "note": "the same discriminated members in anyOf mode — the mode is identity in the carrier and is not consulted by the denotation",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"move\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dx\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dy\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"say\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"body\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":true,\"name\":{\"type\":\"string\",\"value\":\"note\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"stop\"}}}]}]}}}",
+      "values": [
+        {
+          "label": "move",
+          "value": {
+            "_tag": "move",
+            "dx": 1,
+            "dy": -2
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "stop",
+          "value": {
+            "_tag": "stop"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "unknown-tag",
+          "value": {
+            "_tag": "jump"
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "union-discriminated-singleton",
+      "note": "a one-member discriminated union — the bare (unwrapped) arm of ElMembers",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"stop\"}}}]}]}}}",
+      "values": [
+        {
+          "label": "stop",
+          "value": {
+            "_tag": "stop"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "other-tag",
+          "value": {
+            "_tag": "move"
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "struct-with-union",
+      "note": "a discriminated union under a struct field — the denotation composes",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"event\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"move\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dx\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"dy\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"say\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"body\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":true,\"name\":{\"type\":\"string\",\"value\":\"note\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"stop\"}}}]}]}}]}}}",
+      "values": [
+        {
+          "label": "ok",
+          "value": {
+            "event": {
+              "_tag": "move",
+              "dx": 1,
+              "dy": -2
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "unknown-tag",
+          "value": {
+            "event": {
+              "_tag": "jump"
+            }
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "union-undiscriminated-anyof",
+      "note": "an undiscriminated anyOf union over keywords — admitted as content, El is Empty, so no value triples exist (corpus restriction 3)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"_tag\":\"String\",\"checks\":[]},{\"_tag\":\"Boolean\",\"checks\":[]},{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "union-undiscriminated-oneof",
+      "note": "an undiscriminated oneOf union over two string literals, spelled zebra before alpha — order is identity",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"zebra\"}},{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"alpha\"}}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "union-nested",
+      "note": "a union whose second member is a union — the no-flattening rule, admitted",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"_tag\":\"Null\",\"checks\":[]},{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[],\"rest\":[{\"_tag\":\"String\",\"checks\":[]}]},{\"_tag\":\"Boolean\",\"checks\":[]}]}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "decl-date",
+      "note": "effect/schema/Date, arity 0, null payload — admitted as content; El is Empty, so no value triples exist (corpus restriction 4)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":null},\"typeParameters\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "decl-url",
+      "note": "effect/schema/URL, arity 0, null payload",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/URL\",\"payload\":null},\"typeParameters\":[]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "decl-option-str",
+      "note": "effect/schema/Option at arity 1 over String — the one arity-1 row",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Option\",\"payload\":null},\"typeParameters\":[{\"_tag\":\"String\",\"checks\":[]}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "decl-option-nested",
+      "note": "Option over a struct — the type parameter is a code like any other",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Option\",\"payload\":null},\"typeParameters\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}]}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "struct-with-decl",
+      "note": "a declaration under a struct field: the struct's own El is uninhabited too, so it carries no value triples",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"at\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":null},\"typeParameters\":[]}}]}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "annotation",
+      "note": "the sidecar annotation kind: key, addressed subject at 0x53, encoded value",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"key\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
+      "values": [
+        {
+          "label": "ok",
+          "value": {
+            "key": "foldlab/schema/title",
+            "subject": {
+              "$link": {
+                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                "tag": 83
+              }
+            },
+            "value": "the vector document"
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "subject-wrong-tag",
+          "value": {
+            "key": "foldlab/schema/title",
+            "subject": {
+              "$link": {
+                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                "tag": 9
+              }
+            },
+            "value": "the vector document"
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "key-missing",
+          "value": {
+            "subject": {
+              "$link": {
+                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                "tag": 83
+              }
+            },
+            "value": "v"
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "excess",
+          "value": {
+            "key": "k",
+            "subject": {
+              "$link": {
+                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                "tag": 83
+              }
+            },
+            "value": "v",
+            "zextra": true
+          },
+          "verdict": "refuse"
+        }
+      ],
+      "verdict": "admit"
+    },
+    {
+      "denotes": true,
+      "name": "refuse-struct-unsorted",
+      "note": "struct fields out of strict name order — the sortedness clause of Ast.wf",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": true,
+      "name": "refuse-struct-duplicate",
+      "note": "a struct declaring the same field name twice — strict order subsumes no-duplicates",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"arbitrary\":{\"constraint\":{\"integer\":true}},\"expected\":\"an integer\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": true,
+      "name": "refuse-struct-unsorted-nested",
+      "note": "the sortedness clause failing inside a nested struct",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"z\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": true,
+      "name": "refuse-union-empty",
+      "note": "the empty union — that is Never, and Never is not admitted",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": true,
+      "name": "refuse-union-empty-nested",
+      "note": "the empty union under a struct field",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"u\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[]}}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-union-empty-member",
+      "note": "an empty union as a member of a well-formed union",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"_tag\":\"String\",\"checks\":[]},{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[]}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-decl-payload",
+      "note": "effect/schema/Date carrying a string payload — the row admits null only",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":\"not a null payload\"},\"typeParameters\":[]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-decl-arity-short",
+      "note": "effect/schema/Option with no type parameter — arity 1 is the row's discipline",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Option\",\"payload\":null},\"typeParameters\":[]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-decl-arity-long",
+      "note": "effect/schema/Date with a type parameter — arity 0 is the row's discipline",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Date\",\"payload\":null},\"typeParameters\":[{\"_tag\":\"String\",\"checks\":[]}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-decl-param-illformed",
+      "note": "an admitted declaration whose type parameter is an ill-formed code",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Option\",\"payload\":null},\"typeParameters\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unknown-declaration",
+      "note": "effect/schema/Duration: a declaration shipping Effect's whole contract and no registry row — the allowlist is the admission rule (PLAN P4)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Duration\",\"payload\":null},\"typeParameters\":[]}}}",
+      "refusal": "unknownDeclaration",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unknown-declaration-nested",
+      "note": "the same unadmitted id under a struct property",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"d\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Duration\",\"payload\":null},\"typeParameters\":[]}}]}}}",
+      "refusal": "unknownDeclaration",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-non-empty-references",
+      "note": "a revision-1 document allocating a reference table — recursion, which the admitted subset does not reach (survey B3, ruling 2)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"Node\":{\"_tag\":\"String\",\"checks\":[]}},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
+      "refusal": "nonEmptyReferences",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-wrong-revision",
+      "note": "a schema-node envelope at a revision no door speaks",
+      "payload": "{\"revision\":7,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
+      "refusal": "wrongRevision",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unadmitted-node",
+      "note": "Effect's BigInt node — a first-order representation node the admitted subset defers",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"BigInt\",\"checks\":[]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-union-mode",
+      "note": "a union at a mode outside the table — not a union spelling at all",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"allOf\",\"types\":[{\"_tag\":\"String\",\"checks\":[]}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-number-unchecked",
+      "note": "a bare Number with no isInt check — Effect's float-capable number, which the value plane has no term for (ruling 15, the float ceiling)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Number\",\"checks\":[]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-number-check-alien",
+      "note": "a Number carrying effect/schema/isBetween — a check id the admitted subset does not reach (the checks layer is Slice C5)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"expected\":\"a value between 0 and 9\"},\"representation\":{\"id\":\"effect/schema/isBetween\",\"payload\":{\"maximum\":9,\"minimum\":0}}}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-number-check-drift",
+      "note": "a Number whose isInt check is spelled with different annotations — the admitted subset pins ONE spelling of the one admitted check, so drift is not a schema",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Number\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"expected\":\"an int\"},\"representation\":{\"id\":\"effect/schema/isInt\",\"payload\":null}}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-string-checked",
+      "note": "a String carrying a filter — every admitted node but Number has an EMPTY checks list",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"String\",\"checks\":[{\"_tag\":\"Filter\",\"aborted\":false,\"annotations\":{\"expected\":\"a value with a length of at least 2\"},\"representation\":{\"id\":\"effect/schema/isMinLength\",\"payload\":{\"minLength\":2}}}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-tuple-elements",
+      "note": "an Arrays node with positional elements — the admitted subset carries the plain array only (tuples are Slice C2)",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Arrays\",\"checks\":[],\"elements\":[{\"isOptional\":false,\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"rest\":[]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-index-signature",
+      "note": "an Objects node with an index signature — records are Slice C3, not admitted yet",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[{\"parameter\":{\"_tag\":\"String\",\"checks\":[]},\"type\":{\"_tag\":\"String\",\"checks\":[]}}],\"propertySignatures\":[]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-mutable-property",
+      "note": "a property signature declaring isMutable — the mutability bit is not collapsed and only the immutable reading is admitted",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":true,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
+      "refusal": "notASchema",
+      "values": [],
+      "verdict": "refuse"
+    }
+  ],
+  "counts": {
+    "acceptValues": 32,
+    "admittedCodes": 28,
+    "codes": 51,
+    "refuseValues": 53,
+    "refusedCodes": 23,
+    "values": 85
+  },
+  "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test"],
+  "revision": 1
+}

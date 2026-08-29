@@ -34,6 +34,17 @@ name = "schemas"
 srcDir = "tools"
 root = "Schemas"
 
+# The disagreement vector: `lake exe verdicts` regenerates the
+# conformance corpus of (code, value, verdict) triples under
+# conformance/, with every verdict computed by executing the model
+# (`ingest` for codes, `decode` for values); `--check` is the
+# byte-identity gate. The TypeScript side replays the corpus through
+# `Materialize` and disagreement is a red suite.
+[[lean_exe]]
+name = "verdicts"
+srcDir = "tools"
+root = "Verdicts"
+
 # The wire-mirror emitter: `lake exe emitwire <path>` regenerates the
 # effects package's generated canonical-schema mirrors; `--check` is
 # the byte-identity gate.

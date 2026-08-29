@@ -8,6 +8,7 @@ run = [
   "mise run gen:vectors",
   "mise run gen:cas-vectors",
   "mise run gen:cas-schemas",
+  "mise run gen:cas-verdicts",
   "mise run gen:backend-wire",
   "mise run gen:backend-programs",
   "mise run gen:backend-mcp",
@@ -58,6 +59,11 @@ description = "Regenerate the canonical-schema payload fixtures from the Lean se
 dir = "{{config_root}}/library/cas"
 run = "lake exe schemas"
 
+[tasks."gen:cas-verdicts"]
+description = "Regenerate the two-doors conformance corpus (code/value/verdict triples) by executing the Lean model"
+dir = "{{config_root}}/library/cas"
+run = "lake exe verdicts"
+
 [tasks."gen:backend-wire"]
 description = "Regenerate the effects package's generated canonical-schema mirrors from the Lean codes"
 dir = "{{config_root}}/library/cas"
@@ -84,12 +90,13 @@ dir = "{{config_root}}/library/cas"
 run = "lake exe surface"
 
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, wire-mirror, program, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, wire-mirror, program, MCP-manifest, lift-manifest, and surface-ledger byte-identity gates"
 dir = "{{config_root}}/library/cas"
 run = [
   "lake --wfail build",
   "lake exe vectors --check",
   "lake exe schemas --check",
+  "lake exe verdicts --check",
   "lake exe emitwire --check ../effects/src/cas/generated/ConformanceVectorSchema.ts",
   "lake exe emitprograms --check ../effects/test/generated/VectorPrograms.ts",
   "lake exe mcpspec --check",
