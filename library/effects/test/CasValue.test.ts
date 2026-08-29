@@ -15,6 +15,15 @@ import {
   ProjectionCodecFailure,
   type Root,
 } from "../src/cas/Value.ts"
+import {
+  GrammarKindTags,
+  KindTagRows,
+} from "../src/cas/generated/grammar/kindTags.ts"
+import {
+  HistoryKindTag,
+  ReservedKindTags,
+  WitnessKindTag,
+} from "../src/internal/kindTags.ts"
 import { deterministicAddress } from "./fixtures/address.ts"
 
 const Snapshot = Schema.Struct({
@@ -39,6 +48,34 @@ const CustomCodecValue = Schema.Struct({
   label: DomainLabelFromString,
 })
 interface CustomCodecValue extends Schema.Schema.Type<typeof CustomCodecValue> {}
+
+/** The door's refusal set is the generated registry plus the two
+ * replay-plane tags, which carry no registry row. */
+it("PRJ-004 the refusal set is the generated registry, not a hand list", () => {
+  expect([...ReservedKindTags].sort((a, b) => a - b))
+    .toEqual([...GrammarKindTags, HistoryKindTag, WitnessKindTag]
+      .sort((a, b) => a - b))
+  // Every ratified sort AND every reserved code point, by name.
+  expect(KindTagRows.every((row) => ReservedKindTags.has(row.tag))).toBe(true)
+})
+
+it("PRJ-004 refuses a caller projection at every registry tag", () => {
+  for (const row of KindTagRows) {
+    expect(() =>
+      Cas.value({ kindTag: row.tag, revision: 1, schema: Snapshot })
+    ).toThrow(/reserved/)
+  }
+})
+
+/** The aliasing regression B-A named: 0x0D (`context`) and 0x0E
+ * (`step`) were mintable, which handed a ratified sort's plane a second
+ * public interpretation. A projection at either must refuse. */
+it("PRJ-004 refuses a caller projection at 0x0D and 0x0E", () => {
+  expect(() => Cas.value({ kindTag: 0x0D, revision: 1, schema: Snapshot }))
+    .toThrow(/reserved/)
+  expect(() => Cas.value({ kindTag: 0x0E, revision: 1, schema: Snapshot }))
+    .toThrow(/reserved/)
+})
 
 it.effect("PRJ-001 rejects a root whose resident node has the wrong kind", () => {
   const first = Cas.value({ kindTag: 0x31, revision: 1, schema: Snapshot })

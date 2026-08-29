@@ -388,8 +388,9 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
   const kindTag = Byte.make(options.kindTag)
   const revision = Revision.make(options.revision)
   // The whole library-owned registry is refused, not just the replay
-  // tags — a projection aliasing a blob tag would give one kind plane
-  // two public interpretations.
+  // tags — a projection aliasing a registry row would give one kind
+  // plane two public interpretations. The set is generated from
+  // `Cas.Grammar.manifestV0`, so this door widens with the grammar.
   if (ReservedKindTags.has(kindTag)) {
     throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)
   }
