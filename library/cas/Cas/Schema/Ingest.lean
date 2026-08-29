@@ -57,6 +57,22 @@ struct is. A `mode` outside the table is not a union spelling at all
 and dies in the decoder as `notASchema`. Member ORDER is never tested,
 because order is the identity: there is no canonical arrangement to
 demand and nothing on this path sorts.
+
+The enum code (increment C4) is gated the same way and needs no new
+refusal either. Its discipline is nonemptiness and pairwise-distinct
+member NAMES, both `illFormed` at the gate; a member value outside the
+two rows Effect can persist — string and number — is not an enum
+spelling at all and dies in the decoder as `notASchema`. Member VALUES
+are deliberately unconstrained, because TypeScript aliases are content
+the source language spells, and order is again never tested.
+
+The tuple code (increment C2) adds no refusal either, and adds no `wf`
+clause worth the name: its elements are nonempty by construction and its
+rest is at most one type by construction, so the two disciplines the
+admission map asks for are STRUCTURAL. A `rest` of length two or more,
+and the empty tuple, therefore die in the decoder as `notASchema` — they
+are shapes the carrier cannot spell, which is the same reading `Never`
+gets.
 -/
 
 namespace Cas.Schema
@@ -92,6 +108,14 @@ def pairwiseNames : List (String × Bool × Ast) → Bool
   | [] => true
   | f :: fs => fs.all (fun g => decide (f.1 < g.1)) && pairwiseNames fs
 
+/-- Boolean twin of the enum's distinct-names clause — the `Pairwise`
+shape verbatim, like `pairwiseNames`. It asks for DISTINCTNESS and not
+for order: an enum's members are never sorted, because their order is
+their identity. -/
+def distinctEnumNames : List (String × EnumValue) → Bool
+  | [] => true
+  | m :: ms => ms.all (fun n => decide (m.1 ≠ n.1)) && distinctEnumNames ms
+
 mutual
 
 /-- Boolean twin of `Ast.WF` — the runtime gate of the ingestion
@@ -102,6 +126,8 @@ def Ast.wf : Ast → Bool
   | .decl id p ps =>
     id.payloadWf p && decide (ps.length = id.arity) && wfParams ps
   | .union ms _ => !ms.isEmpty && wfMembers ms
+  | .enum ms => !ms.isEmpty && distinctEnumNames ms
+  | .tuple e es r => wfElement e && wfElements es && wfRest r
   | _ => true
 
 def wfFields : List (String × Bool × Ast) → Bool
@@ -119,6 +145,21 @@ def wfMembers : List Ast → Bool
   | [] => true
   | a :: as => a.wf && wfMembers as
 
+/-- Boolean twin of `WFElement`. The optionality bit is not tested —
+there is nothing to test, it is carried. -/
+def wfElement : Bool × Ast → Bool
+  | (_, a) => a.wf
+
+/-- Boolean twin of `WFElements`. -/
+def wfElements : List (Bool × Ast) → Bool
+  | [] => true
+  | e :: es => wfElement e && wfElements es
+
+/-- Boolean twin of `WFRest`. -/
+def wfRest : Option Ast → Bool
+  | none => true
+  | some a => a.wf
+
 end
 
 theorem pairwiseNames_iff : ∀ fs, pairwiseNames fs = true ↔
@@ -127,6 +168,13 @@ theorem pairwiseNames_iff : ∀ fs, pairwiseNames fs = true ↔
   | f :: fs => by
     simp [pairwiseNames, List.pairwise_cons, List.all_eq_true,
       pairwiseNames_iff fs]
+
+theorem distinctEnumNames_iff : ∀ ms, distinctEnumNames ms = true ↔
+    List.Pairwise (fun a b : String × EnumValue => a.1 ≠ b.1) ms
+  | [] => by simp [distinctEnumNames]
+  | m :: ms => by
+    simp [distinctEnumNames, List.pairwise_cons, List.all_eq_true,
+      distinctEnumNames_iff ms]
 
 mutual
 
@@ -146,11 +194,28 @@ theorem Ast.wf_iff : ∀ (a : Ast), a.wf = true ↔ a.WF
       wfParams_iff ps, and_assoc]
   | .union ms _ => by
     simp [Ast.wf, Ast.WF, wfMembers_iff ms]
+  | .enum ms => by
+    simp [Ast.wf, Ast.WF, distinctEnumNames_iff ms]
+  | .tuple e es r => by
+    simp [Ast.wf, Ast.WF, wfElement_iff e, wfElements_iff es, wfRest_iff r,
+      and_assoc]
 
 theorem wfMembers_iff : ∀ ms, wfMembers ms = true ↔ WFMembers ms
   | [] => by simp [wfMembers, WFMembers]
   | a :: as => by
     simp [wfMembers, WFMembers, Ast.wf_iff a, wfMembers_iff as]
+
+theorem wfElement_iff : ∀ e, wfElement e = true ↔ WFElement e
+  | (_, a) => by simp [wfElement, WFElement, Ast.wf_iff a]
+
+theorem wfElements_iff : ∀ es, wfElements es = true ↔ WFElements es
+  | [] => by simp [wfElements, WFElements]
+  | e :: es => by
+    simp [wfElements, WFElements, wfElement_iff e, wfElements_iff es]
+
+theorem wfRest_iff : ∀ r, wfRest r = true ↔ WFRest r
+  | none => by simp [wfRest, WFRest]
+  | some a => by simp [wfRest, WFRest, Ast.wf_iff a]
 
 theorem wfFields_iff : ∀ fs, wfFields fs = true ↔ WFFields fs
   | [] => by simp [wfFields, WFFields]
@@ -372,6 +437,130 @@ private def alphaFirst : Ast :=
         | .error .notASchema => true
         | _ => false)
 
+/-! ## The enum at the door — worked, at elaboration
+
+The C4 calls, run through the door so the carrier's behaviour is in the
+source and not only in a docstring. -/
+
+private def direction : Ast :=
+  .enum [("Up", .str "Up"), ("Down", .str "Down")]
+
+private def directionReversed : Ast :=
+  .enum [("Down", .str "Down"), ("Up", .str "Up")]
+
+-- ORDER IS IDENTITY: reordering the members is a DIFFERENT code with
+-- DIFFERENT payload bytes. Effect reads `Object.keys` order, which is
+-- source order, and nothing on this path sorts.
+#guard direction.payload != directionReversed.payload
+
+-- Both survive the door as themselves, in the order they were written.
+#guard (match ingest direction.envelope, ingest directionReversed.envelope with
+        | .ok a, .ok b => a.payload == direction.payload &&
+            b.payload == directionReversed.payload
+        | _, _ => false)
+
+-- A numeric enum, including the alias TypeScript admits: two members at
+-- one value, which `WF` deliberately does NOT refuse — the name is the
+-- identity, the value is not.
+#guard (match ingest (Ast.enum [("A", .int ⟨1, by decide⟩),
+          ("B", .int ⟨1, by decide⟩)]).envelope with
+        | .ok _ => true
+        | .error _ => false)
+
+-- THE EMPTY ENUM IS REFUSED at the gate — like the empty union, it
+-- admits nothing, which is `Never`, which is not admitted.
+#guard (match ingest (Ast.enum []).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- REPEATED NAMES are refused: the name is the member's identity, so two
+-- members cannot share one.
+#guard (match ingest (Ast.enum [("A", .str "x"), ("A", .str "y")]).envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- A member value outside the two admitted rows — a BOOLEAN, which
+-- Effect's `Enum` cannot persist — is not an enum spelling at all and
+-- dies in the decoder.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Enum"), ("checks", .arr []),
+              ("enums", .arr [.arr [.str "A",
+                .obj [("type", .str "boolean"), ("value", .bool true)]]])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
+/-! ## The tuple at the door — worked, at elaboration
+
+The C2 calls, run through the door. The two that matter are the ones the
+carrier makes structural rather than clausal: a tuple cannot spell the
+plain array's representation, and a `rest` of length two has no spelling
+at all. -/
+
+private def pair : Ast := .tuple (false, .str) [(false, .int)] none
+
+private def pairSwapped : Ast := .tuple (false, .int) [(false, .str)] none
+
+private def headAndTail : Ast := .tuple (false, .str) [] (some .int)
+
+-- POSITION IS IDENTITY: swapping two elements is a DIFFERENT code with
+-- DIFFERENT payload bytes.
+#guard pair.payload != pairSwapped.payload
+
+-- Both survive the door as themselves, positions intact.
+#guard (match ingest pair.envelope, ingest pairSwapped.envelope with
+        | .ok a, .ok b => a.payload == pair.payload &&
+            b.payload == pairSwapped.payload
+        | _, _ => false)
+
+-- The OPTIONALITY BIT IS DATA: the same element types under different
+-- optionality are two codes, and both are admitted.
+#guard (Ast.tuple (false, .str) [(false, .int)] none).payload !=
+  (Ast.tuple (false, .str) [(true, .int)] none).payload
+
+#guard (match ingest (Ast.tuple (false, .str) [(true, .int)] none).envelope with
+        | .ok _ => true
+        | .error _ => false)
+
+-- A tuple with a rest type — `Schema.TupleWithRest` — round-trips too.
+#guard (match ingest headAndTail.envelope with
+        | .ok a => a.payload == headAndTail.payload
+        | .error _ => false)
+
+-- THE PLAIN ARRAY KEEPS ITS OWN SPELLING. `.arr` is `{elements:[],
+-- rest:[t]}`, and no tuple code can spell that, because `Ast.tuple`
+-- takes a first element. So there is no second collapse to normalize
+-- away, and the array's bytes are unchanged by this increment.
+#guard (match ingest (Ast.arr .str).envelope with
+        | .ok a => a.payload == (Ast.arr .str).payload
+        | .error _ => false)
+
+-- A `rest` OF LENGTH TWO has no spelling on this side — the carrier
+-- holds an `Option` — so the deferred trailing-rest semantics are
+-- refused in the DECODER, by shape, and not by a clause that could
+-- drift.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Arrays"), ("checks", .arr []),
+              ("elements", .arr [.obj [("isOptional", .bool false),
+                ("type", (Ast.str).toRepresentationJson)]]),
+              ("rest", .arr [(Ast.int).toRepresentationJson,
+                (Ast.bool).toRepresentationJson])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
+-- THE EMPTY TUPLE — `{elements:[], rest:[]}` — is still not admitted.
+-- It was not admitted before this increment either; nothing is retired.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [
+              ("_tag", .str "Arrays"), ("checks", .arr []),
+              ("elements", .arr []), ("rest", .arr [])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
 /-! ## The bytes-in door
 
 `ingest` takes a VALUE. Everything that arrives from outside — a stored
@@ -452,6 +641,14 @@ theorem ingestBytes_payload' {a : Ast} (ha : a.WF) (hn : a.RepNormal) :
 -- `Value.int 7`, and `deNumNorm` is what puts it back.
 #guard (match ingestBytes (Ast.lit (.int ⟨7, by decide⟩)).payload with
         | .ok a => a.payload == (Ast.lit (.int ⟨7, by decide⟩)).payload
+        | .error _ => false)
+
+-- The enum through the BYTES door, including the number member the
+-- collapse would otherwise break.
+#guard (match ingestBytes (Ast.enum [("A", .int ⟨1, by decide⟩),
+          ("B", .str "b")]).payload with
+        | .ok a => a.payload ==
+            (Ast.enum [("A", .int ⟨1, by decide⟩), ("B", .str "b")]).payload
         | .error _ => false)
 
 -- Bytes that are no canonical rendering die at the parser, by name.

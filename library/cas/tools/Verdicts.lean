@@ -103,6 +103,8 @@ def denotesValues : Ast → Bool
   | .struct fs => denotesFields fs
   | .decl _ _ _ => false
   | .union ms _ => discriminatedB ms && denotesMembers ms
+  | .enum _ => false
+  | .tuple _ _ _ => false
   | _ => true
 
 def denotesFields : List (String × Bool × Ast) → Bool
@@ -322,6 +324,47 @@ def corpus : List Case := [
   { name := "union-nested",
     note := "a union whose second member is a union — the no-flattening rule, admitted",
     source := .code (.union [.null, .union [.arr .str, .bool] .oneOf] .anyOf) },
+  -- ## Tuples: CODES only, no Lean value verdict
+  { name := "tuple-pair",
+    note := "a two-element tuple — admitted as content, El is Empty (corpus restriction 7), and position is identity",
+    source := .code (.tuple (false, .str) [(false, .int)] none) },
+  { name := "tuple-pair-swapped",
+    note := "the same two element types in the other order — a DIFFERENT code at a different address",
+    source := .code (.tuple (false, .int) [(false, .str)] none) },
+  { name := "tuple-optional-element",
+    note := "a trailing optional element — the optionality bit is carried, never collapsed; whether an optional element may sit anywhere but last is a DENOTATION question, not an admission one",
+    source := .code (.tuple (false, .int) [(true, .str)] none) },
+  { name := "tuple-with-rest",
+    note := "Schema.TupleWithRest: one element and a rest type — the rest is an Option in the carrier, so at most one is structural",
+    source := .code (.tuple (false, .str) [] (some .int)) },
+  { name := "tuple-nested",
+    note := "a tuple inside an array inside a tuple — nesting like any other code",
+    source := .code (.tuple
+      (false, .arr (.tuple (false, .str) [] none)) [(false, .null)] none) },
+  { name := "array-plain-still-array",
+    note := "the plain array, unchanged by the Arrays completion: {elements:[], rest:[t]} has NO tuple spelling, because Ast.tuple takes a first element — which is what keeps the revision-1 projection injective with no second collapse",
+    source := .code (.arr .str),
+    values := [
+      ("empty", .arr []),
+      ("strings", .arr [.str "a", .str "b"]),
+      ("wrong-item", .arr [.nat 1]),
+      ("not-an-array", .str "a")] },
+  -- ## Enums: CODES only, no Lean value verdict
+  { name := "enum-string",
+    note := "a string enum spelled Up before Down — admitted as content, El is Empty (corpus restriction 6), and the order is Object.keys order, which is source order",
+    source := .code (.enum [("Up", .str "Up"), ("Down", .str "Down")]) },
+  { name := "enum-string-reversed",
+    note := "the same two members in the other order — a DIFFERENT code at a different address: order is identity for enums as it is for unions",
+    source := .code (.enum [("Down", .str "Down"), ("Up", .str "Up")]) },
+  { name := "enum-number-alias",
+    note := "a numeric enum with a negative member and an ALIAS (two names at one value) — admitted, because the NAME is the member's identity and TypeScript spells aliases",
+    source := .code (.enum [
+      ("Debug", .int ⟨-1, by decide⟩),
+      ("Warn", .int ⟨1, by decide⟩),
+      ("Warning", .int ⟨1, by decide⟩)]) },
+  { name := "struct-with-enum",
+    note := "an enum under a struct field: the struct's own El is uninhabited too, so it carries no value triples",
+    source := .code (.struct [("dir", false, .enum [("Up", .str "Up")])]) },
   -- ## Declarations: CODES only, no Lean value verdict
   { name := "decl-date",
     note := "effect/schema/Date, arity 0, null payload — admitted as content; El is Empty, so no value triples exist (corpus restriction 4)",
@@ -379,6 +422,15 @@ def corpus : List Case := [
   { name := "refuse-union-empty-member",
     note := "an empty union as a member of a well-formed union",
     source := .code (.union [.str, .union [] .anyOf] .anyOf) },
+  { name := "refuse-enum-empty",
+    note := "the empty enum — like the empty union it admits nothing, which is Never, and Never is not admitted",
+    source := .code (.enum []) },
+  { name := "refuse-enum-duplicate-name",
+    note := "an enum declaring the same member name twice — the name IS the member's identity, so it cannot repeat (values may, and do: see enum-number-alias)",
+    source := .code (.enum [("A", .str "x"), ("A", .str "y")]) },
+  { name := "refuse-enum-empty-nested",
+    note := "the empty enum under a struct field",
+    source := .code (.struct [("e", false, .enum [])]) },
   { name := "refuse-decl-payload",
     note := "effect/schema/Date carrying a string payload — the row admits null only",
     source := .code (.decl .date (.str "not a null payload") []) },
@@ -480,15 +532,41 @@ def corpus : List Case := [
         ("representation", .obj [
           ("id", .str "effect/schema/isMinLength"),
           ("payload", .obj [("minLength", .nat 2)])])]])])) },
-  { name := "refuse-tuple-elements",
-    note := "an Arrays node with positional elements — the admitted subset carries the plain array only (tuples are Slice C2)",
+  { name := "refuse-tuple-empty",
+    note := "the EMPTY tuple, {elements:[], rest:[]} — Schema.Tuple([]) has no spelling in the carrier and had none before the Arrays completion either, so nothing is retired by refusing it",
+    source := .raw (rawEnvelope (.obj [
+      ("_tag", .str "Arrays"),
+      ("checks", .arr []),
+      ("elements", .arr []),
+      ("rest", .arr [])])) },
+  { name := "refuse-tuple-rest-two",
+    note := "an Arrays node with TWO rest types — the trailing-rest semantics the admission map defers; the carrier holds an Option, so the refusal is structural rather than a clause that could drift",
     source := .raw (rawEnvelope (.obj [
       ("_tag", .str "Arrays"),
       ("checks", .arr []),
       ("elements", .arr [.obj [
         ("isOptional", .bool false),
         ("type", Ast.str.toRepresentationJson)]]),
+      ("rest", .arr [
+        Ast.int.toRepresentationJson,
+        Ast.bool.toRepresentationJson])])) },
+  { name := "refuse-tuple-element-annotated",
+    note := "an element carrying an annotation bag — annotations are GROW(C-ann), on elements as everywhere else",
+    source := .raw (rawEnvelope (.obj [
+      ("_tag", .str "Arrays"),
+      ("checks", .arr []),
+      ("elements", .arr [.obj [
+        ("annotations", .obj [("title", .str "first")]),
+        ("isOptional", .bool false),
+        ("type", Ast.str.toRepresentationJson)]]),
       ("rest", .arr [])])) },
+  { name := "refuse-enum-boolean-member",
+    note := "an Enum whose member value is a boolean — Effect's Enum persists string and number values only, so this is not an enum spelling at all",
+    source := .raw (rawEnvelope (.obj [
+      ("_tag", .str "Enum"),
+      ("checks", .arr []),
+      ("enums", .arr [.arr [.str "A",
+        .obj [("type", .str "boolean"), ("value", .bool true)]]])])) },
   { name := "refuse-index-signature",
     note := "an Objects node with an index signature — records are Slice C3, not admitted yet",
     source := .raw (rawEnvelope (.obj [
@@ -573,7 +651,9 @@ def restrictions : List String := [
   "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)",
   "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only",
   "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only",
-  "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test"
+  "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test",
+  "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only",
+  "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"
 ]
 
 def documentValue : Except String Json.Value := do

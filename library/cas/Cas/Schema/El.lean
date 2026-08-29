@@ -81,6 +81,65 @@ The general union's denotation therefore remains a named obligation:
                      unions, with whatever weaker-than-exactness law
                      its consumer can live with. Owed only when a
                      consumer demands it.
+
+## The enum's denotation — a named obligation
+
+`El (.enum ms) = Empty`: an enum denotes NO Lean values yet, and that is
+a statement rather than a placeholder — the same shape of answer the
+general declaration gets, and for a sharper reason than cost.
+
+An enum's values are its members' values, so the obvious denotation is
+the index `Fin ms.length` with `encode` sending index `i` to the `i`-th
+member's value. That is a bijection exactly when the VALUES are
+pairwise distinct — and `Ast.WF` deliberately does not ask that, because
+TypeScript admits alias members (`enum E { A = 1, B = 1 }`) and Effect
+persists both rows. Under aliasing the decode side is not extensional:
+two indices carry one value, so which index the wire records is a
+function of the member ORDER, not of the value, and the round trip is
+false. That is the general union's pathology exactly, and it takes the
+same staged answer: a distinctness guard in `El` (`cond` on a boolean
+twin, the way `discriminatedB` guards the union) with `Fin`-indexed
+carriage under it. Until a consumer wants enum VALUES rather than enum
+CARRIAGE, `Empty` is the truth and every value-plane law holds over the
+grown carrier vacuously rather than falsely. Named obligation:
+
+    enumEl : the distinctness-guarded denotation for enums —
+             `El (.enum ms) = cond (valuesDistinctB ms) (Fin ms.length)
+             Empty` or its equivalent — with the codec arms and the
+             round trip that follow from it.
+
+## The tuple's denotation — a named obligation, and why the product
+   alone is not enough
+
+`El (.tuple e es r) = Empty` for now. The PRODUCT is the obvious shape
+and it is within reach — `ElElements` mirroring `ElFields`, the rest as
+a `List` — but the product alone is not a denotation, because a tuple's
+positions live in an ARRAY and a struct's live under NAMES.
+
+Concretely: an absent optional element does not leave a hole in a JSON
+array, it SHORTENS it. So `readonly [a?, b]` cannot be encoded at all —
+dropping the first element moves `b` into position 0, and the decoder
+reading position 0 gets `b` where the code says `a`. Exactness and the
+round trip are both false on such a code. TypeScript's own type system
+forbids it, so Effect can never CONSTRUCT one; but the representation
+can spell one, and `Ast.WF` admits it, because `WF` is the store's
+admission discipline and the store should carry what the wire carries.
+
+That is the general union's situation exactly, and it takes the ratified
+answer: a boolean guard in `El`, not a new clause in `WF`. Named
+obligation:
+
+    tupleEl : `El (.tuple e es r) = cond (trailingOptionalB (e :: es))
+              (ElElements (e :: es) × ElRest r) Empty`, with the
+              positional codec arms and the round trip that follow —
+              the encoder emitting elements then rest, the decoder
+              splitting the array at the element count, and the
+              trailing-optional guard doing for the split what
+              discrimination does for tag dispatch.
+
+Until then a tuple is carried and not inhabited: mintable, addressable,
+re-emittable, materializable into a live Effect validator, with every
+value-plane law holding vacuously rather than falsely.
 -/
 
 mutual
@@ -97,6 +156,8 @@ def El : Ast → Type
   | .ref t => StoreRef t
   | .decl _ _ _ => Empty
   | .union ms _ => cond (discriminatedB ms) (ElMembers ms) Empty
+  | .enum _ => Empty
+  | .tuple _ _ _ => Empty
 
 /-- Field components, right-nested: `(first, rest)`. -/
 def ElFields : List (String × Bool × Ast) → Type

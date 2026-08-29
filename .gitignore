@@ -10,3 +10,11 @@ node_modules/
 # Vendored corpus bytes: never committed - the committed artifact is
 # experiments/parser-census/corpus-manifest.json (pins, licenses, counts).
 corpus/
+# Root-level PDFs. The .reference/papers rule above states the policy — the
+# public repo must not redistribute publisher-copyrighted documents — but only
+# covered one directory, so a PDF dropped at the root slipped the net.
+/*.pdf
+# Local credential scratch. Ignoring is CONTAINMENT, NOT SECURITY: the bytes
+# are still in the working tree in plaintext. The fix is to hold secrets
+# outside the repo (or in the keychain) and rotate anything that has sat here.
+/turso_tok.md

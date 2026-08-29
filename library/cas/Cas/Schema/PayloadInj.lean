@@ -117,6 +117,38 @@ theorem deNumNorm_decl_payload {g : DeclarationId.General} {p : DeclPayload}
     DeclarationId.General.PayloadWF, DeclarationId.General.row,
     DeclarationId.PayloadWF])
 
+/-- The recovery is exact on an enum member's value. A number member is
+spelled under the key `"value"` — the same key a number literal uses —
+so the same reading recovers it, and the string member carries no number
+to recover. Stated OUTSIDE the mutual block below because an enum member
+carries no code: the enum arm is not part of the recursion over `Ast`. -/
+theorem deNumNorm_numNorm_enumValue (v : EnumValue) :
+    deNumNorm (Json.Value.numNorm v.toJson) = v.toJson := by
+  cases v with
+  | str _ => rfl
+  | int i =>
+    by_cases h : 0 ≤ i.val
+    · show (Json.Value.obj _) = _
+      simp only [EnumValue.toJson, Json.Value.numNorm, numNormFields, deNumNorm,
+        deNumNormFields, if_pos h, reint, ite_self, Json.Value.obj.injEq,
+        List.cons.injEq, Prod.mk.injEq, if_true, and_true, true_and]
+      exact congrArg Json.Value.int (Int.toNat_of_nonneg h)
+    · show (Json.Value.obj _) = _
+      simp only [EnumValue.toJson, Json.Value.numNorm, numNormFields, deNumNorm,
+        deNumNormFields, if_neg h, reint, ite_self]
+
+/-- The recovery is exact on a whole member list. -/
+theorem deNumNorm_numNorm_enumMembers :
+    ∀ (ms : List (String × EnumValue)),
+      deNumNormItems (numNormItems (enumMembersToJson ms))
+        = enumMembersToJson ms
+  | [] => rfl
+  | (n, v) :: ms => by
+    show (_ :: _) = _
+    simp only [enumMembersToJson, enumMemberToJson, numNormItems, deNumNormItems,
+      Json.Value.numNorm, deNumNorm, deNumNorm_numNorm_enumValue v,
+      deNumNorm_numNorm_enumMembers ms]
+
 mutual
 
 /-- The recovery is exact on the representation image of a well-formed
@@ -168,6 +200,47 @@ theorem deNumNorm_numNorm_representation :
     simp only [Json.Value.numNorm, numNormFields, deNumNorm,
       deNumNormFields, reint, deNumNorm_numNorm_members ms hwf]
     rfl
+  | .enum ms, _ => by
+    show (Json.Value.obj _) = _
+    simp only [Json.Value.numNorm, numNormFields, deNumNorm,
+      deNumNormFields, reint, deNumNorm_numNorm_enumMembers ms]
+    rfl
+  | .tuple e es r, ⟨he, hes, hr⟩ => by
+    show (Json.Value.obj _) = _
+    simp only [Json.Value.numNorm, numNormFields, numNormItems, deNumNorm,
+      deNumNormFields, deNumNormItems, reint,
+      deNumNorm_numNorm_element e he, deNumNorm_numNorm_elements es hes,
+      deNumNorm_numNorm_rest r hr]
+    rfl
+
+theorem deNumNorm_numNorm_element :
+    ∀ (e : Bool × Ast), WFElement e →
+      deNumNorm (Json.Value.numNorm (elementToRepresentationJson e))
+        = elementToRepresentationJson e
+  | (o, a), ha => by
+    show (Json.Value.obj _) = _
+    simp only [elementToRepresentationJson, Json.Value.numNorm, numNormFields,
+      deNumNorm, deNumNormFields, reint, ite_self,
+      deNumNorm_numNorm_representation a ha]
+    rfl
+
+theorem deNumNorm_numNorm_elements :
+    ∀ (es : List (Bool × Ast)), WFElements es →
+      deNumNormItems (numNormItems (elementsToRepresentationJson es))
+        = elementsToRepresentationJson es
+  | [], _ => rfl
+  | e :: es, ⟨he, hes⟩ => by
+    simp only [elementsToRepresentationJson, numNormItems, deNumNormItems,
+      deNumNorm_numNorm_element e he, deNumNorm_numNorm_elements es hes]
+
+theorem deNumNorm_numNorm_rest :
+    ∀ (r : Option Ast), WFRest r →
+      deNumNormItems (numNormItems (restToRepresentationJson r))
+        = restToRepresentationJson r
+  | none, _ => rfl
+  | some a, ha => by
+    simp only [restToRepresentationJson, numNormItems, deNumNormItems,
+      deNumNorm_numNorm_representation a ha]
 
 theorem deNumNorm_numNorm_fields :
     ∀ (fs : List (String × Bool × Ast)), WFFields fs →

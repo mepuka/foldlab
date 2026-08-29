@@ -25,6 +25,27 @@ def astBeq : Ast → Ast → Bool
   | .ref a, .ref b => a == b
   | .decl i p ps, .decl j q qs => i == j && p == q && paramsBeq ps qs
   | .union ms m, .union ns n => m == n && membersBeq ms ns
+  -- Members compare POSITIONWISE here too: an enum's order is its
+  -- identity, so two enums over the same pairs in different orders are
+  -- different codes and must not share a name.
+  | .enum ms, .enum ns => ms == ns
+  -- Elements compare POSITIONWISE, optionality bit included: a tuple's
+  -- positions are its identity.
+  | .tuple e es r, .tuple f fs s =>
+    elementBeq e f && elementsBeq es fs && restBeq r s
+  | _, _ => false
+
+def elementBeq : Bool × Ast → Bool × Ast → Bool
+  | (o, a), (p, b) => o == p && astBeq a b
+
+def elementsBeq : List (Bool × Ast) → List (Bool × Ast) → Bool
+  | [], [] => true
+  | e :: es, f :: fs => elementBeq e f && elementsBeq es fs
+  | _, _ => false
+
+def restBeq : Option Ast → Option Ast → Bool
+  | none, none => true
+  | some a, some b => astBeq a b
   | _, _ => false
 
 def fieldsBeq :
@@ -60,6 +81,21 @@ def litExpr : LitVal → Expr
   | .bool b => .bool b
   | .int i => .int i.val
   | .str s => .str s
+
+/-- One enum member as an object-literal entry. The key is the member
+NAME, quoted the way `Ts.Expr.str` quotes — so a name and a string
+literal come out spelled identically, and there is one quoting rule in
+this emitter rather than two. -/
+private def enumEntry (m : String × EnumValue) : String × Expr :=
+  ("\"" ++ m.1 ++ "\"",
+    match m.2 with
+    | .str s => .str s
+    | .int i => .int i.val)
+
+/-- An enum's members as object-literal entries, in the code's order. -/
+private def enumEntries : List (String × EnumValue) → List (String × Expr)
+  | [] => []
+  | m :: ms => enumEntry m :: enumEntries ms
 
 mutual
 
@@ -97,6 +133,41 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
       .call (schema "Union") [
         .arr (constructorMembers env members),
         .object [("mode", .str mode.wire)]]
+    -- `Schema.Enum(<enum-like object>)` — Effect's own constructor
+    -- (`Schema.ts:3021`), whose parameter type is
+    -- `{ [x: string]: string | number }`: a TypeScript `enum` object
+    -- and an object LITERAL are both inhabitants, and both build the
+    -- same `SchemaAST.Enum` from `Object.keys` order. The estate emits
+    -- the literal; see the note below the emitter for why.
+    | .enum members =>
+      .call (schema "Enum") [.object (enumEntries members)]
+    -- `Schema.Tuple([…])`, and `Schema.TupleWithRest(Schema.Tuple([…]),
+    -- [rest])` when there is a rest type — Effect's own printer's two
+    -- shapes verbatim (`toCodeDocument.ts:486-504`), including
+    -- `Schema.optionalKey` on an optional element. The third shape that
+    -- printer has, `Schema.Array(item)` for the elementless case, is
+    -- `.arr`'s lowering and stays there: the carrier cannot spell an
+    -- elementless tuple, so this arm never has to choose.
+    | .tuple first more rest =>
+      let elements :=
+        .arr (constructorElement env first :: constructorElements env more)
+      match rest with
+      | none => .call (schema "Tuple") [elements]
+      | some item =>
+        .call (schema "TupleWithRest") [
+          .call (schema "Tuple") [elements],
+          .arr [constructorGo env false item]]
+
+private def constructorElement (env : List (String × Ast)) :
+    Bool × Ast → Expr
+  | (opt, code) =>
+    if opt then .call (schema "optionalKey") [constructorGo env false code]
+    else constructorGo env false code
+
+private def constructorElements (env : List (String × Ast)) :
+    List (Bool × Ast) → List Expr
+  | [] => []
+  | e :: es => constructorElement env e :: constructorElements env es
 
 private def constructorFields (env : List (String × Ast)) :
     List (String × Bool × Ast) → List (String × Expr)
@@ -163,5 +234,72 @@ private def renderedConstructor (a : Ast) : String :=
 #guard renderedConstructor (.union [.null, .union [.arr .str, .bool] .oneOf] .anyOf) ==
   "Schema.Union([Schema.Null, Schema.Union([Schema.Array(Schema.String), " ++
     "Schema.Boolean], { mode: \"oneOf\" })], { mode: \"anyOf\" })"
+
+/-! ## The enum lowering, pinned — and a recorded deviation
+
+Effect's own printer (`toCodeDocument.ts:454-469`) emits an ARTIFACT —
+`enum _Enum0 { "Up" = "Up", … }` as a separate declaration — and refers
+to it as `Schema.Enum(_Enum0)`. The estate emits the enum-like object
+INLINE: `Schema.Enum({ "Up": "Up", … })`.
+
+The call this records (A-1): the two texts build the SAME schema.
+`Schema.Enum` takes any `{ [x: string]: string | number }`
+(`Schema.ts:3021`) and reads its members as
+`Object.keys(enums).filter(key => typeof enums[enums[key]] !== "number")
+.map(key => [key, enums[key]])` — insertion order, with the numeric
+enum's reverse mappings filtered out. An object literal has no reverse
+mappings, so the filter is a no-op on it and the member list is
+identical, in identical order.
+
+What the estate gains by deviating: the lowering stays a FUNCTION of the
+code alone. Effect's spelling needs a fresh identifier per enum, which
+means a counter threaded through the recursion and a second output
+channel for the artifacts — plumbing this emitter does not have, and
+plumbing whose only purpose would be to reproduce a name that carries no
+meaning. The emitted expression is self-contained, so a code's lowering
+does not depend on where in a module it appears. Growing the artifact
+channel is a backend increment, owed when a consumer wants the named
+`enum` declaration itself (a TypeScript `enum` TYPE, which the object
+literal does not declare). -/
+
+#guard renderedConstructor (.enum [("Up", .str "Up"), ("Down", .str "Down")]) ==
+  "Schema.Enum({ \"Up\": \"Up\", \"Down\": \"Down\" })"
+
+#guard renderedConstructor (.enum [("One", .int ⟨1, by decide⟩),
+    ("MinusOne", .int ⟨-1, by decide⟩)]) ==
+  "Schema.Enum({ \"One\": 1, \"MinusOne\": -1 })"
+
+-- Order is identity out to the emitted source here too: reversing the
+-- members emits different text, because it is a different code.
+#guard renderedConstructor (.enum [("Down", .str "Down"), ("Up", .str "Up")]) ==
+  "Schema.Enum({ \"Down\": \"Down\", \"Up\": \"Up\" })"
+
+/-! ## The tuple lowering, pinned
+
+Effect's printer's own two shapes (`toCodeDocument.ts:486-504`), and its
+`Schema.optionalKey` on an optional element. Its third shape,
+`Schema.Array(item)` for `{elements:[], rest:[t]}`, is `.arr`'s lowering
+and stays there — the carrier cannot spell an elementless tuple, so the
+choice never arises on this arm. -/
+
+#guard renderedConstructor (.tuple (false, .str) [(false, .int)] none) ==
+  "Schema.Tuple([Schema.String, Schema.Int])"
+
+#guard renderedConstructor (.tuple (false, .str) [(true, .int)] none) ==
+  "Schema.Tuple([Schema.String, Schema.optionalKey(Schema.Int)])"
+
+#guard renderedConstructor (.tuple (false, .str) [] (some .bool)) ==
+  "Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Boolean])"
+
+-- Position is identity out to the emitted source: swapping two elements
+-- emits different text, because it is a different code.
+#guard renderedConstructor (.tuple (false, .int) [(false, .str)] none) ==
+  "Schema.Tuple([Schema.Int, Schema.String])"
+
+-- A tuple nests like any other code, and a plain array is still a plain
+-- array beside it.
+#guard renderedConstructor
+    (.arr (.tuple (false, .str) [(false, .arr .int)] none)) ==
+  "Schema.Array(Schema.Tuple([Schema.String, Schema.Array(Schema.Int)]))"
 
 end Cas.Backend

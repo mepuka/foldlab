@@ -7,14 +7,14 @@
     "IR": 78,
     "Lang": 129,
     "Lift": 37,
-    "Schema": 351,
-    "Values": 308,
+    "Schema": 429,
+    "Values": 341,
     "Vectors": 65
   },
   "axiomCensus": {
-    "Classical.choice": 148,
-    "Quot.sound": 251,
-    "propext": 339
+    "Classical.choice": 166,
+    "Quot.sound": 278,
+    "propext": 378
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -29,13 +29,13 @@
     "Cas.Lang.Status": 28,
     "Cas.Lang.interpret": 6,
     "Cas.Node": 64,
-    "Cas.Schema.Ast": 204,
+    "Cas.Schema.Ast": 263,
     "Cas.Schema.Described": 23,
     "Cas.Schema.El": 27,
     "Cas.Word": 56
   },
-  "declarations": 1190,
-  "documented": 565,
+  "declarations": 1269,
+  "documented": 599,
   "library": "Cas",
   "modules": [
     {
@@ -4193,8 +4193,8 @@
       ]
     },
     {
-      "declarations": 34,
-      "documented": 9,
+      "declarations": 52,
+      "documented": 15,
       "module": "Cas.Schema.Ast",
       "surface": [
         {
@@ -4216,7 +4216,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.below_1",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → List (String × Bool × Cas.Schema.Ast) → Sort (max 1 u)",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → List (String × Bool × Cas.Schema.Ast) → Sort (max 1 u)",
           "touches": ["Schema"]
         },
         {
@@ -4224,7 +4224,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.below_2",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → List Cas.Schema.Ast → Sort (max 1 u)",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → List Cas.Schema.Ast → Sort (max 1 u)",
           "touches": ["Schema"]
         },
         {
@@ -4232,7 +4232,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.below_3",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → String × Bool × Cas.Schema.Ast → Sort (max 1 u)",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → Bool × Cas.Schema.Ast → Sort (max 1 u)",
           "touches": ["Schema"]
         },
         {
@@ -4240,7 +4240,23 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.below_4",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → Bool × Cas.Schema.Ast → Sort (max 1 u)",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → List (Bool × Cas.Schema.Ast) → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.below_5",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → Option Cas.Schema.Ast → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.below_6",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → String × Bool × Cas.Schema.Ast → Sort (max 1 u)",
           "touches": ["Schema"]
         },
         {
@@ -4249,7 +4265,7 @@
           "documented": false,
           "kind": "theorem",
           "name": "Cas.Schema.Ast.brecOn.eq",
-          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} {motive_5 : Bool × Cas.Schema.Ast → Sort u} (t : Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t), t.brecOn F_1 F_2 F_3 F_4 F_5 = F_1 t (Cas.Schema.Ast.brecOn.go t F_1 F_2 F_3 F_4 F_5).2",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), t.brecOn F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_1 t (Cas.Schema.Ast.brecOn.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
           "touches": ["Schema"]
         },
         {
@@ -4257,7 +4273,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn.go",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_1 t ×' t.below",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_1 t ×' t.below",
           "touches": ["Schema"]
         },
         {
@@ -4265,7 +4281,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_1",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : List (String × Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_2 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List (String × Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_2 t",
           "touches": ["Schema"]
         },
         {
@@ -4274,7 +4290,7 @@
           "documented": false,
           "kind": "theorem",
           "name": "Cas.Schema.Ast.brecOn_1.eq",
-          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} {motive_5 : Bool × Cas.Schema.Ast → Sort u} (t : List (String × Bool × Cas.Schema.Ast)) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t), Cas.Schema.Ast.brecOn_1 t F_1 F_2 F_3 F_4 F_5 = F_2 t (Cas.Schema.Ast.brecOn_1.go t F_1 F_2 F_3 F_4 F_5).2",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : List (String × Bool × Cas.Schema.Ast)) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_1 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_2 t (Cas.Schema.Ast.brecOn_1.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
           "touches": ["Schema"]
         },
         {
@@ -4282,7 +4298,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_1.go",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : List (String × Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_2 t ×' Cas.Schema.Ast.below_1 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List (String × Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_2 t ×' Cas.Schema.Ast.below_1 t",
           "touches": ["Schema"]
         },
         {
@@ -4290,7 +4306,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_2",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : List Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_3 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_3 t",
           "touches": ["Schema"]
         },
         {
@@ -4299,7 +4315,7 @@
           "documented": false,
           "kind": "theorem",
           "name": "Cas.Schema.Ast.brecOn_2.eq",
-          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} {motive_5 : Bool × Cas.Schema.Ast → Sort u} (t : List Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t), Cas.Schema.Ast.brecOn_2 t F_1 F_2 F_3 F_4 F_5 = F_3 t (Cas.Schema.Ast.brecOn_2.go t F_1 F_2 F_3 F_4 F_5).2",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : List Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_2 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_3 t (Cas.Schema.Ast.brecOn_2.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
           "touches": ["Schema"]
         },
         {
@@ -4307,7 +4323,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_2.go",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : List Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_3 t ×' Cas.Schema.Ast.below_2 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_3 t ×' Cas.Schema.Ast.below_2 t",
           "touches": ["Schema"]
         },
         {
@@ -4315,7 +4331,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_3",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : String × Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_4 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_4 t",
           "touches": ["Schema"]
         },
         {
@@ -4324,7 +4340,7 @@
           "documented": false,
           "kind": "theorem",
           "name": "Cas.Schema.Ast.brecOn_3.eq",
-          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} {motive_5 : Bool × Cas.Schema.Ast → Sort u} (t : String × Bool × Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t), Cas.Schema.Ast.brecOn_3 t F_1 F_2 F_3 F_4 F_5 = F_4 t (Cas.Schema.Ast.brecOn_3.go t F_1 F_2 F_3 F_4 F_5).2",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : Bool × Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_3 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_4 t (Cas.Schema.Ast.brecOn_3.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
           "touches": ["Schema"]
         },
         {
@@ -4332,7 +4348,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_3.go",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : String × Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_4 t ×' Cas.Schema.Ast.below_3 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_4 t ×' Cas.Schema.Ast.below_3 t",
           "touches": ["Schema"]
         },
         {
@@ -4340,7 +4356,7 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_4",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_5 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List (Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_5 t",
           "touches": ["Schema"]
         },
         {
@@ -4349,7 +4365,7 @@
           "documented": false,
           "kind": "theorem",
           "name": "Cas.Schema.Ast.brecOn_4.eq",
-          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} {motive_5 : Bool × Cas.Schema.Ast → Sort u} (t : Bool × Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t), Cas.Schema.Ast.brecOn_4 t F_1 F_2 F_3 F_4 F_5 = F_5 t (Cas.Schema.Ast.brecOn_4.go t F_1 F_2 F_3 F_4 F_5).2",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : List (Bool × Cas.Schema.Ast)) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_4 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_5 t (Cas.Schema.Ast.brecOn_4.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
           "touches": ["Schema"]
         },
         {
@@ -4357,7 +4373,57 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.Ast.brecOn_4.go",
-          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : String × Bool × Cas.Schema.Ast → Sort u} → {motive_5 : Bool × Cas.Schema.Ast → Sort u} → (t : Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_4 t → motive_5 t) → motive_5 t ×' Cas.Schema.Ast.below_4 t",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : List (Bool × Cas.Schema.Ast)) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_5 t ×' Cas.Schema.Ast.below_4 t",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.brecOn_5",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : Option Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_6 t",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.brecOn_5.eq",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : Option Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_5 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_6 t (Cas.Schema.Ast.brecOn_5.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.brecOn_5.go",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : Option Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_6 t ×' Cas.Schema.Ast.below_5 t",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.brecOn_6",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : String × Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_7 t",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.brecOn_6.eq",
+          "signature": "∀ {motive_1 : Cas.Schema.Ast → Sort u} {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} {motive_3 : List Cas.Schema.Ast → Sort u} {motive_4 : Bool × Cas.Schema.Ast → Sort u} {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} {motive_6 : Option Cas.Schema.Ast → Sort u} {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} (t : String × Bool × Cas.Schema.Ast) (F_1 : (t : Cas.Schema.Ast) → t.below → motive_1 t) (F_2 : (t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) (F_3 : (t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) (F_4 : (t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) (F_5 : (t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) (F_6 : (t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) (F_7 : (t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t), Cas.Schema.Ast.brecOn_6 t F_1 F_2 F_3 F_4 F_5 F_6 F_7 = F_7 t (Cas.Schema.Ast.brecOn_6.go t F_1 F_2 F_3 F_4 F_5 F_6 F_7).2",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.Ast.brecOn_6.go",
+          "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → {motive_2 : List (String × Bool × Cas.Schema.Ast) → Sort u} → {motive_3 : List Cas.Schema.Ast → Sort u} → {motive_4 : Bool × Cas.Schema.Ast → Sort u} → {motive_5 : List (Bool × Cas.Schema.Ast) → Sort u} → {motive_6 : Option Cas.Schema.Ast → Sort u} → {motive_7 : String × Bool × Cas.Schema.Ast → Sort u} → (t : String × Bool × Cas.Schema.Ast) → ((t : Cas.Schema.Ast) → t.below → motive_1 t) → ((t : List (String × Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_1 t → motive_2 t) → ((t : List Cas.Schema.Ast) → Cas.Schema.Ast.below_2 t → motive_3 t) → ((t : Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_3 t → motive_4 t) → ((t : List (Bool × Cas.Schema.Ast)) → Cas.Schema.Ast.below_4 t → motive_5 t) → ((t : Option Cas.Schema.Ast) → Cas.Schema.Ast.below_5 t → motive_6 t) → ((t : String × Bool × Cas.Schema.Ast) → Cas.Schema.Ast.below_6 t → motive_7 t) → motive_7 t ×' Cas.Schema.Ast.below_6 t",
           "touches": ["Schema"]
         },
         {
@@ -4374,6 +4440,26 @@
           "kind": "def",
           "name": "Cas.Schema.Ast.ctorElimType",
           "signature": "{motive_1 : Cas.Schema.Ast → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Schema.EnumValue",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ctorElim",
+          "signature": "{motive : Cas.Schema.EnumValue → Sort u} → (ctorIdx : Nat) → (t : Cas.Schema.EnumValue) → ctorIdx = t.ctorIdx → Cas.Schema.EnumValue.ctorElimType ctorIdx → motive t",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ctorElimType",
+          "signature": "{motive : Cas.Schema.EnumValue → Sort u} → Nat → Sort (max 1 u)",
           "touches": ["Schema"]
         },
         {
@@ -4404,6 +4490,22 @@
         },
         {
           "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.WFElement",
+          "signature": "Bool × Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.WFElements",
+          "signature": "List (Bool × Cas.Schema.Ast) → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.WFFields",
@@ -4424,6 +4526,44 @@
           "kind": "def",
           "name": "Cas.Schema.WFParams",
           "signature": "List Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.WFRest",
+          "signature": "Option Cas.Schema.Ast → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enum_names_nodup",
+          "signature": "∀ {ms : List (String × Cas.Schema.EnumValue)}, List.Pairwise (fun a b => a.fst ≠ b.fst) ms → (List.map (fun x => x.fst) ms).Nodup",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enum_nil_not_wf",
+          "signature": "¬(Cas.Schema.Ast.enum []).WF",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqEnumValue",
+          "signature": "DecidableEq Cas.Schema.EnumValue",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Schema.instDecidableEqEnumValue.decEq",
+          "signature": "(x x_1 : Cas.Schema.EnumValue) → Decidable (x = x_1)",
           "touches": ["Schema"]
         },
         {
@@ -6079,8 +6219,8 @@
       ]
     },
     {
-      "declarations": 28,
-      "documented": 17,
+      "declarations": 36,
+      "documented": 21,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -6126,6 +6266,21 @@
           "kind": "theorem",
           "name": "Cas.Schema.IngestRefusal.ofNat_ctorIdx",
           "signature": "∀ (x : Cas.Schema.IngestRefusal), Cas.Schema.IngestRefusal.ofNat x.ctorIdx = x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.distinctEnumNames",
+          "signature": "List (String × Cas.Schema.EnumValue) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.distinctEnumNames_iff",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.distinctEnumNames ms = true ↔ List.Pairwise (fun a b => a.fst ≠ b.fst) ms",
           "touches": ["Schema"]
         },
         {
@@ -6264,6 +6419,40 @@
         },
         {
           "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.wfElement",
+          "signature": "Bool × Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.wfElement_iff",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.wfElement e = true ↔ Cas.Schema.WFElement e",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.wfElements",
+          "signature": "List (Bool × Cas.Schema.Ast) → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.wfElements_iff",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.wfElements es = true ↔ Cas.Schema.WFElements es",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "def",
           "name": "Cas.Schema.wfFields",
@@ -6312,12 +6501,29 @@
           "name": "Cas.Schema.wfParams_iff",
           "signature": "∀ (ps : List Cas.Schema.Ast), Cas.Schema.wfParams ps = true ↔ Cas.Schema.WFParams ps",
           "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.wfRest",
+          "signature": "Option Cas.Schema.Ast → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.wfRest_iff",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.wfRest r = true ↔ Cas.Schema.WFRest r",
+          "touches": ["Schema"]
         }
       ]
     },
     {
-      "declarations": 16,
-      "documented": 11,
+      "declarations": 21,
+      "documented": 13,
       "module": "Cas.Schema.PayloadInj",
       "surface": [
         {
@@ -6348,6 +6554,40 @@
           "name": "Cas.Schema.deNumNorm_decl_payload",
           "signature": "∀ {g : Cas.Schema.DeclarationId.General} {p : Cas.Schema.DeclPayload}, g.PayloadWF p → p = Cas.Schema.DeclPayload.null",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_element",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.WFElement e → Cas.Schema.deNumNorm (Cas.Schema.elementToRepresentationJson e).numNorm = Cas.Schema.elementToRepresentationJson e",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_elements",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.WFElements es → Cas.Schema.deNumNormItems (Cas.Json.numNormItems (Cas.Schema.elementsToRepresentationJson es)) = Cas.Schema.elementsToRepresentationJson es",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_enumMembers",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.deNumNormItems (Cas.Json.numNormItems (Cas.Schema.enumMembersToJson ms)) = Cas.Schema.enumMembersToJson ms",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_enumValue",
+          "signature": "∀ (v : Cas.Schema.EnumValue), Cas.Schema.deNumNorm v.toJson.numNorm = v.toJson",
+          "touches": ["Schema", "Values"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6392,6 +6632,15 @@
           "kind": "theorem",
           "name": "Cas.Schema.deNumNorm_numNorm_representation",
           "signature": "∀ (a : Cas.Schema.Ast), a.WF → Cas.Schema.deNumNorm a.toRepresentationJson.numNorm = a.toRepresentationJson",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.deNumNorm_numNorm_rest",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.WFRest r → Cas.Schema.deNumNormItems (Cas.Json.numNormItems (Cas.Schema.restToRepresentationJson r)) = Cas.Schema.restToRepresentationJson r",
           "touches": ["Schema", "Values"]
         },
         {
@@ -6458,8 +6707,8 @@
       ]
     },
     {
-      "declarations": 85,
-      "documented": 60,
+      "declarations": 133,
+      "documented": 82,
       "module": "Cas.Schema.SelfCodec",
       "surface": [
         {
@@ -6556,6 +6805,15 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_enum",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), (Cas.Schema.Ast.enum ms).repNorm = Cas.Schema.Ast.enum ms",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Schema.Ast.repNorm_idem",
           "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.repNorm = a.repNorm",
           "touches": ["Schema"]
@@ -6567,6 +6825,15 @@
           "kind": "theorem",
           "name": "Cas.Schema.Ast.repNorm_repNormal",
           "signature": "∀ (a : Cas.Schema.Ast), a.repNorm.RepNormal",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Ast.repNorm_tuple",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast) (es : List (Bool × Cas.Schema.Ast)) (r : Option Cas.Schema.Ast), (Cas.Schema.Ast.tuple e es r).repNorm = Cas.Schema.Ast.tuple (Cas.Schema.repNormElement e) (Cas.Schema.repNormElements es) (Cas.Schema.repNormRest r)",
           "touches": ["Schema"]
         },
         {
@@ -6609,6 +6876,36 @@
           "kind": "def",
           "name": "Cas.Schema.Ast.toRepresentationJson",
           "signature": "Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.ofJson",
+          "signature": "Cas.Json.Value → Option Cas.Schema.EnumValue",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.EnumValue.ofJson_toJson",
+          "signature": "∀ (v : Cas.Schema.EnumValue), Cas.Schema.EnumValue.ofJson v.toJson = some v",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.EnumValue.toJson",
+          "signature": "Cas.Schema.EnumValue → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.EnumValue.toJson_canonical",
+          "signature": "∀ (v : Cas.Schema.EnumValue), v.toJson.Canonical",
           "touches": ["Schema", "Values"]
         },
         {
@@ -6656,6 +6953,129 @@
           "name": "Cas.Schema.decl_wire_ne_casRef",
           "signature": "∀ (g : Cas.Schema.DeclarationId.General), g.wire ≠ Cas.Schema.DeclarationId.casRef.wire",
           "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elementToJson",
+          "signature": "Bool × Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementToJson_canonical",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.WFElement e → (Cas.Schema.elementToJson e).Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elementToRepresentationJson",
+          "signature": "Bool × Cas.Schema.Ast → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementToRepresentationJson_canonical",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), (Cas.Schema.elementToRepresentationJson e).Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementToRepresentationJson_repNorm",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.elementToRepresentationJson (Cas.Schema.repNormElement e) = Cas.Schema.elementToRepresentationJson e",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elementsToJson",
+          "signature": "List (Bool × Cas.Schema.Ast) → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementsToJson_canonical",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.WFElements es → Cas.Json.CanonicalItems (Cas.Schema.elementsToJson es)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.elementsToRepresentationJson",
+          "signature": "List (Bool × Cas.Schema.Ast) → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementsToRepresentationJson_canonical",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Json.CanonicalItems (Cas.Schema.elementsToRepresentationJson es)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.elementsToRepresentationJson_repNorm",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.elementsToRepresentationJson (Cas.Schema.repNormElements es) = Cas.Schema.elementsToRepresentationJson es",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMemberToJson",
+          "signature": "String × Cas.Schema.EnumValue → Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMembersOfJson",
+          "signature": "List Cas.Json.Value → Option (List (String × Cas.Schema.EnumValue))",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.enumMembersOfJson_toJson",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Schema.enumMembersOfJson (Cas.Schema.enumMembersToJson ms) = some ms",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.enumMembersToJson",
+          "signature": "List (String × Cas.Schema.EnumValue) → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.enumMembersToJson_canonical",
+          "signature": "∀ (ms : List (String × Cas.Schema.EnumValue)), Cas.Json.CanonicalItems (Cas.Schema.enumMembersToJson ms)",
+          "touches": ["Schema", "Values"]
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
@@ -6816,6 +7236,40 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": false,
           "kind": "def",
+          "name": "Cas.Schema.ofJsonElement",
+          "signature": "Cas.Json.Value → Option (Bool × Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofJsonElement_elementToJson",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.ofJsonElement (Cas.Schema.elementToJson e) = some e",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.ofJsonElements",
+          "signature": "List Cas.Json.Value → Option (List (Bool × Cas.Schema.Ast))",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofJsonElements_elementsToJson",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.ofJsonElements (Cas.Schema.elementsToJson es) = some es",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
           "name": "Cas.Schema.ofJsonFields",
           "signature": "List (String × Cas.Json.Value) → Option (List (String × Bool × Cas.Schema.Ast))",
           "touches": ["Schema", "Values"]
@@ -6864,6 +7318,23 @@
           "touches": ["Schema"]
         },
         {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.ofJsonRest",
+          "signature": "List Cas.Json.Value → Option (Option Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofJsonRest_restToJson",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.ofJsonRest (Cas.Schema.restToJson r) = some r",
+          "touches": ["Schema"]
+        },
+        {
           "axioms": ["Quot.sound", "propext"],
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
@@ -6879,6 +7350,40 @@
           "kind": "theorem",
           "name": "Cas.Schema.ofRepresentationDocument_representationDocument",
           "signature": "∀ (a : Cas.Schema.Ast), Cas.Schema.Ast.ofRepresentationDocument a.representationDocument = some a.repNorm",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ofRepresentationElement",
+          "signature": "Cas.Json.Value → Option (Bool × Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationElement_elementToRepresentationJson",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.ofRepresentationElement (Cas.Schema.elementToRepresentationJson e) = some (Cas.Schema.repNormElement e)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.ofRepresentationElements",
+          "signature": "List Cas.Json.Value → Option (List (Bool × Cas.Schema.Ast))",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationElements_elementsToRepresentationJson",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.ofRepresentationElements (Cas.Schema.elementsToRepresentationJson es) = some (Cas.Schema.repNormElements es)",
           "touches": ["Schema"]
         },
         {
@@ -6946,6 +7451,23 @@
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.ofRepresentationRest",
+          "signature": "List Cas.Json.Value → Option (Option Cas.Schema.Ast)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.ofRepresentationRest_restToRepresentationJson",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.ofRepresentationRest (Cas.Schema.restToRepresentationJson r) = some (Cas.Schema.repNormRest r)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.paramsToJson",
           "signature": "List Cas.Schema.Ast → List Cas.Json.Value",
           "touches": ["Schema", "Values"]
@@ -6993,6 +7515,67 @@
           "name": "Cas.Schema.payload_renderPlain",
           "signature": "∀ (a : Cas.Schema.Ast), a.payload = Cas.Json.renderPlain a.envelope",
           "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.repNormElement",
+          "signature": "Bool × Cas.Schema.Ast → Bool × Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormElement_fst",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), (Cas.Schema.repNormElement e).fst = e.fst",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormElement_idem",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.repNormElement (Cas.Schema.repNormElement e) = Cas.Schema.repNormElement e",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormElement_wf",
+          "signature": "∀ (e : Bool × Cas.Schema.Ast), Cas.Schema.WFElement e → Cas.Schema.WFElement (Cas.Schema.repNormElement e)",
+          "touches": ["Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.repNormElements",
+          "signature": "List (Bool × Cas.Schema.Ast) → List (Bool × Cas.Schema.Ast)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormElements_idem",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.repNormElements (Cas.Schema.repNormElements es) = Cas.Schema.repNormElements es",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormElements_wf",
+          "signature": "∀ (es : List (Bool × Cas.Schema.Ast)), Cas.Schema.WFElements es → Cas.Schema.WFElements (Cas.Schema.repNormElements es)",
+          "touches": ["Schema"]
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -7109,12 +7692,81 @@
           "touches": ["Schema"]
         },
         {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.repNormRest",
+          "signature": "Option Cas.Schema.Ast → Option Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormRest_idem",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.repNormRest (Cas.Schema.repNormRest r) = Cas.Schema.repNormRest r",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.repNormRest_wf",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.WFRest r → Cas.Schema.WFRest (Cas.Schema.repNormRest r)",
+          "touches": ["Schema"]
+        },
+        {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Schema.representationDocument_canonical",
           "signature": "∀ (a : Cas.Schema.Ast), a.representationDocument.Canonical",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.restToJson",
+          "signature": "Option Cas.Schema.Ast → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.restToJson_canonical",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.WFRest r → Cas.Json.CanonicalItems (Cas.Schema.restToJson r)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.restToRepresentationJson",
+          "signature": "Option Cas.Schema.Ast → List Cas.Json.Value",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.restToRepresentationJson_canonical",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Json.CanonicalItems (Cas.Schema.restToRepresentationJson r)",
+          "touches": ["Schema", "Values"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.restToRepresentationJson_repNorm",
+          "signature": "∀ (r : Option Cas.Schema.Ast), Cas.Schema.restToRepresentationJson (Cas.Schema.repNormRest r) = Cas.Schema.restToRepresentationJson r",
           "touches": ["Schema", "Values"]
         },
         {
@@ -9495,10 +10147,10 @@
   ],
   "totals": {
     "class": 3,
-    "def": 634,
-    "inductive": 33,
-    "instance": 57,
+    "def": 669,
+    "inductive": 34,
+    "instance": 59,
     "structure": 36,
-    "theorem": 427
+    "theorem": 468
   }
 }
