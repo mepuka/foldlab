@@ -214,15 +214,45 @@ export const source = (bindings: ReadonlyArray<Binding>): string => {
     })
 
   const imports = [`import { Schema } from "effect"`]
+  const auxiliaries: Array<string> = []
+  const auxiliarySeen = new Set<string>()
   for (const artifact of generated.artifacts) {
-    if (artifact._tag !== "Import") {
-      throw new TypeError(
-        `materialized source needs a ${artifact._tag} artifact, which the admitted subset does not carry`,
-      )
+    if (artifact._tag === "Import") {
+      if (!imports.includes(artifact.importDeclaration)) {
+        imports.push(artifact.importDeclaration)
+      }
+      continue
     }
-    if (!imports.includes(artifact.importDeclaration)) {
-      imports.push(artifact.importDeclaration)
+    if (artifact._tag === "Enum") {
+      // An enum member table, emitted once above the bindings that name
+      // it. Effect prints a TypeScript `enum` declaration; this package
+      // is `erasableSyntaxOnly`, so the table is respelled as the object
+      // literal that builds the identical `SchemaAST.Enum` — the same
+      // move the hand mirrors make.
+      if (!auxiliarySeen.has(artifact.identifier)) {
+        auxiliarySeen.add(artifact.identifier)
+        const open = artifact.code.runtime.indexOf("{")
+        const close = artifact.code.runtime.lastIndexOf("}")
+        if (open < 0 || close <= open) {
+          throw new TypeError(
+            `materialized Enum artifact ${artifact.identifier} has no member table to respell`,
+          )
+        }
+        const members = artifact.code.runtime
+          .slice(open + 1, close)
+          .replaceAll(" = ", ": ")
+        auxiliaries.push(
+          [
+            `const ${artifact.identifier} = {${members}} as const`,
+            `type ${artifact.identifier} = (typeof ${artifact.identifier})[keyof typeof ${artifact.identifier}]`,
+          ].join("\n"),
+        )
+      }
+      continue
     }
+    throw new TypeError(
+      `materialized source needs a ${artifact._tag} artifact, which the admitted subset does not carry`,
+    )
   }
 
   const stamps = bindings.map((binding) =>
@@ -254,6 +284,10 @@ export const source = (bindings: ReadonlyArray<Binding>): string => {
     ].join("\n")
   })
 
-  return `${[...header, ...imports, ``, declarations.join("\n\n")].join("\n")}\n`
+  const body = auxiliaries.length === 0
+    ? declarations.join("\n\n")
+    : `${auxiliaries.join("\n\n")}\n\n${declarations.join("\n\n")}`
+
+  return `${[...header, ...imports, ``, body].join("\n")}\n`
 }
 

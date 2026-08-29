@@ -407,13 +407,83 @@ const admitNode = (value: Schema.Json, path: string): void => {
       gateNoChecks(node, path)
       const elements = gateArray(node.elements, `${path}.elements`)
       const rest = gateArray(node.rest, `${path}.rest`)
-      if (elements.length !== 0 || rest.length !== 1) {
+      if (rest.length > 1) {
         refuse(
           "notASchema",
-          `${path} is not the admitted array: no positional elements and exactly one rest element (tuples are Slice C2)`,
+          `${path} carries ${rest.length} rest types, and the admitted subset refuses more than one structurally (trailing-rest semantics stay deferred)`,
         )
       }
-      admitNode(rest[0]!, `${path}[]`)
+      if (elements.length === 0 && rest.length !== 1) {
+        refuse(
+          "notASchema",
+          `${path} is the empty tuple, which no constructor spells: a plain array is zero elements and one rest type, a tuple is at least one element`,
+        )
+      }
+      for (const [index, element] of elements.entries()) {
+        const signature = gateObject(element, `${path}.elements[${index}]`)
+        if ("annotations" in signature) {
+          refuse(
+            "notASchema",
+            `${path}.elements[${index}] carries an annotation bag, which the admitted subset does not reach (C-ann)`,
+          )
+        }
+        if (typeof signature.isOptional !== "boolean") {
+          refuse(
+            "notASchema",
+            `${path}.elements[${index}].isOptional is not a boolean`,
+          )
+        }
+        admitNode(signature.type as Schema.Json, `${path}[${index}]`)
+      }
+      if (rest.length === 1) {
+        admitNode(rest[0]!, `${path}[]`)
+      }
+      return
+    }
+    case "Enum": {
+      gateNoChecks(node, path)
+      const members = gateArray(node.enums, `${path}.enums`)
+      if (members.length === 0) {
+        refuse(
+          "illFormed",
+          `${path} is the empty enum, which names no member — and the empty type is Never, which is not admitted`,
+        )
+      }
+      const seen = new Set<string>()
+      for (const [index, member] of members.entries()) {
+        if (!Array.isArray(member) || member.length !== 2) {
+          refuse(
+            "notASchema",
+            `${path}.enums[${index}] is not a [name, value] pair`,
+          )
+        }
+        const [name, wireValue] = member as [Schema.Json, Schema.Json]
+        if (typeof name !== "string") {
+          refuse(
+            "notASchema",
+            `${path}.enums[${index}] names its member with a non-string`,
+          )
+        }
+        if (seen.has(name)) {
+          refuse(
+            "illFormed",
+            `${path} declares the member name ${canonicalJson(name)} twice — member names are the enum's identity and never repeat (values may alias; names may not)`,
+          )
+        }
+        seen.add(name)
+        const value = gateObject(wireValue, `${path}.enums[${index}]`)
+        const admitted = value.type === "string"
+          ? typeof value.value === "string"
+          : value.type === "number"
+            ? typeof value.value === "number" && Number.isSafeInteger(value.value)
+            : false
+        if (!admitted) {
+          refuse(
+            "notASchema",
+            `${path}.enums[${index}] carries a member value outside the admitted subset: strings and safe integers only (ruling 15, the float ceiling)`,
+          )
+        }
+      }
       return
     }
     case "Objects": {

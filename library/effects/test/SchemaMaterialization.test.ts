@@ -264,6 +264,8 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         // output is therefore round-trippable through Effect's own
         // printer, which the hand-composed literal `oneOf` is not.
         `tagged-pin Schema.Union([Schema.Struct({ "_tag": Schema.Literal("move"), "dx": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), "dy": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })) }), Schema.Struct({ "_tag": Schema.Literal("say"), "body": Schema.String, "note": Schema.optionalKey(Schema.String) }), Schema.Struct({ "_tag": Schema.Literal("stop") })], { mode: "oneOf" })`,
+        `enum-pin Schema.Struct({ "direction": Schema.Enum(_Enum), "level": Schema.Enum(_Enum1), "mixed": Schema.optionalKey(Schema.Enum(_Enum2)) })`,
+        `tuple-pin Schema.Struct({ "nested": Schema.optionalKey(Schema.Tuple([Schema.Array(Schema.Tuple([Schema.String])), Schema.Null])), "pair": Schema.Tuple([Schema.String, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]), "plain": Schema.Array(Schema.String), "withOptional": Schema.Tuple([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.optionalKey(Schema.String)]), "withRest": Schema.TupleWithRest(Schema.Tuple([Schema.String]), [Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))]) })`,
         `ref-root Cas.CanonicalSchema.ref(83)`,
       ])
 
@@ -280,14 +282,29 @@ it.effect("toCodeDocument generates TypeScript for every registered code and for
         // member is a union, which is what the byte pin holds.
         `union-pin { readonly "choice": string | boolean | number, readonly "exact": "zebra" | "alpha", readonly "nested"?: null | ReadonlyArray<string> | boolean }`,
         `tagged-pin { readonly "_tag": "move", readonly "dx": number, readonly "dy": number } | { readonly "_tag": "say", readonly "body": string, readonly "note"?: string } | { readonly "_tag": "stop" }`,
+        `enum-pin { readonly "direction": _Enum, readonly "level": _Enum1, readonly "mixed"?: _Enum2 }`,
+        `tuple-pin { readonly "nested"?: readonly [ReadonlyArray<readonly [string]>, null], readonly "pair": readonly [string, number], readonly "plain": ReadonlyArray<string>, readonly "withOptional": readonly [number, string?], readonly "withRest": readonly [string, ...Array<number>] }`,
         `ref-root Cas.ReferenceSentinel`,
       ])
 
-    // The declaration's own import rides along exactly once, and no
-    // reference table is needed for the admitted subset.
-    expect(generated.artifacts).toEqual([
+    // The declaration's own import rides along exactly once, the enum
+    // fixture contributes one member-table artifact per enum field
+    // (C4), and no reference table is needed for the admitted subset.
+    expect(
+      generated.artifacts.filter((artifact) => artifact._tag === "Import"),
+    ).toEqual([
       { _tag: "Import", importDeclaration: `import { Cas } from "@foldlab/cas"` },
     ])
+    expect(
+      generated.artifacts
+        .filter((artifact) => artifact._tag === "Enum")
+        .map((artifact) => artifact._tag === "Enum" && artifact.identifier),
+    ).toEqual(["_Enum", "_Enum1", "_Enum2"])
+    expect(
+      generated.artifacts.every((artifact) =>
+        artifact._tag === "Import" || artifact._tag === "Enum"
+      ),
+    ).toBe(true)
     expect(generated.references).toEqual({ nonRecursives: [], recursives: {} })
   }).pipe(Effect.provide(layer)))
 
