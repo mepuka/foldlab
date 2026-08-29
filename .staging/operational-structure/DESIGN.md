@@ -565,7 +565,7 @@ on `Prog`.
 | Rung | Carrier | Status | Static analysis | Store encoding | Handler set |
 |---|---|---|---|---|---|
 | **L-A** — the table | `PProg = List PLine` (`Defun.lean:97`) | landed | exact: `over = under = actual` | tags 14/15, `encodeProg_wf` Level 0 (`Defun.lean:440`) | all of R10, via `embed` |
-| **L-S** — the guarded table (**proposed**) | `SProg`: L-A plus one branch line, scrutinee a decidable test on a loaded node, arms closed `SProg`s | **proposed** | `over ⊋ under`; the sandwich (§2.5) | one new tag (16, to be reserved), arms by reference so they dedupe | all of R10, via `sEmbed` |
+| **L-S** — the guarded table (**proposed**) | `SProg`: L-A plus one branch line, scrutinee a decidable test on a loaded node, arms closed `SProg`s | **proposed** | `over ⊋ under`; the sandwich (§2.5) | forms on the step/cont sorts (14/15), never a third tag; arms by reference so they dedupe | all of R10, via `sEmbed` |
 | **L-P** — the free monad | `Prog CasSig` (`Prog.lean:25`) | landed | **none, and impossible** (§2.2) | not content — R7's boundary; continuations are host functions (`Prog.lean:12-15`) | all of R10 |
 | **L-T** — the tower | `Handler.through` (`Tower.lean:65`) | landed | — | — | `interpret_through` (`Tower.lean:71`) |
 
@@ -740,9 +740,9 @@ shape. None is used as settled vocabulary above except where marked
    computation is a handler pair, and every fragment inherits it
    through its embedding." The generalization of §3.4; the thing that
    makes λ•'s per-construct agreement relation unnecessary here.
-8. **Wire tag 16** — registry reservation for the branch node, with the
-   registry agent, mirroring the tag 14/15 reservation
-   (`Defun.lean:68-72`).
+8. **~~Wire tag 16~~ — WITHDRAWN (P6, 2026-08-29).** The guarded table
+   is FORMS on the `step`/`cont` sorts (tags 14/15, ratified by G3),
+   never a third tag; no registry reservation is owed.
 9. **`manifestVersion` bump** — required by `Mcp.lean:96` for slices 3
    and 5; a ruling, not a code change.
 

@@ -23,7 +23,7 @@ from reading everything.
 | [.reference/](.reference/) | Evidence only: source lock and receipts, catalog, study clones (gitignored), dumps | Resolving or citing sources |
 | `formal/` | Formal verification artifacts (claim-gated) | — |
 | [`library/`](library/machine/README.md) | Distributable libraries, Lean 4 or mixed-language (claim-gated; machine and effects live here) | Building machine-algebra or effect-replay slices |
-| [EFFECTS-BACKEND](library/cas/EFFECTS-BACKEND.md) | The store language, RATIFIED law: semantics, handlers, the tower, backend targets, representation strata (R1–R14) | Working on the language, the backend, generated surfaces, or reasoning about effects |
+| [EFFECTS-BACKEND](library/cas/EFFECTS-BACKEND.md) | The store language, RATIFIED law: semantics, handlers, the tower, backend targets, representation strata (R1–R15) | Working on the language, the backend, generated surfaces, or reasoning about effects |
 | [SPECS.md](docs/SPECS.md) | Spec ledger + operator decision record: every spec categorized with the rulings it carries and why | Building from any spec; recording or citing a ruling |
 | `experiments/` | Experimental artifacts (routing: [experiments/AGENTS.md](experiments/AGENTS.md)) | — |
 | `.staging/` | Pre-grade staged material — `.md` specs are TRACKED archival documents indexed in [SPECS.md](docs/SPECS.md); corpora/caches stay local | — |

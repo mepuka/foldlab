@@ -3,6 +3,7 @@
 # ruling 2026-08-29). Index: docs/SPECS.md.
 .staging/*
 !.staging/README.md
+!.staging/*.md
 !.staging/*/
 .staging/*/*
 !.staging/*/*.md

@@ -34,6 +34,11 @@ deleted.
 | [library/machine/MACHINE-ALGEBRA.md](../library/machine/MACHINE-ALGEBRA.md) | machine algebra | The machine-algebra spec |
 | [library/effects/IMPLEMENTATION-PLAN.md](../library/effects/IMPLEMENTATION-PLAN.md) | effects host | Effects library implementation plan |
 | [experiments/lift-harness/docs/differential-testing-spec.md](../experiments/lift-harness/docs/differential-testing-spec.md) | lift harness | R1–R12 differential-testing rulings (landed 7d8dda24) |
+| [library/effects/VOCABULARY.md](../library/effects/VOCABULARY.md) | word law | The ratified CLI/API register: everyday vs protocol; consumer-gated term entry |
+| [library/effects/PROFILE-CAS-HTTP-0.md](../library/effects/PROFILE-CAS-HTTP-0.md) | byte plane | The cas-http/0 wire profile (§6 /control/missing, §7 roots publication) |
+| [library/effects/BACKEND.md](../library/effects/BACKEND.md) | store backends | The backend seam law (ByteReader/ByteWriter/RootStore; invariants above the seam) |
+| [library/cas/REGISTRY.md](../library/cas/REGISTRY.md) | kind registry | GENERATED human registry (projection of Cas.Grammar.manifestV0; byte-gated) |
+| [library/cas/UNION-DESIGN.md](../library/cas/UNION-DESIGN.md) | union semantics | The ratified union design (order is identity; mode is identity) |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 
@@ -58,6 +63,9 @@ deleted.
 | [.staging/operational-structure/BUILD-MODELING-AUDIT.md](../.staging/operational-structure/BUILD-MODELING-AUDIT.md) | build/speculation semantics | Deep-modeling audit (2026-08-29, saved VERBATIM per ruling 19): build time HAVE-BY-COMPOSITION; speculation OWED with SPEC-1 false-as-designed (the word pollutes) and SPEC-2 the scoped rescue; multi-runtime HAVE except the runtime memo fact (Persistable's seat); §4 proof-obligation list is the lane's ledger; MS-1 commissioned |
 | [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
 | [.staging/research-backlog/telemetry-hoover.md](../.staging/research-backlog/telemetry-hoover.md) | telemetry/logging | Backlog research (decision 20): telemetry + logging hoovers that speak the language; the word IS the trace; Defun envelope-vs-word analysis as periodic health checking |
+| [.staging/operational-structure/FRONTEND.md](../.staging/operational-structure/FRONTEND.md) | front end | Design (2026-08-29, decision 21): tier-1 read-only browser store; components-as-projections mechanics (zero new Ts forms); BYOA matrix (4 MCP clients + pi-gets-the-CLI); FE-1 emitagents commissioned-ask; 11 ruling asks incl. rc.112 and cas_word |
+| [.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md](../.staging/operational-structure/PAPERWORK-AND-PROJECTION-AUDIT.md) | store semantics + hygiene | Ruling prep (2026-08-29): projection is TWO things (kind→component = emitted manifest, seat taken; value↔view = Annotation two fields short); published programs unspellable until items 22/23 + host step/cont codec; paperwork defects D1-D11 incl. the SECURITY item and the sessions convention |
+| [.staging/operational-structure/BACKEND-ROBUSTNESS.md](../.staging/operational-structure/BACKEND-ROBUSTNESS.md) | server robustness | Probed sweep (2026-08-29): store crash-safe by construction (2097/2097 verified post-SIGKILL); host NOT live-safe — oversized frames silently lost, SQLite busy = whole-process stall; BS-1 slice specified; adopt-vs-build table per Rust/Go ruling; hashing centralized-as-service is a virtue, scheme identification the real gap; 6 ruling asks |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -69,6 +77,10 @@ deleted.
 | [.staging/scouts/](../.staging/scouts/), [.staging/reviews/](../.staging/reviews/) | 2026-08-25 scout waves and assurance review |
 | [.staging/fixture-gen/DECISIONS.md](../.staging/fixture-gen/DECISIONS.md), [DESIGN.md](../.staging/fixture-gen/DESIGN.md) | Fixture-generation lane decisions and design |
 | [.staging/parser-experiments/*.md](../.staging/parser-experiments/) | Pre-lift-harness briefs (dslv0 chassis superseded by experiments/lift-harness) |
+| [.staging/HANDOFF-2026-08-25.md](../.staging/HANDOFF-2026-08-25.md) | The 2026-08-25 session handoff (rescued from the depth-1 gitignore hole, D2) |
+| [.staging/sessions/](../.staging/sessions/) | Session records — one pointer-shaped index per operator session (rulings, lanes, specs rowed, debts opened); the pre-content form of press 6's work-as-content |
+| [docs/entity-store/](entity-store/) + [docs/research/](research/) | Prior-era working sets (audits, dispatches, research notes) — era records, one set row each |
+| [experiments/lift-harness/docs/](../experiments/lift-harness/docs/) | The harness's own doc set (engine-service spec, graduation design, R11 record) — differential-testing-spec.md is the Category-1 member |
 
 ## Decision record — 2026-08-29 (the operator's rulings, with why)
 
