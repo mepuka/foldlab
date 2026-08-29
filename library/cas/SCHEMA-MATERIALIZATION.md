@@ -215,6 +215,39 @@ evidence, the gates carry trust). `patterns: "error"` stays the default.
    (Also: EFFECTS-BACKEND.md:247 "five of eight affected classes" is a
    misstatement of "five of eight affected modules.")
 
+## Ruling queue — accumulated in-flight (2026-08-29, post-ratification)
+
+Items surfaced by the landed slices, awaiting operator rulings; rulings
+1-5 above stay open except where noted:
+
+6. **Union identity — RULED 2026-08-29** (UNION-DESIGN.md, promoted):
+   order is identity, both modes carried and admitted, Stage 1 landed
+   to order. Stage 2 (discriminated denotation) joins
+   deriving-for-inductives.
+7. **The three adopted Effect declaration rows** (`effect/schema/Date`,
+   `URL`, `Option` — C-decl merge `78f38364`): ratify or reject.
+   Adopted verbatim per P4 so the general constructor is inhabited; no
+   estate identity minted.
+8. **`Ast.ref` as sugar for `Ast.decl` row zero**: kept open by
+   construction (the `DeclarationId.General` split costs nothing either
+   way).
+9. **Reserved annotation kind tag**: annotation nodes currently reside
+   at caller-chosen tags (suite uses `0x41`); minting an
+   `AnnotationKindTag` is plane identity and wants Lean and TS
+   counterparts together.
+10. **TS-side declaration rows**: `CanonicalSchema` does not yet admit
+    Date/URL/Option-carrying schemas (Lean-root asymmetry; follow-on
+    lane, not a defect).
+11. **The parser dependency, named**: `cas_from_store` (DERIVING-DESIGN
+    §4) requires a Lean-side strict JSON parser — none exists
+    (`Values/Json.lean` is render-only). The parser slice is the SAME
+    work as the standing "bytes determine the canonical value"
+    obligation (ruling: injectivity of the canonical rendering), so one
+    slice discharges both debts. Sequencing decision owed.
+12. **Declaration registry documentation home**: the wire-identity
+    table lives in `Declarations.lean`'s docstring; `REGISTRY.md` is
+    scoped to kind tags. Promote or leave.
+
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
