@@ -238,18 +238,82 @@ def matchLit : List Char → List Char → Option (List Char)
   | _ :: _, [] => none
   | c :: l, d :: cs => if c = d then matchLit l cs else none
 
+theorem matchLit_append : ∀ (l r : List Char), matchLit l (l ++ r) = some r
+  | [], _ => rfl
+  | c :: l, r => by simp [matchLit, matchLit_append l r]
+
+theorem matchLit_sound : ∀ (l cs r : List Char), matchLit l cs = some r → l ++ r = cs
+  | [], cs, r, h => by simpa using (Option.some.inj h).symm
+  | _ :: _, [], _, h => by simp [matchLit] at h
+  | c :: l, d :: cs, r, h => by
+    simp only [matchLit] at h
+    split at h
+    · rename_i hcd
+      subst hcd
+      simp only [List.cons_append, List.cons.injEq, true_and]
+      exact matchLit_sound l cs r h
+    · simp at h
+
+/-! ### The escape reader, and the strictness it needs
+
+`unescapeOne` (`Cas.Values.JsonInj`) reads a code and is a left inverse
+ON THE ENCODER'S IMAGE — which is all its round-trip lemma claims, and
+less than a strict parser needs. It happily reads `A` as `A` and
+`` as a backspace, neither of which the encoder ever emits (`A` is
+literal; a backspace is `\b`). Admitting them would make `parse` accept
+two spellings of one string, and `parse_sound` would be FALSE.
+
+`unescapeCanon` is the fix, and it is the estate's own byte-identity
+idiom applied one level down: read the character, then RE-ENCODE it and
+demand the input actually spells it that way. The re-encoding is
+`matchLit` against `escapeCharCompact`, so the check is local (at most
+six characters), soundness is `matchLit_sound` and adequacy is
+`matchLit_append` — no case analysis over the escape alphabet at all. -/
+
+/-- The STRICT escape reader: `unescapeOne` answers the character, and
+the answer is admitted only if the input spells it the way
+`escapeCharCompact` spells it. -/
+def unescapeCanon (cs : List Char) : Option (Char × List Char) :=
+  match unescapeOne cs with
+  | some (ch, _) => (matchLit (escapeCharCompact ch).toList cs).map fun r => (ch, r)
+  | none => none
+
+/-- ADEQUACY: a canonically escaped character is read back, with its
+tail untouched. -/
+theorem unescapeCanon_escapeCharCompact (c : Char) (rest : List Char) :
+    unescapeCanon ((escapeCharCompact c).toList ++ rest) = some (c, rest) := by
+  simp only [unescapeCanon, unescapeOne_escapeCharCompact c rest,
+    matchLit_append, Option.map_some]
+
+/-- SOUNDNESS: whatever the reader answers is spelled the way the
+encoder spells it. Immediate — that is what the reader checks. -/
+theorem unescapeCanon_sound {cs : List Char} {ch : Char} {rest : List Char}
+    (h : unescapeCanon cs = some (ch, rest)) :
+    (escapeCharCompact ch).toList ++ rest = cs := by
+  unfold unescapeCanon at h
+  split at h
+  · rename_i c' _ _
+    match hm : matchLit (escapeCharCompact c').toList cs with
+    | none => rw [hm] at h; simp at h
+    | some r =>
+      rw [hm] at h
+      simp only [Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨hc, hr⟩ := h
+      subst hc; subst hr
+      exact matchLit_sound _ _ _ hm
+  · simp at h
+
 /-- Read a canonical string body up to its closing quote, one escape
-code at a time through `unescapeOne` — the SAME reader
-`Cas.Values.JsonInj` proves the escape round trip for. The closing quote
-is tested first, which is what makes the reader stop: `escapeCharCompact`
-never emits a bare `"`. -/
+code at a time through `unescapeCanon`. The closing quote is tested
+FIRST, which is what makes the reader stop: `escapeCharCompact` never
+emits a bare `"`. -/
 def parseStrChars : Nat → List Char → Option (List Char × List Char)
   | 0, _ => none
   | _ + 1, [] => none
   | f + 1, c :: cs =>
     if c = '"' then some ([], cs)
     else
-      match unescapeOne (c :: cs) with
+      match unescapeCanon (c :: cs) with
       | some (ch, rest) => (parseStrChars f rest).map fun p => (ch :: p.1, p.2)
       | none => none
 
@@ -343,6 +407,389 @@ def parseChars (cs : List Char) : Option Value :=
 refuses everything the canonical rendering does not emit. -/
 def parse (s : String) : Option Value := parseChars s.toList
 
+/-! ## Adequacy — the rendering parses back
+
+The left-inverse direction, with an ARBITRARY TAIL, which is the form
+the induction wants and the form that makes the follow set visible:
+reading a rendered value off the front of `renderChars v ++ rest`
+answers `v.numNorm` and leaves `rest` untouched, provided `rest` cannot
+extend a decimal run. Same shape as
+`JsonInj.unescapeOne_escapeCharCompact`, one level up. -/
+
+/-- The escape of a character is nonempty and never opens with a bare
+quote — which is why the string reader can test for the closing quote
+first and stop there. Derived from the round trip rather than by
+re-casing the eight escape classes. -/
+private theorem escapeCharCompact_cons (c : Char) :
+    ∃ d t, (escapeCharCompact c).toList = d :: t ∧ d ≠ '"' := by
+  simp only [escapeCharCompact]
+  by_cases h1 : c = '"'
+  · rw [if_pos h1]; exact ⟨'\\', ['"'], rfl, by decide⟩
+  rw [if_neg h1]
+  by_cases h2 : c = '\\'
+  · rw [if_pos h2]; exact ⟨'\\', ['\\'], rfl, by decide⟩
+  rw [if_neg h2]
+  by_cases h3 : c.toNat = 8
+  · rw [if_pos h3]; exact ⟨'\\', ['b'], rfl, by decide⟩
+  rw [if_neg h3]
+  by_cases h4 : c.toNat = 9
+  · rw [if_pos h4]; exact ⟨'\\', ['t'], rfl, by decide⟩
+  rw [if_neg h4]
+  by_cases h5 : c.toNat = 10
+  · rw [if_pos h5]; exact ⟨'\\', ['n'], rfl, by decide⟩
+  rw [if_neg h5]
+  by_cases h6 : c.toNat = 12
+  · rw [if_pos h6]; exact ⟨'\\', ['f'], rfl, by decide⟩
+  rw [if_neg h6]
+  by_cases h7 : c.toNat = 13
+  · rw [if_pos h7]; exact ⟨'\\', ['r'], rfl, by decide⟩
+  rw [if_neg h7]
+  by_cases h8 : c.toNat < 32
+  · rw [if_pos h8]
+    exact ⟨'\\', ['u', '0', '0', hexLower (c.toNat / 16), hexLower (c.toNat % 16)],
+      String.toList_ofList, by decide⟩
+  · rw [if_neg h8]
+    exact ⟨c, [], String.toList_singleton c, h1⟩
+
+/-- ADEQUACY of the string reader: an escaped body followed by its
+closing quote is read back exactly, whatever follows the quote. -/
+theorem parseStrChars_escapeCodes :
+    ∀ (cs rest : List Char) (f : Nat),
+      (escapeCodes cs ++ '"' :: rest).length ≤ f →
+      parseStrChars f (escapeCodes cs ++ '"' :: rest) = some (cs, rest)
+  | [], rest, f, hlen => by
+    cases f with
+    | zero => simp [escapeCodes] at hlen
+    | succ f => simp [escapeCodes, parseStrChars]
+  | c :: cs, rest, f, hlen => by
+    obtain ⟨d, t, hdt, hd⟩ := escapeCharCompact_cons c
+    have hsplit : escapeCodes (c :: cs) ++ '"' :: rest
+        = d :: (t ++ (escapeCodes cs ++ '"' :: rest)) := by
+      simp only [escapeCodes, hdt]
+      simp
+    have hone : unescapeCanon (d :: (t ++ (escapeCodes cs ++ '"' :: rest)))
+        = some (c, escapeCodes cs ++ '"' :: rest) := by
+      rw [← List.cons_append, ← hdt]
+      exact unescapeCanon_escapeCharCompact c (escapeCodes cs ++ '"' :: rest)
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlen' : (escapeCodes cs ++ '"' :: rest).length ≤ f := by
+        simp only [List.length_cons, List.length_append] at hlen ⊢
+        omega
+      simp only [parseStrChars, if_neg hd, hone,
+        parseStrChars_escapeCodes cs rest f hlen', Option.map_some]
+
+/-- No decimal run can be extended across an array's tail: it opens with
+`]` or `,`. -/
+private theorem noDigitStart_itemsChars (xs : List Value) (rest : List Char) :
+    NoDigitStart (itemsChars xs ++ rest) := by
+  cases xs <;> simp only [itemsChars, List.cons_append] <;> rfl
+
+/-- The same for an object's tail: `}` or `,`. -/
+private theorem noDigitStart_fieldsChars (fs : List (String × Value)) (rest : List Char) :
+    NoDigitStart (fieldsChars fs ++ rest) := by
+  match fs with
+  | [] => rfl
+  | (_, _) :: _ => rfl
+
+/-- A digit character is none of the grammar's literal openers — the
+step that lets the number arm be the parser's fall-through. -/
+private theorem digit_ne (d : Char) {c : Char}
+    (hc : digitValue c ≠ none) (hd : digitValue d = none) : c ≠ d :=
+  fun h => hc (h ▸ hd)
+
+/-- One field, given the adequacy of its value's parse. Stated with the
+value's law as a HYPOTHESIS rather than as a fourth member of the mutual
+group below: `parseField` consumes no character before descending into
+the value, so it has no decreasing argument of its own. -/
+private theorem parseField_of (k : String) (v : Value) (rest : List Char) (f : Nat)
+    (hv : ∀ (r : List Char) (g : Nat), (renderChars v ++ r).length ≤ g →
+      NoDigitStart r → parseValue g (renderChars v ++ r) = some (v.numNorm, r))
+    (hlen : (fieldChars k (renderChars v) ++ rest).length ≤ f)
+    (hr : NoDigitStart rest) :
+    parseField f (fieldChars k (renderChars v) ++ rest)
+      = some ((k, v.numNorm), rest) := by
+  have hsplit : fieldChars k (renderChars v) ++ rest
+      = '"' :: (escapeCodes k.toList ++ '"' :: (':' :: (renderChars v ++ rest))) := by
+    simp [fieldChars]
+  rw [hsplit] at hlen ⊢
+  cases f with
+  | zero => simp at hlen
+  | succ f =>
+    have hlens : (escapeCodes k.toList ++ '"' :: (':' :: (renderChars v ++ rest))).length ≤ f := by
+      simp only [List.length_cons] at hlen
+      omega
+    have hlenv : (renderChars v ++ rest).length ≤ f := by
+      simp only [List.length_cons, List.length_append] at hlen ⊢
+      omega
+    simp only [parseField,
+      parseStrChars_escapeCodes k.toList (':' :: (renderChars v ++ rest)) f hlens,
+      hv rest f hlenv hr, String.ofList_toList]
+    simp
+
+mutual
+
+/-- ADEQUACY: a rendered value, followed by anything that cannot extend
+a decimal run, parses back to exactly that value's number-normal form,
+leaving the tail untouched. THE law the obligation rides on. -/
+theorem parseValue_renderChars : ∀ (v : Value) (rest : List Char) (f : Nat),
+    (renderChars v ++ rest).length ≤ f → NoDigitStart rest →
+    parseValue f (renderChars v ++ rest) = some (v.numNorm, rest)
+  | .null, rest, f, hlen, _ => by
+    cases f with
+    | zero => simp [renderChars] at hlen
+    | succ f => simp [renderChars, parseValue, matchLit, Value.numNorm]
+  | .bool b, rest, f, hlen, _ => by
+    cases f with
+    | zero => cases b <;> simp [renderChars] at hlen
+    | succ f => cases b <;> simp [renderChars, parseValue, matchLit, Value.numNorm]
+  | .nat n, rest, f, hlen, hr => by
+    obtain ⟨c, t, hct, hdv⟩ := toDigits_head n
+    have hsplit : renderChars (.nat n) ++ rest = c :: (t ++ rest) := by
+      simp only [renderChars, hct]; simp
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hback : c :: (t ++ rest) = Nat.toDigits 10 n ++ rest := by
+        rw [hct]; simp
+      simp only [parseValue,
+        if_neg (digit_ne 'n' hdv rfl), if_neg (digit_ne 't' hdv rfl),
+        if_neg (digit_ne 'f' hdv rfl), if_neg (digit_ne '"' hdv rfl),
+        if_neg (digit_ne '-' hdv rfl), if_neg (digit_ne '[' hdv rfl),
+        if_neg (digit_ne '{' hdv rfl), hback,
+        parseNat_toDigits n rest hr, Option.map_some, Value.numNorm]
+  | .int i, rest, f, hlen, hr => by
+    by_cases hi : 0 ≤ i
+    · obtain ⟨c, t, hct, hdv⟩ := toDigits_head i.toNat
+      have hsplit : renderChars (.int i) ++ rest = c :: (t ++ rest) := by
+        simp only [renderChars, if_pos hi, hct]; simp
+      rw [hsplit] at hlen ⊢
+      cases f with
+      | zero => simp at hlen
+      | succ f =>
+        have hback : c :: (t ++ rest) = Nat.toDigits 10 i.toNat ++ rest := by
+          rw [hct]; simp
+        simp only [parseValue,
+          if_neg (digit_ne 'n' hdv rfl), if_neg (digit_ne 't' hdv rfl),
+          if_neg (digit_ne 'f' hdv rfl), if_neg (digit_ne '"' hdv rfl),
+          if_neg (digit_ne '-' hdv rfl), if_neg (digit_ne '[' hdv rfl),
+          if_neg (digit_ne '{' hdv rfl), hback,
+          parseNat_toDigits i.toNat rest hr, Option.map_some, Value.numNorm,
+          if_pos hi]
+    · have hsplit : renderChars (.int i) ++ rest
+          = '-' :: (Nat.toDigits 10 (-i).toNat ++ rest) := by
+        simp only [renderChars, if_neg hi]; simp
+      rw [hsplit] at hlen ⊢
+      cases f with
+      | zero => simp at hlen
+      | succ f =>
+        have hnn : (0 : Int) ≤ -i := by omega
+        have hcast : ((-i).toNat : Int) = -i := Int.toNat_of_nonneg hnn
+        have hne : (-i).toNat ≠ 0 := by omega
+        have hval : -(Int.ofNat (-i).toNat) = i := by
+          rw [show (Int.ofNat (-i).toNat) = -i from Int.toNat_of_nonneg hnn]
+          omega
+        simp only [parseValue, parseNat_toDigits (-i).toNat rest hr,
+          if_neg hne, hval, Value.numNorm, if_neg hi]
+        simp
+  | .str s, rest, f, hlen, _ => by
+    have hsplit : renderChars (.str s) ++ rest
+        = '"' :: (escapeCodes s.toList ++ '"' :: rest) := by
+      simp only [renderChars]; simp
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlen' : (escapeCodes s.toList ++ '"' :: rest).length ≤ f := by
+        simp only [List.length_cons] at hlen; omega
+      simp only [parseValue,
+        parseStrChars_escapeCodes s.toList rest f hlen', Option.map_some,
+        String.ofList_toList, Value.numNorm]
+      simp
+  | .arr [], rest, f, hlen, _ => by
+    cases f with
+    | zero => simp [renderChars] at hlen
+    | succ f =>
+      simp [renderChars, parseValue, Value.numNorm, numNormItems]
+  | .arr (x :: xs), rest, f, hlen, hr => by
+    obtain ⟨d, t, hdt, hd⟩ := renderChars_head x
+    have hsplit : renderChars (.arr (x :: xs)) ++ rest
+        = '[' :: (d :: (t ++ (itemsChars xs ++ rest))) := by
+      simp only [renderChars, hdt]; simp
+    have hback : d :: (t ++ (itemsChars xs ++ rest))
+        = renderChars x ++ (itemsChars xs ++ rest) := by
+      rw [hdt]; simp
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlenx : (renderChars x ++ (itemsChars xs ++ rest)).length ≤ f := by
+        rw [← hback]
+        simp only [List.length_cons] at hlen ⊢
+        omega
+      have hleni : (itemsChars xs ++ rest).length ≤ f := by
+        rw [← hback] at hlenx
+        simp only [List.length_cons, List.length_append] at hlenx ⊢
+        omega
+      simp only [parseValue, if_neg hd, hback,
+        parseValue_renderChars x (itemsChars xs ++ rest) f hlenx
+          (noDigitStart_itemsChars xs rest),
+        parseItems_itemsChars xs rest f hleni hr, Option.map_some,
+        Value.numNorm, numNormItems]
+      simp
+  | .obj [], rest, f, hlen, _ => by
+    cases f with
+    | zero => simp [renderChars] at hlen
+    | succ f =>
+      simp [renderChars, parseValue, Value.numNorm, numNormFields]
+  | .obj ((k, v) :: fs), rest, f, hlen, hr => by
+    have hsplit : renderChars (.obj ((k, v) :: fs)) ++ rest
+        = '{' :: ('"' :: (escapeCodes k.toList ++ '"' :: ':' ::
+            (renderChars v ++ (fieldsChars fs ++ rest)))) := by
+      simp only [renderChars, fieldChars]; simp
+    have hback : '"' :: (escapeCodes k.toList ++ '"' :: ':' ::
+        (renderChars v ++ (fieldsChars fs ++ rest)))
+        = fieldChars k (renderChars v) ++ (fieldsChars fs ++ rest) := by
+      simp [fieldChars]
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlenf : (fieldChars k (renderChars v) ++ (fieldsChars fs ++ rest)).length ≤ f := by
+        rw [← hback]
+        simp only [List.length_cons] at hlen ⊢
+        omega
+      have hlens : (fieldsChars fs ++ rest).length ≤ f := by
+        simp only [fieldChars, List.length_cons, List.length_append] at hlenf ⊢
+        omega
+      simp only [parseValue, if_neg (by decide : ('"' : Char) ≠ '}'), hback,
+        parseField_of k v (fieldsChars fs ++ rest) f
+          (parseValue_renderChars v) hlenf (noDigitStart_fieldsChars fs rest),
+        parseFields_fieldsChars fs rest f hlens hr, Option.map_some,
+        Value.numNorm, numNormFields]
+      simp
+
+/-- ADEQUACY for an array's tail. -/
+theorem parseItems_itemsChars : ∀ (xs : List Value) (rest : List Char) (f : Nat),
+    (itemsChars xs ++ rest).length ≤ f → NoDigitStart rest →
+    parseItems f (itemsChars xs ++ rest) = some (numNormItems xs, rest)
+  | [], rest, f, hlen, _ => by
+    cases f with
+    | zero => simp [itemsChars] at hlen
+    | succ f => simp [itemsChars, parseItems, numNormItems]
+  | x :: xs, rest, f, hlen, hr => by
+    have hsplit : itemsChars (x :: xs) ++ rest
+        = ',' :: (renderChars x ++ (itemsChars xs ++ rest)) := by
+      simp only [itemsChars]; simp
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlenx : (renderChars x ++ (itemsChars xs ++ rest)).length ≤ f := by
+        simp only [List.length_cons] at hlen; omega
+      have hleni : (itemsChars xs ++ rest).length ≤ f := by
+        simp only [List.length_append] at hlenx ⊢; omega
+      simp only [parseItems, if_neg (by decide : (',' : Char) ≠ ']'),
+        parseValue_renderChars x (itemsChars xs ++ rest) f hlenx
+          (noDigitStart_itemsChars xs rest),
+        parseItems_itemsChars xs rest f hleni hr, Option.map_some, numNormItems]
+      simp
+
+/-- ADEQUACY for an object's tail. -/
+theorem parseFields_fieldsChars :
+    ∀ (fs : List (String × Value)) (rest : List Char) (f : Nat),
+      (fieldsChars fs ++ rest).length ≤ f → NoDigitStart rest →
+      parseFields f (fieldsChars fs ++ rest) = some (numNormFields fs, rest)
+  | [], rest, f, hlen, _ => by
+    cases f with
+    | zero => simp [fieldsChars] at hlen
+    | succ f => simp [fieldsChars, parseFields, numNormFields]
+  | (k, v) :: fs, rest, f, hlen, hr => by
+    have hsplit : fieldsChars ((k, v) :: fs) ++ rest
+        = ',' :: (fieldChars k (renderChars v) ++ (fieldsChars fs ++ rest)) := by
+      simp only [fieldsChars]; simp
+    rw [hsplit] at hlen ⊢
+    cases f with
+    | zero => simp at hlen
+    | succ f =>
+      have hlenf : (fieldChars k (renderChars v) ++ (fieldsChars fs ++ rest)).length ≤ f := by
+        simp only [List.length_cons] at hlen; omega
+      have hlens : (fieldsChars fs ++ rest).length ≤ f := by
+        simp only [fieldChars, List.length_cons, List.length_append] at hlenf ⊢
+        omega
+      simp only [parseFields, if_neg (by decide : (',' : Char) ≠ '}'),
+        parseField_of k v (fieldsChars fs ++ rest) f
+          (parseValue_renderChars v) hlenf (noDigitStart_fieldsChars fs rest),
+        parseFields_fieldsChars fs rest f hlens hr, Option.map_some, numNormFields]
+      simp
+
+end
+
+/-! ### The document laws
+
+The adequacy statement at the entry point, where the tail is empty (so
+the follow-set premise is vacuous) and the fuel is the input's own
+length (so the fuel premise is `≤` on the nose). -/
+
+/-- ADEQUACY, at the door: the canonical rendering of ANY value parses
+back to that value's number-normal form. -/
+theorem parse_renderPlain (v : Value) : parse (renderPlain v) = some v.numNorm := by
+  have h := parseValue_renderChars v [] (renderChars v).length (by simp) trivial
+  rw [List.append_nil] at h
+  simp only [parse, parseChars, ← renderChars_eq v, h]
+
+/-- On the nose, for the values the parser itself produces. -/
+theorem parse_renderPlain' {v : Value} (hv : v.NumNormal) :
+    parse (renderPlain v) = some v := by
+  rw [parse_renderPlain v, hv]
+
+/-- THE law at the canonical bytes: on canonically spelled values, the
+compact canonical rendering parses back to the value's number-normal
+form. This is the payload path (`Ast.payload = renderCompact
+a.envelope`, `payload_renderPlain`). -/
+theorem parse_render {v : Value} (hv : v.Canonical) :
+    parse (renderCompact v) = some v.numNorm := by
+  rw [renderCompact_eq_renderPlain v hv, parse_renderPlain v]
+
+/-- On the nose, mirroring the `repNorm` treatment on the schema
+plane. -/
+theorem parse_render' {v : Value} (hc : v.Canonical) (hn : v.NumNormal) :
+    parse (renderCompact v) = some v := by
+  rw [parse_render hc, hn]
+
+/-! ### `RenderPlainInjective`, DISCHARGED
+
+The obligation falls out of adequacy alone: two values with one
+rendering are handed to one parser call, which answers one value.
+
+Worth recording: the obligation as stated carries `Canonical` premises
+on both values, and the parser does not need them. The premises were an
+artefact of the anticipated proof route (through the sort), not of the
+fact — `renderPlain_inj` is the unrestricted statement, and
+`renderPlain_injective` is it weakened to the shape the schema plane's
+consumers already take as a hypothesis. -/
+
+/-- The canonical rendering is injective up to the number collapse, with
+NO canonicality premise. -/
+theorem renderPlain_inj {v w : Value} (h : renderPlain v = renderPlain w) :
+    v.numNorm = w.numNorm := by
+  have hv := parse_renderPlain v
+  rw [h, parse_renderPlain w] at hv
+  exact (Option.some.inj hv).symm
+
+/-- THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11,
+survey blocker B7): bytes determine the canonical value. -/
+theorem renderPlain_injective : RenderPlainInjective :=
+  fun _ _ _ _ h => renderPlain_inj h
+
+/-- The same at `renderCompact`, which is what the payload bytes are. -/
+theorem renderCompact_inj {v w : Value} (hv : v.Canonical) (hw : w.Canonical)
+    (h : renderCompact v = renderCompact w) : v.numNorm = w.numNorm :=
+  renderCompact_inj_of renderPlain_injective hv hw h
+
 /-! ## The acceptance contract, worked at elaboration
 
 `Value` carries no `BEq`, so the answers are compared through the
@@ -365,6 +812,15 @@ private def reshow : Option Value → Option String
 #guard reshow (parse "{\"a\":[0,12,-3,\"hi\\n\\\"x\\\\\",true,null],\"b\":{}}")
   == some "{\"a\":[0,12,-3,\"hi\\n\\\"x\\\\\",true,null],\"b\":{}}"
 #guard reshow (parse "\"\\u0001\\u001f\"") == some "\"\\u0001\\u001f\""
+#guard reshow (parse "\"\\b\\t\\n\\f\\r\"") == some "\"\\b\\t\\n\\f\\r\""
+#guard reshow (parse "\"A\"") == some "\"A\""
+
+-- ONE SPELLING PER STRING: `unescapeOne` alone would read all three of
+-- these, and the re-encoding check in `unescapeCanon` is what refuses
+-- them. Without it `parse_sound` would be false.
+#guard reshow (parse "\"\\u0041\"") == none  -- the canonical spelling is `A`
+#guard reshow (parse "\"\\u0008\"") == none  -- the canonical spelling is `\b`
+#guard reshow (parse "\"\\u001F\"") == none  -- the escape emits lowercase hex
 
 -- SORTED KEYS ARE THE GATE'S QUESTION: an unsorted object is a value
 -- with a rendering, so the parser answers it as spelled.
