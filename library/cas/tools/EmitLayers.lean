@@ -24,12 +24,36 @@ open Cas.Schema Cas.Backend Cas.Backend.Ts
 
 namespace EmitLayersMain
 
-/-! ## The modules the topology names -/
+/-! ## The modules the topology names
 
-def storePath : String := "../../src/cas/Store.ts"
-def backendPath : String := "../../src/cas/Backend.ts"
-def kvsBackendPath : String := "../../src/cas/KvsBackend.ts"
-def kvsPath : String := "effect/unstable/persistence/KeyValueStore"
+A module is an ADDRESS now, not a string. Each specifier below is put
+as a marker file node (`EmitLayer.fileRef` — the design decision and
+its open half are stated there), and a constructor reference names the
+address rather than the path. The specifier survives as a plain string
+only where a `ServiceRef` still carries one: a service reference names
+a TYPE, not written code, and promoting it is a different question with
+a different consumer.
+
+The two spellings are held together at the source: `storePath` is
+`storeFile.spec`, so a specifier is written once and the file node and
+the service references cannot part. -/
+
+def storeFile : FileRef := fileRef "../../src/cas/Store.ts"
+def backendFile : FileRef := fileRef "../../src/cas/Backend.ts"
+def kvsBackendFile : FileRef := fileRef "../../src/cas/KvsBackend.ts"
+def kvsFile : FileRef := fileRef "effect/unstable/persistence/KeyValueStore"
+
+/-- The resolution table every emission below is performed against.
+`effect` itself is absent on purpose: no CONSTRUCTOR is taken from it —
+only the `Crypto.Crypto` service type and `Layer`, both of which ride
+`ServiceRef.path` and the emitter's always-taken import. A file node
+for it would be a row nothing resolves. -/
+def files : Files := [storeFile, backendFile, kvsBackendFile, kvsFile]
+
+def storePath : String := storeFile.spec
+def backendPath : String := backendFile.spec
+def kvsBackendPath : String := kvsBackendFile.spec
+def kvsPath : String := kvsFile.spec
 
 /-! ## The services — keys exactly as `Context.Key.key` spells them -/
 
@@ -86,13 +110,13 @@ def topology : Option (List Binding) := do
     ["The platform digest, as a leaf this grammar refuses to open: the",
      "constructor reaches for `crypto.subtle` through `Effect.tryPromise`.",
      "It contributes identity, never structure."]
-    (.«opaque» { name := "layerCryptoWebCrypto", path := storePath }
+    (.«opaque» (codeRef storeFile "layerCryptoWebCrypto")
       "host escape: WebCrypto `subtle.digest` behind a tryPromise"
       [crypto] [])
   let scheme ← bind "addressSha256"
     ["Scheme-0 SHA-256 as the address scheme — one key answered, one",
      "key still demanded."]
-    (.service { name := "AddressScheme.layerSha256", path := storePath }
+    (.service (codeRef storeFile "AddressScheme.layerSha256")
       addressScheme [crypto])
   let addressLive ← bind "addressLive"
     ["The scheme over the platform digest, the digest kept PRIVATE:",
@@ -101,7 +125,7 @@ def topology : Option (List Binding) := do
   let backing ← bind "memoryBacking"
     ["The three byte-plane seams from one in-memory backend — a leaf",
      "whose constructor answers a whole context."]
-    (.backing { name := "layerMemoryBackend", path := backendPath }
+    (.backing (codeRef backendFile "layerMemoryBackend")
       [byteReader, byteWriter, rootStore] [])
   let freshBacking ← bind "freshMemoryBacking"
     ["The same backing, built again rather than shared. This topology",
@@ -117,7 +141,7 @@ def topology : Option (List Binding) := do
     ["The typed-node law: two services answered, three demanded. Left",
      "unsatisfied on purpose, so the residual fold has something to",
      "discharge."]
-    (.backing { name := "layerStore", path := storePath }
+    (.backing (codeRef storeFile "layerStore")
       [casLoader, casStore] [addressScheme, byteReader, byteWriter])
   let system ← bind "casSystem"
     ["The whole system: the law over its own foundation, with the",
@@ -127,12 +151,12 @@ def topology : Option (List Binding) := do
   let kvsMemory ← bind "kvsMemory"
     ["Effect's own in-memory key-value store — the persistence family's",
      "simplest realization, and a written constructor like any other."]
-    (.service { name := "layerMemory", path := kvsPath } keyValueStore [])
+    (.service (codeRef kvsFile "layerMemory") keyValueStore [])
   let kvsBacking ← bind "kvsBacking"
     ["The byte-plane seams derived from whatever `KeyValueStore` the",
      "composition supplies — two seams answered, the realization",
      "demanded."]
-    (.backing { name := "layerKvsBackend", path := kvsBackendPath }
+    (.backing (codeRef kvsBackendFile "layerKvsBackend")
       [byteReader, byteWriter] [keyValueStore])
   let kvsSeams ← bind "kvsSeams"
     ["The seams over the memory realization, the realization kept",
@@ -220,6 +244,13 @@ def header : List String := [
   "kind and printed by `lake exe emitlayers`; regeneration is",
   "byte-identity-gated (`--check`, wired into `check:cas`).",
   "",
+  "Every import path below is RESOLVED, not copied: a constructor",
+  "reference names its module by store address (`CodeRef.file`, at the",
+  "file kind), and the specifier is recovered from that file node's",
+  "name. The file nodes are markers — they certify WHICH MODULE, never",
+  "which bytes; full-content provenance is the open half of that",
+  "ruling (`Cas/Backend/EmitLayer.lean`).",
+  "",
   "The acceptance this module carries is BEHAVIOURAL SHAPE, not byte",
   "identity of a hand-written original: `EmittedLayers.test.ts` builds",
   "each requirement-free layer below and asserts its Context holds",
@@ -242,7 +273,7 @@ def rendered : IO String := do
   | none => throw (IO.userError
       "the topology does not project: a node's payload was refused")
   | some bs =>
-    match emitModule header bs with
+    match emitModule header files bs with
     | none => throw (IO.userError
         "the topology does not resolve: a child address names nothing bound")
     | some m => pure (Render.module house0 m)

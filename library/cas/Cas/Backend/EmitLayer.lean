@@ -3,6 +3,13 @@ import Cas.Backend.Target
 import Cas.Backend.Ts
 import Cas.Codec.NodeCodec
 import Cas.Codec.Sha256
+-- The file kind is the grammar's own (`0x0B` over manifest over
+-- chunk), so a code reference's target is built by the grammar's
+-- constructors and not by a second spelling of a named blob.
+import Cas.Grammar.Syntax
+-- The emitted table stamps each topology's own address, so the
+-- generated module names the content it was lowered from.
+import Cas.Codec.Hex
 
 /-!
 # Layer emission — a described topology as TypeScript
@@ -27,12 +34,26 @@ executed here rather than restated.
   both computed by the fold below. A wrong fold is a TypeScript
   compile error in the generated module, which is the cheapest gate in
   the chain.
-- **The import list.** Every code reference names its module; the
-  imported name is the FIRST DOTTED SEGMENT of the reference, so
-  `AddressScheme.layerSha256` imports `AddressScheme` and
-  `Crypto.Crypto` imports `Crypto`. A dotted reference therefore
-  requires its first segment to be a real named export — the rule is
-  stated because it is a real constraint on what a topology may name.
+- **The import list.** Every code reference names its module BY
+  ADDRESS, and the module specifier is recovered from the file node's
+  `name` through the resolution table below. The imported name is the
+  FIRST DOTTED SEGMENT of the export, so `AddressScheme.layerSha256`
+  imports `AddressScheme` and `Crypto.Crypto` imports `Crypto`. A
+  dotted reference therefore requires its first segment to be a real
+  named export — the rule is stated because it is a real constraint on
+  what a topology may name.
+
+## What the address promotion cost the emitter, stated
+
+`CodeRef.path` was a module specifier the emitter read straight off the
+term. `CodeRef.file` is an address, and an address is not a path: the
+emitter has to RESOLVE it. That is the honest coupling this ruling
+buys, and it is paid the same way the residual fold already pays for
+addressed children — with a table built beside the bindings, consulted
+by lookup, and refusing (`none`) when an address names nothing. The
+gain is that the topology's edge to written code is now a typed edge
+the store walks, counts, and refuses at the wrong kind, instead of a
+string nothing checks.
 
 ## The fold, and what it is not
 
@@ -78,6 +99,77 @@ store answers when this topology is admitted, and the identity a
 parent's `StoreRef` names. -/
 def systemAddressOf (n : SystemNode) : Option Addr32 :=
   (systemNodeOf n).map fun node => Cas.sha256Addr (Cas.encodeNode node)
+
+/-! ## Files — the module specifiers, recovered from addresses
+
+A `CodeRef` names its module by address now, so the specifier the
+import list needs is not in the term. The file kind carries a NAME, and
+by the convention this lane authors under that name IS the module
+specifier. Recovering it is a lookup, on the same children-first
+discipline `resolveAll` runs and for the same reason: a node cannot be
+emitted without the content its addresses name.
+
+### The file node's content — the design decision, stated not assumed
+
+A `CodeRef.file` could address either of two things, and they are not
+equivalent:
+
+- the module's FULL SOURCE. Complete provenance: the topology becomes a
+  Merkle DAG all the way down to the bytes that build it, and the
+  address certifies exactly which code. The cost is that the topology's
+  address — and therefore the emitted module's byte gate, and the
+  committed addresses of every parent node — churns on EVERY edit to
+  any source file the topology names. A whitespace fix in `Store.ts`
+  moves `casSystem`'s address and turns `check:cas` red for a reason
+  the topology has no opinion about;
+- a MARKER: a file node carrying the specifier as its name, and nothing
+  the emitter does not read. Its address is a function of the specifier
+  alone, so it moves when the specifier moves and never otherwise.
+
+**v0 takes the marker.** A byte gate that goes red for unrelated
+reasons stops being read, and the emitter reads the name and only the
+name — so full content would be provenance the generated artifact pays
+for and never spends. The marker is honest about what it certifies:
+WHICH MODULE, never WHICH BYTES.
+
+**Full-content file nodes are the OPEN HALF of this ruling**, not a
+rejected option. They want a source-ingestion step (the recipe-1 writer
+over real file bytes, not `blobOfString`'s one-chunk clamp) and a
+ruling on what a topology's address is allowed to depend on. Neither is
+decided here, and neither should be decided silently by whichever form
+a first implementation happened to pick. -/
+
+/-- One file node the topology names: the address it resides at and the
+module specifier its `name` carries. -/
+structure FileRef where
+  addr : Addr32
+  spec : String
+
+/-- The resolution table an emission is performed against. -/
+abbrev Files := List FileRef
+
+/-- The marker file node for a module specifier: the specifier as the
+file's name, `text/plain`, over a one-chunk blob of the specifier's own
+bytes. See the design decision above — this is the provenance-light
+form, deliberately. -/
+def markerFile (spec : String) : Cas.Grammar.Tree .file :=
+  .file (Cas.Grammar.Name.utf8 spec) (Cas.Grammar.Name.utf8 "text/plain")
+    (Cas.Grammar.blobOfString spec)
+
+/-- A module specifier as the addressed file it resides at, under the
+production digest. -/
+def fileRef (spec : String) : FileRef :=
+  { addr := (markerFile spec).address Cas.sha256Addr, spec := spec }
+
+/-- The code reference naming `export` in the module `f` carries. -/
+def codeRef (f : FileRef) («export» : String) : CodeRef :=
+  { «export» := «export», file := ⟨f.addr⟩ }
+
+/-- The module specifier a code reference names. `none` when its
+address names no file in the table — the same refusal an unresolved
+child address gets, paid at emission. -/
+def specOf (fs : Files) (c : CodeRef) : Option String :=
+  (fs.find? fun f => f.addr.val == c.file.addr.val).map (·.spec)
 
 /-! ## Bindings — a topology as an ordered, addressed list -/
 
@@ -175,9 +267,9 @@ private def nameAt (t : Resolved) (a : Addr32) : Option Ts.Expr :=
 edge is `Layer.<combinator>(…)` over the exported names of its
 children. -/
 def exprOf (t : Resolved) : SystemNode → Option Ts.Expr
-  | .service c _ _ => some (.ident c.name)
-  | .backing c _ _ => some (.ident c.name)
-  | .«opaque» c _ _ _ => some (.ident c.name)
+  | .service c _ _ => some (.ident c.«export»)
+  | .backing c _ _ => some (.ident c.«export»)
+  | .«opaque» c _ _ _ => some (.ident c.«export»)
   | .fresh inner => do
     let i ← nameAt t inner.addr
     pure (.call (.ident "Layer.fresh") [i])
@@ -221,14 +313,23 @@ def layerTypeOf (r : Residual) : String :=
 private def rootOf (name : String) : String :=
   (name.splitOn ".").headD name
 
-private def refsOf : SystemNode → List (String × String)
-  | .service c p r =>
-    (c.path, rootOf c.name) :: ((p :: r).map fun s => (s.path, rootOf s.name))
-  | .backing c p r =>
-    (c.path, rootOf c.name) :: ((p ++ r).map fun s => (s.path, rootOf s.name))
-  | .«opaque» c _ p r =>
-    (c.path, rootOf c.name) :: ((p ++ r).map fun s => (s.path, rootOf s.name))
-  | _ => []
+/-- Every (module, imported name) pair one node contributes. `none`
+when the node's constructor names a file the table does not carry — a
+topology cannot be emitted against a table that does not resolve it. -/
+private def refsOf (fs : Files) : SystemNode → Option (List (String × String))
+  | .service c p r => do
+    let spec ← specOf fs c
+    pure ((spec, rootOf c.«export») ::
+      ((p :: r).map fun s => (s.path, rootOf s.name)))
+  | .backing c p r => do
+    let spec ← specOf fs c
+    pure ((spec, rootOf c.«export») ::
+      ((p ++ r).map fun s => (s.path, rootOf s.name)))
+  | .«opaque» c _ p r => do
+    let spec ← specOf fs c
+    pure ((spec, rootOf c.«export») ::
+      ((p ++ r).map fun s => (s.path, rootOf s.name)))
+  | _ => some []
 
 private def insertSorted (x : String) : List String → List String
   | [] => [x]
@@ -247,13 +348,15 @@ private def addRef :
 
 /-- Every module the topology names, with the names it takes from it —
 paths and names both sorted, so the header is a function of the
-description alone. `Layer` from `effect` is always taken: every
-emitted module declares layer types even when it emits no edge. -/
-def importsOf (bs : List Binding) : List Ts.Import :=
-  let pairs := ("effect", "Layer") :: bs.flatMap fun b => refsOf b.node
+description and the file table alone. `Layer` from `effect` is always
+taken: every emitted module declares layer types even when it emits no
+edge. `none` when a constructor's file address resolves to nothing. -/
+def importsOf (fs : Files) (bs : List Binding) : Option (List Ts.Import) := do
+  let perNode ← bs.mapM fun b => refsOf fs b.node
+  let pairs := ("effect", "Layer") :: perNode.flatten
   let grouped := pairs.foldl addRef []
   let sorted := grouped.mergeSort fun a b => decide (a.1 ≤ b.1)
-  sorted.map fun (path, names) => .named names path
+  pure (sorted.map fun (path, names) => .named names path)
 
 /-! ## The module -/
 
@@ -279,7 +382,14 @@ def declOf (t : Resolved) (b : Binding) : Option Ts.Decl := do
 the key set the topology says it answers with. A layer that still
 demands services cannot be built without provision, so it is exported
 as a const and left out of the table — the gate covers what it can
-actually run. -/
+actually run.
+
+Each row also carries the topology's own CONTENT ADDRESS. A generated
+projection that does not name the term it projects cannot be checked
+against it, and the address is the only name a description has; it is
+also what makes a stored topology nameable from the host at all, which
+is what an annotation on the system plane needs. The differential reads
+`name`/`keys`/`layer` and ignores it. -/
 def tableDecl (t : Resolved) (bs : List Binding) : Ts.Decl :=
   let rows := bs.filterMap fun b =>
     match find? t b.addr with
@@ -287,23 +397,27 @@ def tableDecl (t : Resolved) (bs : List Binding) : Ts.Decl :=
       if r.requires.isEmpty then
         some (Ts.Expr.objectML [
           ("name", .str name),
+          ("address", .str (Cas.hexS b.addr.val)),
           ("keys", .arr (r.provides.map fun s => .str s.key)),
           ("layer", .ident name)])
       else none
     | none => none
   .const {
     doc := ["Every requirement-free topology beside the service keys it",
-            "declares — what the Context-key-set differential compares."]
+            "declares and the address it resides at — what the",
+            "Context-key-set differential compares."]
     name := "topology"
     value := .arr rows }
 
 /-- The whole generated module: header, derived imports, one exported
-const per binding, and the differential's table. -/
-def emitModule (header : List String) (bs : List Binding) :
+const per binding, and the differential's table. The file table is what
+turns each constructor's addressed module back into a specifier. -/
+def emitModule (header : List String) (fs : Files) (bs : List Binding) :
     Option Ts.Module := do
   let t ← resolveAll bs
   let decls ← bs.mapM (declOf t)
-  pure { header := header, imports := importsOf bs,
+  let imports ← importsOf fs bs
+  pure { header := header, imports := imports,
          decls := decls ++ [tableDecl t bs] }
 
 end Cas.Backend

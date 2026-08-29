@@ -159,24 +159,80 @@ it.effect("the validator register decides the annotation kind's typed reference"
     const validate = M.validator(yield* materializeFixture("annotation"))
     const subject = "7f".repeat(32)
 
-    // The encoded side of a typed reference is the sentinel; the schema
-    // node kind tag (0x53) is the one the edge admits.
+    // The subject is a union over the addressable planes now, so an arm
+    // carries the reference and the arm's tag is what the edge admits.
+    // The schema arm admits 0x53.
     expect(yield* validate({
       key: "title",
-      subject: { $link: { id: subject, tag: 0x53 } },
-      value: "the union pin",
-    })).toEqual({ key: "title", subject, value: "the union pin" })
+      subject: { _tag: "schema", address: { $link: { id: subject, tag: 0x53 } } },
+      value: { _tag: "text", text: "the union pin" },
+    })).toEqual({
+      key: "title",
+      subject: { _tag: "schema", address: subject },
+      value: { _tag: "text", text: "the union pin" },
+    })
 
-    // A reference to some other kind is refused by the codec itself.
+    // The system arm admits 0x54 — the plane the NAME SEAT rides, and
+    // the one the monomorphic subject could not spell at all.
+    expect(yield* validate({
+      key: "foldlab/name",
+      subject: { _tag: "system", address: { $link: { id: subject, tag: 0x54 } } },
+      value: { _tag: "text", text: "casSystem" },
+    })).toEqual({
+      key: "foldlab/name",
+      subject: { _tag: "system", address: subject },
+      value: { _tag: "text", text: "casSystem" },
+    })
+
+    // The value's `ref` arm is a typed reference too — where hex text
+    // used to sit, and refused on the same law.
+    expect(yield* validate({
+      key: "foldlab/view",
+      subject: { _tag: "program", address: { $link: { id: subject, tag: 0x0f } } },
+      value: {
+        _tag: "ref",
+        address: { _tag: "system", address: { $link: { id: subject, tag: 0x54 } } },
+      },
+    })).toEqual({
+      key: "foldlab/view",
+      subject: { _tag: "program", address: subject },
+      value: { _tag: "ref", address: { _tag: "system", address: subject } },
+    })
+
+    // A reference to some other kind is refused by the codec itself:
+    // widening the union added planes, it did not weaken the edge.
     expect(yield* Effect.exit(validate({
       key: "title",
-      subject: { $link: { id: subject, tag: 9 } },
-      value: "the union pin",
+      subject: { _tag: "schema", address: { $link: { id: subject, tag: 9 } } },
+      value: { _tag: "text", text: "the union pin" },
     }))).toMatchObject({ _tag: "Failure" })
-    // A bare address is not a reference.
+    // An arm's tag belongs to the arm: 0x54 under the schema arm is not
+    // the same edge as 0x54 under the system arm.
+    expect(yield* Effect.exit(validate({
+      key: "title",
+      subject: { _tag: "schema", address: { $link: { id: subject, tag: 0x54 } } },
+      value: { _tag: "text", text: "the union pin" },
+    }))).toMatchObject({ _tag: "Failure" })
+    // A plane the estate does not have is not an arm.
+    expect(yield* Effect.exit(validate({
+      key: "title",
+      subject: {
+        _tag: "projection",
+        address: { $link: { id: subject, tag: 0x53 } },
+      },
+      value: { _tag: "text", text: "the union pin" },
+    }))).toMatchObject({ _tag: "Failure" })
+    // A bare address is not a reference, and an untagged subject is not
+    // an arm — both spellings of the shape this ruling replaced.
     expect(yield* Effect.exit(validate({
       key: "title",
       subject,
+      value: { _tag: "text", text: "the union pin" },
+    }))).toMatchObject({ _tag: "Failure" })
+    // A bare string is no longer a value: that is the whole promotion.
+    expect(yield* Effect.exit(validate({
+      key: "title",
+      subject: { _tag: "schema", address: { $link: { id: subject, tag: 0x53 } } },
       value: "the union pin",
     }))).toMatchObject({ _tag: "Failure" })
   }).pipe(Effect.provide(layer)))

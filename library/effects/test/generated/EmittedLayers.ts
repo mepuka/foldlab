@@ -4,6 +4,13 @@
  * kind and printed by `lake exe emitlayers`; regeneration is
  * byte-identity-gated (`--check`, wired into `check:cas`).
  *
+ * Every import path below is RESOLVED, not copied: a constructor
+ * reference names its module by store address (`CodeRef.file`, at the
+ * file kind), and the specifier is recovered from that file node's
+ * name. The file nodes are markers — they certify WHICH MODULE, never
+ * which bytes; full-content provenance is the open half of that
+ * ruling (`Cas/Backend/EmitLayer.lean`).
+ *
  * The acceptance this module carries is BEHAVIOURAL SHAPE, not byte
  * identity of a hand-written original: `EmittedLayers.test.ts` builds
  * each requirement-free layer below and asserts its Context holds
@@ -86,55 +93,66 @@ export const kvsFoundation: Layer.Layer<AddressScheme | ByteReader | ByteWriter>
 export const kvsSystem: Layer.Layer<AddressScheme | ByteReader | ByteWriter | CasLoader | CasStore> = Layer.provideMerge(storeLaw, kvsFoundation)
 
 /** Every requirement-free topology beside the service keys it
- * declares — what the Context-key-set differential compares. */
+ * declares and the address it resides at — what the
+ * Context-key-set differential compares. */
 export const topology = [
   {
     name: "cryptoWebCrypto",
+    address: "f629a281678b414c7ada146fbc0b75a868de94aaa2de1498381a86717a8eae8e",
     keys: ["effect/Crypto"],
     layer: cryptoWebCrypto,
   },
   {
     name: "addressLive",
+    address: "af1acb89deefcc3d5f1f605342cbb4d0a19e8351b28c0fe01cca3b4c4ef220c2",
     keys: ["foldlab/cas/AddressScheme"],
     layer: addressLive,
   },
   {
     name: "memoryBacking",
+    address: "2301f618e4cc6f30b7c3604647e0f0a4b5d6292f311fcf41cfba26f8e5adf08f",
     keys: ["foldlab/cas/ByteReader", "foldlab/cas/ByteWriter", "foldlab/cas/RootStore"],
     layer: memoryBacking,
   },
   {
     name: "freshMemoryBacking",
+    address: "4a72438b9ba5e7d94c6bb3c3a7adeeec44fc68f8e8c848b83db64778d8d1e227",
     keys: ["foldlab/cas/ByteReader", "foldlab/cas/ByteWriter", "foldlab/cas/RootStore"],
     layer: freshMemoryBacking,
   },
   {
     name: "foundation",
+    address: "0fec852a1bc0caa80172c965d41536daec872bfd66dd27087298f304fc3132bc",
     keys: ["foldlab/cas/AddressScheme", "foldlab/cas/ByteReader", "foldlab/cas/ByteWriter", "foldlab/cas/RootStore"],
     layer: foundation,
   },
   {
     name: "casSystem",
+    address: "71a69b64d0152178366363153474d4429f24c9756f358ad9835b2baf3cc3de50",
     keys: ["foldlab/cas/AddressScheme", "foldlab/cas/ByteReader", "foldlab/cas/ByteWriter", "foldlab/cas/CasLoader", "foldlab/cas/CasStore", "foldlab/cas/RootStore"],
     layer: casSystem,
   },
   {
     name: "kvsMemory",
+    address: "240e5b55d344a4ab9c3d26a37cae1019e076774d10798cdfb12fac82d660407f",
     keys: ["effect/persistence/KeyValueStore"],
     layer: kvsMemory,
   },
   {
     name: "kvsSeams",
+    address: "297fe32abcb3ed0a193bd857fa79d2be299fde724328066d0eef9123b4e25f53",
     keys: ["foldlab/cas/ByteReader", "foldlab/cas/ByteWriter"],
     layer: kvsSeams,
   },
   {
     name: "kvsFoundation",
+    address: "04860cc6386a39ff7b5a080ac5efc682cfda6139de07ea95ea1c70264fddc800",
     keys: ["foldlab/cas/AddressScheme", "foldlab/cas/ByteReader", "foldlab/cas/ByteWriter"],
     layer: kvsFoundation,
   },
   {
     name: "kvsSystem",
+    address: "1387314d1d9c1f842af4709be02e797d004e48baa67fa6a4507221931252c6a1",
     keys: ["foldlab/cas/AddressScheme", "foldlab/cas/ByteReader", "foldlab/cas/ByteWriter", "foldlab/cas/CasLoader", "foldlab/cas/CasStore"],
     layer: kvsSystem,
   },

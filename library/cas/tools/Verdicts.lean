@@ -382,26 +382,112 @@ def corpus : List Case := [
   { name := "struct-with-decl",
     note := "a declaration under a struct field: the struct's own El is uninhabited too, so it carries no value triples",
     source := .code (.struct [("at", false, .decl .date .null [])]) },
-  -- ## The annotation kind (stipulation S2)
+  -- ## The annotation kind (stipulation S2), after the convergent
+  -- naming ruling: the subject is a union over every addressable
+  -- plane, and the value is alternatives — text, or a typed reference.
   { name := "annotation",
-    note := "the sidecar annotation kind: key, addressed subject at 0x53, encoded value",
+    note := "the sidecar annotation kind: key, a subject union over the five addressable planes (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), and a value that is either text or a typed reference",
     source := .code Annotation.schemaCode,
     values := [
-      ("ok", .obj [
+      ("on-schema-text", .obj [
+        ("key", .str "foldlab/schema/title"),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "the vector document")])]),
+      -- The NAME SEAT: a human-facing name on a stored topology, which
+      -- the monomorphic subject could not spell at all.
+      ("name-on-system", .obj [
+        ("key", .str "foldlab/name"),
+        ("subject", .obj [
+          ("_tag", .str "system"),
+          ("address", sentinel sampleAddr systemKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "casSystem")])]),
+      -- The name seat again, on a published program (`cont`, 0x0F).
+      ("name-on-program", .obj [
+        ("key", .str "foldlab/name"),
+        ("subject", .obj [
+          ("_tag", .str "program"),
+          ("address", sentinel sampleAddr programKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "put a tree")])]),
+      -- The VALUE→VIEW link: a typed reference where hex text used to
+      -- sit, so the edge is one the store can walk and refuse.
+      ("ref-value", .obj [
+        ("key", .str "foldlab/view"),
+        ("subject", .obj [
+          ("_tag", .str "program"),
+          ("address", sentinel sampleAddr programKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "ref"),
+          ("address", .obj [
+            ("_tag", .str "system"),
+            ("address", sentinel sampleAddr systemKindTag.toNat)])])]),
+      ("on-git", .obj [
+        ("key", .str "foldlab/note"),
+        ("subject", .obj [
+          ("_tag", .str "git"),
+          ("address", sentinel sampleAddr gitKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "the commit this describes")])]),
+      ("on-exchange", .obj [
+        ("key", .str "foldlab/note"),
+        ("subject", .obj [
+          ("_tag", .str "exchange"),
+          ("address", sentinel sampleAddr exchangeKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "the turn this describes")])]),
+      -- An arm's tag is part of the arm: a schema-tagged sentinel under
+      -- the system arm is not the same edge.
+      ("subject-arm-tag-swapped", .obj [
+        ("key", .str "foldlab/name"),
+        ("subject", .obj [
+          ("_tag", .str "system"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "wrong plane")])]),
+      -- A plane the estate does not have today is not an arm.
+      ("subject-unknown-arm", .obj [
+        ("key", .str "foldlab/name"),
+        ("subject", .obj [
+          ("_tag", .str "projection"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "no such plane")])]),
+      -- The old shape, kept as a REFUSAL: a bare sentinel subject and a
+      -- string value are what the widening replaced.
+      ("subject-untagged", .obj [
         ("key", .str "foldlab/schema/title"),
         ("subject", sentinel sampleAddr schemaKindTag.toNat),
-        ("value", .str "the vector document")]),
-      ("subject-wrong-tag", .obj [
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "the vector document")])]),
+      ("value-bare-string", .obj [
         ("key", .str "foldlab/schema/title"),
-        ("subject", sentinel sampleAddr 9),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
         ("value", .str "the vector document")]),
       ("key-missing", .obj [
-        ("subject", sentinel sampleAddr schemaKindTag.toNat),
-        ("value", .str "v")]),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
+        ("value", .obj [("_tag", .str "text"), ("text", .str "v")])]),
       ("excess", .obj [
         ("key", .str "k"),
-        ("subject", sentinel sampleAddr schemaKindTag.toNat),
-        ("value", .str "v"),
+        ("subject", .obj [
+          ("_tag", .str "schema"),
+          ("address", sentinel sampleAddr schemaKindTag.toNat)]),
+        ("value", .obj [("_tag", .str "text"), ("text", .str "v")]),
         ("zextra", .bool true)])] },
   -- ## The exchange kind (interactions as content, R15)
   { name := "exchange",
