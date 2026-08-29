@@ -20,6 +20,7 @@ runs from `library/cas` unless noted.
 | `lake exe emitprograms` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
 | `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) | `--check` in `check:cas` |
 | `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
+| `lake exe obligations` | `surface/cas-obligations.json` (the obligation ledger: the named obligations written in the docstrings, plus the health counters) | `--check` and `--self-test` in `check:cas` |
 
 `mise run gen` runs all regenerations; `mise run check` asserts a
 clean tree after. A red byte gate means regenerate and READ THE DIFF —

@@ -1,0 +1,409 @@
+{
+  "counters": {
+    "discharged": 18,
+    "emptyDenotations": 4,
+    "formless": 0,
+    "owed": 9,
+    "parked": 4,
+    "pinPending": 1
+  },
+  "declarations": [
+    {
+      "declaration": "Cas.Lang.handle_step_agree",
+      "excerpt": "…lision` applied once — with `hresident` discharged from the PROVER's clause succeeding (`prove_load_clause`),…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Auth",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Lang.whole_run_security",
+      "excerpt": "…e the triage note above. `hresident` is discharged from that hypothesis at every `load`, so CAS-003's empty Le…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Auth",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Lang.dataflowClosedFrom_cons",
+      "excerpt": "…able's head, split into the head line's obligation and the tail's — the shape the run's own induction consumes…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Defun",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Lang.decodeLine_encodeLine",
+      "excerpt": "CODE-POINT ROUND TRIP (un-parked): a well-formed line, encoded as a step node, decodes back…",
+      "keyword": "un-parked",
+      "module": "Cas.Lang.Defun",
+      "state": "un-parked"
+    },
+    {
+      "declaration": "Cas.Lang.decodeProg_encodeProg",
+      "excerpt": "…HE PROGRAM IS RECOVERABLE FROM CONTENT (owed item, discharged): the word `encodeProg` lays down reads ba…",
+      "keyword": "owed",
+      "module": "Cas.Lang.Defun",
+      "state": "owed"
+    },
+    {
+      "declaration": "Cas.Lang.decodeProg_encodeProg",
+      "excerpt": "…IS RECOVERABLE FROM CONTENT (owed item, discharged): the word `encodeProg` lays down reads back to exactly the…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Defun",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Lang.readLine_exact",
+      "excerpt": "READLINE EXACTNESS (owed item, discharged): a successful line read proves its input…",
+      "keyword": "owed",
+      "module": "Cas.Lang.Defun",
+      "state": "owed"
+    },
+    {
+      "declaration": "Cas.Lang.readLine_exact",
+      "excerpt": "READLINE EXACTNESS (owed item, discharged): a successful line read proves its input was a line encodi…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Defun",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Lang.readPIn_encodePIn",
+      "excerpt": "OPERAND ROUND TRIP (un-parked): the operand reader recovers a well-formed operand and con…",
+      "keyword": "un-parked",
+      "module": "Cas.Lang.Defun",
+      "state": "un-parked"
+    },
+    {
+      "declaration": "Cas.Lang.readPRef_encodePRef",
+      "excerpt": "TYPED-REF ROUND TRIP (un-parked): the kind tag passes through and the operand round trip ca…",
+      "keyword": "un-parked",
+      "module": "Cas.Lang.Defun",
+      "state": "un-parked"
+    },
+    {
+      "declaration": "Cas.Lang.run_interpretRef_agree",
+      "excerpt": "…BRIDGE (EFFECTS-BACKEND R10's named F3 obligation, discharged): the fueled small-step `run` and the big-step…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Handler",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Lang.run_interpretRef_agree",
+      "excerpt": "…ECTS-BACKEND R10's named F3 obligation, discharged): the fueled small-step `run` and the big-step reference in…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Handler",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Schema.ofRepresentationJson_repNormal",
+      "excerpt": "…ecoder soundness for `RepNormal`** (the obligation this module carried as open until slice 2's secondary): eve…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Json.pairwise_mergeSort_keys",
+      "excerpt": "…ivity and totality of the string order, discharged once for both pair carriers. Generic in the value type on p…",
+      "keyword": "discharged",
+      "module": "Cas.Values.Canonicalize",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Json.natRepr_inj",
+      "excerpt": "…is the lemma the schema plane named as sub-obligation 2 of `Json.RenderPlainInjective`.",
+      "keyword": "sub-obligation",
+      "module": "Cas.Values.Digits",
+      "state": "sub-obligation"
+    },
+    {
+      "declaration": "Cas.Json.escapeCompact_inj",
+      "excerpt": "SUB-OBLIGATION 1, DISCHARGED: the canonical escape is injective — one escaped spelling p…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Values.JsonInj",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Json.escapeCompact_inj",
+      "excerpt": "SUB-OBLIGATION 1, DISCHARGED: the canonical escape is injective — one esca…",
+      "keyword": "SUB-OBLIGATION",
+      "module": "Cas.Values.JsonInj",
+      "state": "sub-obligation"
+    },
+    {
+      "declaration": "Cas.Json.renderCompact_inj_of",
+      "excerpt": "The obligation transported to `renderCompact`, which is what the payload b…",
+      "keyword": "obligation",
+      "module": "Cas.Values.JsonInj",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Json.renderPlain_inj_of_numNormal",
+      "excerpt": "On `NumNormal` values the obligation gives equality on the nose.",
+      "keyword": "obligation",
+      "module": "Cas.Values.JsonInj",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Json.parseValue_renderChars",
+      "excerpt": "…leaving the tail untouched. THE law the obligation rides on.",
+      "keyword": "obligation",
+      "module": "Cas.Values.JsonParse",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Json.renderPlain_injective",
+      "excerpt": "THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocke…",
+      "keyword": "OBLIGATION",
+      "module": "Cas.Values.JsonParse",
+      "state": "obligation"
+    },
+    {
+      "declaration": "Cas.Json.renderPlain_injective",
+      "excerpt": "THE NAMED OBLIGATION, DISCHARGED (`Cas.Values.JsonInj`, ruling 11, survey blocker B7): bytes…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Values.JsonParse",
+      "state": "discharged"
+    }
+  ],
+  "library": "Cas",
+  "moduleDocs": [
+    {
+      "excerpt": "…ted rather than asserted. What is still owed there is registry, not proof: wire tags 14 and 15 (`step`,…",
+      "keyword": "owed",
+      "module": "Cas",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…rtifact channel is a backend increment, owed when a consumer wants the named `enum` declaration itself (…",
+      "keyword": "owed",
+      "module": "Cas.Backend.EmitAst",
+      "state": "owed"
+    },
+    {
+      "excerpt": "## The premise is discharged, not assumed",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Auth",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…act`, `decodeLine_exact` — EXACTNESS (owed item, discharged 2026-08-29): the decoder accepts nothing…",
+      "keyword": "owed",
+      "module": "Cas.Lang.Defun",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…te primitives (`nat32`, `readChunk`). UN-PARKED 2026-08-29: rolled back on 2026-08-28 for kernel-memory e…",
+      "keyword": "UN-PARKED",
+      "module": "Cas.Lang.Defun",
+      "state": "un-parked"
+    },
+    {
+      "excerpt": "…deLine_exact` — EXACTNESS (owed item, discharged 2026-08-29): the decoder accepts nothing outside the enco…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Defun",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "### The reconciliation debt, DISCHARGED 2026-08-29 Rows 14 and 15 were spelled here as bare `UInt8…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Lang.Defun",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…; three-stage exhausts the kernel\". The parked proofs rewrote the byte primitives straight into the CONCRE…",
+      "keyword": "parked",
+      "module": "Cas.Lang.Defun",
+      "state": "parked"
+    },
+    {
+      "excerpt": "…e codec uses: each `match` scrutinee is discharged against an ABSTRACT byte string in its own lemma, and the c…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Defun",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…counted refs, trailing-empty), and the parked proof drove all four stages simultaneously through the conc…",
+      "keyword": "parked",
+      "module": "Cas.Lang.Defun",
+      "state": "parked"
+    },
+    {
+      "excerpt": "…two lines), and it is exactly where the obligation bites. `Function.Injective H` discharges it, but nothing he…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Defun",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…VED, not assumed; one is proved, one is owed, and the note says which. ### L-A — the table (applicative…",
+      "keyword": "owed",
+      "module": "Cas.Lang.Fragments",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…Y monad by structural recursion. That obligation returns exactly when a rung adds loops, and no rung above…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Fragments",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…form and free construction. **CORPUS PIN PENDING** — SAF is not yet G0-pinned in `.reference/provenance/pa…",
+      "keyword": "PIN PENDING",
+      "module": "Cas.Lang.Fragments",
+      "state": "pin-pending"
+    },
+    {
+      "excerpt": "…ment on the target. ITrees' `MonadIter` obligation returns exactly when F3 adds loops, and will be taken then,…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Handler",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…med obligation of the F3 increment — is DISCHARGED below (`run_interpretRef_agree`); see that section's note f…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Lang.Handler",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…against the fueled run R10's named F3 obligation, discharged here. Statement triage found two facts about it…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Handler",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…fueled run R10's named F3 obligation, discharged here. Statement triage found two facts about its shape, sta…",
+      "keyword": "discharged",
+      "module": "Cas.Lang.Handler",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…and implemented — in the store. Named obligation (not claimed here): the refinement theorem — over a faithfu…",
+      "keyword": "obligation",
+      "module": "Cas.Lang.Tower",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…te keeps on purpose, and each is a live obligation rather than a defect: 1. **`Ast.toJson` / `Ast.ofJson` — t…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.Basis",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…its consumer can live with. Owed only when a consumer demands it. ## T…",
+      "keyword": "Owed",
+      "module": "Cas.Schema.El",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…eral declaration's denotation — a named obligation `El (.decl id p ps) = Empty`: a general declaration denote…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.El",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…`WF` is load-bearing The value plane's obligation can only conclude equality up to `Value.numNorm`, the numbe…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.PayloadInj",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "## The read path — a named obligation, and why it is not forced here The round trip `Node → El a…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.Projection",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…order alone, so no third collapse is owed. - **Union, stage 2 — denotation, discriminated first** — L…",
+      "keyword": "owed",
+      "module": "Cas.Schema.Schema",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…so it adds no second collapse. Named obligation, deliberately parked: the general declaration's DENOTATIO…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.Schema",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…lapse. Named obligation, deliberately parked: the general declaration's DENOTATION. `El` of a `.decl`…",
+      "keyword": "parked",
+      "module": "Cas.Schema.Schema",
+      "state": "parked"
+    },
+    {
+      "excerpt": "…e envelope remains the increment's open obligation (pending, per the facade's increment list) — nothing here c…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…alone, and its laws are the named open obligation of this module.",
+      "keyword": "obligation",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…re_ne_casRef` shows why nothing more is owed — the general code cannot spell row zero (`foldlab/cas/ref`…",
+      "keyword": "owed",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…discipline, discharging the named open obligations of this module. Three statements, in dependency order: -…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…-1 projection is a bijection onto. The obligation stood parked because the proof was looked for in the wrong…",
+      "keyword": "obligation",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…a bijection onto. The obligation stood parked because the proof was looked for in the wrong place. Lean 4…",
+      "keyword": "parked",
+      "module": "Cas.Schema.SelfCodec",
+      "state": "parked"
+    },
+    {
+      "excerpt": "…all, which answers one value. The three sub-obligations this module named, and where each landed: 1. **`escapeCom…",
+      "keyword": "sub-obligation",
+      "module": "Cas.Values.JsonInj",
+      "state": "sub-obligation"
+    },
+    {
+      "excerpt": "…tive`, the value plane's one named open obligation (ruling 11, survey blocker B7). ## The acceptance contract…",
+      "keyword": "obligation",
+      "module": "Cas.Values.JsonParse",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "…xactly `cs.length`. ## The follow set, discharged `renderPlain` is not prefix-free — `\"1\"` prefixes `\"12\"` —…",
+      "keyword": "discharged",
+      "module": "Cas.Values.JsonParse",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…`RenderPlainInjective`, DISCHARGED The obligation falls out of adequacy alone: two values with one rendering…",
+      "keyword": "obligation",
+      "module": "Cas.Values.JsonParse",
+      "state": "obligation"
+    },
+    {
+      "excerpt": "### `RenderPlainInjective`, DISCHARGED The obligation falls out of adequacy alone: two values wit…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Values.JsonParse",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…nce law `markerScan ∘ lower = range` is DISCHARGED IN GENERAL below (`markerScan_lower`), no longer only guard…",
+      "keyword": "DISCHARGED",
+      "module": "Cas.Values.Refs",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…eral This model's own named follow-up, discharged. The fixtures above are now regression pins on a theorem ra…",
+      "keyword": "discharged",
+      "module": "Cas.Values.Refs",
+      "state": "discharged"
+    }
+  ]
+}

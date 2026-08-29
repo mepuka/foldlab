@@ -100,6 +100,17 @@ srcDir = "tools"
 root = "Surface"
 supportInterpreter = true
 
+# The obligation ledger: lake exe obligations extracts the named
+# obligations already written in the library's docstrings into
+# surface/cas-obligations.json, with the health counters the estate
+# otherwise remembers; --check is the byte-identity gate and
+# --self-test runs the planted-defect controls.
+[[lean_exe]]
+name = "obligations"
+srcDir = "tools"
+root = "Obligations"
+supportInterpreter = true
+
 # The lift-manifest emitter: `lake exe emitlift` regenerates the
 # effect-lift lane's rule manifest (the R11 interchange document the
 # recognition engines consume) at the target the tool bakes in (a
