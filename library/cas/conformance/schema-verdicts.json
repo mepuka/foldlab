@@ -850,11 +850,179 @@
     {
       "denotes": true,
       "name": "annotation",
-      "note": "the sidecar annotation kind: key, addressed subject at 0x53, encoded value",
-      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"key\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}}}",
+      "note": "the sidecar annotation kind: key, a subject union over the five addressable planes (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), and a value that is either text or a typed reference",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"key\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"ref\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"text\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"text\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}]}}]}}}",
       "values": [
         {
-          "label": "ok",
+          "label": "on-schema-text",
+          "value": {
+            "key": "foldlab/schema/title",
+            "subject": {
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "the vector document"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "name-on-system",
+          "value": {
+            "key": "foldlab/name",
+            "subject": {
+              "_tag": "system",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 84
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "casSystem"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "name-on-program",
+          "value": {
+            "key": "foldlab/name",
+            "subject": {
+              "_tag": "program",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 15
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "put a tree"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "ref-value",
+          "value": {
+            "key": "foldlab/view",
+            "subject": {
+              "_tag": "program",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 15
+                }
+              }
+            },
+            "value": {
+              "_tag": "ref",
+              "address": {
+                "_tag": "system",
+                "address": {
+                  "$link": {
+                    "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                    "tag": 84
+                  }
+                }
+              }
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "on-git",
+          "value": {
+            "key": "foldlab/note",
+            "subject": {
+              "_tag": "git",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 71
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "the commit this describes"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "on-exchange",
+          "value": {
+            "key": "foldlab/note",
+            "subject": {
+              "_tag": "exchange",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 88
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "the turn this describes"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "subject-arm-tag-swapped",
+          "value": {
+            "key": "foldlab/name",
+            "subject": {
+              "_tag": "system",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "wrong plane"
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "subject-unknown-arm",
+          "value": {
+            "key": "foldlab/name",
+            "subject": {
+              "_tag": "projection",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "no such plane"
+            }
+          },
+          "verdict": "refuse"
+        },
+        {
+          "label": "subject-untagged",
           "value": {
             "key": "foldlab/schema/title",
             "subject": {
@@ -863,18 +1031,24 @@
                 "tag": 83
               }
             },
-            "value": "the vector document"
+            "value": {
+              "_tag": "text",
+              "text": "the vector document"
+            }
           },
-          "verdict": "accept"
+          "verdict": "refuse"
         },
         {
-          "label": "subject-wrong-tag",
+          "label": "value-bare-string",
           "value": {
             "key": "foldlab/schema/title",
             "subject": {
-              "$link": {
-                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-                "tag": 9
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
               }
             },
             "value": "the vector document"
@@ -885,12 +1059,18 @@
           "label": "key-missing",
           "value": {
             "subject": {
-              "$link": {
-                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-                "tag": 83
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
               }
             },
-            "value": "v"
+            "value": {
+              "_tag": "text",
+              "text": "v"
+            }
           },
           "verdict": "refuse"
         },
@@ -899,12 +1079,18 @@
           "value": {
             "key": "k",
             "subject": {
-              "$link": {
-                "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
-                "tag": 83
+              "_tag": "schema",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 83
+                }
               }
             },
-            "value": "v",
+            "value": {
+              "_tag": "text",
+              "text": "v"
+            },
             "zextra": true
           },
           "verdict": "refuse"
@@ -1282,12 +1468,12 @@
     }
   ],
   "counts": {
-    "acceptValues": 36,
+    "acceptValues": 41,
     "admittedCodes": 39,
     "codes": 68,
-    "refuseValues": 59,
+    "refuseValues": 62,
     "refusedCodes": 29,
-    "values": 95
+    "values": 103
   },
   "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],
   "revision": 1

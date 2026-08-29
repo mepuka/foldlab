@@ -106,9 +106,9 @@ shape of this module is meant to answer. Nothing is reserved for it.
 
 An author writes the topology and nothing else: service keys as
 strings — exactly `Context.Key.key`, the same word the runtime
-compares — references to code that is already written, and the wiring
-edges between them. Constructor BODIES are never authored here; they
-are `CodeRef`s to written code, which is the R7 line
+compares — ADDRESSED references to code that is already written, and
+the wiring edges between them. Constructor BODIES are never authored
+here; they are `CodeRef`s to written code, which is the R7 line
 (`EFFECTS-BACKEND.md:112-119`: the backend generates layers, host
 machinery, not programs). Everything else — the emitted expression,
 the declared `Layer.Layer<…>` type, the import list, the residual
@@ -147,13 +147,41 @@ open Cas.Schema.Notation
 plane identity: see the reserved-tag note above. -/
 def systemKindTag : UInt8 := 0x54
 
-/-- A reference to WRITTEN CODE: the module specifier it is exported
-from and the name it is exported as. A dotted `name` names a static
-member (`AddressScheme.layerSha256`); the import list is derived from
-its first segment. -/
+/-- The tag file nodes reside at (`0x0B`), read off the grammar's own
+sort table rather than spelled a second time here. -/
+def fileKindTag : UInt8 := Cas.Grammar.Ty.file.wireTag
+
+#guard fileKindTag == 0x0B
+
+/-- A reference to WRITTEN CODE: the FILE it is exported from, as an
+address, and the name it is exported as. A dotted `export` names a
+static member (`AddressScheme.layerSha256`); the import list is derived
+from its first segment.
+
+`file` was `path : String` — a module specifier carried as text, which
+is out-of-band by exactly the mechanism the annotation kind's old
+`value : String` was. Written code already has a content seat
+(`file` 0x0B over `manifest` 0x0A over `chunk` 0x08 puts a named file
+with a media type); what had no seat was the NAMED EXPORT WITHIN A
+MODULE, and that is this struct rather than a new plane. The topology's
+edge to written code is now an address the store walks, counts in
+`refCount`, and refuses at the wrong kind.
+
+What the emitter must now do, and this is the honest cost: a module
+SPECIFIER is no longer readable off the term. `EmitLayer` recovers it
+from the file node's `name`, which means emission takes a resolution
+table beside its bindings — the same children-first discipline the
+residual fold already runs on. See `Cas/Backend/EmitLayer.lean`.
+
+Promoting this struct moves every stored `SystemNode` address, because
+the payload changed. That is the one cost in this ruling that IS an
+address-moving event for content, and `BUILD-MODELING-AUDIT.md:124`
+§D.2 is why it was paid now: today the stored topologies are the
+authored DAG in `tools/EmitLayers.lean` and nothing else. It will never
+be cheaper. -/
 cas_struct CodeRef where
-  name : String
-  path : String
+  «export» : String
+  file : StoreRef fileKindTag
 
 /-- A service as the topology names it: the runtime key the context is
 compared on (exactly `Context.Key.key`), and the reference to the tag
@@ -204,10 +232,14 @@ never the payload, which is why the payload pins below are literals
 rather than computations over this value. -/
 def pinChild : Addr32 := ⟨List.replicate 32 0xab, by simp⟩
 
+/-- The pin's file address — the node the constructor is exported from,
+at the file kind. -/
+def pinFile : Addr32 := ⟨List.replicate 32 0xcd, by simp⟩
+
 /-- A leaf: one written constructor, one service key, one demand. -/
 def pinService : SystemNode :=
   .service
-    { name := "AddressScheme.layerSha256", path := "../../src/cas/Store.ts" }
+    { «export» := "AddressScheme.layerSha256", file := ⟨pinFile⟩ }
     { key := "foldlab/cas/AddressScheme", name := "AddressScheme"
     , path := "../../src/cas/Store.ts" }
     [{ key := "effect/Crypto", name := "Crypto.Crypto", path := "effect" }]
@@ -215,11 +247,13 @@ def pinService : SystemNode :=
 /-- An edge: two addressed children, both at the system kind. -/
 def pinEdge : SystemNode := .provideMerge ⟨pinChild⟩ ⟨pinChild⟩
 
--- A leaf carries no references, so its payload is the whole of it.
+-- A leaf is no longer reference-free: its constructor's FILE is an
+-- address now, so the leaf carries exactly one typed edge at the file
+-- kind and the module specifier has left the payload.
 #guard putPayload 1 pinService == some
-  "{\"revision\":1,\"value\":{\"_tag\":\"service\",\"ctor\":{\"name\":\"AddressScheme.layerSha256\",\"path\":\"../../src/cas/Store.ts\"},\"provides\":{\"key\":\"foldlab/cas/AddressScheme\",\"name\":\"AddressScheme\",\"path\":\"../../src/cas/Store.ts\"},\"requires\":[{\"key\":\"effect/Crypto\",\"name\":\"Crypto.Crypto\",\"path\":\"effect\"}]}}"
+  "{\"revision\":1,\"value\":{\"_tag\":\"service\",\"ctor\":{\"export\":\"AddressScheme.layerSha256\",\"file\":{\"$ref\":0}},\"provides\":{\"key\":\"foldlab/cas/AddressScheme\",\"name\":\"AddressScheme\",\"path\":\"../../src/cas/Store.ts\"},\"requires\":[{\"key\":\"effect/Crypto\",\"name\":\"Crypto.Crypto\",\"path\":\"effect\"}]}}"
 
-#guard putRefs 1 pinService == some []
+#guard putRefs 1 pinService == some [⟨fileKindTag, pinFile⟩]
 
 -- An edge's addresses never reach the payload: each lowers to the
 -- positional marker and rides the node's reference array instead.

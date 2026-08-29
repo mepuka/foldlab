@@ -1,4 +1,12 @@
 import Cas.Schema.Notation
+import Cas.Schema.Projection
+import Cas.Schema.Exchange
+import Cas.Schema.System
+-- The program and git planes own their tags in the grammar's sort
+-- table, not here: `Cas/Grammar/Sorts.lean` is where `cont` (0x0F) and
+-- `git` (0x47) are ratified, and the arms below read them off it so the
+-- byte is spelled once in the estate.
+import Cas.Grammar.Sorts
 
 /-!
 # The sidecar annotation kind (stipulation S2)
@@ -7,22 +15,86 @@ Annotation content is STORE CONTENT. The carrier `Ast` gains no
 annotation field — that would ripple every codec, canonicality, and
 round-trip proof in the plane for data the kernel never inspects — so
 an annotation is its own described kind whose SUBJECT is a typed store
-reference to a schema node (kind tag `0x53`). The DAG carries as many
-of them as wanted: "twenty encoded other schemas" is twenty annotation
-nodes, or twenty addresses carried in their values.
+reference. The DAG carries as many of them as wanted: "twenty encoded
+other schemas" is twenty annotation nodes, or twenty addresses carried
+in their values.
 
-One annotation node says one thing about one schema:
+One annotation node says one thing about one addressed value:
 
-- `subject` — the schema being annotated, addressed, never inlined.
+- `subject` — the value being annotated, addressed, never inlined.
   Stipulation S4 holds by construction here: the edge references the
-  schema AS a schema, not a concrete instance of it.
+  subject AS its own kind, not as a concrete instance of something
+  else.
 - `key` — the `foldlab/...` annotation key this node carries. String
   keys only: symbol-keyed annotations are dropped at persistence and
   code generation on the Effect side, so the persistent namespace is
   the slash namespace and nothing else.
-- `value` — the encoded content, as a string. A content address in
-  hex when the value is itself store content; that is how an
-  annotation carries another schema rather than a scalar.
+- `value` — what the annotation says, as ALTERNATIVES: a `text` arm for
+  a scalar, and a `ref` arm carrying a typed reference to whatever the
+  annotation points at.
+
+## Why the subject is a union (the convergent naming ruling)
+
+`subject` was `StoreRef schemaKindTag` — a schema node and nothing
+else. That pinned the kind to one plane, and three separate defects
+were the same fact seen from three sides: a view's link to the value it
+projects, a program's human-facing name, and a topology's link to the
+written code that builds it were all unspellable or degraded to text.
+`AnnotationSubject` is the widening `Exchange.lean:77-79` already
+established the pattern for — one arm per addressable plane the estate
+HAS TODAY, each arm a `StoreRef` at that plane's tag, because a
+reference demands one tag and "what this annotation is about" is
+genuinely alternatives:
+
+- `exchange` (`0x58`) — a recorded turn of the agent seam;
+- `git` (`0x47`) — a git object as content;
+- `program` (`0x0F`) — a `cont` node, the only spelling in which a
+  program is content;
+- `schema` (`0x53`) — the plane the kind was born pinned to;
+- `system` (`0x54`) — a service topology.
+
+Nothing is reserved for a plane that does not exist yet: growth is by
+an arm, and an arm is arm-additive.
+
+## Why the value is a union too
+
+`value : String` degraded a store-content link to text — the module's
+own former docstring said "a content address in hex when the value is
+itself store content", which is precisely the out-of-band config a
+content-addressed estate exists to eliminate. A hex string does not
+appear in `refCount`, `Graph.verify` does not walk it, and
+`WrongKindReference` can never fire on it.
+
+`AnnotationValue` fixes that with two arms, and the `ref` arm carries
+an `AnnotationSubject` rather than a bare `StoreRef`:
+
+- a `StoreRef` demands ONE tag, so a single generic `ref` arm cannot be
+  spelled at all — the tag would have to be invented;
+- one arm per plane, flattened into this union, would spell the plane
+  list twice and let the two copies drift;
+- nesting the subject union keeps admission CHECKABLE, which is the
+  property the ruling asks for: every arm still names its expected tag,
+  the reference lowers to a positional marker and rides the node's
+  reference array, and the store's admission law refuses an edge whose
+  target is of another kind. `WrongKindReference` fires on an annotation
+  value now, which it never could before.
+
+The two unions are the same list because they answer the same question
+— "which addressable plane" — and one list is one place to grow.
+
+## The versioning event
+
+Arms are canonically ordered by the deriving handler (members sorted by
+tag) and decision 4 rules ORDER IS IDENTITY, so this growth moves the
+annotation SCHEMA CODE's address. `BUILD-MODELING-AUDIT.md:124` §D.2
+prices exactly this: union growth is arm-additive and does not move
+STORED NODE addresses; it does move the schema code's address, and that
+is "a documented versioning event, not an address-moving event for
+content." The receipts are `schemas/annotation.json` and the
+`annotation` row of `schemas/addresses.json`, both regenerated by
+`lake exe schemas` and byte-gated. No annotation node that was ever
+stored changes address; every annotation node authored against the old
+shape has to be re-authored, and there are none.
 
 At projection time the materializer folds sidecar annotations into the
 representation-level annotation bags where Effect persists them. The
@@ -38,11 +110,101 @@ namespace Cas.Schema
 
 open Cas.Schema.Notation
 
-/-- One sidecar annotation on one schema: the addressed subject, the
-`foldlab/...` key it carries, and its encoded value. -/
+/-- The tag `cont` nodes reside at, read off the grammar's sort table.
+A published program is a `cont` node at an address (R7), which is what
+makes `foldlab/name` on a program spellable. -/
+def programKindTag : UInt8 := Cas.Grammar.Ty.cont.wireTag
+
+/-- The tag git objects reside at, read off the grammar's sort table. -/
+def gitKindTag : UInt8 := Cas.Grammar.Ty.git.wireTag
+
+-- Both tags are the grammar's, not a second spelling of a byte.
+#guard programKindTag == 0x0F
+#guard gitKindTag == 0x47
+
+/-- What one annotation is about, by plane: every addressable plane the
+estate has today, each arm a typed reference at that plane's tag. -/
+cas_union AnnotationSubject where
+  | exchange (address : StoreRef exchangeKindTag)
+  | git (address : StoreRef gitKindTag)
+  | program (address : StoreRef programKindTag)
+  | schema (address : StoreRef schemaKindTag)
+  | system (address : StoreRef systemKindTag)
+
+-- The generator's discrimination claim, checked at elaboration.
+#guard AnnotationSubject.schemaCode.discriminated
+
+/-- What one annotation SAYS: a scalar, or a typed reference to
+addressed content. The reference arm reuses `AnnotationSubject` because
+the question is the same one — which addressable plane — and one list
+is one place to grow. -/
+cas_union AnnotationValue where
+  | ref (address : AnnotationSubject)
+  | text (text : String)
+
+-- The generator's discrimination claim, checked at elaboration.
+#guard AnnotationValue.schemaCode.discriminated
+
+/-- One sidecar annotation on one addressed value: the addressed
+subject, the `foldlab/...` key it carries, and what it says. -/
 cas_struct Annotation where
   key : String
-  subject : StoreRef schemaKindTag
-  value : String
+  subject : AnnotationSubject
+  value : AnnotationValue
+
+/-! ## Put from Lean — the projection bridge, at this kind
+
+The pin discipline `Exchange.lean:91-133` established, at the kind this
+ruling widened: the payload text, the reference array, and the node's
+own observable fields. The annotation plane has no reserved tag of its
+own, so the pins ride the caller's tag exactly as the effects suite
+does (`SchemaAnnotation.test.ts` puts at `0x41`).
+
+The worked example is the NAME SEAT: `foldlab/name` on a stored
+topology through the `system` arm — the thing that was unspellable
+before this ruling, spelled. -/
+
+/-- The pin's subject address. Its bytes reach the reference array and
+never the payload, which is why the payload pins below are literals. -/
+def pinSubjectAddr : Addr32 := ⟨List.replicate 32 0xab, by simp⟩
+
+/-- The kind tag the pins reside at — the caller's, matching the
+effects suite's own choice. -/
+def pinAnnotationKindTag : UInt8 := 0x41
+
+/-- The name seat, worked: a human-facing name on a stored topology. -/
+def pinName : Annotation :=
+  { key := "foldlab/name"
+  , subject := .system ⟨pinSubjectAddr⟩
+  , value := .text "casSystem" }
+
+/-- The view link, worked: an annotation whose value is a typed
+reference rather than hex text. -/
+def pinLink : Annotation :=
+  { key := "foldlab/view"
+  , subject := .program ⟨pinSubjectAddr⟩
+  , value := .ref (.system ⟨pinSubjectAddr⟩) }
+
+-- One typed edge at the system kind, and the name as text.
+#guard putPayload 1 pinName == some
+  "{\"revision\":1,\"value\":{\"key\":\"foldlab/name\",\"subject\":{\"_tag\":\"system\",\"address\":{\"$ref\":0}},\"value\":{\"_tag\":\"text\",\"text\":\"casSystem\"}}}"
+
+#guard putRefs 1 pinName == some [⟨systemKindTag, pinSubjectAddr⟩]
+
+-- Two typed edges: the subject at the program kind, and the VALUE's
+-- own reference at the system kind. The second edge is what the old
+-- `value : String` could not carry — the store now walks it, and
+-- `WrongKindReference` can fire on it.
+#guard putPayload 1 pinLink == some
+  "{\"revision\":1,\"value\":{\"key\":\"foldlab/view\",\"subject\":{\"_tag\":\"program\",\"address\":{\"$ref\":0}},\"value\":{\"_tag\":\"ref\",\"address\":{\"_tag\":\"system\",\"address\":{\"$ref\":1}}}}}"
+
+#guard putRefs 1 pinLink == some
+  [⟨programKindTag, pinSubjectAddr⟩, ⟨systemKindTag, pinSubjectAddr⟩]
+
+-- The node itself: the caller's tag, the two edges, and the payload.
+#guard (putNode Cas.Grammar.schemeVersion pinAnnotationKindTag 1 pinLink).map
+    (fun n => (n.version, n.tag, n.refs))
+  == some (Cas.Grammar.schemeVersion, pinAnnotationKindTag,
+      [⟨programKindTag, pinSubjectAddr⟩, ⟨systemKindTag, pinSubjectAddr⟩])
 
 end Cas.Schema
