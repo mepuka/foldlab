@@ -40,7 +40,13 @@ Three layers, one seam:
                                       bytes at a path (supply one function)
               Cas.layerKvsBackend     any Effect KeyValueStore (SQL is the
                                       SQLite and Litestream route)
+              Cas.layerSqlRootStore   the roots registry over any SqlClient —
+                                      what SQL adds is enumeration
 ```
+
+Which layers make a store on a machine, what backing each layout up
+means, and why git sync is right for one and wrong for the other:
+[`BACKEND.md`](BACKEND.md).
 
 Backends are deliberately dumb byte planes — admission and verification
 are laws above the seam, so a backend cannot weaken the store and a
