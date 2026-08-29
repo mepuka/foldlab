@@ -52,6 +52,7 @@ deleted.
 | [.staging/treesitter/MATERIALIZER-LANE.md](../.staging/treesitter/MATERIALIZER-LANE.md) | grammar materializer | Union half unblocked (landed); recursion half (Suspend/Reference, GROW C6) stands |
 | [.staging/verbal-register/REGISTER.md](../.staging/verbal-register/REGISTER.md) | verbal register | DO-NOT-RATIFY-AS-WRITTEN (PLAIN-LANGUAGE.md verdict): wrong plane; regenerate over `Ast` with witnesses |
 | [.staging/operational-structure/BOOTSTRAP.md](../.staging/operational-structure/BOOTSTRAP.md) | bootstrap semantics | Pre-grade design (2026-08-29): env ledger, AGENTS-as-projection gates, MCP setup story; 9 ruling asks; honest limit — "Lean owns the descriptions; mise owns the execution; the doctor for the Lean plane is not Lean" |
+| [.staging/operational-structure/D1-OPTION-A-SCOPING.md](../.staging/operational-structure/D1-OPTION-A-SCOPING.md) | grammar pin | Scoping report (2026-08-29): Option A's premise refuted — pin is upstream HEAD; D1b discovered (Schema.ts unparseable at any pin); A′ fork recipe + 6 re-ruling asks |
 | [.staging/research-backlog/ml-embeddings-tooling.md](../.staging/research-backlog/ml-embeddings-tooling.md) | research backlog | Parked (no domain AGENTS.md — the ledger row is its home) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
@@ -107,6 +108,16 @@ records the 2026-08-29 session rulings that cut across specs.
    *Why: the Effect codebase is the language for generalized
    computation — in semantics, separation of concepts, and typing
    discipline; we return the favor by offering our tooling back.*
+   **⚠ PREMISE REFUTED 2026-08-29 (same day, scoping scout —
+   [D1-OPTION-A-SCOPING](../.staging/operational-structure/D1-OPTION-A-SCOPING.md)):
+   there is no upstream rev to upgrade to — the pin IS upstream HEAD
+   (dormant 19 months); "Option A" would mean vendoring an unmerged
+   PR head (#364) via an estate fork of the binding. And D1b: a
+   second, independent grammar defect leaves Schema.ts (the R8
+   public surface) unparseable at ANY known pin. Option A as ruled
+   does not unblock full R8. RE-RULING OWED — six asks in the
+   report; census counts are grammar-rev-stamped provisional
+   meanwhile.*
 8. **DSL proposal: proceed cautiously.** Everyone self-aware —
    understand what and why they're building, and BLOCK fast and
    early instead of producing work that gums up the future.
