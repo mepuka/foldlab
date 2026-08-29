@@ -45,9 +45,11 @@ abstraction, lowest first, and imported above in that order.
   the sound-and-complete admission judgment with the characterized put
   transition (`Admission`).
 - **`Values/` — the typed projection plane.** The canonical JSON
-  printers (`Json`), the rendering's injectivity direction with its
-  one named open obligation (`JsonInj`), and the typed-reference
-  marker grammar with `Root α` (`Refs`).
+  printers (`Json`), the decimal spelling inverted with `Nat.repr`
+  injectivity (`Digits`), the rendering's injectivity direction
+  (`JsonInj`), the strict parser that proves it — accepting exactly
+  the rendering's image, with adequacy and exactness (`JsonParse`) —
+  and the typed-reference marker grammar with `Root α` (`Refs`).
 - **`IR/` — the store word.** Named `Binding`s in children-first
   admission order, non-empty and proof-bearing admitted wrappers,
   `wf`, and the bridge `toStore` with `wf_toStore_closed` (ledger L1).

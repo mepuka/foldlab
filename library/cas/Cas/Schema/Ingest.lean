@@ -1,4 +1,5 @@
 import Cas.Schema.SelfCodec
+import Cas.Schema.PayloadInj
 import Cas.Values.Canonicalize
 
 /-!
@@ -35,7 +36,9 @@ What is proved:
   envelope because `envelope_canonical` says it is already canonically
   spelled — the exactness law needs no canonicality hypothesis;
 - `ingestLegacy_wf` / `ingestLegacy_toJson` — the same two laws for
-  the revision-0 arm, unchanged in substance.
+  the revision-0 arm, unchanged in substance;
+- `ingestBytes_wf` / `ingestBytes_payload` — the same two laws for the
+  BYTES door (below), which is `Cas.Json.parse` composed with this one.
 
 The declaration allowlist (increment C-decl) is enforced here and
 nowhere else on the failure path: `Ast.ofEnvelope` refuses a
@@ -366,6 +369,103 @@ private def alphaFirst : Ast :=
               ("_tag", .str "Union"), ("checks", .arr []),
               ("mode", .str "allOf"),
               ("types", .arr [(Ast.str).toRepresentationJson])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
+/-! ## The bytes-in door
+
+`ingest` takes a VALUE. Everything that arrives from outside — a stored
+payload, a hoovered carrier, a model's answer — arrives as BYTES, and
+until the parser slice there was no first step: the loop's read half
+started one stage in. `ingestBytes` is that step, and it is the whole
+of it: parse, un-collapse, ingest.
+
+## Why the collapse has to be undone here
+
+`Cas.Json.parse` answers a NUMBER-NORMAL value — every nonnegative
+number spelled `Value.nat`, because that is the only reading a decimal
+run has (`Json.parse_sound`). The revision-1 representation spells one
+of its numbers `Value.int`: the literal under the key `"value"`. So the
+parsed value is not the representation's own spelling, and the strict
+decoder would refuse it.
+
+`deNumNorm` (`Cas.Schema.PayloadInj`) is exactly that reading, already
+proved to invert the collapse on the representation image of a
+well-formed code (`deNumNorm_numNorm_envelope`). It is a SCHEMA-plane
+fact — the key decides the constructor — which is why it belongs on
+this side of the door and not in the parser.
+
+## The refusal
+
+Bytes that are no canonical rendering at all are refused `notASchema`:
+the value plane could not spell them, so they are not a spelling of any
+code. The taxonomy is closed and mirrored on the TypeScript side
+(`CanonicalSchema.ts`); this door adds no name to it. -/
+
+/-- THE BYTES-IN DOOR: the canonical payload bytes of a revision-1
+schema node, read back to the code. Parse strictly, undo the number
+collapse the way the representation spells numbers, then run the
+existing door. -/
+def ingestBytes (s : String) : Except IngestRefusal Ast :=
+  match Json.parse s with
+  | some v => ingest (deNumNorm v)
+  | none => .error .notASchema
+
+/-- Soundness: the bytes door, like the value door, answers only
+well-formed codes. -/
+theorem ingestBytes_wf {s : String} {a : Ast} (h : ingestBytes s = .ok a) : a.WF := by
+  unfold ingestBytes at h
+  split at h
+  · exact ingest_wf h
+  · cases h
+
+/-- EXACTNESS on the canonical image, end to end: a well-formed code's
+own payload BYTES ingest to exactly that code's revision-1 normal form.
+The R15 read loop, closed at its first step. -/
+theorem ingestBytes_payload {a : Ast} (ha : a.WF) :
+    ingestBytes a.payload = .ok a.repNorm := by
+  unfold ingestBytes Ast.payload
+  rw [Json.parse_render (envelope_canonical a)]
+  show ingest (deNumNorm (Json.Value.numNorm a.envelope)) = _
+  rw [deNumNorm_numNorm_envelope ha]
+  exact ingest_envelope ha
+
+/-- Exactness on the nose, for the codes the revision-1 projection
+distinguishes. -/
+theorem ingestBytes_payload' {a : Ast} (ha : a.WF) (hn : a.RepNormal) :
+    ingestBytes a.payload = .ok a := by
+  rw [ingestBytes_payload ha, hn]
+
+/-! ### The bytes door, worked at elaboration -/
+
+-- The loop: a code's payload bytes go out and the code comes back.
+#guard (match ingestBytes optionOfString.payload with
+        | .ok a => a.payload == optionOfString.payload
+        | .error _ => false)
+
+#guard (match ingestBytes (Ast.lit (.int ⟨-7, by decide⟩)).payload with
+        | .ok a => a.payload == (Ast.lit (.int ⟨-7, by decide⟩)).payload
+        | .error _ => false)
+
+-- A NONNEGATIVE number literal is the arm the collapse would break:
+-- the parser answers `Value.nat 7` where the representation spells
+-- `Value.int 7`, and `deNumNorm` is what puts it back.
+#guard (match ingestBytes (Ast.lit (.int ⟨7, by decide⟩)).payload with
+        | .ok a => a.payload == (Ast.lit (.int ⟨7, by decide⟩)).payload
+        | .error _ => false)
+
+-- Bytes that are no canonical rendering die at the parser, by name.
+#guard (match ingestBytes "{\"revision\": 1}" with
+        | .error .notASchema => true
+        | _ => false)
+
+#guard (match ingestBytes "not json at all" with
+        | .error .notASchema => true
+        | _ => false)
+
+-- A canonical rendering that is not a schema node is refused by the
+-- door proper, not by the parser — same name, different reader.
+#guard (match ingestBytes "[]" with
         | .error .notASchema => true
         | _ => false)
 

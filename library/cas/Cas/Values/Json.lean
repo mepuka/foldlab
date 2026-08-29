@@ -170,9 +170,10 @@ The converse direction — bytes determine the canonical value, i.e.
 `renderPlain` is injective — is NOT here. It lives in
 `Cas.Values.JsonInj`, which states it (`RenderPlainInjective`),
 refutes its naive form (`renderPlain_not_injective`: `.nat n` and
-`.int n` share a spelling), discharges the escape half
-(`escapeCompact_inj`, `renderPlain_str_inj`), and leaves the rest as
-one named open obligation. -/
+`.int n` share a spelling), and discharges the escape half
+(`escapeCompact_inj`, `renderPlain_str_inj`); and in
+`Cas.Values.JsonParse`, which PROVES it (`renderPlain_injective`) from
+the strict parser's left-inverse property. -/
 
 mutual
 

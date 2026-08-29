@@ -10,8 +10,10 @@ schema plane's facades name "bytes determine the canonical value" — is
 that the rendering is *injective*: two canonical values with the same
 compact bytes are the same value.
 
-This module states that direction precisely, discharges what is true of
-it unconditionally, and refutes the naive form.
+This module states that direction precisely, refutes the naive form,
+and discharges the escape half. The direction ITSELF is proved in
+`Cas.Values.JsonParse`, from the strict parser: see
+`Json.renderPlain_injective`.
 
 ## The naive form is false
 
@@ -44,42 +46,44 @@ projection that makes one identification, the identification named as a
 function, and the law stated up to it with an on-the-nose corollary on
 the fixed points.
 
-## Named open obligation — `RenderPlainInjective` is UNPROVED
+## `RenderPlainInjective` is PROVED — in `Cas.Values.JsonParse`
 
-`RenderPlainInjective` is a `Prop`-valued definition, not an axiom and
-not a `sorry`: nothing in this module or downstream asserts it.
-Consumers take it as an explicit hypothesis, so the wiring above it is
-complete and the obligation is visible in every signature that depends
-on it.
+It stays a `Prop`-valued definition here, because that is the shape the
+schema plane's derivation was wired against and the wiring did not need
+to change. What changed is that `Json.renderPlain_injective` now
+inhabits it, so every law that took it as a hypothesis is unconditional
+(`Cas.Schema.PayloadInj`). "The node at this address IS this code" is a
+fact (survey blocker B7 closed, ruling 11 closed).
 
-What it needs, in three parts — the first is PROVED here, the other
-two are where it walls:
+The proof is the strict parser's left-inverse property, and nothing
+else: `parse (renderPlain v) = some v.numNorm` for every `v`, so two
+values with one rendering are handed to one parser call, which answers
+one value. The three sub-obligations this module named, and where each
+landed:
 
-1. **`escapeCompact` is injective — PROVED** (`escapeCompact_inj`, and
-   with it `renderPlain_str_inj`: the string arm of the rendering IS
-   injective). The escape alphabet is prefix-free, and the proof is by
-   the standard left-inverse route rather than by comparing codes
-   pairwise: `unescapeOne` reads one code off the front of an escaped
-   character list, `unescapeOne_escapeCharCompact` is its round trip
-   with an arbitrary tail, and injectivity follows by list induction.
-   This was the named likely wall; it is no longer one.
-2. `toString` is injective on `Nat` and on the negative `Int`s
-   (`Nat.repr` has no leading zeros). NOT proved: the toolchain ships
-   no injectivity lemma for `Nat.repr`, so this needs the
-   `Nat.toDigits`/`ofDigits` inverse spelled out — a digits-level
-   development, not a proof edit.
-3. The rendering is self-delimiting: `renderPlain v ++ r` determines
-   `v`. This is an LL(1) argument over the compact grammar and is the
-   real wall — `renderPlain` is not prefix-free on its own (`"1"` is a
-   prefix of `"12"`), so the induction has to carry the follow set,
-   which is the shape of a parser correctness proof. Ruling 11 (no
-   Lean-side JSON parser) is the same slice: with a parser `p` and
-   `p (renderPlain v) = some v` on canonical values, `RenderPlainInjective`
-   is three lines. Part 1 is exactly the string-token half of that
-   parser, so the slice starts with the digits and the follow set.
+1. **`escapeCompact` is injective — PROVED HERE** (`escapeCompact_inj`,
+   and with it `renderPlain_str_inj`). The escape alphabet is
+   prefix-free, and the proof is by the left-inverse route rather than
+   by comparing codes pairwise: `unescapeOne` reads one code off the
+   front of an escaped character list, `unescapeOne_escapeCharCompact`
+   is its round trip with an arbitrary tail, and injectivity follows by
+   list induction. This was the named likely wall; it was not one.
 
-Until it lands, "the node at this address IS this code" is a pin, not
-a fact (survey blocker B7).
+   One caveat the parser slice surfaced: `unescapeOne` is a left
+   inverse ON THE IMAGE, which is exactly what the lemma above claims
+   and LESS than a strict reader needs — it will also read `A` as
+   `A`, a spelling the encoder never emits. `JsonParse.unescapeCanon`
+   is the strict wrapper (read, re-encode, demand the same bytes).
+2. **`Nat.repr` is injective — PROVED** (`Digits.natRepr_inj`,
+   `Cas.Values.Digits`). The toolchain ships no such lemma, but Lean
+   4.33 ships the INVERSE — `Nat.ofDigitChars` with
+   `Nat.ofDigitChars_ten_toDigits` — which was the part that cost.
+3. **The rendering is self-delimiting — PROVED**
+   (`JsonParse.parseValue_renderChars`). It is a parser correctness
+   proof, as expected, and the follow set is `Digits.NoDigitStart`:
+   every position a value can occupy in a canonical rendering is
+   followed by `,`, `]`, `}`, or end of input, none of which is a
+   digit.
 -/
 
 namespace Cas.Json
@@ -393,15 +397,17 @@ theorem renderPlain_str_inj {s t : String}
   simp only [renderPlain, String.toList_append] at hl
   exact List.append_cancel_left (List.append_cancel_right hl)
 
-/-! ## The obligation -/
+/-! ## The direction, as a `Prop` -/
 
-/-- THE named open direction: the compact canonical rendering is
-injective on canonically spelled values, up to the number collapse.
+/-- THE direction: the compact canonical rendering is injective on
+canonically spelled values, up to the number collapse.
 
-This is a `Prop`, not an assertion. Nothing proves it here; consumers
-carry it as a hypothesis so that everything above it is wired and the
-dependency is visible in the signature. See the module docstring for
-the three sub-obligations and the wall. -/
+Kept as a `Prop` rather than folded into a theorem statement because
+that is the shape the schema plane was wired against.
+`Cas.Values.JsonParse.renderPlain_injective` inhabits it — and proves
+the stronger form with no canonicality premise
+(`JsonParse.renderPlain_inj`), so the premises here are slack the
+consumers happen to carry, not a restriction on the fact. -/
 def RenderPlainInjective : Prop :=
   ∀ v w : Value, v.Canonical → w.Canonical →
     renderPlain v = renderPlain w → v.numNorm = w.numNorm
