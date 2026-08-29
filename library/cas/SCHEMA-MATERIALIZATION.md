@@ -454,6 +454,33 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     still disagrees. Decide: report upstream, and/or stop admitting the
     empty struct. Sibling of item 13.
 
+21. **THE ANNOTATION-BAG DIVERGENCE** (found by the generated gate,
+    2026-08-29, `1eda46c5`): Effect's own `toJson` persists an
+    `annotations` bag on Declaration nodes (`Schema.Date` stores
+    `{"annotations":{"expected":"a valid Date"},…}`). Lean's exact
+    decoder would refuse all three adopted rows AS ACTUALLY STORED;
+    the hand gate admitted them by ignoring extras; the disagreement
+    corpus never caught it because corpus payloads are Lean-emitted —
+    a structural blind spot in the vector, now visible. The generated
+    interpreter keeps the tolerant reading (behavior preserved), keys
+    consumed as REQUIRED. RULING: does the estate store Effect's
+    annotation bag (grow the Lean decoder) or strip it at the door
+    (normalize step)? Recorded in `Cas/Backend/Admission.lean`'s
+    header.
+22. **`cas_run`'s manifest scope**: `RunParams` serves the
+    puts-with-answer-indices sub-fragment; the full `PProg` carries
+    literal-address operands and `load`. The projection and embedding
+    theorems are honest either way (`9c67511e`); whether the manifest
+    should GROW is the operator's. Manifest bytes untouched.
+23. **Route `EmitProg` through `PProg`**: triage found three spellings
+    of the program document, not two — the emitter lowers trees
+    straight to TypeScript and never builds a `PProg`. Routing it
+    through the table turns the surviving prose claim into a theorem
+    and collapses the third spelling. Its own slice.
+24. **Surface-ledger blind spot**: `surface/cas-surface.json` walks
+    the `Cas` library only — `Cas.Backend.*` is invisible to
+    retrieval-before-generation. One-line fix in `tools/Surface.lean`'s
+    import set when convenient.
 ## Defect register (found in passing, not part of the plan)
 
 - `Ingest.lean` is untracked, rev-0-only, unconsumed (fixed by Slice B).
