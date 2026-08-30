@@ -111,6 +111,34 @@ still functions and still looks good. The front end never has a
 data model of its own; it has collections and derivations over the
 store, rendered through the register handler above.
 
+THE PRODUCTIVE VIEW (operator, 2026-08-30): what you watch when you
+are productive in this app is the proof AND the plain-semantic
+explanation of your software project coming to fruition, together.
+"What's going on in my project?" — "It was just proven that your
+design protects X, according to this." That feedback loop —
+satisfying, reassuring, and grounded in the record rather than in
+status prose — is the product's core sensation. The pipeline
+(tickets → castles → attacks → closures, churning) is the thing the
+view renders.
+
+## The rule of context (operator, 2026-08-30)
+
+The estate should be able to MATERIALIZE CONTEXT for any agent, in
+any register — and skills are the first case: a skill is the
+agent-facing register of how this particular estate is operating,
+and it should be spat out the way the TypeScript surfaces are —
+derived from the estate's actual state, perfectly aligned with it,
+byte-gated against drift. Today's evidence: the backend-materialize
+skill was seven emitters stale and was fixed BY HAND — exactly the
+defect class the estate refuses everywhere else. The mechanical
+sections of a skill (emitter tables, gate lists, tool rows, law
+counts) are projections of ledgers the estate already emits
+(ENVIRONMENT.json, the surface/obligation/law indexes); generating
+them is consolidation, not a new carrier. The bootstrap ruling
+already names this: skill derivations from tools are emitted
+artifacts of the language-police lane. Speaking the language and
+having its skills ready become the same act.
+
 ## Pending considerations (recorded, not ruled)
 
 1. **Vendored math/CS libraries.** Under consideration: vendoring

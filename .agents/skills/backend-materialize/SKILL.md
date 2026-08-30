@@ -16,7 +16,14 @@ runs from `library/cas` unless noted.
 |---|---|---|
 | `lake exe vectors` | `vectors/*.json` (store words) | `--check` in `check:cas` |
 | `lake exe schemas` | `schemas/*.json` (schema payloads) | `--check` in `check:cas` |
+| `lake exe verdicts` | `conformance/schema-verdicts.json` (the cross-door verdict corpus) | `--check` in `check:cas` |
+| `lake exe admissionmap` | `conformance/admission-map.json` (per-node admission dispositions) | `--check` in `check:cas` |
+| `lake exe emitgate` | `SchemaAdmission.ts` in effects `src/cas/generated/` (the admission table the host enforces) | `--check` in `check:cas` |
 | `lake exe emitwire` | generated wire mirrors in effects `src/cas/generated/` | `--check` in `check:cas` |
+| `lake exe emitlayers` | `EmittedLayers.ts` in effects `test/generated/` | `--check` in `check:cas` |
+| `lake exe materialize` | the materialization fixtures | `--check` in `check:cas` |
+| `lake exe emitlift` | the lift manifest and rules | `--check` in `check:cas` |
+| `lake exe emitgrammar` | the grammar manifest and `REGISTRY.md` | `--check` in `check:cas` |
 | `lake exe emitprograms` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
 | `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) and `McpToolCodes.ts` in effects `src/cas/generated/` (the same rows as the typed table `bin/mcp/tools.ts` serves) | `--check` in `check:cas` |
 | `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
@@ -51,6 +58,19 @@ never an obstacle to bypass.
   emitting a module whose declared type is a lie. On the host side,
   only the CARRIER (the Effect Schema and the handler) is written by
   hand.
+
+## Theorem modules and the walk
+
+`tools/Walk.lean` hard-codes `libraryImports` — a new module is
+INVISIBLE to the surface, obligation, and law ledgers until its name
+is added there. Two devices keep theorem work from moving bytes and
+are both legitimate, disclosed in the packet: a module inside an
+existing glob (`Cas.Backend.*` rides `CasBackend`) or its own
+`[[lean_lib]]` in `defaultTargets` (`CasWp` is the precedent). Either
+way the promotion into the walk is a separate, deliberate act — the
+ledgers gaining the theorems is a diff someone reads, never a side
+effect. Contract packets live in `contracts/`, attack records in
+`contracts/attacks/<ticket>/`; both stay outside every lib target.
 
 ## Fragment and printer rules
 
