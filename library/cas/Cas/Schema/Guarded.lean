@@ -18,12 +18,36 @@ the names a code mentions at positions no `susp` guards, stopping dead
 at every `.susp`. So a cycle that passes through a guard contributes no
 edge at all, and a cycle that does not is exactly a cycle of `bareRefs`.
 
-Why the discipline is needed, in one sentence: resolving an unguarded
-cycle never terminates, and Effect's own codec does not refuse one —
+Why the discipline is needed: a cycle with no guard on it cannot be
+BUILT. Revival walks the code eagerly, so unfolding `A` to get `A`
+again yields no node — and Effect's own codec does not refuse one.
 `{"A":{"$ref":"B"},"B":{"$ref":"A"}}` reads back cleanly through
 `SchemaRepresentation.fromJson`, which the spelling probe pins
 (`library/effects/test/SchemaReferencesPin.test.ts`). The refusal is
 this door's to make or nobody's.
+
+## What this does NOT decide (break pass 2026-08-30, finding F2)
+
+CONSTRUCTIBILITY, not PRODUCTIVITY. `Ast.susp` is a DELAY, not a
+constructor: putting the recursive occurrence under one defers the
+loop, it does not break it. So a document can pass this door and still
+have no value at the end of it. Three witnesses, all `Guarded` and all
+admitted by both doors:
+
+- `{"A": susp (reference "A")}` — Effect's validator runs forever;
+- `{"A": susp (union [reference "A", null])}` — it overflows the stack;
+- `{"A": susp (reference "B"), "B": reference "A"}` — the same knot at
+  one remove, and the cycle really does pass through a `susp`.
+
+The control is `guardedList` below, which decodes in a millisecond on
+the same path — so the discipline is right about the shape Effect
+emits, and it is not a termination claim about forcing the result.
+Deciding productivity needs a second relation over HEAD positions —
+what a name reaches through `susp` wrappers alone, before any
+constructor builds anything — and `union` builds nothing either, so it
+is a ruling and not a line. It is owed, not claimed. The witnesses are
+`contracts/attacks/PDD-3/Attack.lean` §2 on branch
+`attack/opus-cc-mac/pdd-3`.
 
 ## What is proved
 
@@ -396,6 +420,332 @@ theorem references_guarded_decidable (d : Document) :
 decidable proposition is wanted without re-deriving the theorem. -/
 instance (d : Document) : Decidable d.Guarded :=
   decidable_of_iff _ (references_guarded_decidable d)
+
+/-! ## The walk the door runs — the same decision, each name once
+
+`Document.settles` above re-walks every path. On a table whose entries
+each name the next one twice, that is `Θ(2ⁿ)`: the break pass measured
+302 915 ms on an ACYCLIC 25-entry table whose payload is 7 657 bytes
+(`contracts/attacks/PDD-3/Attack.lean` §5, branch
+`attack/opus-cc-mac/pdd-3`). This is the ingestion door for foreign
+content, so the input is attacker-chosen.
+
+`settleAll` is the same decision with the memo the packet's `DECREASES`
+clause always described: it carries the names already known to settle
+and consults that list before descending, so a name is explored once
+however many paths reach it. The variant is `|dom(R)| - |visited|`, and
+it is now a fact about the code.
+
+The memo is FUEL-FREE on purpose. A name enters `seen` only after its
+whole subtree settled, so membership means "no bare path out of this
+name goes on forever" — a property of the table, not of the fuel that
+happened to be left when the walk got there. That is what makes a hit
+at one fuel sound at another. A name on a cycle never enters `seen`,
+because it is added only on the way back out. -/
+
+/-- The memoized walk. `seen` is the names already settled; `ns` is the
+work left. Answers the grown memo, or `none` when a bare path out of
+some name outruns the fuel. -/
+def Document.settleAll (d : Document) :
+    Nat → List String → List String → Option (List String)
+  | _, seen, [] => some seen
+  | 0, seen, n :: ns =>
+    if seen.contains n then d.settleAll 0 seen ns
+    else if (d.out n).isEmpty then d.settleAll 0 (n :: seen) ns
+    else none
+  | fuel + 1, seen, n :: ns =>
+    if seen.contains n then d.settleAll (fuel + 1) seen ns
+    else
+      match d.settleAll fuel seen (d.out n) with
+      | some s => d.settleAll (fuel + 1) (n :: s) ns
+      | none => none
+termination_by fuel _ ns => (fuel, ns.length)
+
+/-- THE CHECK THE DOOR RUNS: every table name settles, each explored
+once. Fuel is the table's own size, exactly as in `Document.guarded` —
+`guardedMemo_eq_guarded` is what says the memo changed the schedule and
+not the answer. -/
+def Document.guardedMemo (d : Document) : Bool :=
+  (d.settleAll d.references.length [] d.names).isSome
+
+/-! ### The memo agrees with the walk
+
+Three growth lemmas, an invariant, and a completeness lemma. The
+recursion is lexicographic — the fuel falls when the walk descends, the
+worklist shortens when it does not — so every proof below is strong
+induction on the fuel with an inner induction on the worklist,
+generalized over the memo. -/
+
+/-- Settling, as a fuel-free property: SOME fuel settles the name. This
+is the memo's invariant, and it is the reason a hit is sound at a fuel
+other than the one that filled it. -/
+def Document.Settling (d : Document) (n : String) : Prop :=
+  ∃ k, d.settles k n = true
+
+/-- One more step of fuel never unsettles a name. -/
+theorem Document.settles_succ {d : Document} :
+    ∀ (fuel : Nat) (n : String),
+      d.settles fuel n = true → d.settles (fuel + 1) n = true := by
+  intro fuel
+  induction fuel with
+  | zero =>
+    intro n hs
+    unfold Document.settles at hs ⊢
+    simp only [List.isEmpty_iff] at hs
+    simp [hs]
+  | succ f ih =>
+    intro n hs
+    unfold Document.settles at hs ⊢
+    exact List.all_eq_true.mpr fun m hm => ih m (List.all_eq_true.mp hs m hm)
+
+/-- And neither does any amount of it. -/
+theorem Document.settles_mono {d : Document} :
+    ∀ {f g : Nat} {n : String},
+      f ≤ g → d.settles f n = true → d.settles g n = true := by
+  intro f g
+  induction g with
+  | zero => intro n h hs; exact (Nat.le_zero.mp h) ▸ hs
+  | succ g ih =>
+    intro n h hs
+    rcases Nat.lt_or_ge f (g + 1) with hlt | hge
+    · exact d.settles_succ g n (ih (Nat.lt_succ_iff.mp hlt) hs)
+    · exact (Nat.le_antisymm h hge) ▸ hs
+
+/-- A finite list of settling names settles at ONE fuel — the largest of
+theirs. Needed because the memo's invariant is per name and the step
+that settles a parent needs one bound for all its children. -/
+theorem Document.settles_uniform {d : Document} :
+    ∀ (ms : List String), (∀ m ∈ ms, d.Settling m) →
+      ∃ k, ∀ m ∈ ms, d.settles k m = true
+  | [], _ => ⟨0, by simp⟩
+  | m :: ms, h => by
+    obtain ⟨k₁, hk₁⟩ := h m (List.mem_cons_self ..)
+    obtain ⟨k₂, hk₂⟩ :=
+      d.settles_uniform ms fun x hx => h x (List.mem_cons_of_mem _ hx)
+    refine ⟨max k₁ k₂, fun x hx => ?_⟩
+    rcases List.mem_cons.mp hx with rfl | hx'
+    · exact d.settles_mono (Nat.le_max_left _ _) hk₁
+    · exact d.settles_mono (Nat.le_max_right _ _) (hk₂ x hx')
+
+/-- A name whose bare successors all settle, settles. -/
+theorem Document.settling_of_out {d : Document} {n : String}
+    (h : ∀ m ∈ d.out n, d.Settling m) : d.Settling n := by
+  obtain ⟨k, hk⟩ := d.settles_uniform (d.out n) h
+  exact ⟨k + 1, List.all_eq_true.mpr fun m hm => hk m hm⟩
+
+/-- The memo only grows, and it covers the work it was given. Both
+halves at once, because the induction is the same one. -/
+theorem Document.settleAll_grows {d : Document} :
+    ∀ (fuel : Nat) (seen ns S : List String),
+      d.settleAll fuel seen ns = some S →
+        (∀ x ∈ seen, x ∈ S) ∧ (∀ n ∈ ns, n ∈ S) := by
+  intro fuel
+  induction fuel using Nat.strongRecOn with
+  | ind fuel ihf =>
+    intro seen ns
+    induction ns generalizing seen with
+    | nil =>
+      intro S h
+      simp only [Document.settleAll, Option.some.injEq] at h
+      subst h
+      exact ⟨fun _ hx => hx, by simp⟩
+    | cons n ns ihn =>
+      intro S h
+      match fuel with
+      | 0 =>
+        unfold Document.settleAll at h
+        split at h
+        · next hc =>
+          obtain ⟨hseen, hns⟩ := ihn seen S h
+          exact ⟨hseen, fun x hx =>
+            match List.mem_cons.mp hx with
+            | .inl he => he ▸ hseen n (List.mem_of_elem_eq_true hc)
+            | .inr hm => hns x hm⟩
+        · split at h
+          · obtain ⟨hseen, hns⟩ := ihn (n :: seen) S h
+            refine ⟨fun x hx => hseen x (List.mem_cons_of_mem _ hx), fun x hx => ?_⟩
+            rcases List.mem_cons.mp hx with rfl | hm
+            · exact hseen x (List.mem_cons_self ..)
+            · exact hns x hm
+          · exact absurd h (by simp)
+      | f + 1 =>
+        unfold Document.settleAll at h
+        split at h
+        · next hc =>
+          obtain ⟨hseen, hns⟩ := ihn seen S h
+          exact ⟨hseen, fun x hx =>
+            match List.mem_cons.mp hx with
+            | .inl he => he ▸ hseen n (List.mem_of_elem_eq_true hc)
+            | .inr hm => hns x hm⟩
+        · split at h
+          · next s hs =>
+            obtain ⟨hsub, _⟩ := ihf f (Nat.lt_succ_self f) seen (d.out n) s hs
+            obtain ⟨hseen, hns⟩ := ihn (n :: s) S h
+            refine ⟨fun x hx => hseen x (List.mem_cons_of_mem _ (hsub x hx)),
+              fun x hx => ?_⟩
+            rcases List.mem_cons.mp hx with rfl | hm
+            · exact hseen x (List.mem_cons_self ..)
+            · exact hns x hm
+          · exact absurd h (by simp)
+
+/-- THE MEMO'S INVARIANT: everything in it settles. Proved against the
+fuel-free `Settling`, which is what makes a hit at one fuel sound at
+another. -/
+theorem Document.settleAll_settling {d : Document} :
+    ∀ (fuel : Nat) (seen ns S : List String),
+      (∀ x ∈ seen, d.Settling x) →
+        d.settleAll fuel seen ns = some S → ∀ x ∈ S, d.Settling x := by
+  intro fuel
+  induction fuel using Nat.strongRecOn with
+  | ind fuel ihf =>
+    intro seen ns
+    induction ns generalizing seen with
+    | nil =>
+      intro S hinv h
+      simp only [Document.settleAll, Option.some.injEq] at h
+      subst h
+      exact hinv
+    | cons n ns ihn =>
+      intro S hinv h
+      match fuel with
+      | 0 =>
+        unfold Document.settleAll at h
+        split at h
+        · exact ihn seen S hinv h
+        · split at h
+          · next he =>
+            refine ihn (n :: seen) S (fun x hx => ?_) h
+            rcases List.mem_cons.mp hx with rfl | hm
+            · exact ⟨0, by unfold Document.settles; exact he⟩
+            · exact hinv x hm
+          · exact absurd h (by simp)
+      | f + 1 =>
+        unfold Document.settleAll at h
+        split at h
+        · exact ihn seen S hinv h
+        · split at h
+          · next s hs =>
+            have hsub := (d.settleAll_grows f seen (d.out n) s hs).2
+            have hsettling := ihf f (Nat.lt_succ_self f) seen (d.out n) s hinv hs
+            refine ihn (n :: s) S (fun x hx => ?_) h
+            rcases List.mem_cons.mp hx with rfl | hm
+            · exact d.settling_of_out fun m hm => hsettling m (hsub m hm)
+            · exact hsettling x hm
+          · exact absurd h (by simp)
+
+/-- COMPLETENESS OF THE MEMO: work that settles within the fuel is work
+the memoized walk finishes, whatever it has already seen. -/
+theorem Document.settleAll_isSome {d : Document} :
+    ∀ (fuel : Nat) (seen ns : List String),
+      (∀ n ∈ ns, d.settles fuel n = true) →
+        (d.settleAll fuel seen ns).isSome = true := by
+  intro fuel
+  induction fuel using Nat.strongRecOn with
+  | ind fuel ihf =>
+    intro seen ns
+    induction ns generalizing seen with
+    | nil => intro _; simp [Document.settleAll]
+    | cons n ns ihn =>
+      intro hall
+      have hn := hall n (List.mem_cons_self ..)
+      have hrest : ∀ m ∈ ns, d.settles fuel m = true :=
+        fun m hm => hall m (List.mem_cons_of_mem _ hm)
+      match fuel with
+      | 0 =>
+        unfold Document.settleAll
+        split
+        · exact ihn seen hrest
+        · unfold Document.settles at hn
+          simp only [hn, if_true]
+          exact ihn (n :: seen) hrest
+      | f + 1 =>
+        unfold Document.settleAll
+        split
+        · exact ihn seen hrest
+        · have hout : ∀ m ∈ d.out n, d.settles f m = true := by
+            unfold Document.settles at hn
+            exact fun m hm => List.all_eq_true.mp hn m hm
+          have := ihf f (Nat.lt_succ_self f) seen (d.out n) hout
+          cases hs : d.settleAll f seen (d.out n) with
+          | none => rw [hs] at this; exact absurd this (by simp)
+          | some s => exact ihn (n :: s) hrest
+
+/-- `references_guarded_decidable_memo` — THE C6 THEOREM over the
+procedure the door actually runs. The statement is
+`references_guarded_decidable`'s, verbatim: the memo changed the
+schedule and not the answer.
+
+SOUNDNESS is the invariant — everything the memo settled settles at
+some fuel, and a name on a cycle settles at none. COMPLETENESS is
+`settleAll_isSome` against the naive walk's own completeness, which is
+where the fuel bound `|table|` still earns its exact value. -/
+theorem references_guarded_decidable_memo (d : Document) :
+    d.guardedMemo = true ↔ d.Guarded := by
+  constructor
+  · intro hm
+    cases hS : d.settleAll d.references.length [] d.names with
+    | none => rw [Document.guardedMemo, hS] at hm; exact absurd hm (by simp)
+    | some S =>
+      have hcover := (d.settleAll_grows d.references.length [] d.names S hS).2
+      have hinv :=
+        d.settleAll_settling d.references.length [] d.names S (by simp) hS
+      rintro ⟨a, hcyc⟩
+      have hmem : a ∈ d.names := by
+        cases hcyc with
+        | edge he => exact d.mem_names_of_edge he
+        | step he _ => exact d.mem_names_of_edge he
+      obtain ⟨k, hk⟩ := hinv a (hcover a hmem)
+      rw [d.not_settles_of_cycle hcyc k] at hk
+      exact absurd hk (by simp)
+  · intro hG
+    have hg := (references_guarded_decidable d).mpr hG
+    unfold Document.guarded at hg
+    exact d.settleAll_isSome d.references.length [] d.names
+      fun n hn => List.all_eq_true.mp hg n hn
+
+/-- The memo changed the SCHEDULE and not the answer — two booleans
+deciding one proposition. -/
+theorem Document.guardedMemo_eq_guarded (d : Document) :
+    d.guardedMemo = d.guarded := by
+  cases hm : d.guardedMemo with
+  | true =>
+    cases hg : d.guarded with
+    | true => rfl
+    | false =>
+      exact absurd ((references_guarded_decidable d).mpr
+        ((references_guarded_decidable_memo d).mp hm)) (by simp [hg])
+  | false =>
+    cases hg : d.guarded with
+    | true =>
+      exact absurd ((references_guarded_decidable_memo d).mpr
+        ((references_guarded_decidable d).mp hg)) (by simp [hm])
+    | false => rfl
+
+/-! ### The cost witness
+
+The break pass's own blowup table, kept as a witness: `fanOutTable n`
+has `n+1` entries, each naming the next one TWICE. It is ACYCLIC, so
+the door walks the whole thing and then admits — which is why the
+naive walk's `Θ(2ⁿ)` is a door problem and not a refusal problem. The
+sizes below are past where the naive walk can go: at 25 entries it took
+302 915 ms, and every entry doubles it. -/
+
+/-- One fan entry: two fields, both naming the next name. -/
+def fanOut (i : Nat) : String × Ast :=
+  (s!"n{i}", .struct [("x", false, .reference s!"n{i + 1}"),
+                      ("y", false, .reference s!"n{i + 1}")])
+
+/-- `n + 1` entries, the last one a plain string, rooted at the first. -/
+def fanOutTable (n : Nat) : Document :=
+  { references := (List.range n).map fanOut ++ [(s!"n{n}", .str)],
+    representation := .reference "n0" }
+
+#guard (fanOutTable 30).references.length == 31
+#guard (fanOutTable 30).guardedMemo
+
+-- And the two agree at a size the naive walk can still be run at, so
+-- `guardedMemo_eq_guarded` is checked and not only proved.
+#guard (fanOutTable 8).guarded == (fanOutTable 8).guardedMemo
 
 /-! ## The document's projection
 

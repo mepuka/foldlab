@@ -1500,11 +1500,18 @@ def ofRepresentationRest : List Json.Value → Option (Option Ast)
 
 end
 
-/-- The document decoder: a single-root document with an EMPTY
-references table. A non-empty table is refused — revision 1's
-`references` is unreachable from the Lean side today (no `Suspend`, no
-`Reference` constructor), so admitting one would answer a code the
-projection cannot re-emit. -/
+/-- The document decoder, BARE-CODE arm: a single-root document with an
+EMPTY references table. A non-empty table is refused because this arm
+answers ONE CODE, and a code is not where a table lives — admitting one
+would answer a code the projection cannot re-emit.
+
+NARROWED by increment C6, alongside the identical sentence on
+`IngestRefusal.nonEmptyReferences`; the twin was left behind and the
+break pass caught it (2026-08-30, note N2). It used to read "revision
+1's `references` is unreachable from the Lean side today (no `Suspend`,
+no `Reference` constructor)", which stopped being true in the commit
+that added both constructors. `Document.ofRepresentationDocument`
+(`Cas/Schema/Guarded.lean`) is the arm that reads a table. -/
 def Ast.ofRepresentationDocument : Json.Value → Option Ast
   | .obj [("references", .obj []), ("representation", r)] =>
     Ast.ofRepresentationJson r

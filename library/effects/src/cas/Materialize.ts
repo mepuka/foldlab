@@ -117,6 +117,19 @@ export const fromPayload = (
   payload: Uint8Array,
 ): Effect.Effect<Materialized, ProjectionError, AddressScheme> =>
   Effect.gen(function* () {
+    // The one gate that has to see the BYTES: a references table naming
+    // one entry twice is two different documents once a parser has been
+    // at it, so it is refused by name before anything parses (PDD-3
+    // break-pass finding F1). Everything after this point takes a value
+    // that has already been read.
+    yield* Effect.try({
+      try: () => CanonicalSchema.admitPayloadSpelling(payload),
+      catch: (issue) =>
+        new ProjectionCodecFailure({
+          direction: "decode",
+          issue: String(issue),
+        }),
+    })
     const envelope = yield* decodedVersionedEnvelope(payload)
     // The gate AND revival, both inside the failure channel: the door
     // refuses by name (`CanonicalSchema.SchemaRefusal`) and never lets a

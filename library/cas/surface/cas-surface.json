@@ -8,14 +8,14 @@
     "IR": 137,
     "Lang": 305,
     "Lift": 77,
-    "Schema": 735,
-    "Values": 475,
+    "Schema": 755,
+    "Values": 478,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 255,
-    "Quot.sound": 434,
-    "propext": 604
+    "Classical.choice": 259,
+    "Quot.sound": 445,
+    "propext": 615
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -30,13 +30,13 @@
     "Cas.Lang.Status": 55,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 94,
-    "Cas.Schema.Ast": 371,
+    "Cas.Schema.Ast": 372,
     "Cas.Schema.Described": 48,
     "Cas.Schema.El": 42,
     "Cas.Word": 111
   },
-  "declarations": 2098,
-  "documented": 1085,
+  "declarations": 2122,
+  "documented": 1106,
   "library": "Cas",
   "modules": [
     {
@@ -11102,8 +11102,8 @@
       ]
     },
     {
-      "declarations": 50,
-      "documented": 42,
+      "declarations": 64,
+      "documented": 56,
       "module": "Cas.Schema.Guarded",
       "surface": [
         {
@@ -11151,6 +11151,13 @@
         {
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.Document.Settling",
+          "signature": "Cas.Schema.Document → String → Prop",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.Document.Walk",
           "signature": "Cas.Schema.Document → List String → Prop",
           "touches": ["Schema"]
@@ -11185,6 +11192,21 @@
           "kind": "def",
           "name": "Cas.Schema.Document.guarded",
           "signature": "Cas.Schema.Document → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.Document.guardedMemo",
+          "signature": "Cas.Schema.Document → Bool",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.guardedMemo_eq_guarded",
+          "signature": "∀ (d : Cas.Schema.Document), d.guardedMemo = d.guarded",
           "touches": ["Schema"]
         },
         {
@@ -11330,6 +11352,37 @@
         {
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.Document.settleAll",
+          "signature": "Cas.Schema.Document → Nat → List String → List String → Option (List String)",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settleAll_grows",
+          "signature": "∀ {d : Cas.Schema.Document} (fuel : Nat) (seen ns S : List String), d.settleAll fuel seen ns = some S → (∀ (x : String), x ∈ seen → x ∈ S) ∧ ∀ (n : String), n ∈ ns → n ∈ S",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settleAll_isSome",
+          "signature": "∀ {d : Cas.Schema.Document} (fuel : Nat) (seen ns : List String), (∀ (n : String), n ∈ ns → d.settles fuel n = true) → (d.settleAll fuel seen ns).isSome = true",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settleAll_settling",
+          "signature": "∀ {d : Cas.Schema.Document} (fuel : Nat) (seen ns S : List String), (∀ (x : String), x ∈ seen → d.Settling x) → d.settleAll fuel seen ns = some S → ∀ (x : String), x ∈ S → d.Settling x",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.Document.settles",
           "signature": "Cas.Schema.Document → Nat → String → Bool",
           "touches": ["Schema"]
@@ -11346,8 +11399,40 @@
           "axioms": ["Quot.sound", "propext"],
           "documented": true,
           "kind": "theorem",
+          "name": "Cas.Schema.Document.settles_mono",
+          "signature": "∀ {d : Cas.Schema.Document} {f g : Nat} {n : String}, f ≤ g → d.settles f n = true → d.settles g n = true",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
           "name": "Cas.Schema.Document.settles_step",
           "signature": "∀ {d : Cas.Schema.Document} {n m : String} {fuel : Nat}, d.Edge n m → d.settles fuel n = true → ∃ j, j < fuel ∧ d.settles j m = true",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settles_succ",
+          "signature": "∀ {d : Cas.Schema.Document} (fuel : Nat) (n : String), d.settles fuel n = true → d.settles (fuel + 1) n = true",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settles_uniform",
+          "signature": "∀ {d : Cas.Schema.Document} (ms : List String), (∀ (m : String), m ∈ ms → d.Settling m) → ∃ k, ∀ (m : String), m ∈ ms → d.settles k m = true",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.Document.settling_of_out",
+          "signature": "∀ {d : Cas.Schema.Document} {n : String}, (∀ (m : String), m ∈ d.out n → d.Settling m) → d.Settling n",
           "touches": ["Schema"]
         },
         {
@@ -11432,6 +11517,21 @@
           "touches": ["Schema"]
         },
         {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.fanOut",
+          "signature": "Nat → String × Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.fanOutTable",
+          "signature": "Nat → Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
           "documented": true,
           "kind": "instance",
           "name": "Cas.Schema.instDecidableGuarded",
@@ -11495,12 +11595,20 @@
           "name": "Cas.Schema.references_guarded_decidable",
           "signature": "∀ (d : Cas.Schema.Document), d.guarded = true ↔ d.Guarded",
           "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.references_guarded_decidable_memo",
+          "signature": "∀ (d : Cas.Schema.Document), d.guardedMemo = true ↔ d.Guarded",
+          "touches": ["Schema"]
         }
       ]
     },
     {
-      "declarations": 56,
-      "documented": 38,
+      "declarations": 66,
+      "documented": 45,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -11626,6 +11734,27 @@
         {
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.dupKeyRefFirst",
+          "signature": "Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.dupKeyRefLast",
+          "signature": "Cas.Json.Value",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.duplicateReferenceKey",
+          "signature": "Cas.Json.Value → Bool",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.guardedList",
           "signature": "Cas.Schema.Document",
           "touches": ["Schema"]
@@ -11637,6 +11766,12 @@
           "name": "Cas.Schema.guarded_list_admitted",
           "signature": "Cas.Schema.guardedList.Guarded",
           "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.hasRepeatedKey",
+          "signature": "List String → Bool"
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -11822,6 +11957,36 @@
           "touches": ["Schema"]
         },
         {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.refChain",
+          "signature": "Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.refChainTwo",
+          "signature": "Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.refChainTwo_guarded",
+          "signature": "Cas.Schema.refChainTwo.Guarded",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.refChain_guarded",
+          "signature": "Cas.Schema.refChain.Guarded",
+          "touches": ["Schema"]
+        },
+        {
           "axioms": ["propext"],
           "documented": true,
           "kind": "theorem",
@@ -11835,6 +12000,20 @@
           "kind": "theorem",
           "name": "Cas.Schema.unguarded_struct_cycle_refused",
           "signature": "¬Cas.Schema.bareStructCycle.Guarded",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.unsortedAndCyclic",
+          "signature": "Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Schema.unsortedOnly",
+          "signature": "Cas.Schema.Document",
           "touches": ["Schema"]
         },
         {
@@ -16490,10 +16669,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1146,
+    "def": 1159,
     "inductive": 52,
     "instance": 112,
     "structure": 70,
-    "theorem": 714
+    "theorem": 725
   }
 }
