@@ -14,23 +14,26 @@ PACKET     b3b76ed4  PDD-1: the contract packet — CANON-1's pair, stated
 ATTACK     contracts/attacks/PDD-1/Attack.lean
 ```
 
-## STATUS — pending fix
+## STATUS — **STANDS-AMENDED. Both holes CLOSED.**
 
-**HOLE-1 and HOLE-2 are owed a fix by the builder.** When the amended
-castle lands, `Attack.lean` is re-run against the amended laws and the
-result is recorded HERE.
+Re-run against the amended castle `f72ef300` on 2026-08-30. HOLE-1 and
+HOLE-2 are both closed with mechanical evidence; the PDD-1 loop is
+complete pending the operator's merge ruling. The attack record for the
+re-run is `AttackAmended.lean` beside this file; the closure summary is
+the **Re-run 2** section below.
 
-The mechanical close condition for HOLE-1 is precise: **§2 of
-`Attack.lean` must STOP ELABORATING.** A new key-preservation law added
-to the packet should make `canonBad`'s law analogues unprovable, and
-that elaboration failure IS the proof the hole closed — not a claim that
-it did. Do not delete §2 to make the file green; a green §2 after the
-amendment means the amendment did not bite.
+One correction to the close condition this file predicted. It said
+HOLE-1 would close when "§2 of `Attack.lean` STOPS ELABORATING". That
+prediction was WRONG, and the record keeps it rather than quietly
+fixing it: `Attack.lean` §2 still elaborates against `f72ef300`, and it
+should. Its analogues were proved against the ORIGINAL law set, which
+the amended set EXTENDS — extending a set cannot falsify a theorem
+about the old one. The real close condition is the one `AttackAmended.lean`
+discharges: `canonBad` must fail the NEW laws, which it does, and — the
+part construction alone could never give — NOTHING may satisfy the
+amended set except `canonServices` itself, which §7 proves outright.
 
-For HOLE-2 the close condition is a theorem whose SUBJECT is a stored
-`SystemNode` — guard-passing authored lists, not `canonServices`-applied
-arguments. `raw_terms_differ` stays either way: it is true of the
-carrier and will remain true.
+`Attack.lean` is unedited and stays the record against `74240903`.
 
 ---
 
@@ -220,8 +223,153 @@ Packet 7m14s before the theorems, disjoint file sets. The FRAME claim
 | — | **Pin drift (c):** is the pin vacuous? | Proved `drifted_pin_is_FALSE`: with a keeps-**FIRST** dedup the pin *statement* is false (`canonDrift [dA,dB] = [dA]` vs `[dB]`), so drift cannot elaborate → red build. The pin is load-bearing. |
 | — | **E2 premise plumbing:** a gap from guard to premise | None. `authoredServices` (`tools/EmitLayers.lean:216-224`) covers every arm carrying a `List ServiceRef` — `.backing`/`.opaque` both lists, `.service` its single `requires` (its `provides` is a scalar `ServiceRef`, needs none); the four edge arms carry no services. Guard ⇒ `isCanonServices` ⇒ `nodup_keys_of_isCanonServices` ⇒ E2's premise. Chain complete. |
 
+---
+
+# Re-run 2 — against the amended castle `f72ef300`
+
+```
+DATE       2026-08-30
+CASTLE     f72ef300  PDD-1: preservation, and the corollary restated at
+                     the term the store holds
+PACKET     f1d04a68  packet amended — the breaker's two adequacy rows
+LEDGER     cdb1e75a  ledger FIXED-BY rows point at the landed fix
+ATTACK     contracts/attacks/PDD-1/AttackAmended.lean
+VERDICT    STANDS-AMENDED — HOLE-1 CLOSED, HOLE-2 CLOSED
+```
+
+## HOLE-1 — **CLOSED**, by proof rather than by search
+
+Three levels of evidence, weakest to strongest.
+
+**1. The named discrimination.** `canonBad` — the discarding
+canonicalizer that satisfied every law of the original packet — fails
+three of the four new preservation laws, kernel-checked:
+`canonBad_violates_preserve_keys` (loses the key `"b"` from
+`[s1, s2]`), `canonBad_violates_preserve_exact` (length changes, so it
+is not a reordering), `canonBad_violates_last_wins` (keeps the first
+occurrence of a repeated key).
+
+**2. A precision finding inside the closure.** `canonBad` SATISFIES
+`mem_of_mem_canonServices`'s analogue — `canonBad_satisfies_preserve_elements`.
+"Nothing is fabricated" is therefore NOT the law that closes HOLE-1; a
+packet that had added only PRESERVE-elements would have left the hole
+open. Key preservation and PRESERVE-exact are the ones that bite.
+
+**3. Categoricity — the part construction can never supply.**
+`amended_laws_are_categorical` proves that any `f` satisfying four of
+the amended laws (distinct keys, sorted by key, key preservation,
+last-wins) IS `canonServices`, for every input. There is no
+wrong-but-passing implementation because there is no other
+implementation at all. The adequacy obligation is discharged by
+uniqueness. Axioms: `[propext, Classical.choice, Quot.sound]`.
+
+Two further probes, both landing in the builder's favour:
+
+- **Injection is excluded.** The dispatch asked whether any law now
+  excludes fabrication rather than only loss. Two do:
+  `canonInject_violates_preserve_elements` and
+  `canonInject_violates_preserve_keys`. That `mem_keys_canonServices`
+  is an **iff** rather than an implication is load-bearing, and the
+  second theorem is the witness for the half a one-directional
+  statement would have lost.
+- **Wrong survivor is excluded, by exactly one law.** `canonFirst`
+  (first occurrence wins) loses no key, fabricates nothing, lands Nodup
+  and sorted — it satisfies PRESERVE-keys and PRESERVE-elements
+  (`canonFirst_satisfies_preserve_keys`,
+  `canonFirst_satisfies_preserve_elements`) and dies only on
+  `canonFirst_violates_last_wins`. `canonServices_last_wins` is not
+  decoration: delete it and a canonicalizer that picks the wrong
+  survivor passes the packet, which is a different address for the same
+  authored set.
+
+## HOLE-2 — **CLOSED**
+
+`systemNode_authored_stable`'s subject is the RAW stored term. Read off
+the elaborated type, not the prose:
+
+```
+@systemNode_authored_stable : ∀ {mk : List ServiceRef → List ServiceRef → SystemNode}
+  {p p' r r' : List ServiceRef},
+  isCanonServices p = true → isCanonServices p' = true →
+    isCanonServices r = true → isCanonServices r' = true →
+      p.Perm p' → r.Perm r' → mk p r = mk p' r'
+```
+
+No `canonServices` in subject position; the hypotheses are the door's
+own guard. The bridge `eq_of_isCanonServices_of_perm` carries exactly
+the guard plus a permutation and concludes `xs = ys`, which is the
+"exactly one spelling per key-Nodup set passes the door" fact my F10
+measured (1 of 6) now stated as a theorem.
+
+**Plumbing verified, not assumed.** `door_discharges_authored_stable`
+and `door_discharges_authored_term` take the guard in the shape the door
+actually spells it — `[p, r].all isCanonServices = true`, matching
+`authoredServices` at `tools/EmitLayers.lean:216-237` — and land the
+stored-term equality and its address image. The chain from the
+elaboration-time `#guard` to the theorem has no missing link.
+
+`raw_terms_differ` (in `Attack.lean`) remains true and remains in the
+record: the carrier is still order-sensitive. What changed is that the
+guard's role is now stated as a theorem instead of left to prose.
+
+## NOTE-3 — answered as claim-scope
+
+The builder answered the `Option Addr32` observation with a claim-scope
+paragraph on `systemAddressOf_authored_stable` rather than an `isSome`
+theorem, and named what an `isSome` proof would cost (a totality theorem
+for `Schema.putNode` at the system code, which this lane does not have).
+Accepted: the term-equality theorem carries the claim, and the address
+equation is its image. NOTE-4 and NOTE-5 are unchanged and were not
+findings against the proof.
+
+## New findings from re-run 2
+
+**NOTE-6 — the amended set is adequate but not minimal.** Categoricity
+needs only four laws; `mem_of_mem_canonServices` and
+`canonServices_perm_of_nodup_keys` are not among its hypotheses and are
+therefore consequences. This is not a defect — they earn their place as
+directly usable client facts rather than as adequacy load — but the
+packet should not be read as though all six preservation-side laws are
+independently load-bearing for adequacy.
+
+**NOTE-7 — no single law carries the set.** `last_wins_alone_is_weak`
+shows `canonServices_last_wins` is vacuously satisfied by the
+canonicalizer that returns nothing. Every law is load-bearing only as
+part of the conjunction, which is what makes categoricity the right
+form of the closure argument.
+
+No BREAK. No new HOLE.
+
+## Gates re-run at `f72ef300`, verbatim
+
+```
+$ lake --wfail build Cas CasBackend CasExamples
+✔ [91/92] Built Cas.Backend.Canon (2.0s)
+Build completed successfully (92 jobs).
+
+$ lake exe emitlayers --check
+ok ../effects/test/generated/EmittedLayers.ts (7758 bytes) — 13 layers
+```
+
+All sixteen public theorems print `[propext, Classical.choice,
+Quot.sound]`. No `sorryAx`, no `ofReduceBool`.
+
+## Failed attempts, re-run 2
+
+| # | Attempt | Result |
+|---|---|---|
+| G1 | Does `canonBad` survive any new law? | Yes — PRESERVE-elements. Recorded as the precision finding above, not a defect. |
+| G2 | Injection: a canonicalizer that keeps everything and fabricates one extra | Excluded twice over (PRESERVE-elements, PRESERVE-keys-iff) |
+| G3 | Wrong survivor: first-occurrence-wins, otherwise perfect | Excluded by `canonServices_last_wins` alone |
+| G4 | Any function at all satisfying the four laws but differing from `canonServices` | **Impossible** — `amended_laws_are_categorical` |
+| G5 | Is `systemNode_authored_stable` secretly over the canonicalized image? | No — subject is `mk p r`, verified on the elaborated type |
+| G6 | Are `eq_of_isCanonServices_of_perm`'s premises stronger than the door's guard? | No — exactly `isCanonServices` on both lists plus the permutation |
+| G7 | Is there a gap between the door's `.all isCanonServices` shape and the theorem's four separate guards? | No — `door_discharges_authored_stable` closes it |
+| G8 | Does `Attack.lean` §2 stop elaborating, as this file predicted? | No, and it should not — the prediction was wrong; see STATUS |
+
 ## Re-run log
 
 | Date | Against | Outcome |
 |---|---|---|
 | 2026-08-30 | `74240903` (original castle) | STANDS — HOLE-1, HOLE-2 open; `Attack.lean` elaborates clean, all `#guard`s green |
+| 2026-08-30 | `f72ef300` (amended castle) | **STANDS-AMENDED** — HOLE-1 CLOSED (categoricity), HOLE-2 CLOSED (stored-term subject + door plumbing); NOTE-6, NOTE-7 raised; no BREAK, no new HOLE |
