@@ -154,3 +154,29 @@ with SPECS rows per the maintenance law.
   + manifest row, never loadable code; 11 ruling asks in its §6 for
   the next docket. Nit routed to daemon pass: SERVING.md "five
   tools" vs six in cas-tools.json.
+
+## Codex recovery packet — reconciled (packet baseline 3ffb5f56 = 4
+## commits behind my resume tip; its "no auth audit / truncated docs"
+## items are STALE — already landed). Two real discoveries I missed:
+- GATEKEEPER WORK NOT RESCUED: dd54bc5f captured only R5 (2 files). The
+  locked worktree agent-a1997956e8eab5080 (pid 4945 alive) holds 17
+  files / 487 ins with unique theorems NOT on main (progAddr_inj,
+  lineAddr_inj/sep, decodeProgAt_encodeProg, payload_eq..., working-tag
+  rows). PRESERVED durably as branch gatekeeper/salvage-preserve
+  (8ab98f15) + scratch patch. HOLD: this IS proof-grill C/D — Lane D of
+  the plan must NOT re-commission it; salvage-split + hard-review owed.
+  PROPOSED-LOGIC "LANDED" marks in that WIP are FALSE.
+- BRAIN STEM CARRIER MISMATCH (current main): Programs.ts:524
+  word.push(answered) unconditional — duplicates appended; Lean runP
+  does not. RunOutcome.word is a put-answer trace, cannot carry a
+  nonempty starting Word. Plus unchecked public Program carrier
+  (bounded() upper-bound only; programAddress skips it; -1→4294967295,
+  257→1). OWED OPERATOR RULING: final Word / fresh-admission delta /
+  put-answer trace. Blocks any Word-refinement claim.
+- DAEMON forged-Host bypass sharper than auth A2: wide bind + client
+  Host: localhost reached unauth read/write/publish. Route to daemon pass.
+## PLAN HARD REVIEW done (CORE-ABSTRACTIONS-PLAN-REVIEW.md, COMMIT-WITH-
+## AMENDMENTS, 22 mechanical): verified all four §1 discharge claims in
+## code — no ratified work un-landed. Confirms 31(b)/(d) absent (A3-A6).
+## Did NOT know of the Gatekeeper WIP — add Lane-D-already-exists as a
+## blocker amendment before the plan is committed.
