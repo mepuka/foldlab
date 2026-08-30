@@ -1,3 +1,77 @@
+# CI TRUTH. This workflow runs the estate's real discipline on a fresh
+# clone: `mise run check:ci` — which is `gen:ci` (every emitter FORCED),
+# `git diff --exit-code`, then the whole check chain with every task
+# forced. It never runs `mise run check`: the local chain may skip a
+# fresh task, and a fresh clone's mtimes make that skip systematically
+# wrong (see the measured refutation above [tasks."check:ci"] in
+# mise.toml — path-ordered checkout mtimes leave most tasks "fresh" on
+# arrival).
+#
+# WHAT THE CHAIN DOES NOT INSTALL FOR ITSELF: three gen tasks shell
+# straight into bun packages (gen:inventory, gen:effects-materialize /
+# gen:effects:research, gen:ledger) and their `bun install` lives in
+# LATER check tasks — so on a fresh runner the gen chain dies before
+# any install runs (probed against real pushes). The install prelude
+# below materializes those three trees from their committed lockfiles
+# first. It lives here and not in mise.toml because the task graph is
+# byte-gated as data (gen:env-ledger); host preparation is this
+# workflow's job.
+#
+# SKIP-LIST AUTHORITY: docs/lab-core/ENVIRONMENT.json. Its residence
+# column and excludedGates array are emitted and byte-gated
+# (gen:env-ledger), so what CI runs is checkable against them rather
+# than maintained by hand here. Precisely: CI attempts NO host-local
+# task (check:extract-twin, check:extract-oxc, gen:oxc-surface —
+# inputs gitignored with no bootstrap, or fetched unpinned), and the
+# PORTABLE tasks CI does not run are exactly the portable members of
+# excludedGates, each excluded with its own stated reason (the three
+# frozen archive tasks; check:lift-roundtrip, whose lockfile does not
+# resolve under bun 1.4.0 — see its task description). Nothing inside
+# the chain is skipped: check:ci forces every task it names.
+#
+# JOB STRUCTURE, and the tradeoff stated honestly: the full chain
+# builds six Lake projects and force-regenerates every emitter — tens
+# of minutes even warm-cached, hours across three OSes. So:
+#   - effects-ts   every PR and push: the TypeScript package gate alone
+#                  (mise run check:effects:ts) — minutes, no Lean.
+#   - check        every PR and push to main: the FULL check:ci, on
+#                  ubuntu. The gate is not thinned — every PR runs the
+#                  complete portable chain once.
+#   - check (matrix) pushes to main and manual dispatch additionally
+#                  run macOS and Windows, because the estate's primary
+#                  dev host is a PowerShell PC and the Mac is the
+#                  coordinator: cross-OS truth is asserted where it
+#                  matters (what lands on main), not on every PR
+#                  round-trip.
+#
+# KNOWN RED, DAY ONE, stated rather than masked: `bun run typecheck`
+# in library/effects exits 1 on one warning-severity diagnostic the
+# patched tsgo treats as failing — effect(multipleEffectProvide) at
+# bin/cli/commands.ts:401, a CLI-lane file (the two test-file siblings
+# of that warning are fixed on this branch). The fix is routed to the
+# CLI seat (session chip task_8e80f1a7); effects-ts and check go green
+# when that lands. The diagnostic is deliberately NOT silenced.
+#
+# TOOLCHAIN PINS: bun and node come from mise.toml's [tools] (exact
+# versions, installed by mise-action). mise itself is pinned below.
+# Lean pins per Lake project through each lean-toolchain file; elan is
+# installed by lean-action (an admitted tool — docs/lab-core/TOOLS.md,
+# "lean-action v1"), and every `lake` invocation resolves the committed
+# per-project pin.
+#
+# CACHING — one mechanism, stated: actions/cache owns ALL Lean caching
+# (~/.elan keyed on the toolchain pins; every .lake tree keyed on
+# pins + lakefiles). lean-action's own cache is turned OFF
+# (use-github-cache: false) so the same trees are not cached twice
+# under two keys. Keys are EXACT — no bare `lake-${os}-` fallback,
+# because restoring a build tree from a different toolchain poisons
+# oleans; and no per-sha key suffix, because a ~GB save per push
+# thrashes the 10GB budget and evicts itself (probed). The cost of
+# exact keys: within one toolchain epoch the cache content is frozen
+# at the epoch's first save and later runs rebuild the drift
+# incrementally; a lean-toolchain or lakefile change starts a fresh
+# epoch with one cold build.
+
 name: check
 
 on:
@@ -6,24 +80,94 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  MISE_VERSION: 2026.8.12
+
 jobs:
+  # The fast lane: the effects package's own gate (frozen install,
+  # lint, typecheck, tests, build, consumer smoke). A subset of
+  # check:ci, re-run here for minutes-scale feedback; the full job
+  # below remains the authority. RED until the commands.ts:401 fix
+  # lands (see the KNOWN RED note above).
+  effects-ts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          version: ${{ env.MISE_VERSION }}
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: mise run --force check:effects:ts
+
   check:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+
+      # elan + the toolchain for the canonical Lake package. Caching is
+      # OFF here on purpose — actions/cache below is the one mechanism.
       - uses: leanprover/lean-action@v1
         with:
           auto-config: false
+          use-github-cache: false
           lake-package-directory: formal/fips202
-      # lean-action installs elan but exports a POSIX-style PATH entry that Windows
-      # task shells cannot resolve; re-export it in Windows form for later steps.
+      # lean-action installs elan but exports a POSIX-style PATH entry
+      # that Windows task shells cannot resolve; re-export it in
+      # Windows form for later steps.
       - name: Put elan on PATH for Windows shells
         if: runner.os == 'Windows'
         shell: pwsh
         run: Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.elan\bin"
+
       - uses: jdx/mise-action@v2
-      - run: mise run check
+        with:
+          version: ${{ env.MISE_VERSION }}
+
+      # Exact-key caches only — see the CACHING note in the header for
+      # why there is no sha suffix and no bare fallback. All three are
+      # gitignored trees, so `git diff --exit-code` inside check:ci is
+      # untouched by restoring them.
+      - name: Cache elan toolchains
+        uses: actions/cache@v4
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ hashFiles('**/lean-toolchain') }}
+      - name: Cache Lake build trees
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/.lake
+          key: lake-${{ runner.os }}-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      # The install prelude: the three package trees the gen chain
+      # reads before any check task would have installed them (see the
+      # header). Frozen lockfiles — this prepares hosts, it resolves
+      # nothing new.
+      - name: Install the gen chain's package dependencies
+        run: |
+          bun install --frozen-lockfile --cwd experiments/entity-store-extract
+          bun install --frozen-lockfile --cwd experiments/entity-store-ledger
+          bun install --frozen-lockfile --cwd library/effects
+
+      - run: mise run check:ci

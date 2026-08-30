@@ -194,13 +194,17 @@ const probe = (
       }
     }
 
+    // One provide over one composed layer (not a provide chain): each
+    // later layer feeds everything before it, outputs merged — the
+    // same resolution order the former chain had, with one lifecycle.
     const server = yield* Effect.forkChild(
       Effect.never.pipe(
-        Effect.provide(layerServeStdio(options.limits)),
-        Effect.provide(layerCasAt(options.store, "sqlite")),
-        Effect.provide(layerStdio),
-        Effect.provide(layerCapture),
-        Effect.provide(layerDiskFs),
+        Effect.provide(layerServeStdio(options.limits).pipe(
+          Layer.provideMerge(layerCasAt(options.store, "sqlite")),
+          Layer.provideMerge(layerStdio),
+          Layer.provideMerge(layerCapture),
+          Layer.provideMerge(layerDiskFs),
+        )),
       ),
     )
     const beside = options.alongside === undefined

@@ -71,13 +71,14 @@ const session = (requests: ReadonlyArray<unknown>) =>
         .filter((line) => line.length > 0)
         .map((line) => JSON.parse(line) as JsonRpcFrame)
 
+    // One provide over one composed layer (not a provide chain):
+    // layerStdio feeds the host, both outputs exposed, one lifecycle.
     const server = yield* Effect.forkChild(
       Effect.never.pipe(
         Effect.provide(layerServeStdio({
           maxNodeBytes: defaultServePolicy.maxNodeBytes,
           maxInFlight: defaultServePolicy.maxInFlight,
-        })),
-        Effect.provide(layerStdio),
+        }).pipe(Layer.provideMerge(layerStdio))),
       ),
     )
 

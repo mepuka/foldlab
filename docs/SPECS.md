@@ -39,6 +39,8 @@ deleted.
 | [library/effects/BACKEND.md](../library/effects/BACKEND.md) | store backends | The backend seam law (ByteReader/ByteWriter/RootStore; invariants above the seam) |
 | [library/cas/REGISTRY.md](../library/cas/REGISTRY.md) | kind registry | GENERATED human registry (projection of Cas.Grammar.manifestV0; byte-gated) |
 | [library/cas/UNION-DESIGN.md](../library/cas/UNION-DESIGN.md) | union semantics | The ratified union design (order is identity; mode is identity) |
+| [library/effects/PACKAGING.md](../library/effects/PACKAGING.md) | distribution | Operating record of implemented, gated state (2026-08-29, decision 26 seat 2): publish-capable-not-published posture, the exhaustive flip list, the effectProvenance field, the repo+bun+mise bar implemented, the Windows honesty list (T7 retired `a5fb51a9`, not rebuilt) |
+| [library/effects/RELEASING.md](../library/effects/RELEASING.md) | releases | Operating procedure (2026-08-29): the seven-step gate sequence a release runs, check:ci-on-fresh-clone as the floor; steps 6–7 fire only on operator order |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 

@@ -5,15 +5,15 @@
     "": {
       "name": "@foldlab/effect-replay",
       "dependencies": {
+        "@effect/platform-bun": "4.0.0-rc.112",
         "@effect/sql-sqlite-bun": "4.0.0-rc.112",
         "effect": "4.0.0-rc.112",
       },
       "devDependencies": {
-        "@effect/platform-bun": "4.0.0-rc.112",
         "@effect/tsgo": "0.38.0",
         "@effect/vitest": "4.0.0-rc.112",
         "@types/bun": "1.4.0",
-        "effect-oxlint": "0.3.3",
+        "effect-oxlint": "0.3.4",
         "oxlint": "1.80.0",
         "oxlint-plugin-effect": "0.11.0",
         "oxlint-tsgolint": "7.0.2001",
@@ -227,7 +227,7 @@
 
     "effect": ["effect@4.0.0-rc.112", "", { "dependencies": { "fast-check": "^4.9.0", "msgpackr": "^2.0.5" } }, "sha512-wXxwuh1Ywnv4cPRM3Wfa0vDwuOHnZ1TsTgHJkG9XgzND6inhBH9n1vBxhg3iIXOia/OrpmvVmd3lrD4vq6bF3A=="],
 
-    "effect-oxlint": ["effect-oxlint@0.3.3", "", { "dependencies": { "@oxlint/plugins": "^1.66.0" }, "peerDependencies": { "effect": "^4.0.0-beta.100" } }, "sha512-J1+0nr0S4mOkPq54Lj2jNpq2iu9UKB+ChhxfT9HANKHKiQaOqjycZqaq8iiZHRGqT36Ir+Lv02LoVLsuA+NfGA=="],
+    "effect-oxlint": ["effect-oxlint@0.3.4", "", { "dependencies": { "@oxlint/plugins": "^1.80.0" }, "peerDependencies": { "effect": "^4.0.0-rc.112" } }, "sha512-VaI72NhDI+OBk8rkWBxR3D+k8iQN5KX4caiTRtWR/KDlif4KdxmjPelQqflwwprxkGldEpLry9fQvvzlBWY6bA=="],
 
     "es-module-lexer": ["es-module-lexer@2.3.2", "", {}, "sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw=="],
 
