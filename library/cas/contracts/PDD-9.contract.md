@@ -265,6 +265,34 @@ LAW R      THE RUN'S MEANING (L231 as a triple; PDD-2's vocabulary).
            sublist of `flatten`, appended — the frame), STORE (exactly
            `flatten`'s projection). Refusal is excluded by `.done`;
            divergence is excluded by the carrier (`runP_halts`).
+
+           WHICH THEOREM CARRIES WHICH AXIS. AMENDMENT, breaker hand
+           (NOTE-2, `contracts/attacks/PDD-9/RESULTS.md`): the first
+           draft of this block said "LAW R carries all three" without
+           saying of which theorem, and a reader took it of all four.
+           It is true of `treeProg_run` and `treeProg_two_state`, whose
+           postconditions carry ANSWER, GROWTH and STORE together. It
+           is NOT true of `treeProg_Triple`, whose postcondition is
+           `fun a w' => a = tr.address H ∧ Word.wf w' = true ∧
+           Honest H w'` — ANSWER plus two invariants, and no frame.
+           The `Triple` form's job is the one the other two cannot
+           state: REFUSAL EXCLUSION at a precondition, in PDD-2's
+           anchor, where `P ≤ wp p Q` is the whole content.
+
+           The breaker's witness for the gap is `paddedShared`
+           (`Attack.lean` §8): a table whose run answers
+           `blobSharedChunk.address`, ends admissible and honest, and
+           writes a binding that is not in `blobSharedChunk.flatten` at
+           all. `treeProg_Triple` does not exclude it; LAW F and
+           `treeProg_two_state` do.
+
+           The Triple is NOT strengthened, and the reason is stated
+           rather than left to inference: GROWTH and STORE are
+           two-state facts about `w₀` and `w'`, and `Triple`'s
+           postcondition sees only `w'`. Writing them into a
+           single-state postcondition is not a cheap strengthening —
+           it is the two-state triple, which is `treeProg_two_state`
+           and already exists.
 FALSIFIER  exhibit an injective `H`, a term `tr` and an admissible
            honest `w` such that `runP H (treeProg tr) w` refuses, or
            answers other than `tr.address H`, or leaves a final word
@@ -273,9 +301,12 @@ FALSIFIER  exhibit an injective `H`, a term `tr` and an admissible
            named falsifier ("a table whose run answers differently than
            the term's meaning").
 BATTERY    library/cas/Cas/Backend/TreeProgCorrect.lean —
-           `treeProg_run`, `treeProg_run_empty`, `treeProg_Triple`,
-           and `treeProg_two_state` (the two-state form, through
-           PDD-2's `Triple_two_state_rel`).
+           `treeProg_run` and `treeProg_two_state` (all three axes;
+           the latter is the two-state form through PDD-2's
+           `Triple_two_state_rel`), `treeProg_run_empty` (the
+           corollary the executed consequence runs), and
+           `treeProg_Triple` (refusal exclusion at a precondition,
+           ANSWER and the two invariants — not the frame).
 ```
 
 ```
@@ -284,19 +315,52 @@ LAW X      THE EXECUTED CONSEQUENCE (L127). `runP` acquires one, on a
            admits:
 
              #guard  — kernel-decided, at a toy address function, on
-                       the shared-subterm witness: the run is DONE, the
-                       answer is the term's `Tree.address`, the final
-                       word is the DEDUPLICATED word (one binding
-                       shorter than `flatten`), and it is a `Sublist` of
-                       `flatten`.
+                       four terms including the shared-subterm witness
+                       and the registry's deepest term: the run is
+                       DONE, the answer is the term's `Tree.address`,
+                       and the final word is the DEDUPLICATED word.
              #eval   — a build-time IO assert at the production digest
-                       `Cas.sha256Addr`, over the registered terms of
-                       `Cas/Vectors/Registry.lean` that the seven
-                       generated programs are lowered from
-                       (`tools/EmitPrograms.lean:45-60`): each term's
+                       `Cas.sha256Addr`, over ALL SEVEN registered
+                       terms of `Cas/Vectors/Registry.lean` that the
+                       seven generated programs are lowered from
+                       (`tools/EmitPrograms.lean:45-70`): each term's
                        `runP H (treeProg tr) []` is computed and
                        compared, binding for binding, against the word
                        and the address the GRAMMAR determines.
+
+           COVERAGE, counted rather than asserted. AMENDMENT, breaker
+           hand (HOLE-1, `contracts/attacks/PDD-9/RESULTS.md`): the
+           first draft of this block said "the registered terms … each
+           term" while `Executed.check` ran FIVE of the seven, and the
+           build line printed on every `lake build` said "the
+           registered programs". `journalTwoEntries` and
+           `schemaVectorDocument` were run nowhere, at either digest,
+           so `.genesis`, `.entry` and `.schema` — three of the
+           grammar's ten clauses, including the constructor with the
+           two-child offset arithmetic and the longest reference chain
+           the registry has — had NO executed consequence. This block
+           and §claim-scope contradicted each other and §claim-scope
+           was the honest half.
+
+           Closed the strong way rather than by narrowing the claim:
+           both runs are added, so all seven registered programs and
+           all ten grammar clauses acquire an executed consequence, and
+           the printed line means what it says. The breaker had already
+           computed both and both PASS (`Attack.lean` §3), so this was
+           a coverage claim to correct and never a defect to fix.
+
+           THE EXPECTED WORD IS NOW A FUNCTION OF THE TERM.
+           AMENDMENT, adopting the breaker's oracle with credit
+           (`Attack.lean` §2, `expected H tr := (flatten H tr).eraseDups`
+           — branch `attack/opus-cc-mac/pdd-9`, commit `e2703228`): the
+           run's word is `flatten` with LATER duplicates dropped, which
+           the term determines. The first draft named it by a
+           hand-chosen `eraseIdx 2` on one witness, which does not
+           generalize to a corpus. The hand-written index is KEPT as a
+           `#guard` pinning the oracle against it on that witness —
+           both because it is the sharper statement there (it pins
+           WHICH occurrence drops) and because the Controls transcript
+           below quotes its failure message character for character.
 
            The two halves are the same verdict at two digests, which is
            PDD-2's battery pattern (`Wp.lean:880-903`) and this lane's
@@ -337,8 +401,32 @@ implementation passes? Three adversarial candidates, and what kills each:
   put present, every reference naming line `0`. Survives F, survives the
   put-shape `#guard` that `ProgProse.lean:298` already carries — that
   guard compares put SHAPES only, which §3.31 records as its limit — and
-  dies at LAW M, because the resolved reference addresses are then not
-  the children's answers.
+  dies at LAW M.
+
+  THE REASON, CORRECTED. AMENDMENT, breaker hand (NOTE-3): the first
+  draft said it dies "because the resolved reference addresses are then
+  not the children's answers". That reason is narrower than the law and
+  fails on the sharpest instance of the class. `badShared`
+  (`Attack.lean` §6) rewrites the second leaf's operand from `.ans 2`
+  to `.ans 0` — a DIFFERENT line carrying an IDENTICAL node — so the
+  resolved address IS the child's answer, at every `H`. It has the
+  right length, so LAW F is blind; its runs agree with the true table's
+  at both the toy digest and `sha256Addr`, so LAW R's conclusion at any
+  single address function is blind too.
+
+  LAW M kills it anyway, and the operative reason is stronger than the
+  one first written: `embed` builds a `Prog` whose CONTINUATIONS ARE
+  FUNCTIONS of the answers, so `embed p = tr.prog` quantifies over
+  every address the interpreter could hand back, and no coincidence at
+  one digest discharges it. The breaker proved it — `badShared_dies_at_
+  LAW_M : embed badShared ≠ Tree.prog blobSharedChunk`, kernel-checked
+  at `[propext, Quot.sound]`, in
+  `library/cas/contracts/attacks/PDD-9/Attack.lean` §6, branch
+  `attack/opus-cc-mac/pdd-9`, commit `e2703228`.
+
+  This is the finding that most changes what the packet claims, and it
+  changes it upward: LAW M is strictly finer than run agreement, and
+  the first draft's adequacy prose understated its own theorem.
 - **A meaning theorem that quantifies over the wrong thing.** `∀ w`
   without `Honest H w` is FALSE, not merely unprovable: a word that
   binds the term's address to a DIFFERENT node makes the put conflict
@@ -386,7 +474,11 @@ written to fit them.
   retire together and that is the intended end state.
 - **LAW X covers the registered terms it names and no others.** It is an
   existential discharged by witnesses, per §B.8, and the packet claims
-  exactly the witnesses it runs.
+  exactly the witnesses it runs. Those are now all seven registered
+  terms and, through them, all ten grammar clauses — but the sentence
+  stands as the governing one: it was already true when the block above
+  it was not (HOLE-1), and it is what a future term added to the
+  registry without a row in `Executed.check` would fall foul of.
 - **Nothing here touches `encodeProg`'s address side.** The cont-node
   address a program HAS (`tools/EmitPrograms.lean:96-103`, R7's stamp) is
   the encoder's fact; this packet is about the runner's, and the two are
@@ -430,6 +522,33 @@ packet's whole claim is that these laws are attached to something.
   pins (`lowerTree_seg`, `lowerTable_seg`) and LAW M
   (`embedFrom_seg`). The restatement cannot quietly part from either
   fenced walker.
+
+Both were reproduced verbatim by the independent breaker, who added
+four more the builder's set did not cover — a transposed `seg` operand
+pair, a mutation of each SHIPPED walker, and a planted `sorry`. All
+red; the record is `contracts/attacks/PDD-9/RESULTS.md` §Controls. Two
+of those are worth restating here because they measure something this
+section did not:
+
+- **The device holds against the FENCED walkers, not only against the
+  restatement.** Both of this section's controls mutate `seg`, which is
+  the half a builder can edit. The class that actually threatens the
+  artifact is a drift in `EmitProg.lean` or `ProgProse.lean`. The
+  breaker mutated each (C4: `lowerTree`'s `.parent` visit order; C5:
+  `lowerTable`'s `.parent` operands transposed) and both went red — the
+  `rfl` clause lemma dies first, with "Not a definitional equality",
+  because `lowerTree_seg` and `lowerTable_seg` are TOTAL functional
+  characterizations and a behavioural change at any tree contradicts
+  them.
+
+- **NOTE-5, and it is this packet's warrant.** Under the `lowerTable`
+  mutation, `Cas/Backend/ProgProse.lean`'s own witness `#guard`
+  (`ProgProse.lean:298`, put SHAPES only) stayed GREEN and that module
+  built clean: the drift was invisible to EVERY gate at HEAD, and is
+  caught only by `table_eq_treeProg` and LAW W's two `#guard`s.
+  THE-ALGEBRA §3.31's error state — "a generated module can carry prose
+  describing table A above code lowered from table B" — was live at
+  HEAD, not hypothetical, and closing it is what LAW W buys.
 
 ## Gates
 
@@ -482,13 +601,99 @@ treeProg_two_state
 
 ## Breaks
 
+The ledger opened on the independent attack of `b5ad3c1d` / `db2c8344`,
+recorded at `library/cas/contracts/attacks/PDD-9/RESULTS.md` and
+`Attack.lean`, branch `attack/opus-cc-mac/pdd-9`, commit `e2703228`.
+Verdict **STANDS** — no BREAK. No law was refuted, every gate and every
+figure reproduced to the byte, the axiom census came back
+`[propext, Quot.sound]` by an independent hand, both planted controls
+reproduced verbatim, and sixteen break attempts failed, including every
+search for a drift class that slips both pins.
+
+All three rows below are therefore claim-side, not implementation-side:
+the castle held and parts of the map were wrong. That is the shape
+PDD-1's re-run rows have, and it is entered in the same register.
+
 ```
-(empty)
+BROKE      b5ad3c1d / db2c8344 — the claim, not the code.
+LAW        LAW X, as its BATTERY block stated it: the `#eval` half runs
+           "over the registered terms of `Cas/Vectors/Registry.lean`
+           that the seven generated programs are lowered from …: each
+           term's `runP H (treeProg tr) []` is computed and compared"
+WITNESS    `Executed.check` ran FIVE of the seven registered rows.
+           `journalTwoEntries` (`journalTwo`, the registry's deepest
+           term at eleven nodes) and `schemaVectorDocument` were named
+           nowhere in the castle, at either digest — so `.genesis`,
+           `.entry` and `.schema`, three of the grammar's ten clauses,
+           had no executed consequence anywhere, and the line printed
+           on every `lake build` said "the registered programs".
+           Both missing runs PASS when run: `Attack.lean` §3 and
+           `checkAdversarial`'s `journalTwo` and `schemaVectorDocument`
+           rows, green at both digests.
+CLASS      claim-scope — the stated boundary of the claim did not equal
+           its actual coverage. Adjacent: `conformance`, since the
+           uncovered clauses are the ones with the two-child offset
+           arithmetic and the longest reference chains.
+FIXED-BY   pending — the coverage commit that follows on this branch;
+           the SHA is filled in below when it lands. Closed the STRONG
+           way (both runs added, all seven programs and all ten clauses
+           executed, the printed line corrected) rather than by
+           narrowing LAW X to the five it ran.
 ```
 
-No falsification has fired against an implementation of these laws. Per
-CONTRACT.md the emptiness is a claim about the record, not a boast: it
-says the laws above have not yet been attacked by an independent hand.
-The adequacy section names the three candidates this hand tried and the
-law that kills each; an attack run belongs at
-`library/cas/contracts/attacks/PDD-9/`, and the row it earns goes here.
+```
+BROKE      db2c8344 — the packet's LAW R prose.
+LAW        "Three axes, per §8.0: ANSWER … GROWTH … STORE … LAW R
+           carries all three."
+WITNESS    `paddedShared` (`Attack.lean` §8): `treeProg
+           blobSharedChunk` with one unrelated put prepended and every
+           operand shifted. Its run answers exactly
+           `blobSharedChunk.address toyAddr`, ends on a word that is
+           `Word.wf` and honest — and contains a binding that is not in
+           `blobSharedChunk.flatten toyAddr` at all. `treeProg_Triple`'s
+           postcondition (`a = tr.address H ∧ Word.wf w' ∧ Honest H w'`)
+           does not exclude it: it carries ANSWER and two invariants,
+           and no frame. `treeProg_run` and `treeProg_two_state` do
+           carry all three, and LAW F excludes the witness besides.
+CLASS      claim-scope.
+FIXED-BY   SPEC-BUG. The theorems are correct and unchanged; the packet
+           overclaimed of one of them. LAW R's block now attributes each
+           axis to the theorem that carries it, and states why the
+           Triple is NOT strengthened: GROWTH and STORE are two-state
+           facts and `Triple`'s postcondition sees only the final word,
+           so writing them in is not a strengthening but a rederivation
+           of `treeProg_two_state`.
+```
+
+```
+BROKE      e45a9779 — the packet's adequacy REASON, in the builder's
+           favour.
+LAW        Adequacy candidate 2: a lowering with the right shapes and
+           wrong operands "dies at LAW M, because the resolved
+           reference addresses are then not the children's answers".
+WITNESS    `badShared` (`Attack.lean` §6): the second leaf's operand
+           rewritten `.ans 2` → `.ans 0`, a different LINE carrying an
+           IDENTICAL node. The resolved address IS the child's answer,
+           at every `H`; the length is unchanged, so LAW F is blind;
+           and `runP` agrees with the true table's run at both the toy
+           digest and `sha256Addr`, so LAW R's conclusion at any single
+           address function is blind. The stated reason does not apply
+           and the class was not closed by it.
+CLASS      adequacy — the reason offered for a law, not the law.
+FIXED-BY   SPEC-BUG, upward. LAW M kills `badShared` regardless, by a
+           STRONGER reason than the one written: `embed` builds a
+           `Prog` whose continuations are FUNCTIONS of the answers, so
+           `embed p = tr.prog` quantifies over every address the
+           interpreter could return and no coincidence at one digest
+           discharges it. The breaker proved it —
+           `badShared_dies_at_LAW_M`, kernel-checked at
+           `[propext, Quot.sound]`. The packet now carries that reason.
+```
+
+One further observation is recorded rather than rowed, because it is
+not a break: the breaker noted (NOTE-4) that this packet's second
+commit landed 56 seconds after the implementation, and diffed it line
+by line to confirm it is additive — no ENSURES clause, no LAW statement
+and no FALSIFIER moved. The same shape is on PDD-2's record as its
+NOTE-6. The amendments in THIS pass are not additive: they correct two
+claims and one reason, and each carries its ledger row above.
