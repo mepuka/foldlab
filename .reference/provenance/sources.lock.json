@@ -348,6 +348,32 @@
           "bytes": 77555
         }
       ]
+    },
+    {
+      "id": "program-proofs",
+      "kind": "local-file",
+      "role": "proof-driven-development-definitional-source",
+      "note": "Local PDF book, not a git-hosted extraction: acquired directly rather than fetched from a repository, so there is no git host/owner, no commit, and no root tree to record. Fields that only apply to a git-hosted pin (repository, revision, rootTree, and the artifact's gitBlob) are recorded as not-applicable below rather than invented, per .reference/MANIFEST.md's maintenance contract (record unresolved sources rather than filling them with values that do not exist). Definitional source for the proof-driven development process: .claude/skills/implement/ and .staging/operational-structure/PROOF-DRIVEN-DEVELOPMENT.md.",
+      "repository": "not-applicable — local file, no git repository",
+      "revision": "not-applicable — local file, no git revision",
+      "rootTree": "not-applicable — local file, no git tree",
+      "edition": {
+        "title": "Program Proofs",
+        "author": "K. Rustan M. Leino",
+        "publisher": "MIT Press"
+      },
+      "artifacts": [
+        {
+          "path": "program_proofs.pdf",
+          "role": "book-source-pdf",
+          "gitBlob": "not-applicable — local file, not tracked as a git blob",
+          "contentDigest": {
+            "algorithm": "sha256",
+            "digest": "a14a98037799512eb343bdfe8efa4ff2022b09b08446ba8205b5e995fcddf025"
+          },
+          "bytes": 25299717
+        }
+      ]
     }
   ],
   "candidateEditionAuthorities": [

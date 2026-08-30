@@ -56,6 +56,10 @@ project's approved-tools rule). Start light; grow as work gets defined.
 
 | Effect runtime family (`npm:effect@4.0.0-rc.112` exactly, plus `@effect/platform-bun`, `@effect/sql-sqlite-bun`, and `@effect/vitest` at the same rc; MIT, Effect-TS; estate-wide move ruled as Wave 1, docs/SPECS.md decision 23; provenance: the `effect-runtime` row of `.reference/provenance/sources.lock.json` names upstream commit `2600f62f` = tag `effect@4.0.0-rc.112`, and `library/effects/package.json`'s `foldlab.effectProvenance` names that row back) | The runtime substrate the effects package ships on and the harnesses execute against — the L0 execution plane whose behavior the Lean model describes | The substrate under test, never a trust source: every correspondence claim about it is carried by the gates and the Lean model, and its own documentation or types prove nothing here. The npm version and the provenance lock row must name each other (AGENTS.md dependency law); moving the version is an estate-wide ruling event, never a routine bump, and the Stage-1 extraction pin (`effect` lock row, rc.111) deliberately does NOT move with it. |
 
+| codex CLI (`codex-cli@0.146.0`, OpenAI; models `gpt-5.6-sol`, `gpt-5.6-luna`) | Reference-material tagger/ingestion assistant: produced `.claude/skills/implement/book-tags.json` from the pinned book (the `program-proofs` row, `.reference/provenance/sources.lock.json`) on 2026-08-30, 10-agent wave | Output is untrusted reference projection; every claim cites a book section and is verifiable against the pinned source; nothing it produces enters gated/formal work without operator grilling. |
+
+| liteparse (mise shim; `npm:@llamaindex/liteparse`, PDF/document parser) | Text projection of pinned PDFs: produced the markdown projection of `program_proofs.pdf` (the `program-proofs` row, `.reference/provenance/sources.lock.json`) | Mechanical extraction with OCR fallback; prose is reliable, code blocks may carry OCR artifacts; projections are working copies, never the source of truth — the pinned PDF is. |
+
 Pending admission (not yet used in gated work): wink-naive-bayes-text-classifier
 (`npm:wink-naive-bayes-text-classifier@2.2.1` exactly, MIT, winkjs family;
 pinned in the lift harness). A classifier aid inside the harness's sieve
@@ -74,7 +78,9 @@ survive to runtime, syntactically and without a type-checker. No gated
 work runs it — the finding is recorded on the divergence ledger as the
 open contract gap `TG1`, and a ruling is owed before it becomes machinery.
 
-Pending admission (not yet used in gated work): liteparse
-(`npm:@llamaindex/liteparse`; PDF/local text extraction — evidence
-preparation only, and the extractor behind the
-[paper corpus](../../.reference/catalog/PAPERS.md)).
+Promoted 2026-08-30: liteparse (`npm:@llamaindex/liteparse`) is superseded
+by the formal register row above — it produced a projection now cited from
+gated documentation (the `program_proofs.pdf` markdown projection), so it
+carries a trust statement rather than a pending-admission note. It remains,
+as before, the extractor behind the
+[paper corpus](../../.reference/catalog/PAPERS.md).
