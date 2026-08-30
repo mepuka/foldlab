@@ -43,10 +43,11 @@ holds":
 
 - `Handler.sum_unique` — any handler agreeing with `h` on the left
   operations and with `g` on the right IS `h.sum g`.
-- `inl_unique_one_target` (and its corollary `Prog.inl_unique`),
-  `Prog.inr_unique` — any injection satisfying
-  `interpret (h.sum g) (ι p) = interpret h p` IS `Prog.inl`.
-- `llmOracleHandler_unique` — the oracle summand L30 names is the ONLY
+- `inl_unique_one_target` / `inr_unique_one_target` (and their
+  corollaries `Prog.inl_unique` / `Prog.inr_unique`) — any injection
+  satisfying `interpret (h.sum g) (ι p) = interpret h p` IS `Prog.inl`.
+- `llmOracleHandler_unique_one_program` (and its corollary
+  `llmOracleHandler_unique`) — the oracle summand L30 names is the ONLY
   handler that presents `handleLlm` as an interpretation.
 
 So there is no wrong-but-passing implementation to find, in any of the
@@ -69,6 +70,19 @@ recorded here rather than softened:
   two rewrites the proof performs (`syntactic_hyp_iff`). So
   `inl_unique_one_target` is the real theorem and `Prog.inl_unique` is
   its corollary; that is how they are stated below.
+- **The lesson is about a PROOF SHAPE, and it is applied uniformly.**
+  The finding was never a fact about `Prog.inl`: it is that a
+  categoricity whose hypothesis is ∀-quantified while its proof
+  consumes one instance — at which hypothesis and conclusion are
+  equivalent — states less than it proves. The first fix pass
+  corrected only the row the breaker pointed at and left the same
+  shape in two others (`AttackAmended.lean` §C, NOTE-7). All three
+  ADQ rows now carry the narrowed statement as primary and the
+  ∀-quantified one as its corollary: `inl_unique_one_target`,
+  `inr_unique_one_target`, `llmOracleHandler_unique_one_program`.
+  `Handler.sum_unique` is EXEMPT and provably so — its premises are
+  already pointwise-minimal, and the breaker's `sum_unique_iff` shows
+  they are an equivalence with neither premise spare.
 - **The counting target never enters the categoricity.**
   `StateT Nat Id` is the device of the REFUTATION
   (`doubleInl_not_interpret_inl`) and of nothing else.
@@ -108,14 +122,23 @@ a different question and the one hole §3.2 turns on.
 
 Second prior-art debt, credited in place at each declaration: the
 independent breaker's attack record,
-`library/cas/contracts/attacks/PDD-7/` @ `b509cb20`. Its verdict was
-STANDS with two HOLEs, both prose against kernel-checked fact, and
-both are fixed above. Eight of its results are adopted here —
+`library/cas/contracts/attacks/PDD-7/`. Two passes, both STANDS: the
+first at `b509cb20` with two HOLEs, the second at `cf91531c`
+(STANDS-AMENDED) with NOTE-7. Every finding was prose against
+kernel-checked fact — no theorem in this file was ever false — and all
+are fixed above.
+
+Adopted from that record, each credited at its declaration:
 `syntactic_hyp_iff`, `inl_unique_one_target`,
 `doubleInl_interpret_inl_Id`, `narrowing_to_Id_fails`, `dup` with
-`doubleInl_factors`, `llmOracleHandler_unique`, `handleLlm_bind`, and
-the `badHandleLlm` adversary. The breaker proved each first and this
-file says so at each one.
+`doubleInl_factors`, `handleLlm_bind`, and the `badHandleLlm`
+adversary (all `Attack.lean` @ `b509cb20`); then
+`syntactic_hyp_iff_inr`, `inr_unique_one_target`, `l30_hyp_iff` and
+`llmOracleHandler_unique_one_program` (`AttackAmended.lean` §C @
+`cf91531c`), which carry the shape lesson into the two rows the first
+fix pass missed. `llmOracleHandler_unique` is the breaker's row from
+the first pass, restated in the narrowed form by the second. The
+breaker proved each first and this file says so at each one.
 -/
 
 namespace Cas.Lang
@@ -410,16 +433,38 @@ theorem Prog.inl_unique {S T : Sig}
   inl_unique_one_target ι
     (fun {_} q => hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) q) p
 
-/-- **ADQ-INL**, mirror: any injection satisfying L24 everywhere is
-`Prog.inr`. -/
+/-- The `inr` mirror of `syntactic_hyp_iff`. Breaker's, adopted:
+`contracts/attacks/PDD-7/AttackAmended.lean` §C1 @ `cf91531c`. -/
+theorem syntactic_hyp_iff_inr {S T : Sig}
+    (ι : {A : Type} → Prog T A → Prog (S ⊕ₛ T) A) {A : Type} (q : Prog T A) :
+    (interpret ((inlHandler S T).sum (inrHandler S T)) (ι q)
+        = interpret (inrHandler S T) q)
+      ↔ ι q = Prog.inr q := by
+  rw [sum_inlHandler_inrHandler, interpret_id, interpret_inrHandler]
+
+/-- **ADQ-INR, the real statement** — the mirror of
+`inl_unique_one_target`, in the same primary/corollary form. Breaker's,
+adopted: `AttackAmended.lean` §C1 @ `cf91531c`, whose NOTE-7 caught that
+the first fix pass corrected the shape only where the finding pointed
+and left this row on the old one-shot `rwa`. -/
+theorem inr_unique_one_target {S T : Sig}
+    (ι : {A : Type} → Prog T A → Prog (S ⊕ₛ T) A)
+    (hι : ∀ {A : Type} (q : Prog T A),
+        interpret ((inlHandler S T).sum (inrHandler S T)) (ι q)
+          = interpret (inrHandler S T) q)
+    {A : Type} (q : Prog T A) : ι q = Prog.inr q :=
+  (syntactic_hyp_iff_inr ι q).mp (hι q)
+
+/-- **ADQ-INR**, the ∀-quantified form — now a COROLLARY, exactly as on
+the left. -/
 theorem Prog.inr_unique {S T : Sig}
     (ι : {A : Type} → Prog T A → Prog (S ⊕ₛ T) A)
     (hι : ∀ (M : Type → Type) [Monad M] [LawfulMonad M]
             (h : Handler S M) (g : Handler T M) {A : Type} (q : Prog T A),
             interpret (h.sum g) (ι q) = interpret g q)
-    {A : Type} (q : Prog T A) : ι q = Prog.inr q := by
-  have key := hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) q
-  rwa [sum_inlHandler_inrHandler, interpret_id, interpret_inrHandler] at key
+    {A : Type} (q : Prog T A) : ι q = Prog.inr q :=
+  inr_unique_one_target ι
+    (fun {_} r => hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) r) q
 
 /-! ## §2.3 L30/L31 — `handleLlm` is an interpretation
 
@@ -470,30 +515,56 @@ theorem handleLlm_eq_interpret_fun (oracle : String → String) (A : Type) :
       = interpret (idHandler.sum (llmOracleHandler oracle)) :=
   funext fun p => handleLlm_eq_interpret oracle p
 
-/-- **ADQ-L30.** L30's right summand is FORCED: `llmOracleHandler
-oracle` is the ONLY handler that presents `handleLlm` as an
-interpretation. L30 alone does not say this, and the packet's first
-draft omitted the row.
+/-! ### ADQ-L30 — L30's right summand is forced
 
-Breaker's, adopted: `contracts/attacks/PDD-7/Attack.lean` §5 @
-`b509cb20`. -/
+`llmOracleHandler oracle` is the ONLY handler that presents `handleLlm`
+as an interpretation. L30 alone does not say this, and the packet's
+first draft omitted the row.
+
+Stated in the same primary/corollary form as the two injections: the
+narrowed statement first, the ∀-quantified one as its corollary.
+Breaker's throughout — `contracts/attacks/PDD-7/Attack.lean` §5 @
+`b509cb20` for the row, and `AttackAmended.lean` §C2 @ `cf91531c` for
+the narrowing, whose NOTE-7 caught that the row had been adopted in the
+∀-form carrying the very shape HOLE-1 was about. -/
+
+/-- The hypothesis of ADQ-L30, at one operation, IS the conclusion at
+that operation. `Prog.bind_pure_right` plays the role `interpret_id`
+plays on the injection side. -/
+theorem l30_hyp_iff (oracle : String → String)
+    (g : Handler LlmSig (Prog CasSig)) (q : String) :
+    ((Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure).handleLlm oracle
+        = interpret (idHandler.sum g)
+            (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure))
+      ↔ g.handle (LlmE.infer q) = (llmOracleHandler oracle).handle (LlmE.infer q) := by
+  show (Prog.pure (oracle q) = (g.handle (LlmE.infer q)).bind Prog.pure)
+    ↔ (g.handle (LlmE.infer q) = Prog.pure (oracle q))
+  rw [Prog.bind_pure_right]
+  exact eq_comm
+
+/-- **ADQ-L30, the real statement.** The oracle summand is forced by the
+hypothesis at SINGLE-OPERATION programs alone — one program per
+operation, at `A := String`. Strictly stronger than the ∀-quantified
+row below. -/
+theorem llmOracleHandler_unique_one_program (oracle : String → String)
+    (g : Handler LlmSig (Prog CasSig))
+    (hg : ∀ q : String,
+        (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure).handleLlm oracle
+          = interpret (idHandler.sum g)
+              (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)) :
+    g = llmOracleHandler oracle :=
+  handler_eq_of_handle fun op =>
+    match op with
+    | LlmE.infer q => (l30_hyp_iff oracle g q).mp (hg q)
+
+/-- **ADQ-L30**, the ∀-quantified form — now a COROLLARY, by the same
+structure as `Prog.inl_unique` and `Prog.inr_unique`. -/
 theorem llmOracleHandler_unique (oracle : String → String)
     (g : Handler LlmSig (Prog CasSig))
     (hg : ∀ (A : Type) (p : Prog AgentSig A),
         p.handleLlm oracle = interpret (idHandler.sum g) p) :
-    g = llmOracleHandler oracle := by
-  refine handler_eq_of_handle (fun op => ?_)
-  match op with
-  | LlmE.infer q =>
-    have h := hg String (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
-    have hl : Prog.handleLlm oracle
-          (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
-        = Prog.pure (oracle q) := rfl
-    have hr : interpret (idHandler.sum g)
-          (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
-        = (g.handle (LlmE.infer q)).bind Prog.pure := rfl
-    exact (Prog.bind_pure_right (g.handle (LlmE.infer q))).symm.trans
-      (hr.symm.trans (h.symm.trans hl))
+    g = llmOracleHandler oracle :=
+  llmOracleHandler_unique_one_program oracle g (fun _q => hg String _)
 
 /-- **L32**, which THE-ALGEBRA lists as ASSERTED and the packet's first
 draft left OWED: `handleLlm` respects `bind`. Two lines from L30 plus
@@ -977,7 +1048,9 @@ this module is accounted for by the `Quot.sound` entries. -/
 #print axioms Prog.inl_injective
 #print axioms inl_unique_one_target
 #print axioms Prog.inl_unique
+#print axioms inr_unique_one_target
 #print axioms Prog.inr_unique
+#print axioms llmOracleHandler_unique_one_program
 #print axioms llmOracleHandler_unique
 #print axioms handleLlm_bind
 #print axioms handleLlm_eq_interpret_fun

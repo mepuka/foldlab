@@ -403,10 +403,12 @@ FALS ADQ-INL  exhibit ι satisfying the hypothesis at every lawful
               target and every handler pair, with ι p ≠ p.inl at some
               p. `doubleInl` is the candidate the ticket names, and the
               theorem says the exhibit does not exist.
-BATT ADQ-INL  `Prog.inl_unique`, `Prog.inr_unique`; and, adopted from
-              the attack record, `inl_unique_one_target` with
-              `syntactic_hyp_iff` — the same conclusion from the single
-              instance the proof actually consumes.
+BATT ADQ-INL  `inl_unique_one_target` with `syntactic_hyp_iff`, and
+              `inr_unique_one_target` with `syntactic_hyp_iff_inr` —
+              the same conclusion from the single instance each proof
+              actually consumes. `Prog.inl_unique` and
+              `Prog.inr_unique` are their corollaries. All four adopted
+              from the attack record.
 
 LAW  ADQ-L30  L30's right summand is FORCED. Adopted from the attack
               record; **the packet omitted this row and should not
@@ -422,7 +424,36 @@ LAW  ADQ-L30  L30's right summand is FORCED. Adopted from the attack
               `Prog.inl`/`inr`, and L30's oracle summand.
 FALS ADQ-L30  exhibit g ≠ llmOracleHandler oracle that also presents
               `handleLlm` as an interpretation.
-BATT ADQ-L30  `llmOracleHandler_unique`.
+BATT ADQ-L30  `llmOracleHandler_unique_one_program` with
+              `l30_hyp_iff` — the summand is forced by the hypothesis
+              at single-operation programs alone;
+              `llmOracleHandler_unique` is its corollary.
+
+NOTE ADQ     **The shape lesson is applied uniformly.** HOLE-1 was
+             never a fact about `Prog.inl`: it was a fact about a PROOF
+             SHAPE — a categoricity whose hypothesis is ∀-quantified
+             while its proof consumes one instance, at which the
+             hypothesis is equivalent to the conclusion, states less
+             than it proves. The first fix pass corrected the row the
+             breaker pointed at and left the same shape in two others
+             (`AttackAmended.lean` §C, NOTE-7). All three ADQ rows now
+             carry the narrowed statement as PRIMARY and the
+             ∀-quantified one as its COROLLARY:
+
+               ADQ-INL   `inl_unique_one_target`   ← `Prog.inl_unique`
+               ADQ-INR   `inr_unique_one_target`   ← `Prog.inr_unique`
+               ADQ-L30   `llmOracleHandler_unique_one_program`
+                                         ← `llmOracleHandler_unique`
+
+             **ADQ-SUM is exempt, and provably so.** `Handler.sum_unique`
+             does not have the shape: its premises are already
+             pointwise-minimal, and the breaker's `sum_unique_iff`
+             upgrades it to an equivalence while
+             `sum_unique_needs_left_premise` /
+             `sum_unique_needs_right_premise` show neither premise is
+             spare. It is left as it stands, and this note says why
+             rather than leaving the asymmetry to be read as an
+             oversight.
 NOTE ADQ-INL  The hypothesis is STRONG — it quantifies over every
               lawful target monad — so the obvious attack is that the
               theorem is vacuous: a uniqueness result whose premise
@@ -876,10 +907,16 @@ Two smaller findings, recorded rather than filed:
 
 ## The attack — the independent breaker's pass
 
-Record: `library/cas/contracts/attacks/PDD-7/` (`Attack.lean`,
-`RESULTS.md`) on branch `attack/opus-cc-mac/pdd-7`, commit `b509cb20`,
-against castle `d714ef14`. Verdict **STANDS** — no BREAK, 2 HOLE, 6
-NOTE. No theorem in the module is false, every gate reproduced to the
+Record: `library/cas/contracts/attacks/PDD-7/` on branch
+`attack/opus-cc-mac/pdd-7`. **Two passes, both STANDS, no BREAK in
+either.** Pass 1 (`Attack.lean`, `RESULTS.md` @ `b509cb20`, against
+castle `d714ef14`): 2 HOLE, 6 NOTE. Pass 2 (`AttackAmended.lean` @
+`cf91531c`, against the fix pass `e1ceb205`): **STANDS-AMENDED** —
+both holes confirmed closed structurally, the declined adoption of
+`inl_unique_via_initiality` concurred with, and one new NOTE-7 whose
+row is the third in the ledger below. No theorem in this module was
+false in either pass; every finding was prose or structure against
+kernel-checked fact. No theorem in the module is false, every gate reproduced to the
 byte, the axiom census reproduced over a strictly larger declaration
 set (55 constants, not the 16 the module prints), the commit order was
 confirmed packet-first, and the sorry-control was repeated by the
@@ -935,6 +972,16 @@ six are `library/cas/contracts/attacks/PDD-7/Attack.lean` @ `b509cb20`:
 | `llmOracleHandler_unique` | ADQ-L30 — the oracle summand is forced | §5 |
 | `handleLlm_bind` | L32, discharged from L30 in two lines | §5 |
 | `badHandleLlm` + three refutations | HOLE-2's witness, into the `Adversary` namespace | §5 |
+
+And from the RE-ATTACK, `AttackAmended.lean` @ `cf91531c` (NOTE-7 —
+the shape lesson reached two rows the first fix pass did not):
+
+| adopted | what it does | record |
+|---|---|---|
+| `syntactic_hyp_iff_inr` | the `inr` mirror of the equivalence | §C1 |
+| `inr_unique_one_target` | ADQ-INR narrowed; `Prog.inr_unique` becomes its corollary | §C1 |
+| `l30_hyp_iff` | ADQ-L30's hypothesis at one operation IS its conclusion | §C2 |
+| `llmOracleHandler_unique_one_program` | ADQ-L30 narrowed to single-operation programs | §C2 |
 
 Six NOTEs were raised. NOTE-1, NOTE-2 and NOTE-5 are adopted into
 claim-scope above. NOTE-3 is adopted into the module's L25 heading and
@@ -1011,4 +1058,46 @@ FIXED-BY   this commit. L31's row carries NOTE L31 naming its reach and
            guarantee; `badHandleLlm` and its three refutations move
            into the module's `Adversary` namespace, so the boundary
            cannot be relaxed without a red build.
+```
+
+The third row is from the RE-ATTACK (`cf91531c`, verdict
+STANDS-AMENDED: both holes confirmed closed structurally — the breaker
+printed the reduced proof term and traced a planted `sorry` through
+both layers to check the primary/corollary inversion was real, not a
+renaming). It is the same finding as HOLE-1, found again in the rows
+the fix pass did not reach.
+
+```
+BROKE      e1ceb205 — the FIX was correct and INCOMPLETE.
+LAW        the HOLE-1 correction as this packet applied it: the
+           narrowed-primary / ∀-corollary structure, adopted for
+           ADQ-INL only, while the amended packet simultaneously
+           claimed the ADQ block was "now complete across all three
+           definitions the slice touches".
+WITNESS    `Prog.inr_unique` kept the original one-shot `rwa` and
+           `llmOracleHandler_unique` was adopted in the ∀-form — both
+           carrying the exact shape HOLE-1 was about. The breaker
+           supplied all four missing declarations kernel-checked:
+           `syntactic_hyp_iff_inr`, `inr_unique_one_target`,
+           `l30_hyp_iff`, `llmOracleHandler_unique_one_program`
+           (`AttackAmended.lean` §C1/§C2 @ `cf91531c`). ADQ-L30's proof
+           consumes exactly `A := String` and one program per
+           operation; at that instance the hypothesis is equivalent to
+           the conclusion, with `Prog.bind_pure_right` playing the role
+           `interpret_id` plays on the injection side.
+           Nothing false, no adversary admitted — a CONSISTENCY defect
+           between what the packet claimed of its own block and what
+           two of its three rows carried.
+CLASS      claim-scope. And the meta-lesson is the part worth keeping:
+           **the first fix was applied where the finding pointed rather
+           than where the finding reached.** A defect stated as a fact
+           about one declaration ("your ADQ-INL prose overclaims") was
+           in truth a fact about a proof shape, and the shape had three
+           instances. Fixing the cited instance and declaring the block
+           complete is how a corrected packet re-acquires the error it
+           just removed.
+FIXED-BY   this commit. All four declarations folded in with credit;
+           NOTE ADQ states the shape lesson and its uniform
+           application; ADQ-SUM's exemption is named and grounded in
+           `sum_unique_iff` rather than assumed.
 ```
