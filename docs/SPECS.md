@@ -429,3 +429,25 @@ records the 2026-08-29 session rulings that cut across specs.
     doubt" — the lane sequences at the top of the plan; (e)
     front-end WASM research commissioned: data-dense, high-quality,
     high-fidelity performant canvas.
+32. **The daemon's three releases** (2026-08-29 late, "YES.
+    RELEASE"): (a) `/projections` RELEASED to the daemon — tier-0
+    serving of the emitted, byte-gated artifacts is the daemon's,
+    read-only; FRONTEND's static-host story updates to match;
+    (b) SERVING.md PROMOTED to Category 1 and moved to
+    `library/effects/` beside its siblings; (c) PROFILE-CAS-HTTP-0
+    gains an additive §14 co-tenancy clause (a versioning event):
+    the profile owns its three resource spaces within the
+    authority, the co-tenant prefixes enumerated; the daemon's
+    totality wording softens to "every unclaimed exchange."
+33. **The ornament coordination** (same sitting; Codex package +
+    the frontend lane): the ornament-grammar proposal stages at
+    `.staging/ornamentation/` under a partitioned namespace
+    (COORDINATION.md carries the partition and owners). MotifNode
+    and Ornament enter as PROPOSED described kinds — the grill
+    decides, under decision 23's new-kinds-yes / new-sorts-NO law.
+    The image-generation service is a pre-grade design: addressed
+    prompt/spec/model/version/seed/input/provenance/rights records;
+    deterministic VECTOR is the only authority — raster and
+    image-generation output never are. All generated visuals and
+    Paper output are pre-grade conception evidence with no trust
+    contribution.
