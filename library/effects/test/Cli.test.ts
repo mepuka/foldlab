@@ -33,7 +33,9 @@ import { CliError } from "effect/unstable/cli"
 import { ChildProcessSpawner } from "effect/unstable/process"
 import { runCas as runEntry } from "../bin/cli/entry.ts"
 import { subjectFor } from "../bin/cli/naming.ts"
+import { casErrorMessage } from "../bin/cli/render.ts"
 import { cas } from "../bin/cli/tree.ts"
+import { AddressMismatch, ContentId } from "../src/cas/Node.ts"
 import { vocabularyWords } from "../bin/cli/vocabulary.ts"
 import { AnnotationSubjectArms } from "../src/cas/generated/annotationPlane.ts"
 import { Cas } from "../src/index.ts"
@@ -1005,3 +1007,21 @@ it.effect("the help vocabulary carries every word VOCABULARY.md's everyday regis
     expect(seeded.length).toBeGreaterThan(0)
     expect(vocabularyWords.map(([word]) => word)).toEqual(seeded)
   }).pipe(Effect.provide(layerDiskFs)))
+
+/* ── the digest-mismatch diagnostic names both readings (R5) ───────── */
+
+it("a digest mismatch says it may be a scheme mismatch, not only corruption", () => {
+  // Ruling ask R5 (BACKEND-ROBUSTNESS): verification recomputes with the
+  // ambient scheme, so under a second same-width scheme every cross-scheme
+  // read surfaces as AddressMismatch. The refusal must not present corrupt
+  // content as the only reading — the cheap half of R5 is that the message
+  // names the other one.
+  const message = casErrorMessage(
+    new AddressMismatch({
+      expected: ContentId.make("ab".repeat(32)),
+      actual: ContentId.make("cd".repeat(32)),
+    }),
+  )
+  expect(message).toContain("refused:")
+  expect(message).toContain("possible scheme mismatch")
+})
