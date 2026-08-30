@@ -172,6 +172,19 @@ def pinSubjectAddr : Addr32 := ⟨List.replicate 32 0xab, by simp⟩
 effects suite's own choice. -/
 def pinAnnotationKindTag : UInt8 := 0x41
 
+/-- The revision the pins ride, and the one the CLI's naming seat puts
+at. It is a pin like the tag beside it: the projection's revision is
+part of the wire, so a consumer that spells it by hand spells it
+twice. Emitted with the tag, and read off there. -/
+def pinAnnotationRevision : Nat := 1
+
+/-- The everyday word for this kind — what a person reading `cas show`
+sees where the registry would give a name, since the annotation plane
+has no registry row to give one. It lives here, beside the tag it
+names, because a rendered kind name enters the human register off the
+generated registry and never off a hand-written table (decision 25). -/
+def pinAnnotationKindWord : String := "annotation"
+
 /-- The name seat, worked: a human-facing name on a stored topology. -/
 def pinName : Annotation :=
   { key := "foldlab/name"
@@ -186,23 +199,23 @@ def pinLink : Annotation :=
   , value := .ref (.system ⟨pinSubjectAddr⟩) }
 
 -- One typed edge at the system kind, and the name as text.
-#guard putPayload 1 pinName == some
+#guard putPayload pinAnnotationRevision pinName == some
   "{\"revision\":1,\"value\":{\"key\":\"foldlab/name\",\"subject\":{\"_tag\":\"system\",\"address\":{\"$ref\":0}},\"value\":{\"_tag\":\"text\",\"text\":\"casSystem\"}}}"
 
-#guard putRefs 1 pinName == some [⟨systemKindTag, pinSubjectAddr⟩]
+#guard putRefs pinAnnotationRevision pinName == some [⟨systemKindTag, pinSubjectAddr⟩]
 
 -- Two typed edges: the subject at the program kind, and the VALUE's
 -- own reference at the system kind. The second edge is what the old
 -- `value : String` could not carry — the store now walks it, and
 -- `WrongKindReference` can fire on it.
-#guard putPayload 1 pinLink == some
+#guard putPayload pinAnnotationRevision pinLink == some
   "{\"revision\":1,\"value\":{\"key\":\"foldlab/view\",\"subject\":{\"_tag\":\"program\",\"address\":{\"$ref\":0}},\"value\":{\"_tag\":\"ref\",\"address\":{\"_tag\":\"system\",\"address\":{\"$ref\":1}}}}}"
 
-#guard putRefs 1 pinLink == some
+#guard putRefs pinAnnotationRevision pinLink == some
   [⟨programKindTag, pinSubjectAddr⟩, ⟨systemKindTag, pinSubjectAddr⟩]
 
 -- The node itself: the caller's tag, the two edges, and the payload.
-#guard (putNode Cas.Grammar.schemeVersion pinAnnotationKindTag 1 pinLink).map
+#guard (putNode Cas.Grammar.schemeVersion pinAnnotationKindTag pinAnnotationRevision pinLink).map
     (fun n => (n.version, n.tag, n.refs))
   == some (Cas.Grammar.schemeVersion, pinAnnotationKindTag,
       [⟨programKindTag, pinSubjectAddr⟩, ⟨systemKindTag, pinSubjectAddr⟩])

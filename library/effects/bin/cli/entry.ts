@@ -118,41 +118,115 @@ const refusalLines = (
  * The one parse mistake the runner cannot even see straight: a flag
  * VALUE that begins with a dash. `--kind-tag -1` is tokenized as an
  * empty `--kind-tag` plus an unknown flag `-1`, so the reader gets two
- * complaints about a mistake they did not make. When that exact pair
- * is present, collapse it to the one sentence that helps: the `=`
- * spelling. Anything else falls through to the ordinary rendering.
+ * complaints about a mistake they did not make. Where that shape is
+ * present it is collapsed to the one sentence that helps: the `=`
+ * spelling.
+ *
+ * Three things decide which errors that is, and each is load-bearing.
+ *
+ * ADJACENCY. The errors arrive in argument order, so the emptied flag
+ * and the token read as a flag are one mistake only when they sit next
+ * to each other. An emptied flag at one end of the vector and an
+ * unrecognized dashed token at the other are two mistakes, and saying
+ * `--store=-1` about them would be a confident sentence about something
+ * that did not happen.
+ *
+ * THE DASH, NOT THE DIGIT. A negative number was the case found first,
+ * but nothing about the tokenizer is numeric: `--store -x` is split the
+ * same way `--kind-tag -1` is, and a predicate that recognized only
+ * digits answered the rest at the grade this module exists to retire.
+ *
+ * THE RUN, because a single-dash token is SHORT FLAGS. The runner reads
+ * `-backup` as `-b -a -c -k -u -p` — six errors from one token — so the
+ * value a reader typed is genuinely not recoverable from what reaches
+ * here. The whole run is consumed either way, because six "no such
+ * flag" lines about one typo is the riddle this collapse exists to
+ * remove; but the exact `=` spelling is only printed when the run is
+ * ONE token and therefore is the value. Longer than that, the sentence
+ * states the rule and stops, rather than advising `--store=-b` about a
+ * word the reader never typed.
  */
-const dashedValueLines = (
+interface DashedValue {
+  /** Where the collapse starts, and how many errors it consumes — so
+   * every error that is NOT part of it is still rendered. */
+  readonly at: number
+  readonly through: number
+  readonly lines: ReadonlyArray<string>
+}
+
+/** A flag the parser found no value for. */
+const emptiedOption = (
+  error: CliError.NonShowHelpErrors,
+): string | undefined =>
+  error._tag === "InvalidValue" && error.kind === "flag" && error.value === ""
+    ? error.option
+    : undefined
+
+/** A single-dash token the parser read as a flag. `--nope` is a
+ * misspelled flag and answers as one; `-b` is what a dashed VALUE is
+ * broken into. */
+const shortOption = (
+  error: CliError.NonShowHelpErrors | undefined,
+): string | undefined =>
+  error !== undefined && error._tag === "UnrecognizedOption"
+      && /^-[^-]/u.test(error.option)
+    ? error.option
+    : undefined
+
+const dashedValuePair = (
   errors: ReadonlyArray<CliError.NonShowHelpErrors>,
-): ReadonlyArray<string> | undefined => {
-  const dashed = errors.find(
-    (error) => error._tag === "UnrecognizedOption" && /^-\d/u.test(error.option),
-  )
-  const emptied = errors.find(
-    (error) => error._tag === "InvalidValue" && error.kind === "flag" && error.value === "",
-  )
-  if (dashed?._tag !== "UnrecognizedOption" || emptied?._tag !== "InvalidValue") {
-    return undefined
+): DashedValue | undefined => {
+  for (const [index, error] of errors.entries()) {
+    const emptied = emptiedOption(error)
+    if (emptied === undefined || shortOption(errors[index + 1]) === undefined) continue
+    let through = index + 1
+    while (shortOption(errors[through + 1]) !== undefined) through += 1
+    const only = through === index + 1 ? shortOption(errors[through]) : undefined
+    return {
+      at: index,
+      through,
+      lines: only === undefined
+        ? [
+          `${emptied} was left empty, and what followed it was read as flags`,
+          `a value that starts with "-" is read as short flags unless the = spelling is used: --${emptied}=<value>`,
+        ]
+        : [
+          `${emptied} was left empty, and ${only} was read as a flag`,
+          `a value that starts with "-" needs the = spelling: --${emptied}=${only}`,
+        ],
+    }
   }
-  return [
-    `${emptied.option} was left empty, and ${dashed.option} was read as a flag`,
-    `a value that starts with "-" needs the = spelling: --${emptied.option}=${dashed.option}`,
-  ]
+  return undefined
 }
 
 /** The refusal as the runner's formatter would have laid it out — the
  * same ERROR heading and two-space indent every other refusal in this
  * CLI already uses, so the register does not change with the source of
  * the complaint. The blank line above it is the one the runner has
- * already written by the time this is rendered. */
+ * already written by the time this is rendered.
+ *
+ * The dashed-value collapse REPLACES its own run and nothing else.
+ * Collapsing the whole list to that one sentence was a second lie in
+ * the same breath as the fix: a misspelled flag typed beside a dashed
+ * value is still a misspelled flag, and dropping it means the reader
+ * corrects the `=` spelling and is told about the next mistake only on
+ * the next run. */
 const renderRefusal = (
   errors: ReadonlyArray<CliError.NonShowHelpErrors>,
   doc: HelpDoc.HelpDoc,
-): string =>
-  [
-    ...dashedValueLines(errors) ?? errors.flatMap((error) => refusalLines(error, doc)),
-    `usage: ${doc.usage}`,
-  ].map((line) => `  ${line}`).join("\n")
+): string => {
+  const dashed = dashedValuePair(errors)
+  const lines = dashed === undefined
+    ? errors.flatMap((error) => refusalLines(error, doc))
+    : errors.flatMap((error, index) =>
+      index === dashed.at
+        ? dashed.lines
+        : index > dashed.at && index <= dashed.through
+        ? []
+        : refusalLines(error, doc)
+    )
+  return [...lines, `usage: ${doc.usage}`].map((line) => `  ${line}`).join("\n")
+}
 
 /**
  * A refusal, written and then marked as written.

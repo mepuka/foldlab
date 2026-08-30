@@ -49,6 +49,8 @@ current verb set, read off.
 | in flight | how many store-touching calls the host runs at once | `ServePolicy.maxInFlight`, the host's own bound — `cas status` prints it |
 | doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
 | name | a human word on stored content — an annotation, never identity | `Annotation` at the pinned key `foldlab/name` (working tag 0x41) — `cas name` writes and publishes one, `cas show` reads it back |
+| annotation | one thing said about one address, itself stored content; a name is the first kind | `Cas.Schema.Annotation` — the kind's own everyday word is emitted beside its tag (`AnnotationKindWord`), never written in the renderer |
+| scheme | the address scheme content is stored and re-verified under; one exists today | `Cas.Grammar.schemeVersion` — the node's version byte, printed beside every kind |
 
 ## The protocol register
 
@@ -100,3 +102,9 @@ current verb set, read off.
    line reads `history N admitted`, and its `--json` says `word`.
    No other verb renders one yet — `cas doctor` reads the emitted
    ledgers and does not replay anything.
+   The versioning event for this split is decision 25, which put
+   `--json` on every verb (`serve` exempt: stdout is the protocol):
+   before it, one verb choosing two words for one fact was that verb's
+   own arrangement; after it, every verb answers in both registers, so
+   the human word and the model word are a standing pair rather than
+   `run`'s local convention.

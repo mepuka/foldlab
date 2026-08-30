@@ -47,6 +47,19 @@ counters, lets a runtime reader CHECK the document it just read.
 
 ## House hazard notes (not theorems; recorded for the next lane)
 
+THE RENDERER CANNOT CURATE WHAT THE FRAMEWORK WILL NOT TYPE. Every
+grade-D row in the CLI audit's transcript had one shape: a failure
+whose type was wide enough that no `match` over it could be
+exhaustive, so the only sentence available was the underlying detail.
+`Cas.matchError` is the counter-example — the fold is the library's
+own, so a new clause cannot ship unworded. Where the type is a
+framework's (`CliError`, `PlatformError`), curation costs a
+hand-written branch per case AND an uncurated fallback that says so
+out loud; where it is the estate's, curation is free and total. So a
+seam's error type is a rendering decision made early: the register a
+verb can answer in is fixed the moment its failures get their type,
+not when its message is written.
+
 `Effect.as` is EAGER — reads its argument at pipe construction.
 `Effect.forEach` passes the index to point-free callbacks. effect's
 installed dist lags its src at rc.112 — confirm src-read APIs against

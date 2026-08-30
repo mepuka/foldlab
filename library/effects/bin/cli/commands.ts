@@ -18,6 +18,7 @@ import {
   Layer,
   Match,
   Option,
+  PlatformError,
   Predicate,
   Result,
   Schema,
@@ -40,6 +41,7 @@ import {
 } from "./store.ts"
 import {
   casErrorMessage,
+  inlineText,
   isRegisteredTag,
   kindJson,
   renderBindingJson,
@@ -75,20 +77,106 @@ import {
 } from "../mcp/server.ts"
 
 /**
+ * THE HOST SAID NO — the one platform failure that is a reader's
+ * business rather than a defect.
+ *
+ * A permission refusal is the operating system's answer about a path,
+ * not the store's answer about content, and it can reach any verb that
+ * touches a file: `put` reading bytes, `init` writing a layout,
+ * `status` walking a directory. It is curated here, once, because the
+ * sentence is the same one at every one of them — and because the
+ * uncurated rendering ("unexpected: PermissionDenied: …") tells a
+ * reader who typed a path they cannot read that cas is broken, which
+ * is the opposite of the truth.
+ *
+ * `pathOrDescriptor` is optional in the platform's own shape, so the
+ * first line is written twice rather than printing "undefined".
+ */
+const permissionRefusal = (system: PlatformError.SystemError): string => {
+  const path = system.pathOrDescriptor === undefined
+    ? undefined
+    : String(system.pathOrDescriptor)
+  return [
+    path === undefined
+      ? "refused: the host denied permission"
+      : `refused: the host denied permission on ${path}`,
+    `  the operating system refused ${system.module}.${system.method} — that is an answer about the path, not about the content`,
+    "  check the path's owner and mode, or run as the user that owns it",
+  ].join("\n")
+}
+
+/** The `PermissionDenied` a failure carries, if it carries one. The
+ * platform wraps its normalized reason in a `PlatformError`, so the
+ * tag that matters is one level down.
+ *
+ * The parameter is a type VARIABLE and not `unknown`: what arrives here
+ * is an effect's own error type, whatever that turned out to be, and
+ * saying so is more honest than claiming an unparsed value crossed a
+ * boundary. There is no schema to establish either way — the whole
+ * design of the fold below is being able to say when it does not know
+ * what it is holding. */
+const permissionDeniedOf = <E>(
+  error: E,
+): PlatformError.SystemError | undefined =>
+  error instanceof PlatformError.PlatformError
+      && error.reason._tag === "PermissionDenied"
+    ? error.reason
+    : undefined
+
+/**
+ * THE REFUSAL FOLD: any failure, in the everyday register.
+ *
+ * Store refusals go through the library's own error fold, so each
+ * clause arrives named; a permission refusal is the host's own and gets
+ * the sentence above; the estate's own tagged refusals carry their
+ * curated sentences; and anything ELSE is a shape nobody wrote a
+ * sentence for, which is said out loud instead of being dressed up as
+ * a refusal the reader caused. A codec failing on a value this package
+ * built, a platform error slipping past a gate — the honest answer is
+ * the underlying detail verbatim, marked as uncurated, because a
+ * dressed-up sentence would claim an understanding this module does
+ * not have. (`prettyErrors` still normalizes the detail line, so an
+ * Error, a string, or a bare primitive all render without this module
+ * reaching for `.message` itself.)
+ *
+ * The parameter is a type variable for the reason `permissionDeniedOf`'s
+ * is, and this fold is the one place in the CLI that is allowed to be
+ * unsure: everything downstream of it has a name.
+ *
+ * Exported so the suite can read the fold directly. The permission
+ * clause is the reason: reaching it through a verb means creating a
+ * file this process cannot read, and file modes are not a portable
+ * fact on the Windows-native primary — so the case that pins the
+ * wording drives this function, and the case that pins the UNCURATED
+ * path drives it beside.
+ */
+export const refusalMessage = <E>(error: E): string => {
+  if (Cas.isCasError(error)) return casErrorMessage(error)
+  const denied = permissionDeniedOf(error)
+  if (denied !== undefined) return permissionRefusal(denied)
+  const detail = Cause.prettyErrors(Cause.fail(error))
+    .map((pretty) => pretty.message)
+    .join("\n")
+  // A curated refusal is one this estate wrote the sentence for: a
+  // tagged error minted in the CLI (`cli/…`) or the MCP host
+  // (`mcp/…`), whose `message` is already the everyday register.
+  // Read via `Reflect`, because the whole point here is being
+  // honestly unsure what `error` is.
+  const tag = Predicate.isObject(error) ? Reflect.get(error, "_tag") : undefined
+  if (Predicate.isString(tag) && (tag.startsWith("cli/") || tag.startsWith("mcp/"))) {
+    return detail
+  }
+  return [
+    `unexpected: ${detail}`,
+    "  cas has no curated sentence for this failure — the line above is the underlying",
+    "  answer, verbatim; if it does not explain itself, this is worth reporting",
+  ].join("\n")
+}
+
+/**
  * Every failure a verb can surface is rendered as a user error: the
  * runner prints the message through its own formatter and marks it
  * reported, so a refusal reads as guidance instead of a stack trace.
- * Store refusals go through the library's own error fold, so each
- * clause arrives named; the estate's own tagged refusals carry their
- * curated sentences; and anything ELSE is a shape nobody wrote a
- * sentence for, which is said out loud instead of being dressed up as
- * a refusal the reader caused. A platform error slipping past a gate,
- * a codec failing on a value this package built — the honest answer is
- * the underlying detail verbatim, marked as uncurated, because a
- * dressed-up sentence would claim an understanding this module does
- * not have. (`prettyErrors` still normalizes the detail line, so
- * an Error, a string, or a bare primitive all render without this
- * module reaching for `.message` itself.)
  *
  * Only the typed error channel is mapped: defects keep their stack
  * traces and interrupts stay interrupts, because neither is something
@@ -97,29 +185,8 @@ import {
 const userFacing = <A, E, R>(
   program: Effect.Effect<A, E, R>,
 ): Effect.Effect<A, CliError.UserError, R> =>
-  Effect.mapError(program, (error) => {
-    const detail = Cause.prettyErrors(Cause.fail(error))
-      .map((pretty) => pretty.message)
-      .join("\n")
-    // A curated refusal is one this estate wrote the sentence for: a
-    // tagged error minted in the CLI (`cli/…`) or the MCP host
-    // (`mcp/…`), whose `message` is already the everyday register.
-    // Read via `Reflect`, because the whole point here is being
-    // honestly unsure what `error` is.
-    const tag = Predicate.isObject(error) ? Reflect.get(error, "_tag") : undefined
-    const curated = Predicate.isString(tag)
-      && (tag.startsWith("cli/") || tag.startsWith("mcp/"))
-    const message = Cas.isCasError(error)
-      ? casErrorMessage(error)
-      : curated
-      ? detail
-      : [
-        `unexpected: ${detail}`,
-        "  cas has no curated sentence for this failure — the line above is the underlying",
-        "  answer, verbatim; if it does not explain itself, this is worth reporting",
-      ].join("\n")
-    return new CliError.UserError({ cause: error, userMessage: message })
-  })
+  Effect.mapError(program, (error) =>
+    new CliError.UserError({ cause: error, userMessage: refusalMessage(error) }))
 
 /** Flag, then `CAS_STORE`, then absent — the precedence is the flag's
  * own config fallback, so this module never reads the environment.
@@ -247,6 +314,35 @@ export class NotAFile extends Schema.TaggedError<NotAFile>()(
     ].join("\n")
   }
 }
+
+/** The text given to `cas name` is not a name.
+ *
+ * Two ways that happens and they are one refusal, because the answer is
+ * the same: a name is ONE LINE of human text, rendered inline beside
+ * the node's own facts by `cas show`. An empty one prints a blank
+ * column that reads as a defect; one carrying a line break prints a
+ * second line that reads as something cas said. Neither is refused
+ * because the store could not hold it — the store holds any text — but
+ * because this verb is the human seat, and a caller who genuinely wants
+ * shaped text writes the annotation through the library. */
+export class NotAName extends Schema.TaggedError<NotAName>()(
+  "cli/NotAName",
+  { clause: Schema.String },
+) {
+  override get message(): string {
+    return [
+      `not a name: ${this.clause}`,
+      "  a name is one line of human text, printed beside the node's own facts by cas show",
+      "  text with more shape than that is an annotation written through the library's Annotations API, not this verb",
+    ].join("\n")
+  }
+}
+
+/** The C0 control class and DEL — every character that would move the
+ * cursor rather than print. A stored name is rendered INLINE, so one of
+ * these in a name does not merely look wrong: it writes a line beside
+ * the node's facts that reads as cas's own. */
+const controlCharacter = /\p{Cc}/u
 
 /** The addressed content sits on a plane the annotation subject union
  * does not span, so nothing can be said ABOUT it yet. The refusal
@@ -484,12 +580,30 @@ export const ls = Command.make("ls", {
  * key and all. A `ref`-valued annotation points, so its line does. */
 const annotationLine = (found: FoundAnnotation): string => {
   const said = found.value._tag === "text"
-    ? found.value.text
+    // Escaped, because this is STORED text printed inline: `cas name`
+    // refuses to write a control character, and the store still holds
+    // whatever another writer put there.
+    ? inlineText(found.value.text)
     : `-> ${found.value.address.address}`
   return found.key === NameKey
     ? `name       ${said}  (annotation ${found.annotation})`
-    : `annotation ${found.key} — ${said}  (${found.annotation})`
+    : `annotation ${inlineText(found.key)} — ${said}  (${found.annotation})`
 }
+
+/** What `show` says when the ROOTS LISTING itself will not answer.
+ *
+ * Printing nothing here would be a lie of the worst kind: silence in
+ * this column reads as "this content carries no names", and the store
+ * has not said that — it has said nothing. The node's own facts above
+ * are unaffected and were already answered correctly, so the verb still
+ * succeeds; the gap in what it could report is stated in place, which
+ * is how `ls` already reports a root it cannot load. */
+const namesUnread = (failure: Cas.BackendFailure): string =>
+  [
+    "names      not read — the store could not list its published roots",
+    `  ${failure.reason}`,
+    "  the node above is unaffected; names are read off the roots, so this is no answer about them rather than an absence of them",
+  ].join("\n")
 
 const showProgram = (address: string, json: boolean) =>
   Effect.gen(function* () {
@@ -513,9 +627,12 @@ const showProgram = (address: string, json: boolean) =>
     // annotations so they can be found again. Sidecar content: it is
     // reported after the node's own facts and never among them, and
     // `--json` above stays the canonical document alone.
-    for (const found of yield* annotationsAbout(id)) {
-      yield* Console.log(annotationLine(found))
-    }
+    const found = yield* Effect.result(annotationsAbout(id))
+    yield* Result.match(found, {
+      onSuccess: (annotations) =>
+        Effect.forEach(annotations, (one) => Console.log(annotationLine(one))),
+      onFailure: (failure) => Console.log(namesUnread(failure)),
+    })
   })
 
 export const show = Command.make("show", {
@@ -554,6 +671,19 @@ export const show = Command.make("show", {
  */
 const nameProgram = (address: string, text: string, json: boolean) =>
   Effect.gen(function* () {
+    // The name is judged first, before the address and before the
+    // store: it is a fact about the argument alone, and a reader who
+    // typed both wrong should be told about the one they can see.
+    if (text.length === 0) {
+      return yield* new NotAName({
+        clause: "the text is empty, and an empty name says nothing about anything",
+      })
+    }
+    if (controlCharacter.test(text)) {
+      return yield* new NotAName({
+        clause: "the text carries a control character, so it is not one line",
+      })
+    }
     const id = yield* decodeAddress(address)
     const loader = yield* Cas.Loader
     // Loaded first, fail-closed like `publish`: a name claims there is
@@ -623,6 +753,8 @@ export const name = Command.make("name", {
       "  content does not change and its address does not move. `cas show <address>`",
       "  prints the names it finds; the same name said twice is one node, said once,",
       "  and a second name never replaces a first — the store only grows.",
+      "  A name is ONE LINE of human text: empty text and text carrying a control",
+      "  character are refused here, because both would print as a line cas did not say.",
       `  The annotation plane spans five kinds today: ${nameablePlanesListed}.`,
       "  Anything else is refused by name: widening the plane is a Lean ruling",
       "  (Cas.Schema.AnnotationSubject), not a flag. Add --wizard to be walked through it.",
@@ -636,27 +768,115 @@ export const name = Command.make("name", {
  * types `cas help` the way every other tool has taught them to. It is
  * a real verb rather than an alias for `--help` because it answers a
  * different question: not "what are the flags" but "where do I start".
+ *
+ * It is held as ROWS rather than as a block of prose because it has two
+ * registers like every other verb. The page's own sentence — "every
+ * verb answers --json" — was false about the verb printing it, which is
+ * the worst place for that sentence to be false. One row shape answers
+ * both registers, so the two cannot say different things.
  */
+interface LandingRow {
+  /** What a reader is trying to do, in one or two words. */
+  readonly topic: string
+  /** The invocation, exactly as a reader would type it. A topic served
+   * by two verbs names both, joined the way the page joins them. */
+  readonly invocation: string
+  /** What comes back, and what it costs. */
+  readonly says: string
+}
+
+const landingRows: ReadonlyArray<LandingRow> = [
+  {
+    topic: "start",
+    invocation: "cas init",
+    says: "make a store here (the only verb that ever creates one)",
+  },
+  {
+    topic: "look",
+    invocation: "cas status · cas doctor",
+    says: "what this store is; what the lab it sits in has proved",
+  },
+  {
+    topic: "write",
+    invocation: "cas put <file>",
+    says: "a file's bytes become one node; the address is the answer",
+  },
+  {
+    topic: "entry points",
+    invocation: "cas publish <address>",
+    says: "loaded first, fail-closed · cas ls lists every root",
+  },
+  {
+    topic: "read",
+    invocation: "cas show <address>",
+    says: "one node, re-verified · cas verify audits everything reachable",
+  },
+  {
+    topic: "name",
+    invocation: "cas name <address> <text>",
+    says: "a human word on stored content — itself stored content",
+  },
+  {
+    topic: "run",
+    invocation: "cas run <address>",
+    says: "run the program stored at an address; the answer is its history",
+  },
+  {
+    topic: "serve",
+    invocation: "cas serve",
+    says: "MCP over stdio for agents — see cas serve --help before relying on it",
+  },
+]
+
+/** The one-line statement of what the tool is. */
+const landingTitle =
+  "cas — a content-addressed store: content in, address back; equal content, equal address"
+
+/** What holds for every verb rather than for one — read after the rows,
+ * and carried in both registers for the same reason the rows are. */
+const landingNotes: ReadonlyArray<string> = [
+  "every verb answers --json (serve excepted: stdout is the protocol), and --wizard walks you through one",
+  "exit codes: 0, the verb answered (help included); 1, refused — the reason reads under ERROR on stderr",
+  "depth: cas <verb> --help · library/cas/REGISTRY.md (the kinds) · library/effects/VOCABULARY.md (the words)",
+]
+
+/** The two columns, widened to fit whatever the rows hold rather than
+ * counted out in spaces — a longer invocation cannot silently push the
+ * page out of alignment. */
+const landingColumns = {
+  topic: Math.max(...landingRows.map((row) => row.topic.length)) + 1,
+  invocation: Math.max(...landingRows.map((row) => row.invocation.length)) + 4,
+}
+
 const landing = [
-  "cas — a content-addressed store: content in, address back; equal content, equal address",
+  landingTitle,
   "",
-  "  start        cas init                     make a store here (the only verb that ever creates one)",
-  "  look         cas status · cas doctor      what this store is; what the lab it sits in has proved",
-  "  write        cas put <file>               a file's bytes become one node; the address is the answer",
-  "  entry points cas publish <address>        loaded first, fail-closed · cas ls lists every root",
-  "  read         cas show <address>           one node, re-verified · cas verify audits everything reachable",
-  "  name         cas name <address> <text>    a human word on stored content — itself stored content",
-  "  run          cas run <address>            run the program stored at an address; the answer is its history",
-  "  serve        cas serve                    MCP over stdio for agents — see cas serve --help before relying on it",
+  ...landingRows.map((row) =>
+    `  ${row.topic.padEnd(landingColumns.topic)}${
+      row.invocation.padEnd(landingColumns.invocation)
+    }${row.says}`
+  ),
   "",
-  "  every verb answers --json (serve excepted: stdout is the protocol), and --wizard walks you through one",
-  "  exit codes: 0, the verb answered (help included); 1, refused — the reason reads under ERROR on stderr",
-  "  depth: cas <verb> --help · library/cas/REGISTRY.md (the kinds) · library/effects/VOCABULARY.md (the words)",
+  ...landingNotes.map((note) => `  ${note}`),
 ].join("\n")
 
-export const help = Command.make("help", {}, () => Console.log(landing)).pipe(
-  Command.withDescription("where to start — the estate in a dozen lines"),
-)
+/** The landing page in the machine register: the same title, the same
+ * rows field for field, and the same notes. An agent reading this gets
+ * the verb list without parsing a padded column. */
+const landingJson: Schema.Json = {
+  notes: [...landingNotes],
+  rows: landingRows.map((row) => ({
+    invocation: row.invocation,
+    says: row.says,
+    topic: row.topic,
+  })),
+  title: landingTitle,
+}
+
+export const help = Command.make("help", { json: jsonFlag }, ({ json }) =>
+  Console.log(json ? renderJson(landingJson) : landing)).pipe(
+    Command.withDescription("where to start — the estate in a dozen lines"),
+  )
 
 /* ── put ─────────────────────────────────────────────────────────── */
 
@@ -692,7 +912,9 @@ const workingTagNote = (tag: number): string =>
 /** The file gate both put registers share: the path must exist, and it
  * must be a FILE. Without the second check a directory reaches the
  * platform reader and answers `BadResource: FileSystem.readFile`,
- * which names neither the mistake nor the fix (transcript row A7). */
+ * which names neither the mistake nor the fix. The audit's transcript
+ * grades the missing-file half (E6/E10); the directory half is the same
+ * gate found while closing them, and has no row of its own. */
 const requireFile = (
   file: string,
 ): Effect.Effect<void, NoSuchFile | NotAFile, FileSystem.FileSystem> =>
@@ -859,8 +1081,13 @@ const decodeLiftDocument = (text: string) =>
 export const put = Command.make("put", {
   store: storeFlag,
   json: jsonFlag,
+  // OPTIONAL rather than defaulted, because `--program` has to be able
+  // to tell "not said" from "said, and said 1". A default collapses the
+  // two, and the contradiction below then accepts `--program --kind-tag
+  // 1` in silence — a flag silently dropped teaches a false model of
+  // the verb just as surely when the value happens to be the default.
   kindTag: Flag.integer("kind-tag").pipe(
-    Flag.withDefault(defaultKindTag),
+    Flag.optional,
     Flag.withDescription(
       "the kind the content takes, as a tag byte, 0 to 255 (default: 1, an opaque value payload)",
     ),
@@ -882,14 +1109,20 @@ export const put = Command.make("put", {
 }, ({ file, json, kindTag, program, store }) => {
   // The two flags contradict, and the contradiction is judged before
   // the store is even resolved: a usage mistake must not come back as
-  // a store refusal when the path happens to be wrong too.
-  if (program && kindTag !== defaultKindTag) {
-    return Effect.fail(new KindTagOnProgram({ given: kindTag })).pipe(userFacing)
+  // a store refusal when the path happens to be wrong too. PRESENCE is
+  // what contradicts, not the value — `--kind-tag 1` beside `--program`
+  // is the same false claim as `--kind-tag 5`, and used to be accepted
+  // in silence because 1 is what the flag defaulted to.
+  if (program && Option.isSome(kindTag)) {
+    return Effect.fail(new KindTagOnProgram({ given: kindTag.value })).pipe(userFacing)
   }
   if (program) {
     return putProgramDocument(file, json).pipe(Effect.provide(layerStoreAt(store)), userFacing)
   }
-  return putProgram(file, kindTag, json).pipe(Effect.provide(layerStoreAt(store)), userFacing)
+  return putProgram(file, Option.getOrElse(kindTag, () => defaultKindTag), json).pipe(
+    Effect.provide(layerStoreAt(store)),
+    userFacing,
+  )
 }).pipe(Command.withDescription(
     "put a file's bytes in the store as one node — the address is the answer, and equal bytes give it back unchanged; --program puts a program document's whole table instead",
   ))

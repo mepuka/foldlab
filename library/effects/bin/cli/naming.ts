@@ -38,21 +38,22 @@ import { Cas } from "../../src/index.ts"
 import {
   AnnotationKindTag,
   AnnotationNameKey,
+  AnnotationRevision,
   AnnotationSubjectArms,
 } from "../../src/cas/generated/annotationPlane.ts"
 
-/** The kind tag annotation nodes ride and the name seat's key — the
- * EMITTED spellings (`annotationPlane.ts`, from
- * `Cas/Schema/Annotation.lean`'s own pins, byte-gated), re-exported so
- * every CLI module names them through this seat. */
-export { AnnotationKindTag }
+/** The name seat's key — the EMITTED spelling (`annotationPlane.ts`,
+ * from `Cas/Schema/Annotation.lean`'s own pins, byte-gated), given the
+ * house name the CLI reads it under. */
 export const NameKey = AnnotationNameKey
 
-/** The annotation projection: revision 1 at the working tag, the same
- * projection the byte pins are checked against. */
+/** The annotation projection: the emitted revision at the emitted
+ * working tag, the same projection the Lean byte pins are checked
+ * against. Neither number is spelled here — a projection's revision is
+ * part of the wire, so a second spelling of it is a second wire. */
 export const AnnotationNode = Cas.value({
   kindTag: AnnotationKindTag,
-  revision: 1,
+  revision: AnnotationRevision,
   schema: Cas.Annotations.Annotation,
 })
 
@@ -66,19 +67,29 @@ export const AnnotationNode = Cas.value({
 export const nameablePlanes: ReadonlyArray<readonly [string, number]> =
   AnnotationSubjectArms.map((row) => [row.arm, row.tag])
 
-/** The five arm constructors by arm name — the hand half of the seam,
- * because a constructor is code and the emitted table is data. The
+/** An address no store holds, used only to ask a constructor which arm
+ * it builds. Cheaper than a second table of arm names, and it cannot
+ * disagree with the library the way a table can. */
+const probe = Cas.ContentId.make("0".repeat(64))
+
+/** The arm constructors, keyed by the arm each one actually builds —
+ * the hand half of the seam, because a constructor is code and the
+ * emitted table is data. The KEYS are read off the library's own
+ * output rather than spelled here, so this module holds no copy of an
+ * arm name; the emitted table holds no copy of a constructor. The
  * suite walks the emitted table through `subjectFor` and fails when an
  * emitted arm has no constructor here, so a widened union cannot ship
  * a refusal that lies about the plane being unspellable. */
 const constructors: ReadonlyMap<string, (id: Cas.ContentId) => Cas.Annotations.Subject> =
   new Map([
-    ["exchange", Cas.Annotations.onExchange],
-    ["git", Cas.Annotations.onGit],
-    ["program", Cas.Annotations.onProgram],
-    ["schema", Cas.Annotations.onSchema],
-    ["system", Cas.Annotations.onSystem],
-  ])
+    Cas.Annotations.onExchange,
+    Cas.Annotations.onGit,
+    Cas.Annotations.onProgram,
+    Cas.Annotations.onSchema,
+    Cas.Annotations.onSystem,
+  ].map((make): readonly [string, (id: Cas.ContentId) => Cas.Annotations.Subject] =>
+    [make(probe)._tag, make]
+  ))
 
 /** The subject arm a stored node's kind tag selects, or none when the
  * emitted table has no arm at that plane. */
@@ -114,18 +125,29 @@ const byNameFirst = (left: FoundAnnotation, right: FoundAnnotation): number => {
  * walked, each root read through the annotation projection, and the
  * ones whose subject is this address kept.
  *
- * Best-effort by design: a root of another kind, another revision, or
- * another shape simply is not an annotation about this subject, and
- * the walk moves on — `cas verify` is the verb that judges roots, not
- * this read. The cost is one load per published root, which is the
- * honest price of having no reverse index; the day an index kind
- * lands, this walk is what it replaces.
+ * Best-effort PER ROOT, and only per root: a root of another kind,
+ * another revision, or another shape simply is not an annotation about
+ * this subject, and the walk moves on — `cas verify` is the verb that
+ * judges roots, not this read. But the roots LISTING itself failing is
+ * a different fact, and it stays in the error channel: a store that
+ * cannot say what it has published has not answered "no names", it has
+ * not answered. `show` says so on its own line rather than printing an
+ * empty result that reads like an absence of names.
+ *
+ * The failure type is the listing's own — `BackendFailure`, the only
+ * thing `RootStore.list` can raise — and not the whole store error
+ * union, because every OTHER refusal on this path is already answered
+ * per root above.
+ *
+ * The cost is one load per published root, which is the honest price of
+ * having no reverse index; the day an index kind lands, this walk is
+ * what it replaces.
  */
 export const annotationsAbout = (
   subject: Cas.ContentId,
 ): Effect.Effect<
   ReadonlyArray<FoundAnnotation>,
-  never,
+  Cas.BackendFailure,
   Cas.RootStore | Cas.Loader
 > =>
   Cas.RootStore.pipe(
@@ -146,5 +168,4 @@ export const annotationsAbout = (
         ))
     ),
     Effect.map((found) => Arr.getSomes(found).toSorted(byNameFirst)),
-    Effect.orElseSucceed((): ReadonlyArray<FoundAnnotation> => []),
   )

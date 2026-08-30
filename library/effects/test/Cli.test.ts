@@ -18,12 +18,14 @@
  */
 import { expect, it } from "@effect/vitest"
 import {
+  cast,
   Console,
   Effect,
   FileSystem,
   Layer,
   Option,
   Path,
+  PlatformError,
   Sink,
   Stdio,
   Stream,
@@ -31,13 +33,19 @@ import {
 } from "effect"
 import { CliError } from "effect/unstable/cli"
 import { ChildProcessSpawner } from "effect/unstable/process"
+import { refusalMessage } from "../bin/cli/commands.ts"
 import { runCas as runEntry } from "../bin/cli/entry.ts"
-import { subjectFor } from "../bin/cli/naming.ts"
-import { casErrorMessage } from "../bin/cli/render.ts"
+import { AnnotationNode, NameKey, subjectFor } from "../bin/cli/naming.ts"
+import { casErrorMessage, inlineText, isRegisteredTag, tagHex, tagLabel } from "../bin/cli/render.ts"
 import { cas } from "../bin/cli/tree.ts"
 import { AddressMismatch, ContentId } from "../src/cas/Node.ts"
 import { vocabularyWords } from "../bin/cli/vocabulary.ts"
-import { AnnotationSubjectArms } from "../src/cas/generated/annotationPlane.ts"
+import {
+  AnnotationKindTag,
+  AnnotationKindWord,
+  AnnotationSubjectArms,
+} from "../src/cas/generated/annotationPlane.ts"
+import { KindTagsByName } from "../src/cas/generated/grammar/kindTags.ts"
 import { Cas } from "../src/index.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
 
@@ -840,6 +848,121 @@ it.effect("name: a plane outside the subject union is refused by name", () =>
         .toContain("not an address")
     })))
 
+it.effect("show: a roots listing that will not answer is said, not printed as no names", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      const address = addressOf(yield* invoke("put", file, "--store", store))
+
+      // `roots` as a FILE, so the listing fails with something that is
+      // not "not found" — the shape a store that cannot say what it has
+      // published actually has. The objects are untouched, so the node's
+      // own facts still load.
+      yield* fs.remove(`${store}/roots`, { recursive: true }).pipe(Effect.ignore)
+      yield* fs.writeFileString(`${store}/roots`, "not a directory")
+
+      const shown = yield* invoke("show", address, "--store", store)
+      // The node answered, and answered correctly.
+      expect(shown[0]).toBe(`address    ${address}`)
+      expect(shown[1]).toBe("kind       value (0x01)  (scheme 0)")
+      // And the gap is stated in place. Silence here would read as "this
+      // content carries no names", which the store never said.
+      const last = shown.at(-1)!
+      expect(last).toContain("names      not read")
+      expect(last).toContain("could not list its published roots")
+      expect(last).toContain("no answer about them rather than an absence of them")
+    })))
+
+it("every everyday kind word is an emitted one (decision 25)", () => {
+  // Decision 25: a kind name enters the human register off the
+  // GENERATED registry, never off a hand-written table. The everyday
+  // overlay used to spell "annotation" in TypeScript beside the
+  // annotation tag; the word is emitted now, from the Lean pin that
+  // owns the tag, and the rest of the overlay is seeded from the same
+  // file's arm table.
+  for (const row of AnnotationSubjectArms) {
+    expect(tagLabel(row.tag)).toBe(`${row.arm} (${tagHex(row.tag)})`)
+  }
+  // The annotation kind's own word, beside its own tag — and it is
+  // still a WORKING tag, which the overlay does not change.
+  expect(tagLabel(AnnotationKindTag)).toBe(`${AnnotationKindWord} (${tagHex(AnnotationKindTag)})`)
+  expect(isRegisteredTag(AnnotationKindTag)).toBe(false)
+  // Collision 3's ruling still rides the overlay: a `cont` node is the
+  // program, and a `step` is one of that program's steps — the noun
+  // read back out of the overlay rather than spelled a second time.
+  expect(tagLabel(KindTagsByName.cont)).toBe("program (0x0f)")
+  expect(tagLabel(KindTagsByName.step)).toBe("program step (0x0e)")
+})
+
+it.effect("one screen, one spelling: the kind line and the plane list agree", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      // 0x58, the exchange plane, is a WORKING tag: the registry gives
+      // it no row, so `cas name`'s kind line printed a bare byte on the
+      // same screen whose refusal spelled the plane out. Both read off
+      // the emitted arm table now.
+      const exchange = AnnotationSubjectArms.find((row) => row.arm === "exchange")!
+      const subject = addressOf(
+        yield* invoke("put", file, "--kind-tag", String(exchange.tag), "--store", store),
+      )
+      const named = yield* invoke("name", subject, "the worked exchange", "--store", store)
+      expect(named[1]).toBe(`kind       exchange (${tagHex(exchange.tag)})  (scheme 0)`)
+
+      // And the refusal on a plane the union does not span prints the
+      // same words for the same tags.
+      const value = addressOf(yield* invoke("put", file, "--store", store))
+      const refused = refusalText(
+        yield* Effect.flip(invoke("name", value, "nope", "--store", store)),
+      )
+      for (const row of AnnotationSubjectArms) {
+        expect(refused).toContain(`${row.arm} (${tagHex(row.tag)})`)
+      }
+    })))
+
+it.effect("name: an empty name and a name with a line break are refused", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const subject = addressOf(yield* invoke("put", file, "--kind-tag", "83", "--store", store))
+
+      // The empty string is not a human word, and it would print as a
+      // blank column that reads like a defect.
+      const empty = refusalText(yield* Effect.flip(invoke("name", subject, "", "--store", store)))
+      expect(empty).toContain("not a name: the text is empty")
+      expect(empty).toContain("one line of human text")
+
+      // A line break in a name would print a SECOND line beside the
+      // node's own facts — a stored value writing a line that reads as
+      // cas's. Refused at the seat that writes it.
+      const broken = refusalText(
+        yield* Effect.flip(invoke("name", subject, "real\nkind       schema (0x53)", "--store", store)),
+      )
+      expect(broken).toContain("not a name: the text carries a control character")
+
+      // Judged before the address, because it is a fact about the
+      // argument alone: a reader who typed both wrong hears about the
+      // one in front of them.
+      expect(refusalText(yield* Effect.flip(invoke("name", "nope", "", "--store", store))))
+        .toContain("not a name")
+
+      // And nothing reached the store on the way to either refusal.
+      expect(yield* invoke("ls", "--store", store)).toEqual(["no roots published"])
+    })))
+
+it("a stored name with a control character renders escaped, never as a line of its own", () => {
+  // `cas name` refuses to WRITE one, but the annotation plane is a
+  // library API and the store only grows, so `show` still has to render
+  // whatever another writer put there. Escaped, it is visibly content;
+  // unescaped, it would forge a line under the node's facts.
+  expect(inlineText("real\nkind       schema (0x53)")).toBe(
+    "real\\nkind       schema (0x53)",
+  )
+  // The three that have spellings get them; anything else renders as
+  // its code point, because a name is not a payload and there is no
+  // encoding to fall back to.
+  expect(inlineText("a\tb\rc\u0007d")).toBe("a\\tb\\rc\\u0007d")
+  expect(inlineText("an ordinary name")).toBe("an ordinary name")
+})
+
 it("every emitted annotation arm dispatches to a constructor", () => {
   // The emitted table (`annotationPlane.ts`, from the Lean union's own
   // code) is data; the arm constructors are code. This walk is the
@@ -853,6 +976,88 @@ it("every emitted annotation arm dispatches to a constructor", () => {
     expect(Option.isSome(subject)).toBe(true)
     expect(Option.getOrThrow(subject)._tag).toBe(row.arm)
   }
+})
+
+it.effect("every emitted arm's reference demands the tag the table names", () =>
+  Effect.gen(function* () {
+    // The arm dispatch above proves the CLI can SPELL every emitted
+    // arm. This proves the spelling is the right one: an arm is a
+    // reference demanding one kind tag, and the tag it demands on the
+    // wire has to be the tag the emitted table names — otherwise the
+    // refusal that prints "exchange (0x58)" would be describing a
+    // reference that expects something else.
+    //
+    // Read off the stored node's own refs, because that is where the
+    // expected tag actually lives; four of the five arms build their
+    // tag from an independent library constant, so this is a real
+    // comparison and not a table read back to itself.
+    const store = yield* Cas.Store
+    for (const row of AnnotationSubjectArms) {
+      const target = yield* store.put({
+        kind: { version: Cas.SchemeVersion, tag: row.tag },
+        payload: new TextEncoder().encode(`a ${row.arm} node`),
+        refs: [],
+      })
+      const arm = Option.getOrThrow(subjectFor(row.tag, target))
+      const stored = yield* AnnotationNode.put(
+        Cas.Annotations.annotationOn(arm)({
+          key: NameKey,
+          value: Cas.Annotations.text(row.arm),
+        }),
+      )
+      const node = yield* store.load(cast(stored))
+      expect(node.refs).toEqual([{ expectedTag: row.tag, id: target }])
+    }
+  }).pipe(Effect.provide(Cas.layerMemoryLive)))
+
+/* ── the refusal fold ──────────────────────────────────────────────── */
+
+it("a permission refusal is the host's answer, said as the host's answer", () => {
+  // The one platform failure that is a reader's business rather than a
+  // defect: they named a path they cannot read. Uncurated it rendered
+  // as "unexpected: PermissionDenied: …", which tells that reader cas
+  // is broken — the opposite of the truth.
+  //
+  // The fold is driven directly rather than through a verb, because
+  // reaching it through one means creating a file this process cannot
+  // read, and file modes are not a portable fact on the Windows-native
+  // primary. The shape below is the platform's own, verbatim.
+  const message = refusalMessage(PlatformError.systemError({
+    _tag: "PermissionDenied",
+    module: "FileSystem",
+    method: "readFile",
+    syscall: "open",
+    pathOrDescriptor: "/locked/note.txt",
+  }))
+  expect(message).toContain("refused: the host denied permission on /locked/note.txt")
+  expect(message).toContain("FileSystem.readFile")
+  expect(message).toContain("about the path, not about the content")
+  expect(message).toContain("owner and mode")
+  expect(message).not.toContain("unexpected:")
+  // A path is optional in the platform's shape, and "undefined" is not
+  // a path.
+  expect(refusalMessage(PlatformError.systemError({
+    _tag: "PermissionDenied",
+    module: "FileSystem",
+    method: "makeDirectory",
+  }))).toContain("refused: the host denied permission\n")
+
+  // The uncurated path is pinned in the same breath, because it is the
+  // half that must NOT quietly widen: a shape nobody wrote a sentence
+  // for is said out loud as one, never dressed up as a refusal the
+  // reader caused.
+  const unwritten = refusalMessage(new Error("something nobody worded"))
+  expect(unwritten).toContain("unexpected:")
+  expect(unwritten).toContain("something nobody worded")
+  expect(unwritten).toContain("no curated sentence")
+  // And a platform failure that is NOT a permission refusal stays on
+  // that same honest path rather than borrowing the new sentence.
+  expect(refusalMessage(PlatformError.systemError({
+    _tag: "BadResource",
+    module: "FileSystem",
+    method: "readFile",
+    pathOrDescriptor: "/some/dir",
+  }))).toContain("unexpected:")
 })
 
 /* ── the program verbs, from the shell ─────────────────────────────── */
@@ -919,6 +1124,25 @@ it.effect("put --program: the flag contradictions and wrong documents are refuse
       expect(contradiction).toContain("--kind-tag 5 does not apply to --program")
       expect(contradiction).toContain("carries its own kinds")
 
+      // PRESENCE contradicts, not the value. `--kind-tag 1` used to be
+      // accepted in silence beside `--program` because 1 was the flag's
+      // default and a default cannot say "not said" — so the reader was
+      // taught that a tag applies to a program document, which it does
+      // not.
+      const defaulted = refusalText(yield* Effect.flip(
+        invoke("put", file, "--program", "--kind-tag", "1", "--store", store),
+      ))
+      expect(defaulted).toContain("--kind-tag 1 does not apply to --program")
+      // And saying nothing about the tag still puts the document.
+      const put = yield* invoke(
+        "put",
+        yield* withLiftDocument(store),
+        "--program",
+        "--store",
+        store,
+      )
+      expect(put[1]).toBe("kind       program (0x0f)  (scheme 0)")
+
       // A file that is not a lift document dies at the door.
       expect(refusalText(yield* Effect.flip(
         invoke("put", file, "--program", "--store", store),
@@ -962,6 +1186,36 @@ it.effect("a negative flag value is answered with the = spelling, not two riddle
         invoke("put", file, "--kind-tag=-1", "--store", store),
       ))
       expect(spelled).toContain("not a kind tag: -1")
+
+      // Nothing about the tokenizer is numeric: a single-letter dashed
+      // value is split exactly the way a negative number is, and a
+      // predicate that recognized only digits answered it at the grade
+      // this seam exists to retire.
+      const letter = yield* printedRefusal("put", file, "--store", "-x")
+      expect(letter).toContain("store was left empty, and -x was read as a flag")
+      expect(letter).toContain("--store=-x")
+
+      // A LONGER dashed value is short flags: `-backup` reaches the
+      // runner as six errors, so the word the reader typed is not
+      // recoverable from them. The run is still collapsed — six "no
+      // such flag" lines about one typo is the riddle — but the
+      // sentence states the rule rather than advising `--store=-b`
+      // about a word nobody typed.
+      const bundled = yield* printedRefusal("put", file, "--store", "-backup")
+      expect(bundled).toContain("what followed it was read as flags")
+      expect(bundled).toContain("--store=<value>")
+      expect(bundled).not.toContain("--store=-b")
+      expect(bundled).not.toContain("no such flag: -a")
+
+      // The collapse REPLACES its own run and nothing else. A
+      // misspelled flag typed beside a dashed value is still a
+      // misspelled flag, and dropping it means the reader fixes the =
+      // spelling and hears about the rest only on the next run.
+      const alongside = yield* printedRefusal(
+        "put", file, "--jsom", "--kind-tag", "-1", "--store", store,
+      )
+      expect(alongside).toContain("--kind-tag=-1")
+      expect(alongside).toContain("no such flag: --jsom")
     })))
 
 /* ── the landing page ──────────────────────────────────────────────── */
@@ -981,6 +1235,45 @@ it.effect("help: the landing page answers, and answers at exit zero", () =>
     // The verb also answers through the ordinary success channel.
     const lines = yield* invoke("help")
     expect(lines.join("\n")).toContain("content in, address back")
+  }).pipe(Effect.provide(layerDiskFs)))
+
+it.effect("help --json: the page that says every verb answers --json answers it", () =>
+  Effect.gen(function* () {
+    // The landing page's own sentence was false about the verb printing
+    // it — the worst place for that sentence to be false, and a
+    // straight break of the decision-25 law it was quoting.
+    const page = oneObject(yield* invoke("help", "--json"))
+    expect(Object.keys(page).toSorted()).toEqual(["notes", "rows", "title"])
+    expect(String(page["title"])).toContain("content in, address back")
+    const rows = page["rows"] as ReadonlyArray<Record<string, unknown>>
+    expect(rows.map((row) => row["topic"])).toEqual([
+      "start",
+      "look",
+      "write",
+      "entry points",
+      "read",
+      "name",
+      "run",
+      "serve",
+    ])
+    // The machine register carries the invocation a reader would type,
+    // unpadded — an agent reads the verb list without parsing a column.
+    expect(rows[0]).toEqual({
+      invocation: "cas init",
+      says: "make a store here (the only verb that ever creates one)",
+      topic: "start",
+    })
+    expect(page["notes"]).toContain(
+      "exit codes: 0, the verb answered (help included); 1, refused — the reason reads under ERROR on stderr",
+    )
+
+    // One shape, two registers: every row's own words appear in the
+    // prose page too, so the two cannot drift.
+    const prose = (yield* invoke("help")).join("\n")
+    for (const row of rows) {
+      expect(prose).toContain(String(row["invocation"]))
+      expect(prose).toContain(String(row["says"]))
+    }
   }).pipe(Effect.provide(layerDiskFs)))
 
 /* ── the vocabulary, gated against its seed ────────────────────────── */
@@ -1010,7 +1303,7 @@ it.effect("the help vocabulary carries every word VOCABULARY.md's everyday regis
 
 /* ── the digest-mismatch diagnostic names both readings (R5) ───────── */
 
-it("a digest mismatch says it may be a scheme mismatch, not only corruption", () => {
+it("a digest mismatch names both readings, the bound, and the next step", () => {
   // Ruling ask R5 (BACKEND-ROBUSTNESS): verification recomputes with the
   // ambient scheme, so under a second same-width scheme every cross-scheme
   // read surfaces as AddressMismatch. The refusal must not present corrupt
@@ -1022,6 +1315,21 @@ it("a digest mismatch says it may be a scheme mismatch, not only corruption", ()
       actual: ContentId.make("cd".repeat(32)),
     }),
   )
-  expect(message).toContain("refused:")
-  expect(message).toContain("possible scheme mismatch")
+  const lines = message.split("\n")
+  // The clause, both addresses, on the line the formatter puts under
+  // ERROR.
+  expect(lines[0]).toContain("refused:")
+  expect(lines[0]).toContain("ab".repeat(32))
+  expect(lines[0]).toContain("cd".repeat(32))
+  // Both readings, and the bound that decides between them today —
+  // without which "a different address scheme" would send a reader
+  // hunting for a second scheme that does not exist yet.
+  expect(message).toContain("different address scheme")
+  expect(message).toContain("one address scheme exists today")
+  // And the next step, named.
+  expect(message).toContain("cas verify")
+  // Grade A shape: indented continuation, so the guidance stays aligned
+  // under the ERROR heading the runner writes.
+  expect(lines.length).toBeGreaterThan(1)
+  expect(lines.slice(1).every((line) => line.startsWith("  "))).toBe(true)
 })
