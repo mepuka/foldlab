@@ -1,8 +1,21 @@
 name = "cas"
-defaultTargets = ["Cas", "CasBackend", "CasExamples"]
+defaultTargets = ["Cas", "CasBackend", "CasExamples", "CasWp"]
 
 [[lean_lib]]
 name = "Cas"
+
+# The proof-stratum statement apparatus (PDD-2): `Cas/Lang/Wp.lean` is
+# the weakest-precondition transformer over the defunctionalized table.
+# It is a LEAF — the library does not import it and nothing generated
+# depends on it — so it is declared as its own library for the same
+# reason `CasBackend` is: `lake build` kernel-checks every one of its
+# theorems even though no root imports them. Being outside `Cas`'s
+# import closure it is also outside `Walk.libraryImports`, so the
+# surface, obligation and law ledgers do not move; adding it to that
+# walk is a promotion, and a promotion is a ruling, not a side effect.
+[[lean_lib]]
+name = "CasWp"
+globs = ["Cas.Lang.Wp"]
 
 # The backend modules, elaborated as their own library so `lake build`
 # kernel-checks every one of them — in particular the R8 seed pins in
