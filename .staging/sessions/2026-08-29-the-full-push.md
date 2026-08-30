@@ -144,3 +144,8 @@ with SPECS rows per the maintenance law.
   and rowed (Category 2). WASM position: DOM-first, falsifiable
   escalation trigger; trust as the design material. Ruling ask
   surfaced: Ts.Decl N-parameter arrow arm (blocks FE-O1/2/3).
+- AUTH AUDIT COMPLETE and rowed: two BROKEN-SILENT (A1 unreadable
+  config → gated store serves open, store.ts:261-265; A2 --allow-host
+  grants origin write trust) — BOTH ROUTED to the daemon fix pass as
+  required fixes. Secrets clean across both history eras. TURSO
+  ROTATION UPGRADED TO URGENT: the token is non-expiring READ-WRITE.

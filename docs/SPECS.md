@@ -76,6 +76,7 @@ deleted.
 | [.staging/ornamentation/ORNAMENTATION.md](../.staging/ornamentation/ORNAMENTATION.md) | front-end ornamentation | Design-and-aesthetics review (decisions 29/33): trust as the design material — four marks, saturation spent only on doubt; the Codex synthesis assessed element-by-element |
 | [.staging/ornamentation/PROOF-OBLIGATIONS.md](../.staging/ornamentation/PROOF-OBLIGATIONS.md) | front-end proofs | 12 graded front-end obligations (FE-O1..): Ts.Decl arrow-arm ruling ask, wf_prefix, Style/R6 discharge, tier-0 gate reuse, tag trichotomy; docket-consistent |
 | [.staging/ornamentation/WASM-CANVAS.md](../.staging/ornamentation/WASM-CANVAS.md) | canvas stack | Decision 31(e) research: DOM-first position, WebGL2 the escalation of record, Rust-WASM UI refused (a11y + second-emitter cost); WASM belongs in the store not the renderer; falsifiable trigger + three owed measurements |
+| [.staging/operational-structure/AUTH-AUDIT.md](../.staging/operational-structure/AUTH-AUDIT.md) | auth posture | Decision 31(c) full technical audit: two BROKEN-SILENT (unreadable config serves gated store open; --allow-host transitively grants origin write trust) — both routed to the daemon fix pass; secrets CLEAN across full history (23,466 objects); rotation of the non-expiring Turso RW token URGENT (operator) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
