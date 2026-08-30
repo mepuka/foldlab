@@ -196,6 +196,100 @@ private theorem key_inj_of_nodup_keys {l : List ServiceRef}
   · exact hp.imp fun hne heq => absurd heq hne
   · exact hp.imp fun hne heq => absurd heq.symm hne
 
+/-! ## Preservation — the conjunct without which the law set is empty
+
+Sortedness, distinct keys, idempotence and order-blindness are all
+satisfied by a canonicalizer that THROWS SERVICES AWAY: `fun xs => if
+(xs.map (·.key)).Nodup then (xs.mergeSort keyLe).take 1 else xs.take 1`
+proves every one of them. That is the sorting trinity's third axis
+(CATALOG §8.0/§8.3) arriving on schedule — order and invariant are not
+sorting correctness without same-elements — and it is the adequacy hole
+this section closes.
+
+The laws below are stated over the SHIPPED `canonServices`, strongest
+first: on the door's own path canonicalization is exactly a reordering;
+in general no key is lost and no key is invented, no service is
+invented, and the survivor of a repeated key is pinned to the LAST
+occurrence. Together with distinct keys and sortedness they determine
+`canonServices` uniquely, which is what makes the set adequate. -/
+
+/-- Deduplication neither loses a key nor invents one. -/
+private theorem mem_keys_canonDedup (xs : List ServiceRef) (k : String) :
+    k ∈ (canonDedup xs).map (·.key) ↔ k ∈ xs.map (·.key) := by
+  induction xs with
+  | nil => simp [canonDedup]
+  | cons s rest ih =>
+    simp only [canonDedup]
+    split
+    · rename_i h
+      rw [canonHasKey_eq_true_iff] at h
+      simp only [List.map_cons, List.mem_cons, ih]
+      constructor
+      · exact fun hk => Or.inr hk
+      · rintro (rfl | hk)
+        · exact ih.mp h
+        · exact hk
+    · simp only [List.map_cons, List.mem_cons, ih]
+
+/-- The survivor of a key is the LAST occurrence of that key in the
+input — the exact last-wins characterization, not merely "some element
+with that key survived". -/
+private theorem canonDedup_last_wins :
+    ∀ {xs : List ServiceRef} {s : ServiceRef}, s ∈ canonDedup xs →
+      ∃ pre post, xs = pre ++ s :: post ∧ s.key ∉ post.map (·.key)
+  | [], s, h => by simp [canonDedup] at h
+  | a :: rest, s, h => by
+    simp only [canonDedup] at h
+    split at h
+    · rename_i hk
+      obtain ⟨pre, post, hxs, hpost⟩ := canonDedup_last_wins h
+      exact ⟨a :: pre, post, by rw [hxs]; rfl, hpost⟩
+    · rename_i hk
+      rw [List.mem_cons] at h
+      rcases h with rfl | h
+      · refine ⟨[], rest, rfl, ?_⟩
+        intro hmem
+        exact hk (canonHasKey_eq_true_iff.mpr
+          ((mem_keys_canonDedup rest s.key).mpr hmem))
+      · obtain ⟨pre, post, hxs, hpost⟩ := canonDedup_last_wins h
+        exact ⟨a :: pre, post, by rw [hxs]; rfl, hpost⟩
+
+/-- **PRESERVE-keys.** `canonServices` loses no key and invents none.
+This is the law the discarding canonicalizer above cannot satisfy. -/
+theorem mem_keys_canonServices (xs : List ServiceRef) (k : String) :
+    k ∈ (canonServices xs).map (·.key) ↔ k ∈ xs.map (·.key) := by
+  rw [canonServices_pin, ← mem_keys_canonDedup xs k]
+  exact ((List.mergeSort_perm (canonDedup xs) keyLe).map (·.key)).mem_iff
+
+/-- **PRESERVE-elements.** Every service in the canonical spelling came
+from the input; nothing is fabricated. -/
+theorem mem_of_mem_canonServices {xs : List ServiceRef} {s : ServiceRef}
+    (h : s ∈ canonServices xs) : s ∈ xs := by
+  rw [canonServices_pin] at h
+  obtain ⟨pre, post, hxs, _⟩ :=
+    canonDedup_last_wins (List.mem_mergeSort.mp h)
+  rw [hxs]
+  simp
+
+/-- **PRESERVE-last-wins.** When a key repeats, the survivor is the LAST
+occurrence — no later element of the input shares its key. With
+`mem_keys_canonServices`, distinct keys and sortedness, this pins
+`canonServices` to exactly one function. -/
+theorem canonServices_last_wins {xs : List ServiceRef} {s : ServiceRef}
+    (h : s ∈ canonServices xs) :
+    ∃ pre post, xs = pre ++ s :: post ∧ s.key ∉ post.map (·.key) := by
+  rw [canonServices_pin] at h
+  exact canonDedup_last_wins (List.mem_mergeSort.mp h)
+
+/-- **PRESERVE-exact.** On the door's own path — distinct keys —
+canonicalization is a REORDERING and nothing else: same services, same
+multiplicities, only the spelling moves. This is the strongest form of
+preservation, and it is the one CANON-1 actually relies on. -/
+theorem canonServices_perm_of_nodup_keys {xs : List ServiceRef}
+    (hnd : (xs.map (·.key)).Nodup) : (canonServices xs).Perm xs := by
+  rw [canonServices_pin, canonDedup_of_nodup_keys hnd]
+  exact List.mergeSort_perm xs keyLe
+
 /-! ## E1 — idempotence -/
 
 /-- **E1.** `canonServices` is idempotent: the canonical spelling of a
@@ -331,15 +425,123 @@ example : isCanonServices [refA, refB] = false := by
   rw [isCanonServices, canonServices_witness_left]
   simp [refA, refB]
 
-/-! ## The corollary — one service set, one term, one address -/
+/-! ## The door REJECTS, it does not canonicalize
 
-/-- **CANON-1's falsifiable claim, at the term.** Two authored orders of
-one key-`Nodup` service set produce EQUAL `SystemNode` terms once the
-authoring door has spelled them canonically.
+The mechanism matters, and stating it wrongly would make the corollary
+below answer a question nobody asked. `tools/EmitLayers.lean:235-237` is
+a `#guard` over `isCanonServices`: a non-canonical authored spelling is
+REFUSED at elaboration, not silently rewritten. The stored term is the
+authored `mk p r`, never `mk (canonServices p) (canonServices r)` — so a
+theorem about the canonicalized term says nothing about the stored one
+unless the guard is in its hypotheses.
+
+`eq_of_isCanonServices_of_perm` is that bridge: of all the spellings of
+one key-`Nodup` service set, EXACTLY ONE passes the guard, so any two
+authored orders that both pass are the same list. The witnesses below
+show both halves of the mechanism on a two-element set — one order
+admitted, its permutation refused. -/
+
+/-- Sorted witness. -/
+private def refX : ServiceRef := { key := "a", name := "X", path := "x" }
+
+/-- Its partner, on a strictly later key. -/
+private def refY : ServiceRef := { key := "b", name := "Y", path := "y" }
+
+private theorem canonServices_XY :
+    canonServices [refX, refY] = [refX, refY] := by
+  rw [canonServices_pin]
+  have hd : canonDedup [refX, refY] = [refX, refY] := by
+    simp [canonDedup, canonHasKey, refX, refY]
+  rw [hd]
+  exact List.mergeSort_of_pairwise
+    (List.pairwise_pair.mpr (by simp [keyLe, refX, refY]))
+
+private theorem canonServices_YX :
+    canonServices [refY, refX] = [refX, refY] := by
+  rw [← canonServices_XY]
+  exact canonServices_perm (by simp [refX, refY]) (List.Perm.swap refX refY [])
+
+/-- One authored order of a key-`Nodup` set passes the guard … -/
+example : isCanonServices [refX, refY] = true := by
+  rw [isCanonServices, canonServices_XY]
+  simp
+
+/-- … and its permutation is REFUSED, rather than quietly canonicalized.
+Rejection is the whole mechanism, and it is why exactly one spelling
+survives authoring. -/
+example : isCanonServices [refY, refX] = false := by
+  rw [isCanonServices, canonServices_YX]
+  simp [refX, refY]
+
+/-- **The bridge.** Two authored spellings of one key-`Nodup` service
+set that BOTH pass the authoring guard are the same list — the guard
+admits exactly one spelling per set.
+
+This is what carries CANON-1 from the canonicalized term to the STORED
+one: a guard-passing list is already its own canonical spelling
+(`canonServices_of_isCanonServices`), and canonical spelling is blind to
+authored order (`canonServices_perm`). -/
+theorem eq_of_isCanonServices_of_perm {xs ys : List ServiceRef}
+    (hx : isCanonServices xs = true) (hy : isCanonServices ys = true)
+    (hperm : xs.Perm ys) : xs = ys :=
+  calc xs = canonServices xs := (canonServices_of_isCanonServices hx).symm
+    _ = canonServices ys :=
+        canonServices_perm (nodup_keys_of_isCanonServices hx) hperm
+    _ = ys := canonServices_of_isCanonServices hy
+
+/-! ## The corollary — one service set, one term, one address
+
+Two statements, and the difference between them is the point. The
+AUTHORED pair speaks about the term the store actually holds, with the
+guard in its hypotheses; the CANONICALIZED pair speaks about the image
+of `canonServices` and is the weaker, more obvious fact. The docket's
+"one address" prose is the authored one. -/
+
+/-- **CANON-1 at the stored term.** Two authored orders of one
+key-`Nodup` service set that both pass the authoring guard produce the
+SAME `SystemNode` — not merely nodes that would agree after
+canonicalization, but the identical stored term.
 
 Stated over an arbitrary two-service-list arm builder, so it covers
 `.backing` and `.opaque ctor note` at once; `.service` follows the same
 way on its single `requires` list. -/
+theorem systemNode_authored_stable
+    {mk : List ServiceRef → List ServiceRef → SystemNode}
+    {p p' r r' : List ServiceRef}
+    (hp : isCanonServices p = true) (hp' : isCanonServices p' = true)
+    (hr : isCanonServices r = true) (hr' : isCanonServices r' = true)
+    (hpp : p.Perm p') (hrr : r.Perm r') :
+    mk p r = mk p' r' := by
+  rw [eq_of_isCanonServices_of_perm hp hp' hpp,
+    eq_of_isCanonServices_of_perm hr hr' hrr]
+
+/-- **And therefore one address, for the term the store holds.** The
+cache-hit defeater `EmitLayer.lean:211-219` names is closed for
+topologies authored through the guarded door.
+
+Two scope notes, both load-bearing. This is a congruence: equal terms
+reside at equal addresses because `systemAddressOf` is a function — it
+says nothing about collisions and nothing about two DIFFERENT service
+sets. And `systemAddressOf` is `Option`-valued, so the equality is an
+equality in `Option Addr32`; proving `isSome` needs a totality theorem
+for `Schema.putNode` at the system code that this lane does not have.
+Here that costs nothing, because the theorem above already gives
+equality of the TERMS and this is its image — but a reader must not
+take the address equation alone as evidence that either side resolves. -/
+theorem systemAddressOf_authored_stable
+    {mk : List ServiceRef → List ServiceRef → SystemNode}
+    {p p' r r' : List ServiceRef}
+    (hp : isCanonServices p = true) (hp' : isCanonServices p' = true)
+    (hr : isCanonServices r = true) (hr' : isCanonServices r' = true)
+    (hpp : p.Perm p') (hrr : r.Perm r') :
+    systemAddressOf (mk p r) = systemAddressOf (mk p' r') :=
+  congrArg systemAddressOf
+    (systemNode_authored_stable hp hp' hr hr' hpp hrr)
+
+/-- The canonicalized-image form, kept because it is what a caller who
+canonicalizes for itself needs. It is strictly weaker than
+`systemNode_authored_stable` and must not be read as a statement about
+stored terms: the door does not apply `canonServices`. -/
 theorem systemNode_canon_stable
     {mk : List ServiceRef → List ServiceRef → SystemNode}
     {p p' r r' : List ServiceRef}
@@ -349,13 +551,8 @@ theorem systemNode_canon_stable
       = mk (canonServices p') (canonServices r') := by
   rw [canonServices_perm hp hpp, canonServices_perm hr hrr]
 
-/-- **And therefore, at the address.** One service set, one address —
-the cache-hit defeater `EmitLayer.lean:211-219` names is closed for
-terms authored through the door.
-
-This is a congruence and nothing more: equal terms reside at equal
-addresses because `systemAddressOf` is a function. It says nothing
-about collisions, and nothing about two DIFFERENT service sets. -/
+/-- The canonicalized-image form at the address. Same weakness, same
+warning as the term form above. -/
 theorem systemAddressOf_canon_stable
     {mk : List ServiceRef → List ServiceRef → SystemNode}
     {p p' r r' : List ServiceRef}
