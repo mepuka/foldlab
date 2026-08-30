@@ -579,13 +579,37 @@ theorem PartialTriple_iff_wlp (p : PProg) (P : WPre) (Q : WPost) :
 /-- TWO-STATE POSTCONDITIONS, without a second carrier: the starting
 word enters as a logical variable, by instantiating the precondition at
 it (§2.3 — "use fresh logical variables when updates overwrite
-information"). This is the estate's `old`. -/
+information"). This is the estate's `old`.
+
+Note the quantifier: this is the two-state reading at a UNIVERSAL
+starting word, which is the two-state triple at precondition `⊤`. The
+form the debt object's `σ` actually asks for — two-state RELATIVE to a
+precondition — is `Triple_two_state_rel` below. -/
 theorem Triple_two_state (p : PProg) (R : Word → Addr32 → Word → Prop) :
     (∀ w₀, Triple H p (fun w => w = w₀) (fun a w' => R w₀ a w'))
       ↔ ∀ w₀, ∃ a w', runP H p w₀ = (.done a, w') ∧ R w₀ a w' := by
   refine ⟨fun h w₀ => h w₀ w₀ rfl, fun h w₀ w hw => ?_⟩
   subst hw
   exact h w
+
+/-- THE TWO-STATE TRIPLE, RELATIVE TO A PRECONDITION — the form the
+debt object's `σ` asks for: a two-state postcondition over the starting
+words `P` admits, rather than over all of them.
+
+Proved first by the independent breaker, who found that
+`Triple_two_state` covers only `P = ⊤` and derived this in three lines
+rather than filing the gap (attack record
+`library/cas/contracts/attacks/PDD-2/Attack.lean` §6, branch
+`attack/opus-cc-mac/pdd-2`, commit `c6f74608`, NOTE-4). Adopted here
+with credit, because a public theorem belongs in the module its
+statement is about. -/
+theorem Triple_two_state_rel (p : PProg) (P : WPre)
+    (R : Word → Addr32 → Word → Prop) :
+    (∀ w₀, P w₀ → Triple H p (fun w => w = w₀) (fun a w' => R w₀ a w'))
+      ↔ ∀ w₀, P w₀ → ∃ a w', runP H p w₀ = (.done a, w') ∧ R w₀ a w' := by
+  refine ⟨fun h w₀ hp => h w₀ hp w₀ rfl, fun h w₀ hp w hw => ?_⟩
+  subst hw
+  exact h w hp
 
 /-- **L10 — THE VARIANT, DISCHARGED WITH A NUMBER.** A triple's run is
 the embedded program's run at fuel `p.length + 1` — "enough fuel" is a
