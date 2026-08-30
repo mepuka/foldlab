@@ -18,12 +18,36 @@ the names a code mentions at positions no `susp` guards, stopping dead
 at every `.susp`. So a cycle that passes through a guard contributes no
 edge at all, and a cycle that does not is exactly a cycle of `bareRefs`.
 
-Why the discipline is needed, in one sentence: resolving an unguarded
-cycle never terminates, and Effect's own codec does not refuse one —
+Why the discipline is needed: a cycle with no guard on it cannot be
+BUILT. Revival walks the code eagerly, so unfolding `A` to get `A`
+again yields no node — and Effect's own codec does not refuse one.
 `{"A":{"$ref":"B"},"B":{"$ref":"A"}}` reads back cleanly through
 `SchemaRepresentation.fromJson`, which the spelling probe pins
 (`library/effects/test/SchemaReferencesPin.test.ts`). The refusal is
 this door's to make or nobody's.
+
+## What this does NOT decide (break pass 2026-08-30, finding F2)
+
+CONSTRUCTIBILITY, not PRODUCTIVITY. `Ast.susp` is a DELAY, not a
+constructor: putting the recursive occurrence under one defers the
+loop, it does not break it. So a document can pass this door and still
+have no value at the end of it. Three witnesses, all `Guarded` and all
+admitted by both doors:
+
+- `{"A": susp (reference "A")}` — Effect's validator runs forever;
+- `{"A": susp (union [reference "A", null])}` — it overflows the stack;
+- `{"A": susp (reference "B"), "B": reference "A"}` — the same knot at
+  one remove, and the cycle really does pass through a `susp`.
+
+The control is `guardedList` below, which decodes in a millisecond on
+the same path — so the discipline is right about the shape Effect
+emits, and it is not a termination claim about forcing the result.
+Deciding productivity needs a second relation over HEAD positions —
+what a name reaches through `susp` wrappers alone, before any
+constructor builds anything — and `union` builds nothing either, so it
+is a ruling and not a line. It is owed, not claimed. The witnesses are
+`contracts/attacks/PDD-3/Attack.lean` §2 on branch
+`attack/opus-cc-mac/pdd-3`.
 
 ## What is proved
 

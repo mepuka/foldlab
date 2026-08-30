@@ -104,15 +104,24 @@ inductive IngestRefusal where
   | nonEmptyReferences
   /-- A revision-1 document whose references table has an UNGUARDED
   CYCLE: a cycle of the reference relation with no `susp` anywhere on
-  it. Resolving one never terminates — the resolver unfolds `A` to get
-  `A` — so the table is refused rather than carried.
+  it. Such a table cannot be BUILT — revival walks the code eagerly, so
+  unfolding `A` gives `A` back and no node is ever reached — and the
+  table is refused rather than carried.
 
   This is the refusal `references_guarded_decidable` decides
   (`Cas/Schema/Guarded.lean`), and it is the estate's alone to make:
   Effect's own codec reads an unguarded cycle back without complaint,
   which the spelling probe pins. A cycle that DOES pass through a `susp`
   is admitted — that is ordinary recursion, and it is what Effect emits
-  for a recursive schema. -/
+  for a recursive schema.
+
+  NARROWED by the break pass (2026-08-30, finding F2). This name used to
+  say "resolving one never terminates", which claims more than the door
+  decides: `susp` is a DELAY and not a constructor, so a `susp`-guarded
+  self-reference is admitted and FORCING it may still diverge —
+  `{"A": susp (reference "A")}` runs Effect's validator forever. What is
+  refused here is a cycle that closes through constructors alone. See
+  `Cas/Schema/Guarded.lean`, "What this does NOT decide". -/
   | unguardedCycle
   /-- A `Declaration` whose `representation.id` is no row of the
   declaration registry (`Cas.Schema.DeclarationId`). The allowlist is
