@@ -326,6 +326,25 @@ BATT L31   `handleLlm_liftCas`; and `handleLlm_liftCas_via_laws`, the
            same fact re-derived from L30 + L23 + `interpret_id`, so
            the packet's own laws are shown to compose rather than
            merely coexist.
+NOTE L31   **L31 IS WRONG-BUT-PASSING ON ITS OWN.** Amendment, breaker
+           hand (HOLE-2). The docstring called this "the law every
+           `runAgent` client assumes", which reads as a standalone
+           client guarantee. It is not one. `liftCas p` contains no
+           `infer` node, so L31 constrains `handleLlm` ONLY on
+           `Prog.inl`'s image and says nothing whatever about the
+           oracle. The witness is `badHandleLlm` — an implementation
+           that DISCARDS the oracle and answers every inference with
+           the empty string — which satisfies L31 at every universe,
+           by the same induction the real one uses. A client leaning
+           on L31 alone has no oracle guarantee at all.
+
+           **L30 is the law that carries the exclusion**, and it is in
+           this packet, so the law SET is adequate — what was missing
+           was the boundary. A `runAgent` client wanting an oracle
+           guarantee must cite L30, not L31. The adversary is adopted
+           into the module's `Adversary` namespace beside the other
+           three so the boundary cannot be relaxed without a red
+           build.
 ```
 
 ### The machinery, stated because it is load-bearing
@@ -384,7 +403,26 @@ FALS ADQ-INL  exhibit ι satisfying the hypothesis at every lawful
               target and every handler pair, with ι p ≠ p.inl at some
               p. `doubleInl` is the candidate the ticket names, and the
               theorem says the exhibit does not exist.
-BATT ADQ-INL  `Prog.inl_unique`, `Prog.inr_unique`.
+BATT ADQ-INL  `Prog.inl_unique`, `Prog.inr_unique`; and, adopted from
+              the attack record, `inl_unique_one_target` with
+              `syntactic_hyp_iff` — the same conclusion from the single
+              instance the proof actually consumes.
+
+LAW  ADQ-L30  L30's right summand is FORCED. Adopted from the attack
+              record; **the packet omitted this row and should not
+              have.** L30 says `handleLlm oracle` IS an interpretation
+              of `idHandler.sum (llmOracleHandler oracle)`; it does not
+              by itself say that `llmOracleHandler oracle` is the ONLY
+              right summand for which that holds. It is:
+                for every g : Handler LlmSig (Prog CasSig),
+                  (∀ A p, p.handleLlm oracle = interpret (idHandler.sum g) p)
+                    → g = llmOracleHandler oracle
+              So the ADQ block is now complete across all three
+              definitions the slice touches: `Handler.sum`,
+              `Prog.inl`/`inr`, and L30's oracle summand.
+FALS ADQ-L30  exhibit g ≠ llmOracleHandler oracle that also presents
+              `handleLlm` as an interpretation.
+BATT ADQ-L30  `llmOracleHandler_unique`.
 NOTE ADQ-INL  The hypothesis is STRONG — it quantifies over every
               lawful target monad — so the obvious attack is that the
               theorem is vacuous: a uniqueness result whose premise
@@ -396,15 +434,46 @@ NOTE ADQ-INL  The hypothesis is STRONG — it quantifies over every
               premise asks for. So the premise has exactly one
               inhabitant and `interpret_inl` exhibits it.
 
-              The strength is also not an accident of convenience. It
-              is the packet's central methodological claim: an
-              injection's defect here is not structural — `doubleInl`
-              is as lawful a program as the real one, satisfying L25
-              and L26 — so no equation between programs separates them.
-              Only an observation can, and a handler into an arbitrary
-              monad is where observations live. Weakening the
-              quantifier to `RefM` would make the law exactly as blind
-              as the word gate.
+              AMENDED, breaker hand (HOLE-1). This note previously
+              said the wide quantifier was "not an accident of
+              convenience" and was the mechanism of the categoricity.
+              **That was false, and it is corrected here rather than
+              softened.** What is true:
+
+              - **The law is SYNTACTICALLY categorical.**
+                `Prog.inl_unique`'s proof consumes exactly ONE instance
+                of its hypothesis — `M := Prog (S ⊕ₛ T)`,
+                `h := inlHandler`, `g := inrHandler` — and at that
+                instance the hypothesis is EQUIVALENT to the
+                conclusion, by the same two rewrites the proof
+                performs (`syntactic_hyp_iff`). The narrowed law
+                `inl_unique_one_target` is therefore strictly stronger
+                than the shipped one, and it is adopted below;
+                `Prog.inl_unique` is now its corollary.
+              - **The counting target never enters.** `StateT Nat Id`
+                is the device of the REFUTATION
+                (`doubleInl_not_interpret_inl`), not of the
+                categoricity. The categoricity is carried entirely by
+                the INITIAL monad.
+              - **The quantifier is generality, not mechanism.** But it
+                is not free either, and the honest constraint is
+                provable: the target must RECORD effects. `Id` does
+                not — `doubleInl` satisfies the Id-restricted
+                hypothesis at every handler pair, so
+                `narrowing_to_Id_fails` shows ADQ-INL becomes FALSE
+                under that narrowing. `Prog (S ⊕ₛ T)` does. That is
+                the sharper and checkable version of what this note
+                was reaching for.
+              - **The `RefM` comparison is UNPROVED, on both sides,
+                and is not implied here.** The old text said weakening
+                to `RefM` "would make the law exactly as blind as the
+                word gate". Nothing in this packet or in the attack
+                record proves that: it needs
+                `ObsEq H (liftCas p) (doubleInl p)`, which the
+                claim-scope section below explicitly declines to prove
+                and which the breaker also failed to close (attack
+                record §8, failed attempt 6). It is OPEN, not
+                established, and this note no longer gestures at it.
 
 LAW  ADQ-DBL  THE-ALGEBRA §3.2, verbatim, on the doubling injection:
                 "KILLED BY interpret_inl (L23) together with `inl` is a
@@ -499,10 +568,66 @@ written to fit them.
   closed under nesting; ours is two hand-applied functions. Proving
   L25/L26 does not close that gap, and this packet does not pretend it
   does.
-- **Not claimed: L32.** "`handleLlm` respects `bind`" is a separate row
-  and is not proved here. L30 makes it a corollary of `interpret_bind`
-  for a reader who wants it, but the corollary is not stated, so the
-  row stays OWED.
+- **~~Not claimed: L32.~~ CLAIMED — the row is DISCHARGED.** Amended,
+  breaker hand. The original text said L30 "makes it a corollary … but
+  the corollary is not stated, so the row stays OWED". That understated
+  what the slice already had: the corollary is two lines, and it is now
+  stated as `handleLlm_bind` (adopted from the attack record).
+  `handleLlm_bind` follows from L30 plus core `interpret_bind` at the
+  shipped `LawfulMonad (Prog S)`, with no induction of its own.
+
+  **This also settles a PDD-8 boundary, and the direction matters.**
+  PDD-8's ticket names the estate's asserted-not-proved "`handleLlm`
+  interprets by monad morphism" (`Interp.lean:19,181-183`) as part of
+  its territory. The breaker's grep confirms there is no declaration
+  behind that prose anywhere in `library/cas` or `.staging` — it is a
+  docstring claim and nothing more. **PDD-7 therefore DISCHARGES that
+  boundary rather than depending on it**: no theorem in this slice
+  rests on the assertion, and `handleLlm_bind` now supplies what the
+  docstring was claiming. Cross-cite: PDD-8's packet should record L32
+  as carried here and not re-prove it.
+- **Not claimed: the categoricity at every universe.** NOTE-5 of the
+  attack record, adopted. `interpret` forces `A : Type`, so
+  `Prog.inl_unique`, `inl_unique_one_target`, `Prog.inr_unique`,
+  `handleLlm_eq_interpret` and `llmOracleHandler_unique` all pin their
+  subjects at **`Type 0` only**, while the shipped `liftCas` and
+  `Prog.handleLlm` are universe-polymorphic (`{A : Type u_1}`), and
+  L25/L26/L31 are proved at `Type u`. The packet disclosed this for L30
+  and not for the ADQ block; it is disclosed for both now.
+  Unexploitable in practice — no Lean definition can branch on universe
+  level — but as stated the categoricity does not reach the universes
+  its subject is typed at, and that is a real gap between the theorem
+  and the sentence a reader would write from it.
+- **Not claimed: that any effect-recording target will do.** The
+  quantifier's honest constraint has one proved lower bound and no
+  proved characterization. `Id` is provably NOT enough
+  (`narrowing_to_Id_fails`: `doubleInl` satisfies the Id-restricted
+  hypothesis at every handler pair, so ADQ-INL is FALSE narrowed to
+  `Id`); the initial monad `Prog (S ⊕ₛ T)` provably IS
+  (`inl_unique_one_target`). Which targets in between suffice is not
+  characterized here.
+- **Not claimed: that the counting recipe transfers to `CasSig`.**
+  NOTE-2 of the attack record, adopted, and it corrects a real defect
+  in the module's own prose. `Handler CasSig (StateT Nat Id)` is
+  **uninhabited** — `CasE.fail` answers `Empty` and `Id` has no branch
+  to put it in — so the module docstring's recipe ("a target monad
+  where an operation is visible: `StateT Nat Id`") is available only at
+  the toy `TickSig`. The refutation is sound, because it refutes a
+  ∀-statement and a witness anywhere suffices; but a reader carrying
+  the recipe to the store language finds it does not typecheck. The
+  substitution that works is `StateT Nat (Except Unit)`.
+- **Not claimed: anything about nondeterministic or stateful oracles.**
+  L30/L31 quantify over `oracle : String → String` — total,
+  deterministic, pure — and every such function is covered. Two
+  identical prompts in one program therefore always get the same
+  answer, by theorem. A history-dependent oracle is not an oracle this
+  quantifier ranges over: it would be a `Handler LlmSig M` for
+  state-carrying `M`, and `interpret (idHandler.sum g)` then lands in
+  `M` rather than in `Prog CasSig`, which `handleLlm`'s codomain
+  forbids. `Interp.lean:21-22`'s "the oracle's nondeterminism enters
+  only as the recorded answer" is a modelling stipulation the TYPE
+  enforces, not a theorem about oracles. (Breaker's §6, recorded
+  because this packet's claim-scope did not state it.)
 - **Not claimed: the consolidation.** handlers-semantics C.2 row 3.4
   offers "or delete `handleLlm` and define it this way". L30 proves
   the two agree; DELETING the hand-rolled recursion would edit
@@ -729,9 +854,10 @@ Two smaller findings, recorded rather than filed:
   than quietly adopting the citation.
 
   What the exhibits do NOT carry, and this slice adds: L7, L8, L21,
-  L22, L25, L26, L30, INJ-H, and both categoricity theorems
-  (`Handler.sum_unique`, `Prog.inl_unique`/`inr_unique`), plus the
-  three adversaries and their refutations. The exhibits show the named
+  L22, L25, L26, L30, INJ-H, and all three categoricity theorems
+  (`Handler.sum_unique`, `inl_unique_one_target`/`Prog.inr_unique`,
+  `llmOracleHandler_unique`), plus the four adversaries and their
+  refutations. The exhibits show the named
   laws are provable — the report's own claim that "the gap is a
   statement gap and not a proof gap". They do not ask whether the law
   SET is strong enough to exclude a wrong implementation, which is the
@@ -740,10 +866,149 @@ Two smaller findings, recorded rather than filed:
 
   One claim-scope line above needs adjusting in light of them: L32
   (`handleLlm` respects `bind`) IS carried, by exhibit §6
-  `handleLlm_bind`. This slice still does not prove it and does not
-  claim the row — but "OWED with nothing behind it" would be the wrong
-  reading, and a follow-up can promote the exhibit rather than redo it.
+  `handleLlm_bind`. (Superseded: the row is now DISCHARGED in this
+  slice, by the breaker's two-line derivation from L30 — see the
+  claim-scope entry.)
 - **`Handler.sum` still has no call site**, and this packet does not
   give it one. It now has laws and a categoricity theorem, so the
   hand-rolled consumers can be claimed against it; making that claim
   edits fenced files and is the next ticket's work, not this one's.
+
+## The attack — the independent breaker's pass
+
+Record: `library/cas/contracts/attacks/PDD-7/` (`Attack.lean`,
+`RESULTS.md`) on branch `attack/opus-cc-mac/pdd-7`, commit `b509cb20`,
+against castle `d714ef14`. Verdict **STANDS** — no BREAK, 2 HOLE, 6
+NOTE. No theorem in the module is false, every gate reproduced to the
+byte, the axiom census reproduced over a strictly larger declaration
+set (55 constants, not the 16 the module prints), the commit order was
+confirmed packet-first, and the sorry-control was repeated by the
+breaker's own hand with both signals firing.
+
+Two results run in the packet's favour and are recorded here rather
+than left in the attack tree:
+
+```
+RESULT     the break ledger's row is CONFIRMED IN BOTH DIRECTIONS, by
+           a route this castle does not use. `doubleInl_factors` proves
+           the adversary is `Prog.inl ∘ dup` — the real injection
+           precomposed with a monad-morphism ENDOMORPHISM of `Prog S` —
+           from which L25 and L26 for the adversary fall out of the
+           same laws for `Prog.inl` and for `dup`, with no induction
+           over the adversary at all. Half (b) of §3.2's claim is
+           false, and now for a stated structural reason rather than
+           by exhibition.
+CLASS      adequacy — and the generalization is the part worth keeping:
+           EVERY equation-between-programs law is blind to the whole
+           family `Prog.inl ∘ φ` for `φ` a monad-morphism endomorphism,
+           not merely to this one member. The packet's closing
+           paragraph said this as a lesson; the breaker made it a
+           theorem.
+
+RESULT     no adversary escaped. The breaker built three of its own —
+           `swapTwoInl` (reorders two operations), `dropInl` (elides an
+           operation whose answer is provably unused), `putDoubleInl`
+           (doubles only the `put` tag, at `CasSig` itself) — and all
+           three die. A1 and A2 die twice over, to L25 and L26
+           respectively, which is the sharpening this packet needed:
+           **"L25 excludes nothing" would be wrong; "L25 excludes THE
+           ADVERSARY from nothing" is what is true**, and the module's
+           heading is accurate only as scoped. L25 and L26 earn their
+           place against other injections; `doubleInl_factors` is the
+           exact account of the family they cannot see.
+CLASS      adequacy — discharged. An escaping injection is provably
+           impossible for the stated type: ADQ-INL is categorical, so
+           every ι either fails L23 at some lawful target or IS
+           `Prog.inl`.
+```
+
+Adopted into the module, credited by path and commit per the PDD-2
+precedent — the breaker proved these first and the packet says so. All
+six are `library/cas/contracts/attacks/PDD-7/Attack.lean` @ `b509cb20`:
+
+| adopted | what it does | record |
+|---|---|---|
+| `syntactic_hyp_iff` | the hypothesis at the consumed instance IS the conclusion | §2 |
+| `inl_unique_one_target` | ADQ-INL from ONE target; `Prog.inl_unique` becomes its corollary | §2 |
+| `doubleInl_interpret_inl_Id` + `narrowing_to_Id_fails` | `Id` is provably not a separating target | §2 |
+| `dup`, `dup_bind`, `dup_injective`, `doubleInl_factors` | the structural account of the break | §3 |
+| `llmOracleHandler_unique` | ADQ-L30 — the oracle summand is forced | §5 |
+| `handleLlm_bind` | L32, discharged from L30 in two lines | §5 |
+| `badHandleLlm` + three refutations | HOLE-2's witness, into the `Adversary` namespace | §5 |
+
+Six NOTEs were raised. NOTE-1, NOTE-2 and NOTE-5 are adopted into
+claim-scope above. NOTE-3 is adopted into the module's L25 heading and
+into the second RESULT block. NOTE-4's instrument correction is fixed
+in the module tail. NOTE-6 offered four results; all four are adopted.
+
+## Breaks — the breaker's rows
+
+Two rows, entered by the breaker's findings after the independent
+attack on `d714ef14`. Both are `claim-scope`, both are prose against
+kernel-checked fact, and **neither required a theorem to change** — the
+castle held and the map was wrong, which is the same shape as PDD-1's
+two breaker rows.
+
+```
+BROKE      d714ef14 — theorem true, ACCOUNT of it false.
+LAW        this packet's NOTE ADQ-INL (at `24b6fe30`) and the module
+           docstring, verbatim:
+             "The strength is also not an accident of convenience. …
+              Only an observation can, and a handler into an arbitrary
+              monad is where observations live. Weakening the
+              quantifier to `RefM` would make the law exactly as blind
+              as the word gate."
+           i.e. the claim that ADQ-INL's quantification over every
+           target monad is the MECHANISM of the categoricity.
+WITNESS    `inl_unique_one_target` — the same conclusion from a
+           hypothesis at ONE monad and ONE handler pair, strictly
+           stronger than the shipped law — together with
+           `syntactic_hyp_iff`, which shows that instance of the
+           hypothesis is EQUIVALENT to the conclusion by exactly the
+           two rewrites `Prog.inl_unique`'s proof performs. The
+           counting target `StateT Nat Id` never enters the proof; the
+           theorem is carried entirely by the initial monad.
+           `inl_unique_via_initiality` closes the second door,
+           reaching the same conclusion through
+           `eq_of_forall_interpret` + ADQ-SUM and bottoming out at the
+           same instance.
+           Second half: the `RefM` sentence rests on
+           `ObsEq H (liftCas p) (doubleInl p)`, which THIS PACKET'S own
+           claim-scope declines to prove and which the breaker also
+           failed to close (record §8, attempt 6). The packet asserted
+           as motivation a thing it refused to assert as a claim.
+CLASS      claim-scope — the stated boundary did not equal the actual
+           coverage, and the error was OPERATIVE: it instructed a later
+           hand that the wide quantifier must not be weakened, when the
+           real constraint is different and provable (`Id` fails, the
+           initial monad suffices).
+FIXED-BY   this commit. NOTE ADQ-INL is rewritten to state what is
+           true, `inl_unique_one_target` and `narrowing_to_Id_fails`
+           are adopted so the correction is carried by theorems and not
+           only by prose, and the `RefM` gesture is withdrawn and
+           marked OPEN on both sides.
+```
+
+```
+BROKE      d714ef14 — law true, REACH overstated.
+LAW        L31 as this packet stated it, and the module docstring:
+             "handleLlm oracle (liftCas p) = p
+              The law every `runAgent` client assumes."
+           presented as a standalone client guarantee.
+WITNESS    `badHandleLlm` — an implementation that DISCARDS THE ORACLE
+           ENTIRELY and answers every inference with the empty string.
+           It satisfies L31 in full, at every universe, by the same
+           induction the real one uses, because `liftCas p` contains no
+           `infer` node. `badHandleLlm_differs` and
+           `badHandleLlm_not_interpret` exhibit the disagreement at
+           `infer "x"` under `wildOracle`. So a `runAgent` client
+           leaning on L31 alone has NO oracle guarantee.
+CLASS      claim-scope — L31's reach stops at `Prog.inl`'s image and
+           the packet never said so. The law SET is adequate (L30 kills
+           the adversary); the boundary line was missing.
+FIXED-BY   this commit. L31's row carries NOTE L31 naming its reach and
+           naming L30 as the law a client must cite for an oracle
+           guarantee; `badHandleLlm` and its three refutations move
+           into the module's `Adversary` namespace, so the boundary
+           cannot be relaxed without a red build.
+```
