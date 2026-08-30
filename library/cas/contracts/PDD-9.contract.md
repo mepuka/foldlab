@@ -683,9 +683,13 @@ WITNESS    `paddedShared` (`Attack.lean` §8): `treeProg
            and no frame. `treeProg_run` and `treeProg_two_state` do
            carry all three, and LAW F excludes the witness besides.
 CLASS      claim-scope.
-FIXED-BY   SPEC-BUG (packet `e2b364e8`); the module's own docstring
-           corrected at `05dc3b65`. The theorems are correct and
-           unchanged; the packet overclaimed of one of them. LAW R's
+FIXED-BY   e2b364e8 — the packet's LAW R block; the module's own
+           docstring at 05dc3b65. NOT `SPEC-BUG`: CONTRACT.md reserves
+           that value for the adequacy class, this row is claim-scope,
+           and commits landed that fix it — PDD-1's claim-scope row
+           names a SHA for the same reason.
+           The theorems are correct and unchanged; the packet
+           overclaimed of one of them. LAW R's
            block now attributes each axis to the theorem that carries
            it, and states why the Triple is NOT strengthened: GROWTH
            and STORE are two-state facts and `Triple`'s postcondition
@@ -711,7 +715,10 @@ WITNESS    `badShared` (`Attack.lean` §6): the second leaf's operand
            address function is blind. The stated reason does not apply
            and the class was not closed by it.
 CLASS      adequacy — the reason offered for a law, not the law.
-FIXED-BY   SPEC-BUG, upward (packet `e2b364e8`). LAW M kills
+FIXED-BY   SPEC-BUG. The adequacy class fired and the packet itself
+           was amended (e2b364e8), which is exactly the case
+           CONTRACT.md reserves this value for. The amendment runs
+           UPWARD: LAW M kills
            `badShared` regardless, by a STRONGER reason than the one
            written: `embed` builds a `Prog` whose continuations are
            FUNCTIONS of the answers, so `embed p = tr.prog` quantifies
