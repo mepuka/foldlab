@@ -415,3 +415,17 @@ records the 2026-08-29 session rulings that cut across specs.
     The standing question every lane answers: where more is that
     calling met; where more is the complexity of design, language,
     and operations conquered.
+31. **The integration and audit push** (2026-08-29 late, same
+    sitting): (a) FIRST-CLASS AGENT-STREAMING INTEGRATIONS
+    commissioned — the protocols landscape studied and a design
+    sketched on the daemon/host's actual surfaces; pi dev and its
+    extension system studied as tier-one harness prior art ("what
+    can we borrow?"); (b) algebra expressiveness joins the plan —
+    how the algebra grows MORE expressive, how the effects
+    abstractions' power is SHOWN, the horizontal efforts named;
+    (c) THE AUTH ORIENTATION AUDITED — full technical audit of
+    every serving and secret surface against the refuse-first
+    posture; (d) PLAIN-LANGUAGE PROJECTIONS ARE PRIORITY, "no
+    doubt" — the lane sequences at the top of the plan; (e)
+    front-end WASM research commissioned: data-dense, high-quality,
+    high-fidelity performant canvas.
