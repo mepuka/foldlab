@@ -48,13 +48,17 @@ goes red. No trust is added and no fenced byte moves.
 - `embed_treeProg` — L231 in its strong form: the emitted table's
   denotation IS the term's store program, as an equality in
   `Prog CasSig Addr32` (LAW M).
-- `treeProg_run`, `treeProg_run_empty`, `treeProg_Triple` — the run's
-  meaning, in PDD-2's `Triple` vocabulary
-  (`library/cas/contracts/PDD-2.contract.md`, `Cas/Lang/Wp.lean:552`)
-  (LAW R).
+- `treeProg_run` and `treeProg_two_state` — the run's meaning on all
+  three axes (ANSWER, GROWTH, STORE), the latter in PDD-2's
+  vocabulary (`library/cas/contracts/PDD-2.contract.md`,
+  `Cas/Lang/Wp.lean:552`); `treeProg_run_empty` is the corollary the
+  executed consequence runs, and `treeProg_Triple` is the
+  refusal-exclusion form, which carries ANSWER and the two invariants
+  and NOT the frame — see its own docstring (LAW R).
 - the `Executed` section — L127: `runP` acquires an executed
-  consequence on registered programs, kernel-decided at a toy address
-  function and `#eval`-decided at the production digest (LAW X).
+  consequence on all seven registered programs, kernel-decided at a toy
+  address function and `#eval`-decided at the production digest
+  (LAW X).
 
 What this module does NOT say is in the packet's claim-scope section;
 the load-bearing entries are that nothing here reaches the TypeScript,
@@ -733,7 +737,17 @@ the emitted table never refuses on an admissible honest word.
 The two-state reading, with `old` the starting word, is
 `treeProg_two_state` below; `Triple`'s own postcondition sees only the
 final state, which is exactly why the estate's `old` is a logical
-variable and not a second carrier. -/
+variable and not a second carrier.
+
+WHAT THIS ONE DOES NOT CARRY, said outright rather than left to a
+reader of the postcondition (the breaker's NOTE-2,
+`contracts/attacks/PDD-9/RESULTS.md`): ANSWER and the two invariants,
+and NOT the FRAME. `paddedShared` — this table with one unrelated put
+prepended and every operand shifted — answers the same address and
+ends admissible and honest while writing a binding that is nowhere in
+`tr.flatten H`, and nothing below excludes it. `treeProg_run` and
+`treeProg_two_state` are the axis-carriers; this is the
+refusal-exclusion form, and the frame is two-state by nature. -/
 theorem treeProg_Triple (hInj : Function.Injective H) {t : Ty} (tr : Tree t) :
     Triple H (treeProg tr)
       (fun w => Word.wf w = true ∧ Honest H w)
@@ -814,6 +828,29 @@ def runVerdict (H : Bytes → Addr32) {t : Ty} (tr : Tree t)
   | (.done a, w) => a == tr.address H && w == expected && Word.wf w
   | _ => false
 
+/-- The word a term's run must answer, as a function of the TERM: its
+`flatten` with LATER duplicates dropped. Every expectation below is
+this, so no witness needs a hand-computed erasure and the coverage
+extends to a term by naming it rather than by measuring it.
+
+Adopted from the independent breaker's attack record with credit —
+`expected H tr := (Tree.flatten H tr).eraseDups`,
+`library/cas/contracts/attacks/PDD-9/Attack.lean` §2, branch
+`attack/opus-cc-mac/pdd-9`, commit `e2703228`. The packet's first draft
+named the deduplicated word by a hand-chosen `eraseIdx 2` on one
+witness, which is sharper there and generalizes nowhere; both are kept,
+and the guard below pins them to each other. -/
+def expectedWord (H : Bytes → Addr32) {t : Ty} (tr : Tree t) : Word :=
+  (tr.flatten H).eraseDups
+
+/-- The registry's schema term. `tools/EmitPrograms.lean:63-70` builds
+it in `IO` because it needs the payload-bound witness; `Payload.ofBytes`
+is total and answers the same payload whenever the bytes fit, which
+`check` verifies rather than assumes — so this is the registered term
+and not a truncated lookalike. -/
+def schemaTerm : Tree .schema :=
+  .schema (Payload.ofBytes (Cas.Grammar.utf8 vectorDocumentCode.payload))
+
 /-! ### Kernel-decided, at the toy address function -/
 
 -- The smallest registered program: one put, one binding, no dedup.
@@ -830,6 +867,12 @@ def runVerdict (H : Bytes → Addr32) {t : Ty} (tr : Tree t)
 #guard runVerdict toyAddr blobSharedChunk
   ((blobSharedChunk.flatten toyAddr).eraseIdx 2)
 
+-- The general oracle agrees with that hand-chosen index on the witness
+-- it was chosen for. This is what lets every other row below be named
+-- rather than measured.
+#guard expectedWord toyAddr blobSharedChunk
+  == (blobSharedChunk.flatten toyAddr).eraseIdx 2
+
 -- §3.5's mutation, REFUTED by execution rather than by argument: the
 -- appending duplicate put would answer `flatten` itself. It does not.
 -- A guard that cannot fail proves nothing, so the negative is kept
@@ -840,6 +883,13 @@ def runVerdict (H : Bytes → Addr32) {t : Ty} (tr : Tree t)
 -- two-reference node, and no sharing — so here the word IS `flatten`.
 #guard runVerdict toyAddr blobTwoLeaves (blobTwoLeaves.flatten toyAddr)
 
+-- The registered `journal-two-entries` program: eleven nodes, the
+-- registry's deepest reference chain, and the only term reaching
+-- `.genesis` and `.entry` — the constructor with the two-child offset
+-- arithmetic. Added on the breaker's HOLE-1; it had no executed
+-- consequence anywhere before, at either digest.
+#guard runVerdict toyAddr journalTwo (expectedWord toyAddr journalTwo)
+
 -- And the two walks agree on the witnesses, executed as well as proved.
 #guard blobSharedChunk.table == treeProg blobSharedChunk
 
@@ -847,7 +897,15 @@ def runVerdict (H : Bytes → Addr32) {t : Ty} (tr : Tree t)
 
 /-! ### The same verdict at the production digest, as a build-time
 assert. `Cas.sha256Addr` is the digest the vector lane and the generated
-programs run under, so this is the registered artifact's own run. -/
+programs run under, so this is the registered artifact's own run.
+
+ALL SEVEN registered rows (`tools/EmitPrograms.lean:45-70`) appear here,
+and through them all ten of the grammar's clauses. `journalTwo` and
+`schemaTerm` were added on the breaker's HOLE-1
+(`contracts/attacks/PDD-9/RESULTS.md`, commit `e2703228`): before them
+`.genesis`, `.entry` and `.schema` had no executed consequence anywhere
+in the estate, while this module's build line already said "the
+registered programs". -/
 
 def check : IO Unit := do
   unless runVerdict Cas.sha256Addr helloValue
@@ -866,6 +924,22 @@ def check : IO Unit := do
       (gitPinCommit.flatten Cas.sha256Addr) do
     throw (IO.userError
       "PDD-9: git-pin-commit's run does not answer its term")
+  unless runVerdict Cas.sha256Addr journalTwo
+      (expectedWord Cas.sha256Addr journalTwo) do
+    throw (IO.userError
+      "PDD-9: journal-two-entries' run does not answer its term")
+  unless (Cas.Grammar.utf8 vectorDocumentCode.payload).length
+      < 4294967296 do
+    throw (IO.userError
+      "PDD-9: the schema payload exceeds the node byte bound, so \
+       schemaTerm is not the registered term")
+  unless runVerdict Cas.sha256Addr schemaTerm
+      (expectedWord Cas.sha256Addr schemaTerm) do
+    throw (IO.userError
+      "PDD-9: schema-vector-document's run does not answer its term")
+  unless runVerdict toyAddr schemaTerm (expectedWord toyAddr schemaTerm) do
+    throw (IO.userError
+      "PDD-9: schema-vector-document's run disagrees at the toy digest")
   unless (blobSharedChunk.flatten Cas.sha256Addr).length == 5 do
     throw (IO.userError
       "PDD-9: shared-chunk's flatten is no longer the five-binding word")
@@ -874,9 +948,9 @@ def check : IO Unit := do
     throw (IO.userError
       "PDD-9: shared-chunk's run does not deduplicate to four bindings")
   IO.println
-    ("PDD-9: runP executed on the registered programs at the production "
-      ++ "digest — every answer is its term's address, and shared-chunk "
-      ++ "deduplicates to four bindings from flatten's five")
+    ("PDD-9: runP executed on all seven registered programs at the "
+      ++ "production digest — every answer is its term's address, and "
+      ++ "shared-chunk deduplicates to four bindings from flatten's five")
 
 #eval check
 
