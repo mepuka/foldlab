@@ -33,6 +33,7 @@ import { cast, Option, Predicate, Schema, SchemaAST } from "effect"
 import { Byte, ContentId } from "./Node.ts"
 import { refWithTag, type Root } from "./Value.ts"
 import { GitKindTag, SchemaKindTag } from "../internal/kindTags.ts"
+import { SystemKindTag as EmittedSystemKindTag } from "./generated/annotationPlane.ts"
 import { KindTagsByName } from "./generated/grammar/kindTags.ts"
 import { KindTag as ExchangeKindTag } from "./Exchanges.ts"
 
@@ -89,12 +90,21 @@ export const ProgramKindTag = KindTagsByName.cont
 /** The tag system nodes reside at — the service-topology plane's
  * WORKING tag, owned in Lean by `Cas.Schema.systemKindTag`.
  *
- * It is spelled here rather than in a system module because there is no
- * TypeScript mirror of `SystemNode`: that lane generates layers, it does
- * not ingest topologies. When a mirror lands, this constant moves to it
- * the way `Exchanges.KindTag` sits with the exchange mirror. Like every
- * working tag it is deliberately absent from `ReservedKindTags`. */
-export const SystemKindTag = 0x54
+ * It is the EMITTED constant, not a hand-written `0x54`. There is no
+ * TypeScript mirror of `SystemNode` — that lane generates layers, it
+ * does not ingest topologies — so this plane has no module of its own
+ * to hold the number the way `Exchanges.KindTag` sits with the exchange
+ * mirror. What it does have is the annotation plane's projection, whose
+ * emitter names the tag the Lean union's `system` arm demands and
+ * byte-gates it (`lake exe schemas --check`). A second spelling here
+ * was a generated fact written out again by hand, and the only drift a
+ * byte gate cannot see is the drift it is not looking at.
+ *
+ * Re-exported rather than consumed straight from the generated module,
+ * because the estate's other consumers name this tag through the
+ * annotation namespace. Like every working tag it is deliberately
+ * absent from `ReservedKindTags`. */
+export const SystemKindTag = EmittedSystemKindTag
 
 /** What one annotation is about, by plane — the hand mirror of Lean
  * `Cas.Schema.AnnotationSubject`.

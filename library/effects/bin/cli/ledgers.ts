@@ -137,21 +137,25 @@ const labMarker = "library/cas/surface"
  * there is no such ancestor — a store outside a checkout. */
 export const findLabRoot = (
   start: string,
-): Effect.Effect<Option.Option<string>, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const path = yield* Path.Path
-    let current = path.resolve(start)
-    for (;;) {
-      const marked = yield* fs.exists(path.join(current, labMarker)).pipe(
-        Effect.orElseSucceed(() => false),
-      )
-      if (marked) return Option.some(current)
-      const parent = path.dirname(current)
-      if (parent === current) return Option.none()
-      current = parent
-    }
-  })
+): Effect.Effect<Option.Option<string>, never, FileSystem.FileSystem | Path.Path> => {
+  const walkUp = (
+    fs: FileSystem.FileSystem,
+    path: Path.Path,
+    current: string,
+  ): Effect.Effect<Option.Option<string>> =>
+    fs.exists(path.join(current, labMarker)).pipe(
+      Effect.orElseSucceed(() => false),
+      Effect.flatMap((marked) => {
+        if (marked) return Effect.succeedSome(current)
+        const parent = path.dirname(current)
+        return parent === current
+          ? Effect.succeedNone
+          : walkUp(fs, path, parent)
+      }),
+    )
+  return Effect.flatMap(FileSystem.FileSystem, (fs) =>
+    Effect.flatMap(Path.Path, (path) => walkUp(fs, path, path.resolve(start))))
+}
 
 /**
  * How a ledger answered.
@@ -184,27 +188,27 @@ export const readLedger = <A>(
   labRoot: string,
   ledger: { readonly path: string; readonly schema: Schema.Codec<A, unknown, never, never> },
 ): Effect.Effect<LedgerRead<A>, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const path = yield* Path.Path
-    const full = path.join(labRoot, ledger.path)
-    const raw = yield* fs.readFileString(full).pipe(
-      Effect.asSome,
-      Effect.orElseSucceed(() => Option.none<string>()),
-    )
-    if (Option.isNone(raw)) return wasAbsent<A>(full)
-    // The described JSON codec, not the global parser: nothing in this
-    // estate spells JSON itself, and the schema is what turns the text
-    // into the handful of fields this reader actually reports.
-    return yield* Schema.decodeUnknownEffect(
-      Schema.fromJsonString(ledger.schema),
-    )(raw.value).pipe(
-      Effect.map((facts) => wasRead(full, facts)),
-      Effect.orElseSucceed(() =>
-        wasUnreadable<A>(full, "the file no longer reads as the ledger this build expects")
-      ),
-    )
-  })
+  Effect.flatMap(FileSystem.FileSystem, (fs) =>
+    Effect.flatMap(Path.Path, (path) => {
+      const full = path.join(labRoot, ledger.path)
+      // The described JSON codec, not the global parser: nothing in
+      // this estate spells JSON itself, and the schema is what turns
+      // the text into the handful of fields this reader reports. The
+      // two rescues are ordered so each names its own state: a decode
+      // that fails is `unreadable`, and only a read that fails —
+      // caught last, around everything — is `absent`.
+      return fs.readFileString(full).pipe(
+        Effect.flatMap((raw) =>
+          Schema.decodeUnknownEffect(Schema.fromJsonString(ledger.schema))(raw).pipe(
+            Effect.map((facts) => wasRead(full, facts)),
+            Effect.orElseSucceed(() =>
+              wasUnreadable<A>(full, "the file no longer reads as the ledger this build expects")
+            ),
+          )
+        ),
+        Effect.orElseSucceed(() => wasAbsent<A>(full)),
+      )
+    }))
 
 /** A counter as `doctor` states it: the number an emitter wrote, or
  * absent. `undefined` is turned into `null` here rather than at every

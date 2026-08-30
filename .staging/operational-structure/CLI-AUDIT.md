@@ -49,6 +49,36 @@ Audit complete. The subagent's inventory closes the last gaps.
 | E18 | `--kind-tag 999` | same help dump + `Schema validation failed: Expected a value between 0 and 255` | **D** |
 | E19 | `--kind-tag 200` | **admitted, exit 0**, `kind 0xc8` | **C** — deliberate (`commands.ts:286-288`), but now that `KindTagRows` exists, a tag with no registry row could be said out loud |
 
+#### Closures
+
+Added after the fact, never over it: the grades above are what the
+audit measured and they stay as measured. Each row below records what
+closed the finding and where the case that keeps it closed now lives.
+The closing commit is 73d72cc0 throughout; e55ccd57 re-ran the whole
+transcript against the closed surface and is what the "answers at A"
+claim rests on.
+
+| # | Old grade | The case that holds it |
+|---|---|---|
+| E4 | F | `locateStore`'s explicit branch runs `isStoreRoot` and refuses with `NotAStore`; `Cli.test.ts` "--store at a path that is not a store refuses, and creates nothing" |
+| E11 | F | same branch — the same case asserts nothing was created on the way to the refusal |
+| E13 | F | same branch; `publish` cannot reach a phantom store to make `roots/` in it |
+| E15 | F | `Cli.test.ts` "the CAS_STORE path is refused by the same branch as the flag" |
+| E16 | D | `readConfig` raises `ConfigUnreadable` naming the path, the clause, and the fix; `Cli.test.ts` "a config that will not read names the file and the fix" |
+| E17 | D | same refusal, with `backend` checked by name so the two legal words are printed rather than a union rendering |
+| E6 | D | judgment moved out of the parser: `NoSuchFile` through `userFacing`, with `Cli.test.ts` asserting no `USAGE` or `GLOBAL FLAGS` block above it |
+| E10 | D | same refusal (E6 and E10 are one path) |
+| E18 | D | `NotAKindTag` in the handler, same shape, same absence of a help dump |
+| E19 | C | ruling ask 4 answered as a NOTE, not a refusal: `workingTagNote` on stderr, so `--json`'s object on stdout stays one object |
+
+Two of the audit's own recommendations were carried further in this
+pass rather than left where they landed. `--kind-tag` is now
+`Flag.optional`, because a default made `--program --kind-tag 1`
+indistinguishable from `--program` and the contradiction was accepted
+in silence. And `cas help` — the verb that prints "every verb answers
+--json" — answers `--json` itself; it was the one verb the sentence
+was false about.
+
 **The headline.** E11/E13 is BROKEN-SILENT — decision 24's only alarm category. Root cause is two correct things composing into a wrong one: `locateStore` resolves an explicit `--store` path **without ever checking `isStoreRoot`** (`bin/cli/store.ts:240-242`), and the file backend makes its own layout on write (`src/cas/FileBackend.ts:178`, `:214`). The result contradicts the module's own stated law at `bin/cli/store.ts:6-8` — "Nothing here creates a store: `init` is the only creator … never an implicit mkdir" — and `init`'s own help, "the only verb that ever creates one" (`commands.ts:138`). A typo'd `--store` forks a phantom store that `status` then reports as real. No test covers it: `test/Cli.test.ts` (315 lines, 8 cases) never exercises an explicit non-store path.
 
 ### 4. Ruling asks

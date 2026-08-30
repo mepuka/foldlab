@@ -15,7 +15,7 @@
  * vocabulary law.
  */
 import { Command } from "effect/unstable/cli"
-import { doctor, init, ls, publish, put, run, serve, show, status, verify } from "./commands.ts"
+import { doctor, help, init, ls, name, publish, put, run, serve, show, status, verify } from "./commands.ts"
 import { daemon } from "./daemon.ts"
 import { history } from "./history.ts"
 import { vocabulary } from "./vocabulary.ts"
@@ -30,6 +30,7 @@ export const cas = Command.make("cas").pipe(
   // speaks one store over stdio to one client, `daemon` binds a port
   // and serves both wire planes to many.
   Command.withSubcommands([
+    help,
     init,
     status,
     doctor,
@@ -37,6 +38,7 @@ export const cas = Command.make("cas").pipe(
     publish,
     ls,
     show,
+    name,
     run,
     verify,
     history,

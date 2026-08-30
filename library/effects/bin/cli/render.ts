@@ -12,11 +12,27 @@
  * needs both: "schema (0x53)". A tag the registry gives no row is
  * printed as bare hex, which is now a statement about that tag rather
  * than about this file.
+ *
+ * The everyday OVERLAY comes from a second emitted table, on the same
+ * law (decision 25: kind names enter the human register off the
+ * generated registry, never off a hand-written one). The annotation
+ * plane's projection — `src/cas/generated/annotationPlane.ts`, from
+ * `Cas/Schema/Annotation.lean`, byte-gated by the same task — carries
+ * the subject union's arm words and the word for the annotation kind
+ * itself. Those arm words are the reason `cas name`'s kind line and a
+ * NotNameable refusal now read the same on one screen: `exchange
+ * (0x58)` in both, off one table, rather than a bare byte in one and a
+ * spelled plane in the other.
  */
 import { Schema } from "effect"
 import { Cas } from "../../src/index.ts"
 import { canonicalJson } from "../../src/cas/Value.ts"
-import { KindTagRows } from "../../src/cas/generated/grammar/kindTags.ts"
+import { KindTagRows, KindTagsByName } from "../../src/cas/generated/grammar/kindTags.ts"
+import {
+  AnnotationKindTag,
+  AnnotationKindWord,
+  AnnotationSubjectArms,
+} from "../../src/cas/generated/annotationPlane.ts"
 
 /** A loaded node as the described binding document: the Lean-computed
  * address and the node it binds — the vector wire shape. */
@@ -61,19 +77,58 @@ const kindNames: ReadonlyMap<number, string> = new Map(
  * is a working tag, and `put` says so. */
 export const isRegisteredTag = (tag: number): boolean => kindNames.has(tag)
 
-/** A kind in the everyday register: the registry's name with the wire
- * byte beside it, `schema (0x53)`. A tag the registry gives no row has
- * no name to print, so it renders as the byte alone. */
+/**
+ * The everyday overlay on the registry names (vocabulary collision 3),
+ * seeded from emitted tables and nowhere else.
+ *
+ * The annotation plane's arm words come first: `exchange`, `git`,
+ * `program`, `schema`, `system` are the words the Lean union spells for
+ * the five addressable planes, and they are everyday words already.
+ * Two of those planes — `exchange` (0x58) and `system` (0x54) — have no
+ * registry row at all, so before this seeding they rendered as bare hex
+ * on one line of a screen whose next line spelled them out.
+ *
+ * The arm word for the `cont` tag is what carries collision 3's ruling:
+ * a `cont` node is never named in a rendered surface — it is the
+ * program. A `step` node is one of that program's steps, and the noun
+ * it is a step OF is read back out of the overlay rather than spelled
+ * again here.
+ *
+ * Last, the annotation kind's own word, emitted beside its tag: a
+ * working tag has no registry row, so `isRegisteredTag` still says
+ * false and `put` still says so out loud; this only keeps a published
+ * name from rendering as an unexplained byte in `ls`.
+ *
+ * Only the human register wears any of this. The machine register keeps
+ * the registry names, which are the emitted facts.
+ */
+const everydayNames: ReadonlyMap<number, string> = (() => {
+  const overlay = new Map<number, string>(
+    AnnotationSubjectArms.map((row): readonly [number, string] => [row.tag, row.arm]),
+  )
+  const program = overlay.get(KindTagsByName.cont) ?? kindNames.get(KindTagsByName.cont)
+  if (program !== undefined) overlay.set(KindTagsByName.step, `${program} step`)
+  overlay.set(AnnotationKindTag, AnnotationKindWord)
+  return overlay
+})()
+
+/** A kind in the everyday register: its name with the wire byte beside
+ * it, `schema (0x53)` — the everyday word where the vocabulary rules
+ * one (`program (0x0f)`), the registry's name otherwise. A tag the
+ * registry gives no row has no name to print, so it renders as the
+ * byte alone. */
 export const tagLabel = (tag: number): string => {
-  const name = kindNames.get(tag)
+  const name = everydayNames.get(tag) ?? kindNames.get(tag)
   return name === undefined ? tagHex(tag) : `${name} (${tagHex(tag)})`
 }
 
 /**
  * A kind in the machine register: the registry name when there is one,
  * the wire tag as a number, and whether the registry gives it a row —
- * the same three facts `tagLabel` renders for a person, spelled so an
- * agent does not have to parse `schema (0x53)` back apart.
+ * spelled so an agent does not have to parse `schema (0x53)` back
+ * apart. The everyday overlay is prose-only on purpose: `name` here is
+ * the emitted registry's own word (`cont`, `step`), because the machine
+ * register reports emitted facts, not renderings of them.
  */
 export const kindJson = (tag: number, version: number): Schema.Json => ({
   name: kindNames.get(tag) ?? null,
@@ -93,8 +148,22 @@ export const renderJson = (value: Schema.Json): string => canonicalJson(value)
  * the words VOCABULARY.md pins — link, kind, address, store. The fold
  * is the library's own, so a new clause cannot slip through unworded. */
 export const casErrorMessage: (error: Cas.Error) => string = Cas.matchError({
+  // Ruling ask R5: verification recomputes the address with the
+  // AMBIENT scheme, so under a second same-width scheme every
+  // cross-scheme read arrives here — and a message naming only
+  // corruption would send that reader looking for a disk fault. Both
+  // readings are named, and the bound that decides between them today
+  // is named with them, so the sentence stays true when the second
+  // scheme lands and stays useful before it does. Continuation lines
+  // carry the formatter's two-space indent, like every other multi-line
+  // refusal in this CLI.
   AddressMismatch: (error) =>
-    `refused: the bytes stored at ${error.expected} hash to ${error.actual} — storage returned content the address does not name`,
+    [
+      `refused: the bytes stored at ${error.expected} hash to ${error.actual}`,
+      "  the content is corrupt, or it was written under a different address scheme",
+      "  one address scheme exists today, so corruption is the live reading",
+      "  cas verify names every other node reachable from a root that fails the same check",
+    ].join("\n"),
   ContentNotFound: (error) => `nothing in the store at ${error.id}`,
   DanglingReference: (error) =>
     `refused: a link points at ${error.missing}, which is not in the store`,
@@ -106,6 +175,30 @@ export const casErrorMessage: (error: Cas.Error) => string = Cas.matchError({
   WrongKindReference: (error) =>
     `refused: a link to ${error.ref} expects kind ${tagLabel(error.expectedTag)}, but that address holds kind ${tagLabel(error.actualTag)}`,
 })
+
+/**
+ * Stored text, made safe to print INLINE — beside a node's own facts,
+ * in a column.
+ *
+ * `cas name` refuses to write a name carrying a control character, so
+ * nothing this CLI stores reaches here needing the escape. But the
+ * annotation plane is a library API and the store only grows: a name
+ * written another way, or one that arrived over the wire, is content
+ * like any other and `show` still has to render it. Unescaped, a stored
+ * `\n` would print a second line under the node's facts that reads as
+ * something cas said — the store's content forging the tool's own
+ * voice. Escaped, it is visibly what it is.
+ *
+ * The three that have spellings get them; the rest render as their
+ * code point, because a name is not a payload and there is nothing to
+ * fall back to.
+ */
+export const inlineText = (text: string): string =>
+  text.replaceAll(/\p{Cc}/gu, (character) => {
+    const spelled = { "\n": "\\n", "\r": "\\r", "\t": "\\t" }[character]
+    return spelled
+      ?? `\\u${(character.codePointAt(0) ?? 0).toString(16).padStart(4, "0")}`
+  })
 
 /** Printable ASCII only. A payload with any other byte renders as hex:
  * the human register never guesses at an encoding it cannot show. */

@@ -50,6 +50,9 @@ current verb set, read off.
 | mark | how far into the history a reader stands: a count, not a time | a zero-based word index — `WordE.since`'s argument, `--since <mark>` |
 | in flight | how many store-touching calls a host runs at once — one bound PER PLANE, so a daemon with both planes saturated can be at twice it | `ServePolicy.maxInFlight`; stdio holds one gate, the daemon one per plane and says so at startup — `cas status` prints the number |
 | doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
+| name | a human word on stored content — an annotation, never identity | `Annotation` at the pinned key `foldlab/name` (working tag 0x41) — `cas name` writes and publishes one, `cas show` reads it back |
+| annotation | one thing said about one address, itself stored content; a name is the first kind | `Cas.Schema.Annotation` — the kind's own everyday word is emitted beside its tag (`AnnotationKindWord`), never written in the renderer |
+| scheme | the address scheme content is stored and re-verified under; one exists today | `Cas.Grammar.schemeVersion` — the node's version byte, printed beside every kind |
 | host | the process that serves a store to callers; `--host` is the address one binds | `cas serve` is the stdio host, `cas daemon` the HTTP one — see collision 6 |
 | daemon | the long-lived host: one port, both wire planes, running until stopped | `cas daemon` |
 | plane | one wire surface on a host's port; the daemon serves two | the abstraction over the two wire names — see collision 7 |
