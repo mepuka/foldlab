@@ -25,7 +25,23 @@ an edge fails the default), §8.0 (the spec form that composes), §9.1–9.5
 (the abstraction function is the bridge; imports explicit and acyclic),
 §1.6 (ghost values do not change executable results).
 
-## Status — the block is RULED; slices 2 and 3 proceed
+## Status — slices 1–3 LANDED, gates green
+
+| Slice | State |
+|---|---|
+| 1 — spelling probe | landed, 12 tests green |
+| 2 — carrier | landed, two arms, round trip per constructor |
+| 3 — document plane + guardedness | landed, `references_guarded_decidable` proved |
+
+`lake build` green; `mise run check:cas` green after regeneration
+through the emitters; effects suite 46 files / 334 tests green. No
+`sorry`, no `native_decide`; the new theorems use the three standard
+Lean axioms and nothing else.
+
+Slices 4 and 5 are not in this ticket and are not started. What they
+inherit is in [§Inherited by the follow-on](#inherited-by-the-follow-on-out-of-scope-here).
+
+## The block that shaped it — RULED; slices 2 and 3 proceeded
 
 The block below was raised against the plan's one-constructor carrier
 and answered by the operator on 2026-08-30 (the ruling is at the head of
@@ -142,6 +158,34 @@ turns on (C5, CLAIM-GATES G0–G6).
   unaffected.
 - **Value-plane verdicts for recursive codes** need a fuel-indexed Lean
   decode — the named follow-on, per the addendum.
+- **Slice 4 owes the faithful `Suspend` lowering.** The materialization
+  emitter lowers `.susp` to its thunk, because the TypeScript fragment
+  has no arrow and grows only with a real consumer. `Schema.suspend(() =>
+  …)` printed verbatim, and the arrow it needs, are owed there. No
+  registered fixture reaches the arm today, so no emitted byte depends
+  on it.
+- **The guardedness ruling has no registry row.** `references_guarded_
+  decidable` deliberately carries no `LAW SM-<n>:` line: minting a row in
+  `tools/Laws.lean` is an operator act, and a theorem claiming an id that
+  belongs to another ruling is the status lie the law index exists to
+  catch. OWED: the row.
+
+### The one divergence C6 does not close
+
+Both doors refuse an EMPTY reference name; they NAME it differently.
+Lean reads the shape and its gate answers `illFormed`; Effect's own
+decoder refuses the spelling outright (`$ref` is `NonEmptyString`), so
+the TypeScript door answers `notASchema` before the admission table is
+consulted.
+
+It is recorded, not closed, and neither repair is a builder's to make:
+refusing the empty name in Lean's DECODER would falsify
+`ofRepresentationJson_toRepresentationJson`, which holds unconditionally
+over every code, and making the name nonempty BY CONSTRUCTION would
+change `Ast.reference`'s ruled signature. The conformance corpus
+therefore carries no row for this spelling and says so at the point of
+omission; the divergence sits in `Cas/Backend/Admission.lean` beside the
+annotation-bag one. Everything else about C6 agrees case for case.
 
 ## The algebra
 
@@ -222,12 +266,17 @@ LAW        L2 — guardedness is decided at the door:
            `guarded` is the fuel-bounded search with fuel = table size.
 FALSIFIER  exhibit an UNGUARDED cyclic table the door ADMITS, or a
            GUARDED cyclic table the door REFUSES.
-BATTERY    Lean: the two witness tables as `#guard`s beside the door
-           (`aliasCycle`, `bareStructCycle` refused; `guardedList`
-           admitted), plus `unguarded_alias_cycle_refused` and
-           `guarded_list_admitted` as theorems; host side,
-           library/effects/test/SchemaReferences.test.ts against the
-           regenerated SchemaAdmission table.
+BATTERY    DISCHARGED. Lean: `unguarded_alias_cycle_refused` and
+           `unguarded_struct_cycle_refused` (their cycles EXHIBITED as
+           `ReachPlus` derivations, not decided by the procedure under
+           test), and `guarded_list_admitted` — the partner without
+           which refusing every table would pass. The door's answers are
+           `#guard`s beside them. Host side: the conformance corpus rows
+           `refuse-unguarded-alias-cycle`,
+           `refuse-unguarded-struct-cycle`, `admit-guarded-recursion`
+           and `admit-references-table`, replayed by
+           test/SchemaVerdicts.test.ts against the regenerated
+           SchemaAdmission table — the cross-door gate.
 
 LAW        L3 — round trip per constructor.
 FALSIFIER  exhibit a well-formed code `a` in the new constructor's
