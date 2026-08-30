@@ -45,6 +45,8 @@ current verb set, read off.
 | refused | a put that broke a store law; every refusal carries its clause name | the admission judgment, clause-named errors |
 | verify | re-hash and re-decode everything reachable from a root | `Graph.verify` and the loader law |
 | history | the record of a run: what was admitted, in order | the store word — see collision 5 |
+| in flight | how many store-touching calls the host runs at once | `ServePolicy.maxInFlight`, the host's own bound — `cas status` prints it |
+| doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
 
 ## The protocol register
 
