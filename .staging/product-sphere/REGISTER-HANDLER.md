@@ -139,6 +139,40 @@ already names this: skill derivations from tools are emitted
 artifacts of the language-police lane. Speaking the language and
 having its skills ready become the same act.
 
+## The trunk (operator, 2026-08-30 — the front-end's central object)
+
+The structure that represents the store IS the front end's center —
+the operator's word: the trunk. It is organic: it grows when you add
+to it, and a session is the experience of watching it be built out —
+apps going, agents running, additions landing. Ten million entries
+is a normal trunk. The liveness of the UI is created by this
+ever-increasing addition; it is your history, your events, your
+logic — it can be anything, including OTHER PROGRAMS: at the limit
+you peek at the daemon or the Lean process running, as an effect,
+rendered.
+
+- **Views are cached registers** over the trunk — the register
+  handler applied to collections. The design decision to make per
+  view: what is offloaded session state versus what is recalculated
+  from the wave of additions.
+- **The UI is holes that can be filled** — a surface of typed holes
+  the trunk's additions fill or leave empty. That is the whole
+  data-flow contract, and PDD-6's sync laws are its semantics
+  (pull-composition, disjointness, empty-at-frontier, the funnel).
+- **Granular and high-def** — the register is a great NYT
+  visualization: beautiful structure at distance, and when you look
+  closer, all of it is data, all of it represents something.
+- **CLI and MCP sit near each other** in the view system — MCP
+  rendered near the CLI where it is literally run; possibly several
+  views of it.
+- Nothing already built is thrown out; this is the frame the
+  existing pieces (foldkit chassis ruling, FRONTEND.md's
+  projection verdict) compose into.
+
+Ornamentation rides the same law: grammars, motifs, and accents
+derived from OUR language — trees, the algebraic laws mapping the
+styling — so the visual system is built up the way the store is.
+
 ## Pending considerations (recorded, not ruled)
 
 1. **Vendored math/CS libraries.** Under consideration: vendoring
