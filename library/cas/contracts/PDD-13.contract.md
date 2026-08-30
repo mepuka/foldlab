@@ -156,11 +156,27 @@ digest of themselves. Estate form: a visited set, not a fuel constant;
 there is no honest constant here, and inventing one would refuse a
 legitimate deep document.
 
-**L8 — the source register is total over the admitted subset.** Given
-bindings whose documents assemble, `Materialize.source` prints a module
-or refuses BY NAME. In particular it stops refusing a non-empty
-references table, which is the one place the admitted subset and the
-printable subset disagreed after PDD-3.
+**L8 — the source register is total over the admitted subset, and
+DECLARATION ORDER IS SEMANTICS.** Given bindings whose documents
+assemble, `Materialize.source` prints a module or refuses BY NAME. In
+particular it stops refusing a non-empty references table, which is the
+one place the admitted subset and the printable subset disagreed after
+PDD-3.
+
+The order clause is not decoration. `const` bindings are hoisted into a
+temporal dead zone, so an entry READ AT MODULE-EVALUATION TIME before
+its own declaration throws, and the emitted module does not load. Write
+`E ⇒ F` for "entry `E`'s printed code reads entry `F` eagerly" — `F`
+occurs in `E`'s representation at a position no `Suspend` guards, and
+Effect did not print the read through `Schema.suspend`. The declaration
+sequence must be a topological order of `⇒`.
+
+`⇒` is acyclic on any admitted document, which is why such an order
+always exists: a cycle in `⇒` would be a reference cycle with no
+`Suspend` on it, and that is exactly what the door refuses
+`unguardedCycle`. This is the guardedness theorem paying for something
+on the host side — the same fact that makes revival terminate makes the
+emitted module loadable.
 
 ```
 REQUIRES   A `SchemaRepresentation.Document` that the door already
@@ -265,14 +281,16 @@ BATTERY    test/SchemaReferenceAssembly.test.ts — "a target that names
            an address already resolved halts".
 
 LAW        L8 — the source register is total over the admitted subset,
-           and a table entry is DECLARED BEFORE the binding that names
-           it.
+           and the declaration sequence is a topological order of the
+           eager-read relation.
 FALSIFIER  exhibit an admitted, assembled document that
            `Materialize.source` refuses; or one whose printed module
-           names a table entry it never declares, or declares one after
-           the binding that uses it, or drops the suspension.
+           names a table entry it never declares, or declares an entry
+           AFTER something that reads it eagerly (the binding that uses
+           it, or another table entry), or drops the suspension.
 BATTERY    test/SchemaReferenceAssembly.test.ts — "a recursive binding
-           declares its table above the export" and "the printed table
+           declares its table above the export", "the table's own eager
+           reads are declared before them", and "the printed table
            carries Effect's own Schema.suspend".
            NOT tested here, and said so at the point of omission: that
            the printed module EVALUATES. The text is TypeScript (Effect
@@ -282,7 +300,11 @@ BATTERY    test/SchemaReferenceAssembly.test.ts — "a recursive binding
            (`test/MaterializeDifferential.test.ts`, over
            `scripts/gen-materialized.ts` output) holds, and it holds it
            only for REGISTERED fixtures — which is slice 5's business,
-           not slice 4's.
+           not slice 4's. Verified OUT OF BAND as a probe and recorded
+           as an observation, not a gate: the module `source` prints for
+           the anonymous linked list typechecks under `tsc --strict`,
+           evaluates, decodes `{next:{next:null}}`, and refuses
+           `{next:{next:7}}`.
 ```
 
 ## Obligation classes that apply
@@ -381,7 +403,44 @@ signature. Both are operator calls.
 ## Breaks
 
 ```
-(no ledger rows yet — a successful falsification against this packet
-appends one here, in the format CONTRACT.md fixes: BROKE / LAW /
-WITNESS / CLASS / FIXED-BY.)
+BROKE      the packet's own L8 as first written — "a table entry is
+           DECLARED BEFORE the binding that names it" — and the first
+           implementation that satisfied it, which emitted Effect's
+           `nonRecursives` (topologically sorted) and then its
+           `recursives`.
+LAW        L8 — the source register is total over the admitted subset,
+           and a table entry is declared before the binding that names
+           it.
+WITNESS    The anonymous linked list, REVIVED and re-lowered — which is
+           the path `Materialize.source` actually takes, and it is not
+           the path a direct `toRepresentation` takes. The revived
+           schema lowers to a THREE-entry table, not one:
+             Objects__1  (cyclic)  Schema.Struct({next:
+                                     Schema.suspend(() => Suspend_)})
+             Suspend_    (cyclic)  Schema.suspend(() => Union([...]))
+             Objects_    (plain)   Schema.Struct({next: Suspend_})
+           `Objects_` is PLAIN and reads the CYCLIC `Suspend_`
+           EAGERLY. Effect's topological sort skips that edge — it sorts
+           only among the plain entries — so plain-first declares
+           `Objects_` above `Suspend_`, and the emitted module throws a
+           temporal-dead-zone `ReferenceError` on load. Every stated
+           obligation was met and the module did not run.
+CLASS      adequacy — the postcondition named the wrong ordering
+           relation. "Before the binding that names it" quantifies over
+           the exported bindings only; the entries read EACH OTHER, and
+           that is where the order actually has to hold.
+FIXED-BY   L8 restated over the eager-read relation `⇒` (§The algebra),
+           with the acyclicity argument that makes a topological order
+           exist — it is the guardedness theorem, cashed on the host.
+           Implementation: cyclic entries first (every reference between
+           them is printed through `Schema.suspend`, so no order among
+           them can be wrong), then Effect's topological order over the
+           plain ones. The one edge that order cannot serve — a cyclic
+           entry reading a plain one eagerly — is refused BY NAME and
+           recorded as owed; it needs a shared NAMED definition beside a
+           recursive one, which SM-21 still blocks.
 ```
+
+The finding cost one implementation pass and no shipped defect: the law
+was wrong before the module was ever written to disk, and the witness
+came out of the battery rather than out of a red gate downstream.

@@ -298,6 +298,32 @@ it.effect("a recursive binding declares its table above the export", () =>
     expect(text).toContain("export const anonymousList = Objects_")
   }).pipe(Effect.provide(layer)))
 
+it.effect("the table's own eager reads are declared before them", () =>
+  Effect.gen(function* () {
+    // The break this law was restated under. Revived and re-lowered —
+    // which is the path `source` actually takes — the linked list has a
+    // THREE-entry table, and the PLAIN entry `Objects_` reads the CYCLIC
+    // entry `Suspend_` eagerly:
+    //   const Objects_ = Schema.Struct({ "next": Suspend_ })
+    // Effect's topological sort skips that edge (it sorts only among the
+    // plain entries), so an emitter that declares the plain entries
+    // first prints a module that throws a temporal-dead-zone
+    // ReferenceError on load. Every entry the table reads eagerly must
+    // stand above the entry that reads it.
+    const address = yield* CS.put(
+      document(linkedList.references, linkedList.representation),
+    )
+    const materialized = yield* M.fromStore(address)
+    const text = M.source([{ ...materialized, name: "anonymousList" }])
+
+    const eager = text.indexOf("const Objects_ = ")
+    const read = text.indexOf("const Suspend_ = ")
+    expect(read).toBeGreaterThan(-1)
+    expect(eager).toBeGreaterThan(-1)
+    expect(text).toContain(`{ "next": Suspend_ }`)
+    expect(read).toBeLessThan(eager)
+  }).pipe(Effect.provide(layer)))
+
 it.effect("the printed table carries Effect's own Schema.suspend", () =>
   Effect.gen(function* () {
     const address = yield* CS.put(
