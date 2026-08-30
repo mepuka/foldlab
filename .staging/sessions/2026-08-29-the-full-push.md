@@ -198,3 +198,22 @@ with SPECS rows per the maintenance law.
 ## MERGE STATE: CLI (a70b2654) + cas_word (df92ada1) both GREEN & held.
 ## Daemon fix pass still running. Merge hold + Brain Stem carrier =
 ## operator's open rulings.
+## DAEMON FIX PASS GREEN (merge/daemon-spine cc2345a7): decision-32
+## releases done (/projections cited, SERVING.md git-mv'd + promoted to
+## Cat 1 + packs, PROFILE §14 co-tenancy); A1 config-unreadable +
+## A2 origin-decoupled BOTH fixed & probed end-to-end; S1-S8 + F2/F4/F6/F7
+## done; MCP-spec claim pinned (found a wrong attribution: headers are
+## SEP-2243). 356 tests, lint 154 baseline, one declared known-red.
+## RESIDUAL (auth): wide bind + anonymousReads:true serves LAN with NO
+## runtime warning; Host: localhost still passes (correct rebinding
+## guard, cannot prove network position). GRADE OWED by the exact-commit
+## auth audit vs cc2345a7 — the gate before any remote-safe claim.
+## Out-of-scope stale "five tools" in README/serve-help/tools.ts (seat 1
+## flagged, not its mandate). SPECS.md edits merge clean onto 28-33.
+## ===== ALL THREE MERGE LANES GREEN & HELD =====
+## CLI a70b2654 · cas_word df92ada1 · daemon cc2345a7.
+## OWED OPERATOR RULINGS before integration: (1) merge hold lift +
+## order CLI→cas_word→daemon; (2) Brain Stem carrier; (3) decision 34
+## (cas_word in-session rulings) at merge. THEN: exact-commit auth
+## audit, Gatekeeper salvage-split + hard-review, plan amendments
+## (incl. Lane-D-exists), gatekeeper run vs settled floor.
