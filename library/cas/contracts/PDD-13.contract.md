@@ -459,8 +459,17 @@ this packet already named rather than a new discovery.
 The packet's own instruction for exactly this position is followed:
 *"If slice 5 reaches the estate register before the type lowering does,
 the honest answer is to say so and stop, not to widen the annotation to
-`Schema.Top`."* OWED, in order: the `Ast → TypeExpr` lowering, then the
-document-shaped schemas registry, then the fixture.
+`Schema.Top`."*
+
+Corroborated independently by PDD-3's amended packet, which reached the
+same wall from the other side and owes the missing arm by name:
+*"`ingestDocumentBytes`. `ingestBytes` composes the parser with the
+BARE-CODE arm, so every document arriving as bytes is refused
+`nonEmptyReferences`."* That is the door `tools/Materialize.lean`'s
+`loadRows` reads through.
+
+OWED, in order: `ingestDocumentBytes`, the `Ast → TypeExpr` lowering,
+the document-shaped schemas registry, then the fixture.
 
 ## Breaks
 
