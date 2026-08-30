@@ -1419,6 +1419,32 @@
     },
     {
       "denotes": false,
+      "name": "admit-guarded-chain",
+      "note": "a GUARDED cycle whose bare relation is not empty: A names B bare and B reaches A again under a Suspend, so the search must follow a real edge AND stop at the guard. A door that does only one of the two passes every earlier admitted row and fails here",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"$ref\":\"B\",\"_tag\":\"Reference\"},\"B\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"Suspend\",\"checks\":[],\"thunk\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}]}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-partly-guarded-cycle",
+      "note": "one pair of names joined BOTH ways — A reaches B bare and again under a guard, B reaches A. The guarded path does not excuse the bare one: some-path-is-guarded is not the predicate, and a door that reads it that way admits a table whose resolution never finishes",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"$ref\":\"B\",\"_tag\":\"Reference\"},{\"_tag\":\"Suspend\",\"checks\":[],\"thunk\":{\"$ref\":\"B\",\"_tag\":\"Reference\"}}]},\"B\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "refusal": "unguardedCycle",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-dead-unguarded-entry",
+      "note": "an unguarded cycle among entries the ROOT NEVER REACHES. Guardedness is a property of the table, not of the part of it the representation uses, so a door that walks from the root inward admits this. It is also where a dead entry stops being harmless: a dead well-formed entry is admitted, a dead cyclic one is not",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"_tag\":\"String\",\"checks\":[]},\"B\":{\"$ref\":\"C\",\"_tag\":\"Reference\"},\"C\":{\"$ref\":\"B\",\"_tag\":\"Reference\"}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "refusal": "unguardedCycle",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
       "name": "refuse-wrong-revision",
       "note": "a schema-node envelope at a revision no door speaks",
       "payload": "{\"revision\":7,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
@@ -1537,10 +1563,10 @@
   ],
   "counts": {
     "acceptValues": 41,
-    "admittedCodes": 43,
-    "codes": 76,
+    "admittedCodes": 44,
+    "codes": 79,
     "refuseValues": 62,
-    "refusedCodes": 33,
+    "refusedCodes": 35,
     "values": 103
   },
   "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],

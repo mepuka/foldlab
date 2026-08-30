@@ -23,6 +23,14 @@ def astBeq : Ast → Ast → Bool
   | .arr a, .arr b => astBeq a b
   | .struct fs, .struct gs => fieldsBeq fs gs
   | .ref a, .ref b => a == b
+  -- The two C6 arms. Without them `astBeq` is not reflexive on a
+  -- `reference` or a `susp` — the catch-all below answers `false` for
+  -- two identical codes — so the sharing environment could never factor
+  -- a repeated one through its name. It is conservative rather than
+  -- wrong, but it is wrong ABOUT EQUALITY, and this emitter's `BEq Ast`
+  -- instance is what the environment lookup is written against.
+  | .reference a, .reference b => a == b
+  | .susp a, .susp b => astBeq a b
   | .decl i p ps, .decl j q qs => i == j && p == q && paramsBeq ps qs
   | .union ms m, .union ns n => m == n && membersBeq ms ns
   -- Members compare POSITIONWISE here too: an enum's order is its
@@ -165,18 +173,24 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
     -- dependency order — is the materialization slice's work
     -- (Lane A slice 4), which this ticket does not open.
     | .reference name => .ident name
-    -- A suspend lowers to its THUNK. Effect's faithful spelling is
-    -- `Schema.suspend(() => …)`, and the estate cannot print it yet: the
-    -- TypeScript fragment (`Cas/Backend/Ts.lean`) has no arrow, and the
-    -- fragment grows only with a real consumer, which is the
-    -- materialization slice and not this one. The simplification is safe
-    -- where it can currently be reached — a `susp` breaks a DEFINITION
-    -- cycle, and in a materialized module the const binding is what
-    -- provides the laziness — but it is a simplification, so it is owed
-    -- rather than assumed. OWED (slice 4): the arrow, and
-    -- `Schema.suspend(() => thunk)` printed verbatim. No registered
-    -- fixture reaches this arm today, so no emitted byte depends on it.
-    | .susp thunk => constructorGo env false thunk
+    -- A suspend lowers to `Schema.suspend(() => …)` — Effect's own
+    -- constructor, and the whole point of the arm: the thunk is what
+    -- DELAYS the cycle, and a lowering that drops it emits a module
+    -- whose const reads itself eagerly (a temporal-dead-zone
+    -- `ReferenceError`, not a lazy schema). PDD-3 shipped that
+    -- simplification because the fragment had no arrow; PDD-13 is the
+    -- real consumer the fragment grows for.
+    --
+    -- The arrow's return type is NOT declared here, because this emitter
+    -- has no type expression to declare — there is no `Ast → TypeExpr`
+    -- lowering. Effect's printer writes
+    -- `Schema.suspend((): Schema.Codec<Objects_ | null> => …)`, and a
+    -- self-referential const needs that annotation to typecheck
+    -- (`TS7022`). OWED, recorded in `contracts/PDD-13.contract.md`: the
+    -- type lowering, before a recursive fixture is materialized through
+    -- this register. No registered fixture reaches this arm today.
+    | .susp thunk =>
+      .call (schema "suspend") [.arrow none (constructorGo env false thunk)]
 
 private def constructorElement (env : List (String × Ast)) :
     Bool × Ast → Expr
@@ -321,5 +335,36 @@ choice never arises on this arm. -/
 #guard renderedConstructor
     (.arr (.tuple (false, .str) [(false, .arr .int)] none)) ==
   "Schema.Array(Schema.Tuple([Schema.String, Schema.Array(Schema.Int)]))"
+
+/-! ## The recursion lowering, pinned — PDD-13 slice 4
+
+`contracts/PDD-13.contract.md`, L6. A `reference` is a NAME and lowers
+to it; a `susp` is a DELAY and lowers to `Schema.suspend(() => …)`.
+PDD-3 lowered `susp` to its bare thunk because the fragment had no
+arrow, which is a denotation error the moment a fixture reaches it: the
+whole content of a suspension is that its body is not evaluated now.
+
+The pins below are the L6 falsifier made executable — a lowering that
+drops the arrow, or renders the reference as anything but its name, goes
+red at elaboration. -/
+
+#guard renderedConstructor (.susp .str) == "Schema.suspend(() => Schema.String)"
+
+#guard renderedConstructor (.reference "Objects_") == "Objects_"
+
+-- The linked list's own shape: the reference under the suspension is
+-- the recursive occurrence, and it survives as a name.
+#guard renderedConstructor
+    (.struct [("next", false, .susp (.union [.reference "Objects_", .null] .anyOf))]) ==
+  "Schema.Struct({\n  next: Schema.suspend(() => Schema.Union([Objects_, " ++
+    "Schema.Null], { mode: \"anyOf\" })),\n})"
+
+-- Two identical suspensions SHARE through the environment, which they
+-- could not before `astBeq` grew its two C6 arms: the catch-all answered
+-- `false` for two equal codes, so a repeated one was re-emitted rather
+-- than named.
+#guard Render.expr house0 0
+    (constructorExpr [("Lazy", .susp .str)] (.arr (.susp .str))) ==
+  "Schema.Array(Lazy)"
 
 end Cas.Backend

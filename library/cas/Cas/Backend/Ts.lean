@@ -40,6 +40,17 @@ inductive Expr where
   | objectML (fields : List (String × Expr))
   /-- `[a, b, …]`. -/
   | arr (items : List Expr)
+  /-- A zero-parameter arrow, `() => body`, with an optional declared
+  return type: `(): T => body`. The declared type is a raw string for
+  the same reason `ConstDecl.type` is — a generated expression sometimes
+  has to arrive at a type the reader expects, and inference would widen
+  it.
+
+  First consumer: the `Suspend` lowering. Effect's own printer writes
+  `Schema.suspend((): Schema.Codec<Objects_ | null> => …)`, so the form
+  is the target's, not a choice — a zero-parameter arrow whose return
+  type is declared when the emitter has one to declare. -/
+  | arrow (returnType : Option String) (body : Expr)
   deriving Inhabited
 
 /-- One statement of a generator body — exactly the forms straight-line
@@ -164,6 +175,12 @@ def expr (style : Style) (depth : Nat) : Expr → String
           String.intercalate "\n"
             (rendered.map fun s => indentOf style (depth + 1) ++ s ++ ",") ++
           "\n" ++ indentOf style depth ++ "]"
+  -- The body renders at THIS depth, not one deeper: an arrow is an
+  -- expression on one line, and the layout of whatever it wraps is that
+  -- expression's own decision.
+  | .arrow returnType body =>
+    "()" ++ (match returnType with | none => "" | some t => ": " ++ t) ++
+      " => " ++ expr style depth body
 
 def exprs (style : Style) (depth : Nat) : List Expr → List String
   | [] => []

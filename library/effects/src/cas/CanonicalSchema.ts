@@ -19,6 +19,7 @@ import {
   ContentId,
   CasNodeInput,
   UnknownKind,
+  WrongKindReference,
   type CasError,
 } from "./Node.ts"
 import {
@@ -606,6 +607,31 @@ const admitNode = (value: Schema.Json | undefined, path: string): void => {
   }
 }
 
+/** Every table name a code mentions, at ANY position — the walk
+ * `bareRefs` (below) is the guarded half of. This one does not stop at a
+ * `Suspend`, because resolving a name is a question about reachability
+ * and a delayed reference is still reached: the linked list's only
+ * reference lives under its suspension, and a resolver that stopped
+ * there would resolve nothing at all. */
+const allRefs = (value: Schema.Json | undefined): ReadonlyArray<string> => {
+  const out: Array<string> = []
+  const walk = (v: Schema.Json | undefined): void => {
+    if (Array.isArray(v)) {
+      for (const item of v) walk(item)
+      return
+    }
+    if (!Predicate.isObject(v)) return
+    const node = v as Schema.JsonObject
+    if (node._tag === "Reference") {
+      if (typeof node.$ref === "string") out.push(node.$ref)
+      return
+    }
+    for (const child of Object.values(node)) walk(child as Schema.Json)
+  }
+  walk(value)
+  return out
+}
+
 /** The table names a code mentions at positions NO `Suspend` guards —
  * `Ast.bareRefs`, interpreted. The walk stops dead at a `Suspend`, which
  * is the whole content of the word "guarded". */
@@ -1120,6 +1146,153 @@ const legacySchema = (value: unknown): Schema.Top => {
       throw new TypeError(`unknown legacy canonical schema tag ${value._tag}`)
   }
 }
+
+/** THE ADDRESS DISCIPLINE: when is a reference name an EDGE?
+ *
+ * Exactly when it is a `ContentId` spelling, decided by `ContentId`'s
+ * own decoder rather than by a second regular expression — one spelling
+ * of an address on the host, and this reads it.
+ *
+ * The ruling that grew the carrier put the address discipline outside
+ * `Ast.wf` deliberately: whether a table key RESOLVES is the door's and
+ * the materializer's question, not the code's (PDD-3 packet, §The claim
+ * scope). This is the materializer's half of that answer.
+ *
+ * Every other name is a plain table key — Effect allocates them from
+ * `identifier` annotations and from its own `Objects_` counter, neither
+ * of which can wander into 64 lowercase hex by accident. A name that
+ * does is resolved as an address, and the estate claims nothing finer:
+ * the spelling IS the discipline. */
+export const referenceAddress = (name: string): Option.Option<ContentId> =>
+  Result.getSuccess(
+    Result.try(() => Schema.decodeSync(ContentId, strictOptions)(name)),
+  )
+
+/** Assemble a document's references table FROM STORE WORDS.
+ *
+ * PDD-3 taught both doors to admit a table; this is what resolves one.
+ * Every address-named reference reachable from the document — through
+ * the table as it grows, and through suspensions, because a delayed
+ * reference is still reached — is loaded from the store, and the schema
+ * node found there is bound under its own address name.
+ *
+ * Three things it is, each a law of `contracts/PDD-13.contract.md`:
+ *
+ * - **A TYPED EDGE, not an address.** A name that resolves to a node of
+ *   another kind is `WrongKindReference`, carrying both tags — never
+ *   `UnknownKind`, which is the name for a caller-supplied ROOT this
+ *   runtime does not read. The precedent is the store's own admission
+ *   law over annotation values (`Cas/Schema/Annotation.lean:76-80`).
+ * - **An EXTENSION.** Bindings the presented document already carries
+ *   are never rebound or dropped, and a name bound twice must be bound
+ *   to the same code: two independently stored documents can each
+ *   allocate `Objects_` for a different shape, and keeping one silently
+ *   is a wrong answer with no error.
+ * - **A READ.** Nothing is put, no address is minted, and the answer is
+ *   a value in hand.
+ *
+ * The assembled document goes back through the DOOR before it is
+ * answered, so guardedness is re-decided over the WHOLE table — a
+ * strictly stronger question than the one each half answered alone, and
+ * the reason two documents that are each guarded can fail to assemble.
+ *
+ * Termination is the visited set, not a fuel constant: each round
+ * resolves at least one address and records it, the set of reachable
+ * addresses is finite because the store is, and content addressing is
+ * acyclic — a node's bytes cannot name the digest of themselves. There
+ * is no honest constant here, and inventing one would refuse a
+ * legitimate deep document. */
+export const assemble: (
+  document: SchemaRepresentation.Document,
+) => Effect.Effect<SchemaRepresentation.Document, ProjectionError, CasLoader> =
+  Effect.fn("CanonicalSchema.assemble")(
+    function* (document: SchemaRepresentation.Document) {
+      const json = SchemaRepresentation.toJson(document) as unknown as {
+        readonly references: Record<string, Schema.Json>
+        readonly representation: Schema.Json
+      }
+      const table: Record<string, Schema.Json> = { ...json.references }
+      // Seeded with what the document already binds: those names are
+      // the caller's, and extension means they are never re-read.
+      const resolved = new Set<string>(Object.keys(json.references))
+      const loader = yield* CasLoader
+
+      const unresolved = (): ReadonlyArray<string> => {
+        const reachable = new Set<string>(allRefs(json.representation))
+        for (const code of Object.values(table)) {
+          for (const name of allRefs(code)) reachable.add(name)
+        }
+        return [...reachable].filter((name) =>
+          !resolved.has(name) && Option.isSome(referenceAddress(name))
+        )
+      }
+
+      for (;;) {
+        const round = unresolved()
+        if (round.length === 0) break
+        for (const name of round) {
+          resolved.add(name)
+          const id = Option.getOrThrow(referenceAddress(name))
+          const node = yield* loader.load(id)
+          if (node.kind.tag !== KindTag) {
+            return yield* new WrongKindReference({
+              ref: id,
+              expectedTag: KindTag,
+              actualTag: node.kind.tag,
+            })
+          }
+          // The BYTES gate, ahead of the parser, exactly as `get` runs
+          // it: assembly is a THIRD byte entry point, and a door that
+          // skips this one would resolve a spelling the other two refuse
+          // by name.
+          yield* Effect.try({
+            try: () => admitPayloadSpelling(node.payload),
+            catch: (issue) => projectionFailure(id, issue),
+          })
+          const envelope = yield* decodedVersionedEnvelope(node.payload, id)
+          const target = yield* Effect.try({
+            try: () => fromEnvelope(envelope),
+            catch: (issue) => projectionFailure(id, issue),
+          })
+          const targetJson = SchemaRepresentation.toJson(target) as unknown as {
+            readonly references: Record<string, Schema.Json>
+            readonly representation: Schema.Json
+          }
+          const bindings: ReadonlyArray<readonly [string, Schema.Json]> = [
+            [name, targetJson.representation],
+            ...Object.entries(targetJson.references),
+          ]
+          for (const [key, code] of bindings) {
+            const seated = table[key]
+            if (
+              seated !== undefined
+              && canonicalJson(seated) !== canonicalJson(code)
+            ) {
+              return yield* projectionFailure(
+                id,
+                `the assembled references table binds ${
+                  canonicalJson(key)
+                } to two different codes`,
+              )
+            }
+            table[key] = code
+          }
+        }
+      }
+
+      // Back through the door: the table grew, so `WF` and guardedness
+      // are decided again over what it grew into.
+      return yield* Effect.try({
+        try: () =>
+          documentFromJson(
+            { references: table, representation: json.representation } as
+              Schema.Json,
+          ),
+        catch: (issue) =>
+          new ProjectionCodecFailure({ direction: "decode", issue: String(issue) }),
+      })
+    },
+  )
 
 /** Load a canonical schema identity. Revision 1 returns Effect's persistent
  * representation; revision 0 is accepted and projected into that same form. */
