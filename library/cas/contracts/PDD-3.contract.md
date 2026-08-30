@@ -25,7 +25,7 @@ an edge fails the default), §8.0 (the spec form that composes), §9.1–9.5
 (the abstraction function is the bridge; imports explicit and acyclic),
 §1.6 (ghost values do not change executable results).
 
-## Status — slices 1–3 LANDED, gates green
+## Status — slices 1–3 LANDED, break pass in, fix pass done
 
 | Slice | State |
 |---|---|
@@ -34,9 +34,18 @@ an edge fails the default), §8.0 (the spec form that composes), §9.1–9.5
 | 3 — document plane + guardedness | landed, `references_guarded_decidable` proved |
 
 `lake build` green; `mise run check:cas` green after regeneration
-through the emitters; effects suite 46 files / 334 tests green. No
-`sorry`, no `native_decide`; the new theorems use the three standard
-Lean axioms and nothing else.
+through the emitters. No `sorry`, no `native_decide`; the theorems use
+the three standard Lean axioms and nothing else.
+
+An independent breaker attacked the work on branch
+`attack/opus-cc-mac/pdd-3` (`e8a31ba3`) and returned
+**STANDS-with-holes plus one BREAK**: every law the packet writes
+holds, and the DOOR's prose about itself did not. The attack record is
+`library/cas/contracts/attacks/PDD-3/` on that branch —
+`RESULTS.md` (verdict, gates verbatim, twelve failed attempts) and
+`Attack.lean` (the witnesses, as derivations). Seven findings — one
+BREAK, four holes, two notes — are carried in
+[§Breaks](#breaks) with what each cost and what closed it.
 
 Slices 4 and 5 are not in this ticket and are not started. What they
 inherit is in [§Inherited by the follow-on](#inherited-by-the-follow-on-out-of-scope-here).
@@ -117,6 +126,26 @@ or it is not held at all.
 Stated first, because the anti-overclaim class is the one this process
 turns on (C5, CLAIM-GATES G0–G6).
 
+- **GUARDEDNESS IS CONSTRUCTIBILITY, NOT PRODUCTIVITY.** Amended by the
+  break pass (F2). The door decides that the EAGER revival of the table
+  terminates: a cycle that closes through constructors alone — a
+  `struct` field, a `union` member, an array element — is refused,
+  because unfolding it builds an infinite code. It does NOT decide that
+  forcing the result reaches a value. `Ast.susp` is a DELAY, not a
+  constructor: putting the recursive occurrence under one defers the
+  loop, it does not break it. Three admitted witnesses say so
+  (`Attack.lean` §2, each proved `Guarded` through
+  `references_guarded_decidable`, so this is a fact about the
+  specification and not about the code):
+  `{A: susp(reference A)}`, `{A: susp(union[reference A, null])}`, and
+  `{A: susp(reference B), B: reference A}`. Measured against Effect's
+  own validator, the first runs forever (killed at 60s) and the second
+  throws `RangeError: Maximum call stack size exceeded`; the control —
+  the guarded linked list this packet ships — decodes in 1ms. Deciding
+  productivity needs a second relation over HEAD positions (what you
+  reach through `susp` wrappers alone, before any constructor), and
+  whether the estate wants it is a ruling. It is not claimed here, and
+  the prose that used to claim it is narrowed.
 - **No denotational adequacy for recursive codes.** `El` is not
   extended over the new constructor(s). A reference's target lives
   outside the code, in the references table, and extending a closed
@@ -144,7 +173,19 @@ turns on (C5, CLAIM-GATES G0–G6).
   question, which this ticket does not open. The door's guardedness
   answer is well defined regardless — a name with no entry has no
   outgoing edge, so it can lie on no cycle.
-- **A DEAD table entry is not refused.** Same reasoning, same evidence.
+- **A DEAD table entry is not refused FOR BEING DEAD.** Corrected by the
+  break pass (N1). The first spelling of this line said a dead entry is
+  not refused, full stop, and that is false: `Document.guarded` runs
+  `d.names.all`, over every name in the table rather than over the ones
+  the root reaches, so a dead entry that CYCLES is refused
+  `unguardedCycle` — `{A: reference "A"}` under a `String` root, which
+  Effect reads back happily (`Attack.lean` §4, `deadCycle`). Both doors
+  agree on it, so this is a claim-scope correction and not a
+  divergence. What holds is the narrower sentence: being unreachable
+  from the root is not itself a refusal, and the estate over-refuses
+  relative to Effect on a dead cycle.
+- **A DUPLICATE table key is REFUSED, and the ruling is assumed.** See
+  [§The assumed ruling](#the-assumed-ruling-duplicate-table-keys-operator-override-invited).
 
 ### Inherited by the follow-on (out of scope here)
 
@@ -169,6 +210,24 @@ turns on (C5, CLAIM-GATES G0–G6).
   `tools/Laws.lean` is an operator act, and a theorem claiming an id that
   belongs to another ruling is the status lie the law index exists to
   catch. OWED: the row.
+- **The node-level duplicate key** — a duplicate `_tag` on a node, which
+  Lean refuses `notASchema` and the in-memory TypeScript door admits.
+  It predates this ticket and this pass deliberately did not widen to
+  it. OWED: one "the bytes are not a canonical spelling" refusal, named,
+  on both hosts, covering every duplicate key rather than the references
+  table's alone (break-pass F1's provenance paragraph).
+- **The productivity relation.** Deciding that forcing a document
+  reaches a value, not merely that revival terminates, needs a second
+  relation over HEAD positions — what a name reaches through `susp`
+  wrappers alone, before any constructor. `Attack.lean` §2's `headName`
+  is the sketch. Whether the estate wants it is a ruling (break-pass
+  F2).
+- **`ingestDocumentBytes`.** `ingestBytes` composes the parser with the
+  BARE-CODE arm, so every document arriving as bytes is refused
+  `nonEmptyReferences`. The TypeScript side has the composition and Lean
+  does not, and that asymmetry is where the duplicate-key divergence
+  lived. `Attack.lean` §7 writes the missing arm out in three lines
+  (break-pass N5).
 
 ### The one divergence C6 does not close
 
@@ -187,6 +246,65 @@ therefore carries no row for this spelling and says so at the point of
 omission; the divergence sits in `Cas/Backend/Admission.lean` beside the
 annotation-bag one. Everything else about C6 agrees case for case.
 
+### The assumed ruling — duplicate table keys (OPERATOR OVERRIDE INVITED)
+
+The break pass's one BREAK (F1) is a byte string the two doors read as
+two different documents. `{"A":<a reference to A>,"A":<a String>}` is a
+references table carrying the name `A` twice. Lean's `Cas.Json.parse`
+keeps both pairs and `Document.lookup` takes the FIRST, so the table
+cycles; `JSON.parse` keeps the LAST, so it does not. One payload, two
+documents, opposite verdicts — and the split runs both ways, because
+`{"A":<a String>,"A":<a reference to A>}` reverses which door sees the
+cycle.
+
+**The fix pass ASSUMES this ruling: a duplicate table key is refused, at
+both doors, by name, before anything is decided about the table's
+content.** The reasoning: which pair wins is a parser's private habit,
+not a fact about the document, so a door that picks a winner is
+answering a question the bytes do not ask. Refusing costs nothing real —
+no canonical spelling has a duplicate key, because a canonical spelling
+sorts strictly ascending — and it is the only answer both hosts can give
+without one of them guessing.
+
+What that costs in mechanism, on each side:
+
+- Lean names the duplicate before it names the cycle. `documentRefusal`
+  used to test guardedness first, so the same duplicate earned
+  `unguardedCycle` in one direction and `illFormed` in the other. It now
+  tests the table's strict-name-order clause first and answers
+  `illFormed` both ways. No document changes from admitted to refused —
+  `pairwiseRefNames` already refused every duplicate — only the NAME
+  moves.
+- TypeScript refuses it from the BYTES, because `JSON.parse` has already
+  thrown one of the pairs away by the time any gate could look. The
+  shipped byte door already turned these payloads away (the canonical
+  re-render does not match the bytes), but ANONYMOUSLY — as
+  `TypeError: Projection payload is not canonical JSON`, which the
+  verdict gate reads as "refused without a name". It now answers
+  `illFormed` with the repeated name in the message.
+
+The alternative the operator may prefer: record the split as a third
+divergence in `Cas/Backend/Admission.lean` beside the empty-name and
+annotation-bag ones, and carry no corpus row. That is a smaller change
+and a larger lie — the table's "agree case for case" line would have to
+go, and a foreign payload would still get two answers. Overriding this
+is deleting one clause in `documentRefusal`, one gate call in
+`Materialize.fromPayload`, and three corpus rows.
+
+**Owed, not fixed, and deliberately so.** The duplicate-key hazard is
+older than this ticket. Its control is a duplicate `_tag` on a NODE with
+an empty table — `{"_tag":"String","_tag":"Null","checks":[]}` — which
+splits the same way and has nothing to do with the references table:
+Lean answers `notASchema`, and the in-memory TypeScript door admits.
+What PDD-3 changed is the REACH, because at the parent commit a
+non-empty table was refused `nonEmptyReferences` by both doors and a
+duplicate table key could not diverge. The node-level twin is an OWED
+EDGE for a follow-on — a general "the bytes are not a canonical
+spelling" refusal, named, on both hosts — and this pass deliberately did
+not widen to it: the table gate refuses duplicates in the references
+table and nowhere else, so no refusal name is claimed for a spelling the
+two doors have not been reconciled on.
+
 ## The algebra
 
 Write `R` for a references table — a finite map from name to code —
@@ -198,10 +316,26 @@ with `n E m ⟺ m ∈ refs(R n)`. `E` is finite because `dom(R)` is finite
 and `refs` is a fold over a finite tree.
 
 **L2 — guardedness is decidable.** The predicate "every cycle of `E`
-passes through a guard" is decided by a fuel-bounded search with fuel
-`|dom(R)|`. Decidability is the theorem; the decision procedure IS the
-door. The variant is `|dom(R)| - |visited|`, strictly decreasing on
-every recursive edge — the `termination` class, estate form fuel.
+passes through a guard" is decided by a search with fuel `|dom(R)|`.
+Decidability is the theorem; the decision procedure IS the door.
+
+**L2a — the search settles each name once.** Added by the fix pass (F3).
+The walk carries the set of names already known to settle and consults
+it before descending, so a name is explored once however many paths
+reach it. The variant is `|dom(R)| - |visited|` — the `termination`
+class, estate form fuel — and it is now a fact about the code rather
+than a description of it. The naive walk, which the packet shipped, has
+no visited set at all: a table whose entries each name the next one
+twice makes it re-walk every path, and it is `Θ(2ⁿ)`. Measured:
+`Attack.lean` §5's `fanTable`, 25 acyclic entries in a 7 657-byte
+payload, 302 915 ms in Lean and 18 271 ms in TypeScript at 23 entries,
+doubling per entry. This is the ingestion door for foreign content, so
+the input is attacker-chosen and the door is synchronous on both hosts.
+The memoized walk decides the SAME predicate — `settlesMemo_iff` proves
+it agrees with the naive one name by name — so
+`references_guarded_decidable` is untouched and
+`references_guarded_decidable_memo` is the same statement over the
+procedure the door actually runs.
 
 **L3 — the round trip extends per constructor.** For every new code `a`,
 `ofRepresentationJson (toRepresentationJson a) = some a` on the
@@ -235,11 +369,17 @@ ENSURES    ingest answers a well-formed DOCUMENT (table + root) whose
            envelope as presented; the door is pure, so there is no
            second state beyond its answer.
 
-DECREASES  |dom(R)| - |visited| for the guardedness search (fuel =
-           table size, existential-fuel discipline,
-           Cas/Lang/Handler.lean:115-123); structural inclusion for
-           every walk over a single code (CATALOG §4.3 — recursion on
-           structurally included children, so the decrease is free).
+DECREASES  |dom(R)| - |visited| for the guardedness search: the walk
+           carries the settled names and never descends into one twice,
+           so every recursive edge either meets the memo and stops or
+           adds a name (fuel = table size bounds the depth,
+           existential-fuel discipline,
+           Cas/Lang/Handler.lean:115-123). AMENDED by the fix pass —
+           the shipped procedure had no visited set and the clause
+           described an algorithm that did not exist (F3). Structural
+           inclusion for every walk over a single code (CATALOG §4.3 —
+           recursion on structurally included children, so the decrease
+           is free).
 
 FRAME      reads: the presented envelope only. writes: nothing — the
            door is a pure function. On the generated side, the byte
@@ -278,6 +418,27 @@ BATTERY    DISCHARGED. Lean: `unguarded_alias_cycle_refused` and
            test/SchemaVerdicts.test.ts against the regenerated
            SchemaAdmission table — the cross-door gate.
 
+           GREW in the fix pass, because all four of those rows have an
+           EMPTY bare-edge relation and a door with fuel ZERO passed
+           every one of them (F4, `Attack.lean` §3 `guardedWrong`):
+           `admit-reference-chain` (`{A: reference B, B: String}`, one
+           acyclic edge) and `admit-reference-chain-two` (two edges, so
+           the search recurses more than once). Both admitted, both with
+           a non-empty relation, so the fuel is exercised by a witness
+           and not only by the theorem.
+
+LAW        L2a — the memoized walk decides what the naive one decides:
+           `d.settlesMemo n = d.settles |dom(R)| n` for every name, so
+           `Document.guardedMemo d = true <-> d.Guarded`
+           (`references_guarded_decidable_memo`).
+FALSIFIER  exhibit a document the two procedures answer differently.
+BATTERY    Lean: `settlesMemo_iff` and
+           `references_guarded_decidable_memo`, plus `#guard`s that the
+           fan table admits at a size the naive walk cannot reach. Host
+           side: test/SchemaGuardednessCost.test.ts asserts the fan
+           table at 40 entries returns inside a wall-clock budget — a
+           RUNTIME assertion on the host, nothing timed in the kernel.
+
 LAW        L3 — round trip per constructor.
 FALSIFIER  exhibit a well-formed code `a` in the new constructor's
            family with
@@ -291,6 +452,31 @@ FALSIFIER  exhibit a spelling refused before this increment and
            admitted after, or refused after under a different name.
 BATTERY    the clause table's `#guard`s (Cas/Backend/Admission.lean:
            385-469) plus the admission-map byte gate.
+
+LAW        L6 — the two doors name a refusal in the same ORDER. A
+           document with two defects earns the same name at both doors.
+FALSIFIER  exhibit a document both doors refuse under different names.
+BATTERY    added by the fix pass (F5). Corpus row
+           `refuse-unguarded-and-illformed` — a table entry that is
+           both on a bare cycle and out of field order — which Lean
+           names `unguardedCycle` and the shipped TypeScript door named
+           `illFormed`, because it ran `admitNode` over the entries
+           before the guardedness filter. The reference handler's order
+           is the order (R10): the TypeScript walk now filters
+           guardedness first. Replayed by the "refused BY NAME" gate in
+           test/SchemaVerdicts.test.ts.
+
+LAW        L7 — a duplicate table key is refused, at both doors, by one
+           name. ASSUMED RULING — see §The assumed ruling.
+FALSIFIER  exhibit a byte string with a repeated references-table key
+           that either door admits, or that the two doors name
+           differently.
+BATTERY    added by the fix pass (F1). Corpus rows
+           `refuse-duplicate-reference-key` (the reference first, so
+           Lean's first-pair lookup sees the cycle) and
+           `refuse-duplicate-reference-key-last` (the reference last,
+           so it does not) — both `illFormed`, both directions, gated
+           for verdict AND for name.
 
 LAW        L5 — the projection stays injective.
 FALSIFIER  exhibit two distinct well-formed documents with equal
@@ -480,3 +666,179 @@ FIXED-BY   SPEC-BUG. Operator ruling 2026-08-30 amended the spec:
 The finding cost no implementation work: the probe ran first, as the
 ticket ordered, and the adequacy class fired on the packet before a
 line of Lean existed.
+
+### The break pass — verdict STANDS-with-holes, one BREAK
+
+Seven rows, one per finding, from the independent attack on
+`attack/opus-cc-mac/pdd-3` (`e8a31ba3`). Every row cites the attack
+module that carries its witness, per CONTRACT.md's ledger rule; the
+attack is a regression object, so re-running
+`lake env lean contracts/attacks/PDD-3/Attack.lean` after this pass is
+the mechanical proof of what closed and what did not.
+
+What the pass did NOT find is worth as much: twelve attacks failed —
+the edge relation misses no nesting (checked per constructor field,
+including all three `tuple` positions), the two walks agree on every
+admitted node shape, key order is exact on both new arms, `repNorm` is
+idempotent on suspends nested in suspends inside a union, a dangling
+reference does not break the decision, and there is no `sorry` or
+`native_decide` anywhere on the C6 path.
+
+```
+BROKE      f486689f — the document plane, both doors
+LAW        L7 / the packet's cross-door claim, "Cross-door agreement is
+           bounded to ADMISSION", and Cas/Backend/Admission.lean:64-67,
+           "Nothing else about C6 diverges … agree case for case".
+WITNESS    one byte string, two documents:
+           {"revision":1,"value":{"references":{
+              "A":{"$ref":"A","_tag":"Reference"},
+              "A":{"_tag":"String","checks":[]}},
+             "representation":{"_tag":"String","checks":[]}}}
+           Lean keeps both pairs and looks up the FIRST, so the table
+           cycles and the door answers unguardedCycle. JSON.parse keeps
+           the LAST, so the in-memory TypeScript door ADMITS. The
+           reversed spelling reverses which door sees the cycle. On the
+           shipped BYTE door the payload was refused — but anonymously,
+           as "Projection payload is not canonical JSON", which the
+           verdict gate reads as refused without a name.
+CLASS      conformance, claim-scope
+FIXED-BY   this fix pass, under the ASSUMED RULING recorded in §The
+           assumed ruling — refused at both doors, named illFormed,
+           before either door decides anything about the table.
+           Lean: documentRefusal tests the strict-name-order clause
+           first. TypeScript: a references-table duplicate gate reading
+           the BYTES, called from Materialize.fromPayload. Corpus rows
+           refuse-duplicate-reference-key and
+           refuse-duplicate-reference-key-last carry both directions.
+           OWED, out of scope by instruction: the node-level twin (a
+           duplicate `_tag` on a node), which predates this ticket.
+ATTACK     Attack.lean §7 — dupHarmlessLast, dupTagNode.
+
+BROKE      f486689f — Guarded.lean:21-26 and Ingest.lean:105-116, the
+           PROSE; no theorem moved.
+LAW        the door's stated reason for existing: "resolving an
+           unguarded cycle never terminates" and "the resolver unfolds
+           A to get A, so the table is refused".
+WITNESS    three documents whose resolver unfolds A to get A forever,
+           ADMITTED by both doors and proved Guarded as a Prop:
+           {A: susp(reference A)}                        (runs forever)
+           {A: susp(union[reference A, null])}           (stack overflow)
+           {A: susp(reference B), B: reference A}        (one remove)
+           The control — this packet's own guardedList — decodes in 1ms
+           on the same path, so the door is right about what Effect
+           emits and wrong about why.
+CLASS      adequacy, claim-scope. The same class as the Break above,
+           one level up: the ruled theorem is the too-weak Q for the
+           prose's claim.
+FIXED-BY   this fix pass, PROSE ONLY — no admission semantics moved,
+           because whether the estate decides productivity is an
+           operator ruling and it is open. Guarded.lean, the
+           unguardedCycle docstring and the packet's claim scope now
+           say what is decided: a constructible cycle is refused; a
+           susp-guarded self-reference is admitted, and forcing it may
+           diverge, because susp is a delay and not a constructor.
+ATTACK     Attack.lean §2 — suspBareSelf_guarded, suspUnionKnot_guarded,
+           suspIndirect_guarded, and headName, which names the
+           distinction the relation does not draw.
+
+BROKE      f486689f — Document.settles, both hosts
+LAW        DECREASES: "|dom(R)| - |visited| for the guardedness search".
+WITNESS    there is no visited set on either side of the wire. The
+           variant is the fuel, structurally, and the search re-walks
+           every path: fanTable n, whose n+1 entries each name the next
+           one twice, is ACYCLIC and ADMITTED after a Θ(2ⁿ) walk.
+           25 entries, a 7 657-byte payload, 302 915 ms in Lean;
+           TypeScript 18 271 ms at 23. Doubling per entry, on the
+           ingestion door for foreign content, synchronous on both
+           hosts.
+CLASS      termination (the variant named an algorithm that did not
+           exist), claim-scope
+FIXED-BY   this fix pass — the memoized walk on both hosts.
+           settlesMemo threads the settled names and consults them
+           before descending; settlesMemo_iff proves it agrees with the
+           naive walk name by name, so references_guarded_decidable
+           stands VERBATIM and references_guarded_decidable_memo is the
+           same statement over the procedure the door runs.
+           test/SchemaGuardednessCost.test.ts is the host-side runtime
+           assertion at a size the naive walk cannot reach.
+ATTACK     Attack.lean §5 — fanEntry, fanTable.
+
+BROKE      f486689f — the BATTERY, not the door
+LAW        Guarded.lean:46-48, "fuel = |table| is precisely enough to
+           force a repeat and no more".
+WITNESS    guardedWrong, a door with fuel ZERO —
+           `d.names.all (fun n => (d.out n).isEmpty)` — agrees with the
+           shipped door on all four C6 corpus rows, on every other
+           witness in the attack, and on all 67 empty-table rows: 71 of
+           71. Both admitted C6 rows have an EMPTY bare-edge relation.
+           The spec is adequate and the battery was not: the theorem
+           was the only thing standing between the shipped door and a
+           door that never follows an edge.
+CLASS      adequacy
+FIXED-BY   this fix pass — corpus rows admit-reference-chain
+           ({A: reference B, B: String}) and admit-reference-chain-two
+           (two edges). Both are admitted by the real door and refused
+           by the fuel-zero one, so the fan of §3's agreement guards
+           goes red, which is the receipt.
+ATTACK     Attack.lean §3 — guardedWrong,
+           guardedWrong_is_not_the_decision, chain1, chain2.
+
+BROKE      f486689f — the refusal NAMES, across the doors
+LAW        L4/L6 — a refused code is refused by name, and by the same
+           name (test/SchemaVerdicts.test.ts).
+WITNESS    a table entry both on a bare cycle and out of field order —
+           {A: struct[b: reference A, a: String]}, root reference A.
+           Lean answers unguardedCycle, because documentRefusal tests
+           guardedness first; the TypeScript door answered illFormed,
+           because it ran admitNode over every entry before its
+           guardedness filter. Same bytes, both doors refuse, different
+           names, and no corpus row asked.
+CLASS      conformance
+FIXED-BY   this fix pass — the reference handler's order IS the order
+           (R10), so the TypeScript walk filters guardedness before it
+           admits the entries. Corpus row
+           refuse-unguarded-and-illformed carries it.
+ATTACK     Attack.lean §4 — unsortedAndCyclic, unsortedOnly.
+
+BROKE      92a64ec4 — the packet's claim scope, line "A DEAD table
+           entry is not refused".
+LAW        the claim-scope class: the stated boundary of a claim equals
+           its actual coverage.
+WITNESS    {A: reference "A"} under a String root. A is unreachable
+           from the root and both doors refuse it unguardedCycle,
+           because Document.guarded runs d.names.all over every name
+           rather than the reachable ones.
+CLASS      claim-scope
+FIXED-BY   this fix pass — the line now reads "not refused FOR BEING
+           DEAD", and the over-refusal relative to Effect is stated
+           where the dangling-reference line is.
+ATTACK     Attack.lean §4 — deadCycle.
+
+BROKE      326064e3 — stale prose, SelfCodec.lean:1502-1505
+LAW        none. A sentence that says the carrier has no Suspend and no
+           Reference constructor, in the commit that added both.
+WITNESS    the docstring on Ast.ofRepresentationDocument still carried
+           the pre-C6 sentence. Its IDENTICAL twin on
+           IngestRefusal.nonEmptyReferences was narrowed in the same
+           commit, and the packet's own Block quotes the two as a pair.
+CLASS      claim-scope
+FIXED-BY   this fix pass — narrowed like its twin: the arm answers ONE
+           CODE, so it reads an empty table and refuses a non-empty one
+           for that reason, not for want of a constructor.
+ATTACK     RESULTS.md N2.
+```
+
+Three notes from the pass are recorded and NOT closed here, because
+none is this ticket's to close: `El.lean` is in the diff under a fence
+(N3 — two forced `Empty` arms and a docstring; adding a constructor
+makes the match non-exhaustive, and no existing arm moved), the effects
+suite's `BrainStem.test.ts` times out on a cold full-suite run at the
+default 5s and passes alone in 199ms (N4 — known baseline, unrelated to
+the schema plane), and `ingestBytes` still composes the parser with the
+BARE-CODE arm so every document arriving as bytes is refused
+`nonEmptyReferences` (N5 — there is no `ingestDocumentBytes`; the
+TypeScript side has the composition, and that gap is where the
+duplicate-key divergence lived). N6 — that `Document.WF`'s strict-order
+clause is unreachable at the door except through duplicates — is no
+longer a note: after this pass it is exactly the clause that refuses
+them.
