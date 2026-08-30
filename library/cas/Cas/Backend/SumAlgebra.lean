@@ -63,9 +63,24 @@ Prior art, verified rather than trusted: the law rows of
 "`Prog.inl`/`Prog.inr` are `interpret` of the injection handlers" — is
 the observation that makes `Prog.inl_unique` provable, and it is the
 reviewer's, not this file's), and `prog-carrier.md` S1–S10 with the
-adversaries of H-2/H-3. The exhibits file those documents cite
-(`handlers-semantics-exhibits.lean`) does not exist in this history,
-so every proof below is developed from the carriers.
+adversaries of H-2/H-3.
+
+The exhibits file those documents cite
+(`handlers-semantics-exhibits.lean`) was gitignored and so unreachable
+from this worktree while the proofs below were developed; every one of
+them comes from the carriers. Main tracked the file at `b9283eda` and
+it is verified against this branch. Five statements overlap and agree:
+its §1 `interpret_sum_inl`/`interpret_sum_inr` with `interpret_inl`/
+`interpret_inr` here, its §2 `op_bind` with `Prog.op_bind`, its §6
+`handleLlm_liftCas` with `handleLlm_liftCas`, and its §3 `handler_ext`
+with the private helper below — arrived at independently, same
+statements, same proof ideas, so the credit for those five is the
+reviewer's as much as this file's. Everything else here — the sum
+projections, the morphism and injectivity laws, L30, the injection
+handlers, both categoricity theorems, and the three adversaries — is
+new. The exhibits establish that the named laws are PROVABLE; the
+question this file is built around is whether the law set is STRONG
+ENOUGH, which is a different question and the one hole §3.2 turns on.
 -/
 
 namespace Cas.Lang

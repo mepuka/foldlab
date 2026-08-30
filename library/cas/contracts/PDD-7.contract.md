@@ -526,14 +526,16 @@ written to fit them.
   is a ruling. (Same device and same disclosure as PDD-2's `CasWp`.)
 - **Not claimed: that the exhibits file was used.** The ticket cites
   `.staging/algebraic-review/handlers-semantics-exhibits.lean` §1, §2,
-  §6 as carrying proof sketches. **That file does not exist in the
-  tree at `main` (00ea1519), and no commit reachable from `main` ever
-  added it.** Every proof in this slice is developed from the carriers
-  and checked by the kernel; the review documents' law ROWS are cited
-  as prior art for the STATEMENTS (THE-ALGEBRA §2.1/§2.3,
-  handlers-semantics C.2 §3, prog-carrier S1–S10), which is all that is
-  actually on disk. Nothing was taken on trust, because there was
-  nothing to take.
+  §6 as carrying proof sketches. That file was NOT TRACKED at this
+  branch's base (`00ea1519`) — it was gitignored, so it did not exist
+  in this worktree — and every proof in this slice was therefore
+  developed from the carriers and checked by the kernel, with the
+  review documents' law ROWS cited as prior art for the STATEMENTS
+  (THE-ALGEBRA §2.1/§2.3, handlers-semantics C.2 §3, prog-carrier
+  S1–S10). Main tracked the file at `b9283eda`, merged in at
+  `7a3d558d`; it is verified here and the five overlapping statements
+  agree with it, item by item, in the Breaks section. So the credit is
+  shared where it overlaps and nothing was taken on trust.
 
 ## Obligation classes in play
 
@@ -695,13 +697,52 @@ Two smaller findings, recorded rather than filed:
   "proved in exhibits §N" currently reads as a discharge and is a
   citation to nothing.
 
-  Nothing was lost for this ticket — every proof here was developed
-  from the carriers and kernel-checked, which is what the ticket asked
-  for ("trust nothing unchecked"). Four of those nine rows (L5, L23,
-  L24, L31) are now genuinely carried, by this slice. But a reader
-  auditing the OWED column needs to know that its Carrier entries are
-  not all citations to things that exist, and PDD-8 will meet the same
-  absence on L16/L17/L18/L34/L35.
+  **CORRECTION, same hand, after main moved.** The observation above is
+  true of git; the diagnosis drawn from it is wrong, and the bullet is
+  left standing rather than swapped out so the error is legible. The
+  files existed on the operator's disk the whole time and were
+  **gitignored** — invisible to a worktree, which is why this castle
+  could not open them. Main tracked them at `b9283eda` ("the review's
+  exhibit files — THE-ALGEBRA's evidence base was gitignored"), merged
+  into this branch at `7a3d558d`. The right claim was the weaker one:
+  not "these do not exist" but "these are unreachable from any clone",
+  which they were until `b9283eda`. A worktree-isolated agent sees
+  exactly the tracked tree, so the two are indistinguishable from
+  inside one — and this packet asserted the stronger.
+
+  **The exhibits are verified, and this slice agrees with them.**
+  `lake env lean ../../.staging/algebraic-review/handlers-semantics-exhibits.lean`
+  from `library/cas` exits 0 against this branch. Correspondence,
+  statement by statement:
+
+  | exhibit | this slice | relation |
+  |---|---|---|
+  | §1 `interpret_sum_inl` | `interpret_inl` (L23) | same statement, same proof idea (`bind_congr`) |
+  | §1 `interpret_sum_inr` | `interpret_inr` (L24) | same |
+  | §2 `op_bind` | `Prog.op_bind` (L5) | same statement, `rfl` both |
+  | §6 `handleLlm_liftCas` | `handleLlm_liftCas` (L31) | same statement, same induction |
+  | §3 `handler_ext` | `handler_eq_of_handle` (private) | same proof term; the ROW is PDD-8's L16 and stays PDD-8's |
+
+  All five were developed here from the carriers before the file was
+  reachable, and they agree. That is a better outcome than having
+  copied them, and it is why the packet reports the agreement rather
+  than quietly adopting the citation.
+
+  What the exhibits do NOT carry, and this slice adds: L7, L8, L21,
+  L22, L25, L26, L30, INJ-H, and both categoricity theorems
+  (`Handler.sum_unique`, `Prog.inl_unique`/`inr_unique`), plus the
+  three adversaries and their refutations. The exhibits show the named
+  laws are provable — the report's own claim that "the gap is a
+  statement gap and not a proof gap". They do not ask whether the law
+  SET is strong enough to exclude a wrong implementation, which is the
+  question this packet is built around and the reason it is not
+  redundant with them.
+
+  One claim-scope line above needs adjusting in light of them: L32
+  (`handleLlm` respects `bind`) IS carried, by exhibit §6
+  `handleLlm_bind`. This slice still does not prove it and does not
+  claim the row — but "OWED with nothing behind it" would be the wrong
+  reading, and a follow-up can promote the exhibit rather than redo it.
 - **`Handler.sum` still has no call site**, and this packet does not
   give it one. It now has laws and a categoricity theorem, so the
   hand-rolled consumers can be claimed against it; making that claim
