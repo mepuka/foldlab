@@ -25,13 +25,76 @@ an edge fails the default), §8.0 (the spec form that composes), §9.1–9.5
 (the abstraction function is the bridge; imports explicit and acyclic),
 §1.6 (ghost values do not change executable results).
 
-## Status — BLOCKED at slice 2
+## Status — the block is RULED; slices 2 and 3 proceed
 
-Slice 1 (the spelling probe) is landed and green. Slices 2 and 3 are
-**not started**: the probe contradicts the plan's slice-2 carrier, and
-the carrier design depends on the answer. The single question is in
-[§Block](#block--the-question-owed) below. Nothing in Lean has been
-written, per the ticket's own rule that the probe precedes it.
+The block below was raised against the plan's one-constructor carrier
+and answered by the operator on 2026-08-30 (the ruling is at the head of
+`.staging/wave-1/PDD-3.md`, and it amends the plan's :127-131):
+
+> Slice 2 grows the universe by TWO constructors —
+> `Ast.reference (name : String)` (the edge into the references table)
+> and `Ast.susp (thunk : Ast)` (the guard), matching Effect's pinned
+> two-node spelling. […] The §3-addendum theorem stands VERBATIM: every
+> cycle passes through a `susp`. Neither constructor adds a sort.
+
+So L2 is no longer a tautology and its falsifier is a real witness
+table. The break ledger carries the finding.
+
+## The carrier, as ruled
+
+Two arms on `Ast`, and the two spellings the probe pinned:
+
+| Arm | Projection | Role |
+|---|---|---|
+| `reference (name : String)` | `{"$ref":name,"_tag":"Reference"}` | the EDGE into the table |
+| `susp (thunk : Ast)` | `{"_tag":"Suspend","checks":[],"thunk":…}` | the GUARD |
+
+`WF` grows by exactly two clauses: `reference n` asks `n ≠ ""` (the
+nonemptiness Effect itself imposes on `$ref`), `susp a` asks `a.WF`.
+The ADDRESS discipline is deliberately not in `WF`.
+
+Key order in the projection is canonical (sorted), which is what puts
+`$ref` before `_tag`: `$` is 0x24 and `_` is 0x5F.
+
+**The document plane.** A new `Document` — the Lean spelling of a shape
+the projection already writes (`Ast.representationDocument`), so this
+mints no carrier where a seat exists:
+
+```
+structure Document where
+  references     : List (String × Ast)   -- strictly name-sorted
+  representation : Ast
+```
+
+`Document.WF` is: names strictly ascending (the canonical-fields
+argument, verbatim from `.struct` — it is what makes the spelling
+unique), every name nonempty, every code `WF`, and **guarded**.
+
+**Guardedness, made precise.** `Ast.bareRefs` collects the table names a
+code mentions at positions **no `susp` guards** — the walk stops dead at
+every `.susp`. That is the plan's own "non-suspend edge relation". The
+table's edge relation is `n ⇝ m ⟺ m ∈ bareRefs (R n)`, and the document
+is GUARDED when `⇝` has no cycle. Since `bareRefs` stops at each `susp`,
+"no cycle in `⇝`" is exactly "every cycle of the references table passes
+through a `susp`" — the theorem verbatim.
+
+Checked against the probe's real documents: the anonymous linked list
+has its only `reference` under the `susp`, so `⇝` has no edges at all —
+guarded. The alias cycle `{A: reference B, B: reference A}` and the
+bare structural cycle `{A: struct[next: reference A]}` both give cycles
+in `⇝` — refused, and they are the L2 witness tables.
+
+**The door.** `nonEmptyReferences` narrows rather than retires: `ingest`
+keeps its type and its name as the BARE-CODE arm (every existing
+theorem and `#guard` over it stands unchanged), and refuses a document
+that carries a table with that name — now meaning "this arm answers a
+bare code", not "the subset does not reach the table". The new
+`ingestDocument` is the document door, and the taxonomy grows by one
+arm, `unguardedCycle`, which is what the guardedness check answers with.
+The emitted admission table describes the document door; the TypeScript
+interpreter (`CanonicalSchema.admitDocument`) grows the same two node
+forms and the same walk, because SM-19's agreement is held by that table
+or it is not held at all.
 
 ## The claim scope — what v1 does NOT claim
 
@@ -58,6 +121,27 @@ turns on (C5, CLAIM-GATES G0–G6).
 - **Live validation of recursive schemas stays Effect's.** Effect's
   `fromRepresentation` handles `Schema.suspend` natively; the estate
   gates differentially at admission and does not model it.
+- **A DANGLING reference is not refused, and nothing says it resolves.**
+  The door checks guardedness and nothing else about names: a `$ref`
+  naming no table entry is admitted. Effect's own codec admits it too
+  (slice 1 pinned that), and resolvability is the address discipline's
+  question, which this ticket does not open. The door's guardedness
+  answer is well defined regardless — a name with no entry has no
+  outgoing edge, so it can lie on no cycle.
+- **A DEAD table entry is not refused.** Same reasoning, same evidence.
+
+### Inherited by the follow-on (out of scope here)
+
+- **Slice 5's recursive byte-gate fixture meets SM-21.** Effect writes
+  an `annotations` bag on a NAMED table entry (`{"identifier":"Node"}`,
+  pinned in slice 1). The Lean spelling carries no bag and the decoder
+  is exact on keys, so a named recursive fixture is unadmittable until
+  SM-21 lands or the door strips the bag. Slice 5 is not in this ticket;
+  the finding is recorded so the follow-on inherits it rather than
+  rediscovering it. The ANONYMOUS linked list carries no bag and is
+  unaffected.
+- **Value-plane verdicts for recursive codes** need a fuel-indexed Lean
+  decode — the named follow-on, per the addendum.
 
 ## The algebra
 
@@ -131,16 +215,19 @@ FALSIFIER  exhibit a well-formed code whose refs computation does not
            dom(R) x dom(R).
 BATTERY    Lean: the decidability instance elaborates, or it does not.
 
-LAW        L2 — guardedness is decided at the door.
-FALSIFIER  exhibit an UNGUARDED cyclic table that the door ADMITS, or a
-           GUARDED cyclic table that the door REFUSES.
-BATTERY    Lean counter-`example` in Cas/Schema/Ingest.lean (the
-           witness table, admitted or refused by `#guard`); host side,
+LAW        L2 — guardedness is decided at the door:
+           `Document.guarded d = true  <->  d.Guarded`
+           (`references_guarded_decidable`), where `Guarded` is the
+           honest no-cycle Prop over the non-suspend edge relation and
+           `guarded` is the fuel-bounded search with fuel = table size.
+FALSIFIER  exhibit an UNGUARDED cyclic table the door ADMITS, or a
+           GUARDED cyclic table the door REFUSES.
+BATTERY    Lean: the two witness tables as `#guard`s beside the door
+           (`aliasCycle`, `bareStructCycle` refused; `guardedList`
+           admitted), plus `unguarded_alias_cycle_refused` and
+           `guarded_list_admitted` as theorems; host side,
            library/effects/test/SchemaReferences.test.ts against the
            regenerated SchemaAdmission table.
-           NOT YET WRITTEN — see the Block: under the plan's
-           one-constructor carrier this falsifier is UNCONSTRUCTIBLE,
-           which is how the defect was found.
 
 LAW        L3 — round trip per constructor.
 FALSIFIER  exhibit a well-formed code `a` in the new constructor's
@@ -221,7 +308,12 @@ Two further observations that bear on scope:
   this ticket — but a recursive fixture will meet it, so slice 5's
   byte-gate fixture depends on B1 or on stripping the bag at the door.
 
-## Block — the question owed
+## Block — RAISED 2026-08-30, RULED the same day
+
+Kept in full, because a spec bug caught before any implementation
+existed is the record this process is measured by. The ruling is quoted
+in [§Status](#status--the-block-is-ruled-slices-2-and-3-proceed) and the
+ledger entry is in [§Breaks](#breaks).
 
 **The plan's slice-2 carrier contradicts the pinned spellings, and the
 contradiction is not cosmetic: under the carrier as written, this
@@ -279,7 +371,7 @@ The existing `Ast.ref (tag : UInt8)` is **not** a candidate for either
 role: it is registry row zero `foldlab/cas/ref`, a `Declaration`,
 unrelated to the references table (Ast.lean:74-86).
 
-### The single question
+### The single question — ANSWERED: two constructors
 
 > Does slice 2 add ONE constructor or TWO — that is, does
 > `Ast.susp (name : String)` spell Effect's `Reference` (`$ref`), with
@@ -305,6 +397,37 @@ two-constructor answer admits what Effect actually writes.
 
 ## Breaks
 
-Empty. The break ledger records successful falsifications against
-believed-in code; the defect above was found by the probe before any
-implementation existed, so it is a BLOCK, not a break.
+```
+BROKE      no implementation — the SPEC. The plan's slice-2 line,
+           CORE-ABSTRACTIONS-PLAN.md:127-131 ("Carrier:
+           `Ast.susp (name : String)` (one constructor; the name is a
+           references-table key)"), carried into the ticket verbatim.
+LAW        L2 — guardedness is decided at the door: the admission
+           check decides "every cycle passes through a `susp`"
+           (§3 addendum, CORE-ABSTRACTIONS-PLAN.md:919-926).
+WITNESS    No witness exists, and THAT is the refutation. Under one
+           constructor every table edge is a `susp` edge, so
+           "every cycle passes through a `susp`" holds for every
+           table: the law is a tautology, the door refuses nothing,
+           and the ticket's own named falsifier — "an unguarded cycle
+           the door must refuse" — has no solution to exhibit.
+           The positive evidence is the pinned rev-1 document for the
+           anonymous linked list, which carries BOTH node families:
+           {"representation":{"_tag":"Reference","$ref":"Objects_"},
+            "references":{"Objects_":{…"next":{"_tag":"Suspend",
+            "checks":[],"thunk":{…{"_tag":"Reference",
+            "$ref":"Objects_"}…}}}}}
+           A one-constructor carrier has no spelling for one of them.
+CLASS      adequacy — "is `Q` strong enough that no wrong
+           implementation passes?" It was not: every implementation
+           passed, including one that refuses nothing.
+FIXED-BY   SPEC-BUG. Operator ruling 2026-08-30 amended the spec:
+           two constructors, `Ast.reference (name : String)` and
+           `Ast.susp (thunk : Ast)`; the §3-addendum theorem stands
+           verbatim and its falsifier becomes a real witness table.
+           Recorded at the head of `.staging/wave-1/PDD-3.md`.
+```
+
+The finding cost no implementation work: the probe ran first, as the
+ticket ordered, and the adequacy class fired on the packet before a
+line of Lean existed.
