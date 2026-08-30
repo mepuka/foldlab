@@ -76,12 +76,22 @@ ENSURES    E1  canonServices (canonServices xs) = canonServices xs
            E2  NodupKeys xs → xs ~ ys → canonServices xs = canonServices ys
            C   Canon (canonServices xs) — the retraction lands in the
                invariant, which is why E1 holds
+           P   PRESERVE (breaker-hand amendment): canonicalization
+               loses nothing. NodupKeys xs → canonServices xs ~ xs;
+               in general keys are preserved both ways, services are
+               not invented, and the survivor of a repeated key is the
+               LAST occurrence. Without this conjunct C, E1 and E2 are
+               jointly satisfied by a canonicalizer that discards
+               services — see the ledger.
            DOOR isCanonServices xs = true → NodupKeys xs, and
                isCanonServices xs = true → canonServices xs = xs
-           ADDR systemAddressOf (mk (canonServices p) (canonServices r))
-               is invariant under permuting key-Nodup p and r —
-               ONE ADDRESS for one service set, which is CANON-1's
-               falsifiable claim.
+           ADDR (breaker-hand amendment; subject corrected) the door
+               GUARDS and REJECTS, it does not canonicalize, so the
+               claim is about the STORED term: two authored orders of
+               one key-Nodup set that both pass `isCanonServices` are
+               the SAME list, hence one `SystemNode`, hence ONE
+               ADDRESS. That is CANON-1's falsifiable claim. The
+               canonicalized-image form is kept as the weaker fact.
            There is no second state: every declaration under contract is
            a pure function of its argument, so `old` is vacuous.
 
@@ -175,14 +185,81 @@ BATTERY    library/cas/Cas/Backend/Canon.lean —
 ```
 
 ```
-LAW ADDR   Address stability (CANON-1's docket claim).
-           NodupKeys p → NodupKeys r → p ~ p' → r ~ r' →
-             systemAddressOf (mk (canonServices p)  (canonServices r))
-           = systemAddressOf (mk (canonServices p') (canonServices r'))
-FALSIFIER  exhibit two authored orders of one key-Nodup service set
-           whose canonicalized nodes reside at different addresses.
+LAW PRESERVE  Canonicalization loses nothing. AMENDMENT, breaker hand,
+              closing the adequacy hole in the first draft of this
+              packet: every law above is satisfied by a canonicalizer
+              that DISCARDS services, so preservation is the missing
+              conjunct and the law set was empty without it (CATALOG
+              §8.0/§8.3 — order and invariant are not sorting
+              correctness without same-elements).
+
+              Four forms, strongest first, all over the SHIPPED
+              function. The exact statement is a PERMUTATION on the
+              door's own path; it degrades to key-level preservation
+              off that path, because `dedup` genuinely does collapse a
+              repeated key and pretending otherwise would be the
+              overclaim this packet exists to prevent:
+
+  PRESERVE-exact  NodupKeys xs → canonServices xs ~ xs
+  PRESERVE-keys   k ∈ keys (canonServices xs) ↔ k ∈ keys xs
+  PRESERVE-elems  s ∈ canonServices xs → s ∈ xs
+  PRESERVE-last   s ∈ canonServices xs →
+                    ∃ pre post, xs = pre ++ s :: post ∧
+                      s.key ∉ keys post
+
+              PRESERVE-last pins WHICH element survives a repeated
+              key, so together with distinct keys and sortedness the
+              four determine `canonServices` uniquely. That is the
+              adequacy argument, and it is why this is the tightest
+              true form rather than the breaker's weaker floor
+              (`∀ s ∈ xs, ∃ t ∈ canonServices xs, t.key = s.key`).
+FALSIFIER     exhibit xs and a key k of xs absent from
+              canonServices xs — or s ∈ canonServices xs with s ∉ xs —
+              or s ∈ canonServices xs whose key recurs later in xs.
+BATTERY       library/cas/Cas/Backend/Canon.lean —
+              `canonServices_perm_of_nodup_keys`,
+              `mem_keys_canonServices`, `mem_of_mem_canonServices`,
+              `canonServices_last_wins`.
+```
+
+```
+LAW ADDR   Address stability (CANON-1's docket claim), stated at the
+           STORED term. AMENDMENT, breaker hand: the first draft named
+           `mk (canonServices p) (canonServices r)` as its subject and
+           was therefore about a term the estate never stores. The
+           authoring door does not canonicalize — it GUARDS with
+           `isCanonServices` and REJECTS, so the stored term is the
+           authored `mk p r`. Rejection, not rewriting, is the
+           mechanism, and every claim below carries the guard in its
+           hypotheses.
+
+           The bridge is the uniqueness fact: of all spellings of one
+           key-Nodup service set, exactly ONE passes the guard.
+
+  GUARD-UNIQUE  isCanonServices xs → isCanonServices ys → xs ~ ys →
+                  xs = ys
+  ADDR-AUTHORED isCanonServices p → isCanonServices p' →
+                isCanonServices r → isCanonServices r' →
+                p ~ p' → r ~ r' →
+                  mk p r = mk p' r'   and hence
+                  systemAddressOf (mk p r)
+                    = systemAddressOf (mk p' r')
+
+           The canonicalized-image form is KEPT, demoted, and labelled
+           as the weaker fact it is: it serves a caller who
+           canonicalizes for itself and must not be read as a statement
+           about stored terms.
+FALSIFIER  exhibit two authored orders of one key-Nodup service set,
+           BOTH passing `isCanonServices`, whose stored nodes reside at
+           different addresses.
 BATTERY    library/cas/Cas/Backend/Canon.lean —
-           `systemAddressOf_canon_stable`.
+           `eq_of_isCanonServices_of_perm`,
+           `systemNode_authored_stable`,
+           `systemAddressOf_authored_stable`; the mechanism itself is
+           witnessed by the `refX`/`refY` pair, where one order is
+           admitted (`isCanonServices = true`) and its permutation is
+           refused (`= false`). `systemNode_canon_stable` /
+           `systemAddressOf_canon_stable` remain as the weaker form.
 ```
 
 ## Claim-scope — what these theorems do NOT say
@@ -196,10 +273,29 @@ written to fit them:
   records why closing that door is its own ruling), so the guarantee is
   exactly: **terms authored through the guarded door are canonical, and
   for those terms authored order does not move the address.**
+- **The door rejects; it does not canonicalize.** AMENDMENT, breaker
+  hand. A non-canonical authored spelling is REFUSED at elaboration,
+  not rewritten, so nothing here says a badly-spelled topology gets
+  fixed — it says it does not compile. Off the guarded path, authored
+  order DOES move the address, and that is a true statement about the
+  estate, not a gap in the proofs.
 - ADDR is a congruence, not an address theory. It says equal terms have
   equal addresses because `systemAddressOf` is a function. It says
   nothing about collision resistance, and nothing about two DIFFERENT
   service sets.
+- **The address equality is at `Option Addr32`.** AMENDMENT, breaker
+  hand (NOTE-3). `systemAddressOf` is `Option`-valued and no `isSome`
+  fact is claimed: proving one needs a totality theorem for
+  `Schema.putNode` at the system code, which this lane does not have,
+  so `none = none` is a formally admissible reading of the address
+  equation ALONE. It costs nothing here only because
+  `systemNode_authored_stable` already proves the TERMS equal and the
+  address statement is its image — a reader must not take the address
+  equation by itself as evidence that either side resolves.
+- **Preservation is exact only on the Nodup path.** Off it,
+  `canonServices` collapses a repeated key by design; PRESERVE-keys and
+  PRESERVE-last say precisely what survives, and nothing stronger is
+  claimed.
 - Nothing here touches the load path. Renormalize-on-read remains the
   named defect it was; a stored non-canonical term stays non-canonical.
 - No soundness word attaches to any host code. The TypeScript is
@@ -209,12 +305,21 @@ written to fit them:
 
 `invariant` (Canon established by `canonServices`, required by E2),
 `algebraic-laws`/`abstraction` (idempotence = retraction; E2 = the
-square over the key-set abstraction), `adequacy` (E2-BARE's witness:
-the premise is load-bearing, proved by refutation), `claim-scope` (the
+square over the key-set abstraction; PRESERVE = the same-elements axis
+that makes the square mean something), `adequacy` (three witnesses now:
+E2-BARE's, and the breaker's two — `canonBad` against the law set and
+`raw_terms_differ` against the corollary's subject), `claim-scope` (the
 section above), `conformance` (the negative byte gate),
 `termination` (structural `dedup`, toolchain `mergeSort`). The
 `frame`, `domain`, and `contract` classes generate nothing: there is no
 state, no partial operation, and no two-state postcondition.
+
+The adequacy class is the one that fired, twice, on review. Both times
+the defect was the SPEC: laws that were individually true and jointly
+too weak to exclude a wrong implementation, and a corollary whose
+subject was not the object the docket's prose was about. Neither was
+an implementation error, which is the whole reason this process states
+the algebra before the code.
 
 ## Gates
 
@@ -242,4 +347,63 @@ FIXED-BY   SPEC-BUG. The packet carries the amended law (E2 with
            `NodupKeys xs`) and the witness is kept as a live
            counter-`example` in Canon.lean, so the amendment cannot be
            quietly relaxed back.
+```
+
+The two rows below are the BREAKER's, entered by the breaker hand after
+the independent attack on commit `74240903`. The verdict on that commit
+was STANDS — no law was refuted, every claim reproduced, the axiom
+prints were clean, and the mirror pin was confirmed load-bearing (a
+keeps-FIRST `dedup` makes the pin statement false, so drift is a red
+build). Both rows are adequacy-family: the castle held, and the map was
+wrong.
+
+```
+BROKE      74240903 — laws true, law SET empty.
+LAW        the conjunction of all eight public laws of 74240903
+           (idempotence, order-blindness, distinct keys, sortedness,
+           both door theorems, both corollaries)
+WITNESS    canonBad xs :=
+             if (xs.map (·.key)).Nodup
+             then (xs.mergeSort keyLe).take 1
+             else xs.take 1
+           A canonicalizer that DISCARDS every service but one
+           satisfies all eight law analogues, kernel-clean, E2-BARE
+           included. The missing conjunct is preservation: nothing in
+           the packet said `canonServices` loses no service. The fact
+           was TRUE of the shipped function all along — only unstated,
+           which is exactly the failure mode §8.0 warns about.
+CLASS      adequacy — is Q strong enough that no wrong implementation
+           passes? It was not.
+FIXED-BY   PENDING at the time this row was written — the amending
+           theorem commit that follows it on this branch. LAW PRESERVE,
+           four forms over the shipped function; discrimination
+           re-verified against the witness, `canonBad` provably fails
+           PRESERVE-keys.
+```
+
+```
+BROKE      74240903 — right theorem, wrong subject.
+LAW        ADDR as first stated:
+             NodupKeys p → NodupKeys r → p ~ p' → r ~ r' →
+               systemAddressOf (mk (canonServices p)  (canonServices r))
+             = systemAddressOf (mk (canonServices p') (canonServices r'))
+WITNESS    raw_terms_differ — two key-Nodup, mutually permuted AUTHORED
+           orders whose stored `SystemNode` terms have UNEQUAL
+           addresses. The authoring door does not apply
+           `canonServices`; it guards with `isCanonServices` and
+           REJECTS (exhaustively: 1 of 6 permutations of a 3-element
+           Nodup set passes). The stored term is `mk p r`, so the
+           theorem as stated was consistent with order-dependent
+           authored addresses — it did not say what the docket's prose
+           says.
+CLASS      claim-scope — the stated boundary of the claim did not equal
+           its actual coverage; the subject of the theorem was not the
+           object of the claim.
+FIXED-BY   PENDING at the time this row was written — the amending
+           theorem commit that follows it on this branch. GUARD-UNIQUE
+           and ADDR-AUTHORED, stated over the stored term with the
+           guard in the hypotheses. The mechanism
+           (rejection, not canonicalization) is now written in the
+           claim-scope section and witnessed in the file by an admitted
+           order and its refused permutation.
 ```
