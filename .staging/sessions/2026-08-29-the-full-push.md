@@ -140,3 +140,7 @@ with SPECS rows per the maintenance law.
   hard review must check for the algebra-expressiveness section and
   plain-language-first sequencing, and require them if absent.
 - Usage reset; all lanes re-dispatched.
+- FRONT-END LANE COMPLETE: three ornamentation deliverables finished
+  and rowed (Category 2). WASM position: DOM-first, falsifiable
+  escalation trigger; trust as the design material. Ruling ask
+  surfaced: Ts.Decl N-parameter arrow arm (blocks FE-O1/2/3).

@@ -73,6 +73,9 @@ deleted.
 | [.staging/operational-structure/STATE-OF-MECHANIZATION.md](../.staging/operational-structure/STATE-OF-MECHANIZATION.md) | status | The proof-ladder status report (L5 rock-solid → L0 paper) with the waiting list and critical-path order; two-hour audit cadence scheduled |
 | [.staging/operational-structure/CLI-AUDIT.md](../.staging/operational-structure/CLI-AUDIT.md) | CLI | Pre-dogfood audit (2026-08-29): verb matrix, freshness defects F1-F5, the E-transcript with grades — found the PHANTOM STORE (BROKEN-SILENT: an explicit --store typo silently creates a store, contradicting init-is-the-only-creator); fix lane dispatched; 5 ruling asks (cas doctor the highest-leverage) |
 | [.staging/operational-structure/PROPOSED-LOGIC.md](../.staging/operational-structure/PROPOSED-LOGIC.md) | proposed theorems | The friction-proposed logic ledger (operator directive): P1-P6 from the CLI lane, P1-P4 from the brain stem, house hazard notes — all PROPOSED, awaiting the grill |
+| [.staging/ornamentation/ORNAMENTATION.md](../.staging/ornamentation/ORNAMENTATION.md) | front-end ornamentation | Design-and-aesthetics review (decisions 29/33): trust as the design material — four marks, saturation spent only on doubt; the Codex synthesis assessed element-by-element |
+| [.staging/ornamentation/PROOF-OBLIGATIONS.md](../.staging/ornamentation/PROOF-OBLIGATIONS.md) | front-end proofs | 12 graded front-end obligations (FE-O1..): Ts.Decl arrow-arm ruling ask, wf_prefix, Style/R6 discharge, tier-0 gate reuse, tag trichotomy; docket-consistent |
+| [.staging/ornamentation/WASM-CANVAS.md](../.staging/ornamentation/WASM-CANVAS.md) | canvas stack | Decision 31(e) research: DOM-first position, WebGL2 the escalation of record, Rust-WASM UI refused (a11y + second-emitter cost); WASM belongs in the store not the renderer; falsifiable trigger + three owed measurements |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
