@@ -7,6 +7,8 @@ import Cas.Lang.Auth
 import Cas.Lang.Tower
 import Cas.Lang.Representation
 import Cas.Lang.Roots
+import Cas.Lang.Worded
+import Cas.Lang.WordWire
 import Cas.Lang.TreeProg
 import Cas.Lang.Defun
 import Cas.Lang.Fragments
@@ -22,6 +24,13 @@ one-step interpretation over the store word, calling the proved
 admission judgment, with the L5–L7 agreement and preservation laws;
 `Roots` is the publication extension (`RootSig`, the sum `StoreSig`,
 and the rooted interpreter delegating Cas operations to `step`);
+`Worded` is the history extension (`WordSig` speaking `since`, the sum
+`WordedSig`, and the worded interpreter delegating store operations to
+`stepRooted` — `since_suffix`, `since_zero`, `since_cas_agrees`,
+`stepWorded_preserves_wf`, and the feed laws `since_next`,
+`since_compose`, `runWorded_preserves_wf`), with `WordWire` carrying the
+word's wire records — the receipt and the history document the
+`emitword` gate mirrors into the effects package;
 `TreeProg` is layer 2 derived inside layer 3 — the grammar term as a
 store program, with `putTree_correct` (F1) proving the run computes
 exactly the elaboration's address and store, deduplicating shared

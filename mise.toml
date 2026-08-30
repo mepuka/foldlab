@@ -47,6 +47,7 @@ run = [
   "mise run gen:cas-verdicts",
   "mise run gen:cas-admission-map",
   "mise run gen:backend-wire",
+  "mise run gen:backend-word",
   "mise run gen:backend-gate",
   "mise run gen:backend-programs",
   "mise run gen:backend-layers",
@@ -84,6 +85,7 @@ run = [
   "mise run --force gen:cas-verdicts",
   "mise run --force gen:cas-admission-map",
   "mise run --force gen:backend-wire",
+  "mise run --force gen:backend-word",
   "mise run --force gen:backend-gate",
   "mise run --force gen:backend-programs",
   "mise run --force gen:backend-layers",
@@ -252,6 +254,13 @@ dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
 outputs = ["../effects/src/cas/generated/ConformanceVectorSchema.ts"]
 run = "lake exe emitwire"
+
+[tasks."gen:backend-word"]
+description = "Regenerate the effects package's word-record mirrors (the receipt and the history document) from the Lean codes"
+dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["../effects/src/cas/generated/WordLogSchema.ts"]
+run = "lake exe emitword"
 
 [tasks."gen:backend-gate"]
 description = "Regenerate the effects package's admission table (what the schema door admits, as data) from the Lean manifest"
@@ -427,7 +436,7 @@ run = "lake exe envledger"
 # fail. This is the one declaration on this task that is load-bearing
 # rather than an optimization.
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, admission-table, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, word-wire, admission-table, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
@@ -437,8 +446,8 @@ sources = [
   "../../experiments/entity-store-extract/inventory.json",
 ]
 run = [
-  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
-  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
+  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
   "mise run check:cas:surface",
   "mise run check:cas:obligations",
   "mise run check:cas:laws",

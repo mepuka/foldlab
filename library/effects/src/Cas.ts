@@ -77,6 +77,30 @@ export {
 export { layerKvsBackend, makeKvsBackend } from "./cas/KvsBackend.ts"
 export type { KvsBackend } from "./cas/KvsBackend.ts"
 
+// The word log: the receipts seam — the store's own history,
+// persisted per store and readable from a mark. The record shapes are
+// the generated word-wire mirrors; nothing here invents a spelling.
+export {
+  defaultWordTable,
+  layerFileWordLog,
+  layerMemoryWordLog,
+  layerSqlWordLog,
+  makeFileWordLog,
+  makeMemoryWordLog,
+  makeSqlWordLog,
+  WordLog,
+  wordLogColumns,
+  wordLogLockRelativePath,
+  wordLogRelativePath,
+} from "./cas/WordLog.ts"
+export type {
+  SqlWordLogOptions,
+  WordHistory,
+  WordLogAppend,
+  WordLogEntry,
+  WordLogShape,
+} from "./cas/WordLog.ts"
+
 // The roots registry over SQL: the one capability the key-value
 // backend cannot serve, because SQL enumerates and a key-value store
 // does not. It is the naming plane only — the bytes stay the key-value
@@ -118,6 +142,7 @@ export {
   layerMemoryWith,
   layerReadStore,
   layerStore,
+  layerWorded,
   makeCasLoaderOver as makeLoaderOver,
   makeCasStore as makeStore,
   makeCasStoreOver as makeStoreOver,

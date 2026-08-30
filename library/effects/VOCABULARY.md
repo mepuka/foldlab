@@ -45,7 +45,9 @@ current verb set, read off.
 | program | a table of steps, itself content: put it, publish it, run it by address | `cont` sort (0x0F) over `step` (0x0E) — `Cas.Lang.PProg`, laid down by `encodeProg` |
 | refused | a put that broke a store law; every refusal carries its clause name | the admission judgment, clause-named errors |
 | verify | re-hash and re-decode everything reachable from a root | `Graph.verify` and the loader law |
-| history | the record of a run: what was admitted, in order | the store word — see collision 5 |
+| history | what was admitted, in order — a run's record, and the store's own (`cas history` reads it; the widening from a run's to a store's is versioned by decision 28) | the store word — see collision 5 |
+| receipt | the store's persisted note that one admission happened: address, kind, size, when | a word-log entry (`wordLogEntrySchema`, generated) |
+| mark | how far into the history a reader stands: a count, not a time | a zero-based word index — `WordE.since`'s argument, `--since <mark>` |
 | in flight | how many store-touching calls a host runs at once — one bound PER PLANE, so a daemon with both planes saturated can be at twice it | `ServePolicy.maxInFlight`; stdio holds one gate, the daemon one per plane and says so at startup — `cas status` prints the number |
 | doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
 | host | the process that serves a store to callers; `--host` is the address one binds | `cas serve` is the stdio host, `cas daemon` the HTTP one — see collision 6 |
@@ -102,11 +104,24 @@ current verb set, read off.
    never "root", in every rendered surface. `Root α`, the typed handle
    the TypeScript value projection returns, is API vocabulary and does
    not appear in the CLI at all.
-5. "Word" is the model's name for a run's history, and it stays the
-   name in `--json` and in every claim (word equality is the
-   conformance gate). Human output says "history": doctor's human line
-   reads "identical admission history", and its `--json` line says
-   word.
+5. "Word" is the model's name for a history, and it stays the name in
+   `--json` and in every claim (word equality is the conformance
+   gate). Human output says "history": doctor's human line reads
+   "identical admission history", and its `--json` line says word.
+
+   The word now names two things, and the reading is widened rather
+   than split. A RUN's word is what one `cas_run` admitted, and it
+   travels in the reply. A STORE's word is what that store has ever
+   admitted, persisted as receipts and read from a mark; `cas history`
+   is the verb, and `--json` calls the document's list `word` for the
+   same reason doctor's does. They are one term because they are one
+   thing at different scopes — bindings in admission order — and the
+   `store` in "store word" is the scope, never a second sense. What
+   distinguishes them is what each carries: a run's word carries
+   bindings, and a store's word is a projection that keeps the
+   addresses and drops the nodes (`log ⋈ store` recovers them). So
+   word equality remains the conformance gate over runs, and no
+   receipts-plane claim inherits it.
 6. "Host" is three things, and the register keeps them apart by how
    each is spelled. The everyday noun is the PROCESS that serves a
    store — "the stdio host", "the daemon". The daemon's bind ADDRESS

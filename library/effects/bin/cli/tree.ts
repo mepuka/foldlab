@@ -17,6 +17,7 @@
 import { Command } from "effect/unstable/cli"
 import { doctor, init, ls, publish, put, run, serve, show, status, verify } from "./commands.ts"
 import { daemon } from "./daemon.ts"
+import { history } from "./history.ts"
 import { vocabulary } from "./vocabulary.ts"
 
 export const cas = Command.make("cas").pipe(
@@ -38,6 +39,7 @@ export const cas = Command.make("cas").pipe(
     show,
     run,
     verify,
+    history,
     serve,
     daemon,
   ]),

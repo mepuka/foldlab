@@ -55,8 +55,20 @@ counter-witness · putWord early cutoff (proved; no consumer).
 ## L2 — built, young, unstressed
 
 cas serve + BS-1 (stall-visible, loss-proof, bounded — probes are
-standing tests; hours old) · SystemNode authoring (two roots, seven
-arms) · census instrument (140,583 decls; found a real twin
+standing tests; hours old) · **cas_word — the receipts spine
+(landed, hours old)**: `WordSig`/`WordedSig` + the worded interpreter
+with `since_suffix`, `since_zero`, `since_cas_agrees`,
+`stepWorded_preserves_wf` PROVED (standard axioms only); the
+word-wire records registered and byte-gated (`emitword` →
+`WordLogSchema.ts`); the per-store word log written at admission
+through the store law (SQLite `cas_word` table / file `word.jsonl`,
+bytes-first + fail-together ruled, torn-tail repair probed); `cas
+history` with `--since <mark>` and `--json` answering the registered
+history document over both layouts. "Words are receipts" now runs:
+answered per call (existing), persisted per store, queryable since a
+mark — the row moves from L1/L0-for-the-running-system to L2
+operational over L3-proved semantics · SystemNode authoring (two
+roots, seven arms) · census instrument (140,583 decls; found a real twin
 divergence: the defaulted-parameter form axis, UNRULED) · env/law/
 obligation emitters · the OXC instrument · mise skip discipline
 (check:cas 0.08s on unchanged tree).
@@ -67,9 +79,10 @@ obligation emitters · the OXC instrument · mise skip discipline
    cross-host address agreement, queue 22 (lit + load in RunParams,
    manifest bump), run-by-address, R7 stamp, the operational
    transcript. WAITING ON: the lane (dispatched).
-2. **cas_word** (WordSig + three theorems) — the front end's true
-   blocker; "words are receipts" is L0 for the RUNNING system until
-   this lands. WAITING ON: P0 merge.
+2. **cas_word — LANDED** (see L2): WordSig, the theorems, the word
+   log, and `cas history`. Remaining follow-ups: the `cas_word` MCP
+   tool row (fenced to the brain-stem lane's manifest bump) and the
+   front-end consumer of the history document.
 3. **FE-1 emitagents** (four client configs + SETUP.md + OWED list) —
    no ruling needed, both inputs gated. WAITING ON: P0 merge (order).
 4. **The daemon bind** (~50 lines: Core.ts + McpServer.layerHttp) —
@@ -101,8 +114,15 @@ INTERPRET PROGRAMS: inline documents YES (proved + operational);
 by-address IN FLIGHT (P0). LAYER/BUILD DEPENDENCIES: layers YES
 (L4); build steps L1. RUN MCP: YES (L2 — young, now stall-proof).
 PLAIN LANGUAGE FOR ALL OPERATIONS: programs + tools + registry YES;
-verdict notes and the literature NO (E2/E5 owed). INTELLIGIBLE AND
-USABLE: unmeasured — dogfood exists to answer it.
+verdict notes and the literature NO (E2/E5 owed). HAND A USER THEIR
+OWN HISTORY: YES (L2, hours old) — every admission is receipted per
+store BY A COMPOSITION THAT PROVIDES THE LOG (the word log is an
+optional service, and both CLI layouts provide it; a composition that
+does not gets the store law unchanged and no receipts), `cas history
+--since <mark>` answers the registered history document, and the word
+semantics behind it is proved; the MCP `cas_word` tool row and the
+front-end pane remain owed.
+INTELLIGIBLE AND USABLE: unmeasured — dogfood exists to answer it.
 
 ## Waiting on the operator (top asks only)
 

@@ -6,16 +6,23 @@
  * calls itself "the seed that content derives from — never a second,
  * drifting copy", so this hand copy is GATED rather than trusted:
  * `test/Cli.test.ts` reads that table and fails when the two disagree
- * by a word or by a count. Glosses are shortened for a terminal
- * column; the words themselves are not.
+ * by a word, by a count, or by an order.
+ *
+ * A gloss here is the seed's gloss SHORTENED for an eighty-column
+ * terminal — a word-for-word prefix of it, never a paraphrase, so a
+ * reader who meets a term in help and again in the document is never
+ * given two definitions. Six rows predate that rule and paraphrase
+ * instead; the gate names them one by one, holds them, and lets no
+ * seventh join them.
  *
  * The register is consumer-gated — a word is here because a verb says
  * it. "in flight" is `cas status`'s (`maxInFlight`), and "doctor" is
- * `cas doctor`'s. The last six are `cas daemon`'s: its verb line and
- * its flags speak them unprompted, so they entered by the same rule.
- * What entered is the ABSTRACTION, exactly as collision 3 ruled for
- * `cas run` — "plane", not `cas-http/0` and "MCP over HTTP", which
- * stay protocol register.
+ * `cas doctor`'s. "receipt" and "mark" are `cas history`'s — the rows
+ * it prints and the index `--since` takes. The last six are
+ * `cas daemon`'s: its verb line and its flags speak them unprompted,
+ * so they entered by the same rule. What entered is the ABSTRACTION,
+ * exactly as collision 3 ruled for `cas run` — "plane", not
+ * `cas-http/0` and "MCP over HTTP", which stay protocol register.
  *
  * It lives in its own module rather than in `bin/cas.ts` because the
  * entry point runs the CLI on import: the gate has to be able to read
@@ -37,7 +44,9 @@ export const vocabularyWords: ReadonlyArray<readonly [string, string]> = [
   ["program", "a table of steps, itself content — put it, publish it, run it"],
   ["refused", "a put that broke a store law; every refusal carries its clause"],
   ["verify", "re-hash and re-decode everything reachable"],
-  ["history", "the record of a run: what was admitted, in order"],
+  ["history", "what was admitted, in order — a run's record, and the store's own"],
+  ["receipt", "the store's persisted note that one admission happened"],
+  ["mark", "how far into the history a reader stands: a count, not a time"],
   ["in flight", "how many store-touching calls the host runs at once"],
   ["doctor", "the checkup: what this store is, and what the lab has proved"],
   ["host", "the process serving a store; --host is the address one binds"],

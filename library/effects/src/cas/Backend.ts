@@ -39,7 +39,18 @@ export class BackendFailure extends Schema.TaggedError<BackendFailure>()(
     reason: Schema.String,
     cause: Schema.optionalKey(Schema.Defect()),
   },
-) {}
+) {
+  /** The refusal's own words, where every renderer looks for them.
+   * `Schema.TaggedError` leaves `message` empty, and `message` is what
+   * `Cause.prettyErrors`, a log line, and the CLI's user-error fold
+   * read — so without this a backend diagnostic that says exactly what
+   * is wrong reaches a person as a BLANK LINE at exit 1. The store
+   * refusals reach the CLI through `Cas.matchError`, which is why this
+   * class was the one whose words never arrived. */
+  override get message(): string {
+    return this.reason
+  }
+}
 
 /** What a backend must answer to be read from: bytes at an address, and
  * advisory presence in bulk. Nothing above the seam trusts either answer

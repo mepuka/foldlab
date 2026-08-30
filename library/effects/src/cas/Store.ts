@@ -11,6 +11,7 @@
  * without a lock because the byte plane only grows.
  */
 import {
+  Clock,
   Context,
   Crypto,
   Effect,
@@ -35,6 +36,7 @@ import {
   layerFileBackendFromFileUrl,
   layerFileBackendWithPath,
 } from "./FileBackend.ts"
+import { WordLog, type WordLogShape } from "./WordLog.ts"
 import {
   judgeAdmission,
   type AdmissionFacts,
@@ -197,11 +199,23 @@ export const makeCasLoaderOver = (
 })
 
 /** Construct the store law over explicit seam shapes — the constructor
- * for embeddings that hold a backend directly, without Layer wiring. */
+ * for embeddings that hold a backend directly, without Layer wiring.
+ *
+ * `wordLog` is the optional receipts seam. When present, every FRESH
+ * admission is receipted — bytes first, receipt second, the crash
+ * matrix's safe direction — and a duplicate put appends nothing,
+ * exactly as the Lean `step` leaves the word unchanged on `duplicate`.
+ * A put whose bytes land but whose receipt does not FAILS TOGETHER,
+ * typed: BROKEN-SILENT is the only alarm category, and a receipt that
+ * silently never existed would break "words are receipts" without a
+ * sound. The content stays resident either way (the byte plane is
+ * grow-only), so the refusal names that a re-put answers the same
+ * address — the same posture as an unacknowledged put. */
 export const makeCasStoreOver = (
   address: CasAddress,
   reader: ByteReaderShape,
   writer: ByteWriterShape,
+  wordLog?: WordLogShape,
 ): CasStoreShape => {
   /** Answer the admission judgment's facts from the byte plane: the
    * verified kind tag per reference, and any bytes resident at the
@@ -268,6 +282,20 @@ export const makeCasStoreOver = (
         yield* writer.putBytes(id, canonicalBytes).pipe(
           Effect.mapError(backendFailure),
         )
+        if (wordLog !== undefined) {
+          const at = yield* Clock.currentTimeMillis
+          yield* wordLog.append({
+            address: id,
+            at,
+            size: node.payload.length,
+            tag: node.kind.tag,
+          }).pipe(
+            Effect.mapError((failure) => new StoreFailure({
+              reason: `admitted ${id} but its receipt was not written: ${failure.reason} — the content is resident and a re-put answers the same address; the word under-reports this admission`,
+              cause: failure,
+            })),
+          )
+        }
         return id
       }
     }
@@ -297,14 +325,24 @@ export class AddressScheme extends Context.Service<AddressScheme, CasAddress>()(
   > = Layer.effect(AddressScheme, makeSha256Address)
 }
 
-/** Construct the store law over the seams and scheme in context. */
+/** Construct the store law over the seams and scheme in context. The
+ * word log is read as an OPTIONAL service: a composition that provides
+ * `WordLog` gets receipted admissions, and one that does not gets the
+ * store law unchanged — the requirement never appears in `R`, so no
+ * existing composition owes a log it did not choose. */
 export const makeCasStore: Effect.Effect<
   CasStoreShape,
   never,
   ByteReader | ByteWriter | AddressScheme
 > = Effect.map(
-  Effect.all([AddressScheme, ByteReader, ByteWriter]),
-  ([address, reader, writer]) => makeCasStoreOver(address, reader, writer),
+  Effect.all([
+    AddressScheme,
+    ByteReader,
+    ByteWriter,
+    Effect.serviceOption(WordLog),
+  ]),
+  ([address, reader, writer, wordLog]) =>
+    makeCasStoreOver(address, reader, writer, Option.getOrUndefined(wordLog)),
 )
 
 /** Construct an isolated in-memory store: the law over one fresh memory
@@ -330,6 +368,33 @@ export const layerStore: Layer.Layer<
     )),
   ),
 )
+
+/**
+ * The store law over a backend AND a word log — the worded
+ * composition, spelled once.
+ *
+ * The optionality ruling stands: `makeCasStore` reads `WordLog` as an
+ * optional service, so a composition that provides none gets the store
+ * law unchanged. What that ruling costs is an ordering that must be
+ * got right every time — the log has to stand UNDER the law's build,
+ * where the law can see it. Merged BESIDE the law instead, the build
+ * finds no log and every admission goes unreceipted, SILENTLY, because
+ * "no log" is a legal composition. That is a trap worth spelling in
+ * one place rather than in every caller.
+ *
+ * The address scheme and any realization the pieces need stay visible
+ * requirements: this combinator decides the ordering and nothing else.
+ */
+export const layerWorded = <ROut, E, RIn, EW, RW>(
+  backend: Layer.Layer<ROut, E, RIn>,
+  wordLog: Layer.Layer<WordLog, EW, RW>,
+): Layer.Layer<
+  CasStore | CasLoader | WordLog | ROut,
+  E | EW,
+  | RIn
+  | RW
+  | Exclude<ByteReader | ByteWriter | AddressScheme, WordLog | ROut>
+> => layerStore.pipe(Layer.provideMerge(Layer.merge(backend, wordLog)))
 
 /** The load-only law over the read seam alone — what a read-only
  * composition (a path-reader host) provides so typed reads work with

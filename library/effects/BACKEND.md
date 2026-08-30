@@ -18,14 +18,25 @@ store-root/
   config.json                              {"backend":"file", …}
   objects/<2 hex>/<62 hex>                 canonical bytes
   roots/<64 hex>                           empty file; presence is the publication
+  word.jsonl                               one receipt per line, in admission order
 ```
 
 ```ts
-Cas.layerFile(storeRoot).pipe(
+Cas.layerWorded(
+  Cas.layerFileBackend(storeRoot),
+  Cas.layerFileWordLog(storeRoot),
+).pipe(
   Layer.provideMerge(Cas.layerAddressSha256Live),
   Layer.provide(myFileSystemLayer),
 )
 ```
+
+`Cas.layerFile(storeRoot)` is the same store WITHOUT receipts — the
+word log is an optional service, and a composition that provides none
+gets the store law unchanged. `layerWorded` exists because the log has
+to stand UNDER the store law's build for the law to see it, and a
+composition that merges it beside instead leaves every admission
+unreceipted with nothing to say so.
 
 The address is the path, so the filesystem is the index — no manifest,
 nothing to rebuild. The directory is the store: rsync it, commit it,
@@ -33,17 +44,38 @@ serve it read-only over HTTP and read it back with
 `Cas.layerPathReader`, which is why a git-hosted store needs no server
 at all.
 
+**`word.jsonl` is the one file in that directory that does not copy.**
+Objects and roots are content and names — copying them is the whole
+point. Receipts are this device's own record of when it learned
+something: the marks are positions in THIS store's history and the
+timestamps are THIS host's clock. Copy the directory and both devices
+hold receipt 7; append on both and they hold different receipt 8s,
+which is a divergence no merge can settle, because the word does not
+sync. Copy the store to move the content, and read the copy's history
+as the copy's — never as a continuation of the original's. (The
+db-backed layout carries the same carve-out one layer down:
+`bin/cli/store.ts` states it for Litestream, where a restore restores
+this device's word rather than merging two.)
+
+A transient `word.jsonl.lock` may appear beside it: the cross-process
+write lock, held only while an append is in flight. Nothing copies it,
+and a stale one left by a killed writer is safe to remove — the
+refusal that names it says so.
+
 ## The database layout — one file, replicable
 
 ```
 store-root/
   config.json                              {"backend":"sqlite", …}
-  cas.db                                   cas_objects + cas_roots
+  cas.db                                   cas_objects + cas_roots + cas_word
 ```
 
 ```ts
 Layer.mergeAll(Cas.layerStore, Cas.layerSqlRootStore()).pipe(
-  Layer.provideMerge(Cas.layerKvsBackend),
+  Layer.provideMerge(Layer.mergeAll(
+    Cas.layerKvsBackend,
+    Cas.layerSqlWordLog(),
+  )),
   Layer.provide(KeyValueStore.layerSql({ table: "cas_objects" })),
   Layer.provide(SqliteClient.layer({ filename: `${storeRoot}/cas.db` })),
   Layer.provideMerge(Cas.layerAddressSha256Live),
@@ -68,12 +100,23 @@ That stack is the whole design. Reading it bottom-up:
   the only thing it adds: enumeration. `publish` is
   `INSERT … ON CONFLICT DO NOTHING` (the set only grows, and
   re-publication is the identity); `list` is `SELECT`.
+- **`Cas.layerSqlWordLog()`** — the receipts plane over that same
+  client: `cas_word(seq INTEGER PRIMARY KEY, address, tag, size, at)`,
+  one row per admission. `append` is one statement — `INSERT … SELECT
+  COALESCE(MAX(seq), -1) + 1` — so the mark is assigned under the same
+  write lock that lands the row, which is what keeps marks dense with
+  no counter held anywhere.
 - **`Cas.layerStore`** — the same store law as every other
   composition. Admission at put, re-verification at load, unchanged.
+  It reads the word log as an OPTIONAL service, which is why the log
+  is provided UNDER it rather than beside it.
 
-Two tables, one file. That is deliberate: the file is the unit
-Litestream replicates, so the bytes and the names that name them are
-backed up together or not at all.
+Three tables, one file. That is deliberate: the file is the unit
+Litestream replicates, so the bytes, the names that name them, and the
+history of both are backed up together or not at all. The carve-out is
+the same as the file layout's `word.jsonl` — a restore restores THIS
+device's word, and a device-sync deployment must exclude `cas_word` or
+move it to a local session database.
 
 **WAL is asserted, not configured.** The Bun SQLite client opens the
 database in WAL mode by default, which is what Litestream requires.

@@ -142,6 +142,7 @@ def residence : List (String × String × String) := [
   ("gen:backend-mcp", "portable", "all inputs tracked"),
   ("gen:backend-programs", "portable", "all inputs tracked"),
   ("gen:backend-wire", "portable", "all inputs tracked"),
+  ("gen:backend-word", "portable", "all inputs tracked"),
   ("gen:cas-schemas", "portable", "all inputs tracked"),
   ("gen:cas-surface", "portable", "all inputs tracked"),
   ("gen:cas-vectors", "portable", "all inputs tracked"),

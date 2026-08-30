@@ -6,7 +6,7 @@
       "declaredOutputs": ["conformance/admission-map.json"],
       "drivenBy": "gen:cas-admission-map",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "admissionmap",
@@ -18,7 +18,7 @@
       "declaredOutputs": ["../effects/src/cas/generated/SchemaAdmission.ts"],
       "drivenBy": "gen:backend-gate",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitgate",
@@ -30,7 +30,7 @@
       "declaredOutputs": ["../effects/src/cas/generated/grammar/manifest.json", "../effects/src/cas/generated/grammar/kindTags.ts", "REGISTRY.md"],
       "drivenBy": "gen:grammar-manifest",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitgrammar",
@@ -42,7 +42,7 @@
       "declaredOutputs": ["../effects/test/generated/EmittedLayers.ts"],
       "drivenBy": "gen:backend-layers",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitlayers",
@@ -54,7 +54,7 @@
       "declaredOutputs": ["../effects/src/cas/generated/lift/manifest.json", "../effects/src/cas/generated/lift/manifest.md"],
       "drivenBy": "gen:lift-manifest",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitlift",
@@ -66,7 +66,7 @@
       "declaredOutputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramAddresses.json", "../effects/test/generated/VectorProgramLifts.json"],
       "drivenBy": "gen:backend-programs",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitprograms",
@@ -78,7 +78,7 @@
       "declaredOutputs": ["../effects/src/cas/generated/ConformanceVectorSchema.ts"],
       "drivenBy": "gen:backend-wire",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "emitwire",
@@ -87,10 +87,22 @@
       "supportInterpreter": false
     },
     {
+      "declaredOutputs": ["../effects/src/cas/generated/WordLogSchema.ts"],
+      "drivenBy": "gen:backend-word",
+      "gatedBy": {
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "task": "check:cas"
+      },
+      "name": "emitword",
+      "root": "EmitWord",
+      "srcDir": "tools",
+      "supportInterpreter": false
+    },
+    {
       "declaredOutputs": ["../../docs/lab-core/ENVIRONMENT.json"],
       "drivenBy": "gen:env-ledger",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "envledger",
@@ -114,7 +126,7 @@
       "declaredOutputs": ["../effects/test/generated/materialized/estate/vector-document.ts", "../effects/test/generated/materialized/estate/vector-index.ts", "../effects/test/generated/materialized/estate/pin-sample.ts", "../effects/test/generated/materialized/estate/literal-pin.ts", "../effects/test/generated/materialized/estate/annotation.ts", "../effects/test/generated/materialized/estate/union-pin.ts", "../effects/test/generated/materialized/estate/tagged-pin.ts", "../effects/test/generated/materialized/estate/enum-pin.ts", "../effects/test/generated/materialized/estate/tuple-pin.ts", "../effects/test/generated/materialized/estate/exchange.ts", "../effects/test/generated/materialized/estate/index.ts"],
       "drivenBy": "gen:backend-materialize",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "materialize",
@@ -126,7 +138,7 @@
       "declaredOutputs": ["mcp/cas-tools.json"],
       "drivenBy": "gen:backend-mcp",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "mcpspec",
@@ -150,7 +162,7 @@
       "declaredOutputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json"],
       "drivenBy": "gen:cas-schemas",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "schemas",
@@ -174,7 +186,7 @@
       "declaredOutputs": ["vectors/value-single.json", "vectors/blob-two-leaves.json", "vectors/file-readme.json", "vectors/journal-two-entries.json", "vectors/shared-chunk.json", "vectors/git-pin-commit.json", "vectors/schema-vector-document.json", "vectors/index.json"],
       "drivenBy": "gen:cas-vectors",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "vectors",
@@ -186,7 +198,7 @@
       "declaredOutputs": ["conformance/schema-verdicts.json"],
       "drivenBy": "gen:cas-verdicts",
       "gatedBy": {
-        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+        "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
         "task": "check:cas"
       },
       "name": "verdicts",
@@ -252,7 +264,7 @@
       "sources": []
     },
     {
-      "commands": ["lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws", "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'", "mise run check:cas:surface", "mise run check:cas:obligations", "mise run check:cas:laws"],
+      "commands": ["lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws", "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'", "mise run check:cas:surface", "mise run check:cas:obligations", "mise run check:cas:laws"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "check:cas",
@@ -432,7 +444,7 @@
       "sources": []
     },
     {
-      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:effects:research", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:cas-laws", "mise run gen:env-ledger", "mise run gen:ledger"],
+      "commands": ["mise run gen:inventory", "mise run gen:vectors", "mise run gen:cas-vectors", "mise run gen:cas-schemas", "mise run gen:cas-verdicts", "mise run gen:cas-admission-map", "mise run gen:backend-wire", "mise run gen:backend-word", "mise run gen:backend-gate", "mise run gen:backend-programs", "mise run gen:backend-layers", "mise run gen:backend-mcp", "mise run gen:backend-materialize", "mise run gen:effects-materialize", "mise run gen:effects:research", "mise run gen:lift-manifest", "mise run gen:grammar-manifest", "mise run gen:cas-surface", "mise run gen:cas-obligations", "mise run gen:cas-laws", "mise run gen:env-ledger", "mise run gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen",
@@ -497,6 +509,16 @@
       "inChain": true,
       "name": "gen:backend-wire",
       "outputs": ["../effects/src/cas/generated/ConformanceVectorSchema.ts"],
+      "residence": "portable",
+      "residenceReason": "all inputs tracked",
+      "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+    },
+    {
+      "commands": ["lake exe emitword"],
+      "dir": "{{config_root}}/library/cas",
+      "inChain": true,
+      "name": "gen:backend-word",
+      "outputs": ["../effects/src/cas/generated/WordLogSchema.ts"],
       "residence": "portable",
       "residenceReason": "all inputs tracked",
       "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
@@ -572,7 +594,7 @@
       "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
     },
     {
-      "commands": ["mise run --force gen:inventory", "mise run --force gen:vectors", "mise run --force gen:cas-vectors", "mise run --force gen:cas-schemas", "mise run --force gen:cas-verdicts", "mise run --force gen:cas-admission-map", "mise run --force gen:backend-wire", "mise run --force gen:backend-gate", "mise run --force gen:backend-programs", "mise run --force gen:backend-layers", "mise run --force gen:backend-mcp", "mise run --force gen:backend-materialize", "mise run --force gen:effects-materialize", "mise run --force gen:effects:research", "mise run --force gen:lift-manifest", "mise run --force gen:grammar-manifest", "mise run --force gen:cas-surface", "mise run --force gen:cas-obligations", "mise run --force gen:cas-laws", "mise run --force gen:env-ledger", "mise run --force gen:ledger"],
+      "commands": ["mise run --force gen:inventory", "mise run --force gen:vectors", "mise run --force gen:cas-vectors", "mise run --force gen:cas-schemas", "mise run --force gen:cas-verdicts", "mise run --force gen:cas-admission-map", "mise run --force gen:backend-wire", "mise run --force gen:backend-word", "mise run --force gen:backend-gate", "mise run --force gen:backend-programs", "mise run --force gen:backend-layers", "mise run --force gen:backend-mcp", "mise run --force gen:backend-materialize", "mise run --force gen:effects-materialize", "mise run --force gen:effects:research", "mise run --force gen:lift-manifest", "mise run --force gen:grammar-manifest", "mise run --force gen:cas-surface", "mise run --force gen:cas-obligations", "mise run --force gen:cas-laws", "mise run --force gen:env-ledger", "mise run --force gen:ledger"],
       "dir": null,
       "inChain": true,
       "name": "gen:ci",
