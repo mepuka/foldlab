@@ -126,19 +126,24 @@ const bootDaemon = (options: {
     ])
     yield* Effect.forkScoped(
       Effect.never.pipe(
-        Effect.provide(layerDaemon({
-          policy: options.policy ?? defaultServePolicy,
-          host: "127.0.0.1",
-          port: Option.some(0),
-          otlp: Option.none(),
-          replicaTarget: options.replicaTarget === undefined
-            ? Option.none()
-            : Option.some(options.replicaTarget),
-          allowedOrigins: options.allowedOrigins ?? [],
-        })),
-        Effect.provide(layerCasAt(options.store, "sqlite")),
-        Effect.provide(layerCapture),
-        Effect.provide(Layer.merge(layerDiskFs, Path.layer)),
+        // One provide over one composed layer — chaining four would
+        // build them under four lifecycles (effect(multipleEffectProvide)).
+        Effect.provide(
+          layerDaemon({
+            policy: options.policy ?? defaultServePolicy,
+            host: "127.0.0.1",
+            port: Option.some(0),
+            otlp: Option.none(),
+            replicaTarget: options.replicaTarget === undefined
+              ? Option.none()
+              : Option.some(options.replicaTarget),
+            allowedOrigins: options.allowedOrigins ?? [],
+          }).pipe(
+            Layer.provideMerge(layerCasAt(options.store, "sqlite")),
+            Layer.provideMerge(layerCapture),
+            Layer.provideMerge(Layer.merge(layerDiskFs, Path.layer)),
+          ),
+        ),
       ),
     )
     const baseUrl = yield* Effect.promise(async () => {
@@ -625,8 +630,9 @@ describe("daemon — cross-plane WAL under multiplexed load", () => {
           Cas.Loader.pipe(
             Effect.flatMap((loader) => loader.load(Cas.ContentId.make(address))),
           )).pipe(
-            Effect.provide(layerCasAt(store, "sqlite")),
-            Effect.provide(layerDiskFs),
+            Effect.provide(
+              Layer.provideMerge(layerCasAt(store, "sqlite"), layerDiskFs),
+            ),
           )
         expect(verified.length).toBe(90)
       })
@@ -724,8 +730,9 @@ describe("daemon — SIGKILL mid-put under load (crash-matrix row 1)", () => {
           Cas.Loader.pipe(
             Effect.flatMap((loader) => loader.load(Cas.ContentId.make(address))),
           )).pipe(
-            Effect.provide(layerCasAt(store, "sqlite")),
-            Effect.provide(layerDiskFs),
+            Effect.provide(
+              Layer.provideMerge(layerCasAt(store, "sqlite"), layerDiskFs),
+            ),
           )
         expect(verified.length).toBe(acked.length)
 

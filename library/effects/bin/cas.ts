@@ -9,40 +9,23 @@
  * host everywhere — the shim runs this file under it, so the platform
  * layer is the Bun one and no Node realization is loaded.
  *
- * Help carries the vocabulary (the everyday register) beside the
- * commands, seeded from VOCABULARY.md — one coherent surface, per the
- * vocabulary law. `--wizard` on any command walks through its inputs:
- * it is one of the runner's own built-in global flags
- * (`GlobalFlag.wizard`), not a declaration of this package's.
+ * The tree is `bin/cli/tree.ts`'s and the runner is
+ * `bin/cli/entry.ts`'s, so this file is only the wiring: what the
+ * arguments are, and what the platform is. `--wizard` on any command
+ * walks through its inputs — one of the runner's own built-in global
+ * flags (`GlobalFlag.wizard`), not a declaration of this package's.
  */
 import { BunRuntime, BunServices } from "@effect/platform-bun"
-import { Effect } from "effect"
-import { Command } from "effect/unstable/cli"
-import { init, ls, publish, put, serve, show, status, verify } from "./cli/commands.ts"
-import { daemon } from "./cli/daemon.ts"
+import { Effect, Stdio } from "effect"
+import { runCas } from "./cli/entry.ts"
+import { cas } from "./cli/tree.ts"
 
-/** The everyday register, seeded from VOCABULARY.md — the words every
- * rendered surface uses, and no others. */
-const vocabulary = [
-  "the words (see library/effects/VOCABULARY.md):",
-  "  store    the content-addressed data itself — a directory (or db file)",
-  "  address  the 64-hex identity of content; equal content, equal address",
-  "  kind     the form a thing takes: value, file, blob, schema",
-  "  link     a typed edge to another address, declaring the kind it expects",
-  "  roots    the addresses published as entry points",
-  "  refused  a put that broke a store law; every refusal carries its clause",
-  "  verify   re-hash and re-decode everything reachable",
-].join("\n")
-
-const cas = Command.make("cas").pipe(
-  Command.withDescription(
-    `a content-addressed store as a data structure\n\n${vocabulary}`,
-  ),
-  Command.withSubcommands([init, status, put, publish, ls, show, verify, serve, daemon]),
-)
-
+// The argument vector comes from `Stdio`, exactly as `Command.run`
+// takes it — this entry point differs from `Command.run` only in what
+// it does with a refusal, never in where the arguments come from.
 BunRuntime.runMain(
-  Command.run(cas, { version: "0.1.0" }).pipe(
+  Stdio.Stdio.use(({ args }) => args).pipe(
+    Effect.flatMap(runCas(cas, { version: "0.1.0" })),
     Effect.provide(BunServices.layer),
   ),
 )

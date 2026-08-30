@@ -12,7 +12,7 @@
  * the Lean model deliberately says nothing about paths.
  */
 import { SqliteClient } from "@effect/sql-sqlite-bun"
-import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
+import { Context, Effect, FileSystem, Layer, Option, Path, Predicate, Schema } from "effect"
 import * as KeyValueStore from "effect/unstable/persistence/KeyValueStore"
 import * as Reactivity from "effect/unstable/reactivity/Reactivity"
 import * as SqlClient from "effect/unstable/sql/SqlClient"
@@ -125,6 +125,33 @@ export class NoStoreFound extends Schema.TaggedError<NoStoreFound>()(
   }
 }
 
+/** A store was named outright — by `--store` or by `CAS_STORE` — and
+ * the path it names is not a store root.
+ *
+ * The refusal exists because the alternative is silent creation: the
+ * file backend makes its own layout on write, so a mistyped `--store`
+ * used to fork a phantom store that `status` then reported as real
+ * (CLI audit E11/E13/E15). Naming a path is not creating one; `init`
+ * is the only creator, which is this module's own stated law. */
+export class NotAStore extends Schema.TaggedError<NotAStore>()(
+  "cli/NotAStore",
+  { store: Schema.String },
+) {
+  override get message(): string {
+    // The same guidance register as NoStoreFound: name the path, say
+    // what was and was not searched, say what a store root looks like,
+    // and end on the one verb that creates one. The two sources are
+    // named together because the flag's own config fallback has
+    // already collapsed them by the time this is raised.
+    return [
+      `no store at ${this.store}`,
+      "  named outright by --store or CAS_STORE, so no parent directory was searched",
+      "  a store root holds objects/ (file backend), or config.json and cas.db (sqlite backend)",
+      "  create one there with: cas init --bare <directory>   (init is the only verb that creates a store)",
+    ].join("\n")
+  }
+}
+
 /** `init` refuses to touch an existing store — it is the only creator,
  * and it creates exactly once. */
 export class StoreAlreadyExists extends Schema.TaggedError<StoreAlreadyExists>()(
@@ -166,14 +193,67 @@ const located = (
   configPath: path.join(store, "config.json"),
 })
 
-/** Read and decode the store's config, absent when the file is not
+/** The store's config is present and will not read. Carries the path,
+ * the clause in the everyday register, and the fix — never a bare
+ * schema issue, because the reader's problem is a file on disk and the
+ * answer has to name it (CLI audit E16/E17). */
+export class ConfigUnreadable extends Schema.TaggedError<ConfigUnreadable>()(
+  "cli/ConfigUnreadable",
+  { configPath: Schema.String, clause: Schema.String, fix: Schema.String },
+) {
+  override get message(): string {
+    return [
+      `the store's config will not read: ${this.configPath}`,
+      `  ${this.clause}`,
+      `  ${this.fix}`,
+    ].join("\n")
+  }
+}
+
+/** What `cas init` writes, as one line — the shape every guidance line
+ * here points back at. */
+const configShape = `cas init writes it as {"backend": "file", "serve": { … }}`
+
+/** The two words a `backend` field is allowed to say, in the guidance
+ * that names them. */
+const backendsAre =
+  `the backends are "file" (a directory of objects) and "sqlite" (one cas.db)`
+
+/** A value from a config file, shown back to its author. Quoted when it
+ * is a string, because that is how it is spelled in the file; printed
+ * bare otherwise, because a quoted number would be a different mistake
+ * from the one that was made. */
+const quoted = (value: Schema.Json): string =>
+  Predicate.isString(value) ? `"${value}"` : String(value)
+
+/** A config file as a JSON object, described: the keys are strings and
+ * the values are JSON, which is as much as this reader knows before it
+ * has looked at `backend`. */
+const JsonObject = Schema.Record(Schema.String, Schema.Json)
+
+/** The schema's own issue tree, indented under the clause. Reached
+ * only by a config that survives the named checks above and still will
+ * not decode — the residual, said honestly rather than hidden. */
+const schemaDetail = (error: Schema.SchemaError): string =>
+  error.message.split("\n").map((line) => line.trim()).filter((line) => line.length > 0)
+    .join("; ")
+
+/**
+ * Read and decode the store's config, absent when the file is not
  * there. A present-but-invalid config is a typed refusal, never a
- * silent default. */
+ * silent default.
+ *
+ * The checks run in the order a reader would ask them — is it JSON, is
+ * it an object, does it name a backend this build has — so the two
+ * mistakes a hand-edited config actually makes each get their own
+ * sentence instead of a schema issue tree. The full decode still runs
+ * last and still refuses; it is the residual, not the first answer.
+ */
 export const readConfig = (
   location: Located,
 ): Effect.Effect<
   Option.Option<StoreConfig>,
-  Schema.SchemaError,
+  ConfigUnreadable,
   FileSystem.FileSystem
 > =>
   Effect.gen(function* () {
@@ -183,7 +263,51 @@ export const readConfig = (
       Effect.orElseSucceed(() => Option.none<string>()),
     )
     if (Option.isNone(raw)) return Option.none()
-    const decoded = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(StoreConfig))(raw.value)
+
+    const refuse = (clause: string, fix: string) =>
+      new ConfigUnreadable({ configPath: location.configPath, clause, fix })
+
+    // The described JSON codec, not the global parser: this module has
+    // no license to spell JSON itself. Two decodes, because the two
+    // mistakes are different sentences — a file that is not JSON, and
+    // JSON that is not an object.
+    const parsed = yield* Schema.decodeUnknownEffect(
+      Schema.fromJsonString(Schema.Json),
+    )(raw.value).pipe(
+      Effect.mapError(() => refuse("the file is not valid JSON", configShape)),
+    )
+    const fields = yield* Schema.decodeUnknownEffect(JsonObject)(parsed).pipe(
+      Effect.mapError(() =>
+        refuse("the file is valid JSON, but not a JSON object", configShape)
+      ),
+    )
+
+    // `backend` is checked by name because it is the one field that
+    // decides how the store is opened: a store that will not say which
+    // layout it has cannot be opened at all, and the reader needs the
+    // two words that are legal, not a union rendering.
+    const backend = fields["backend"]
+    if (backend === undefined) {
+      return yield* refuse(
+        `"backend" is missing — a config must say which layout the store was created with`,
+        backendsAre,
+      )
+    }
+    if (backend !== "file" && backend !== "sqlite") {
+      return yield* refuse(
+        `"backend" says ${quoted(backend)} — this store names a layout that does not exist`,
+        backendsAre,
+      )
+    }
+
+    const decoded = yield* Schema.decodeUnknownEffect(StoreConfig)(fields).pipe(
+      Effect.mapError((error) =>
+        refuse(
+          `a field does not read: ${schemaDetail(error)}`,
+          `fix that field in the file — ${configShape}`,
+        )
+      ),
+    )
     return Option.some(decoded)
   })
 
@@ -232,13 +356,26 @@ const workingDirectory: Effect.Effect<string> = Effect.sync(() => process.cwd())
  * `.cas` discovery, otherwise a typed refusal carrying guidance. */
 export const locateStore = (
   explicit: Option.Option<string>,
-): Effect.Effect<Located, NoStoreFound, FileSystem.FileSystem | Path.Path> =>
+): Effect.Effect<
+  Located,
+  NoStoreFound | NotAStore,
+  FileSystem.FileSystem | Path.Path
+> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
 
     if (Option.isSome(explicit)) {
-      return located(path.resolve(explicit.value), "explicit", path)
+      // The named path is checked with the same witness discovery
+      // uses, and a path that is not a store root is a refusal. It
+      // must never be opened: the file backend makes its own layout on
+      // write, so opening a typo'd path is CREATING a store — which
+      // this module's own law reserves to `init`.
+      const store = path.resolve(explicit.value)
+      if (yield* isStoreRoot(fs, path, store)) {
+        return located(store, "explicit", path)
+      }
+      return yield* new NotAStore({ store })
     }
 
     const start = yield* workingDirectory
@@ -459,7 +596,7 @@ export const layerStoreAt = (
   | Cas.ByteReader
   | Cas.AddressScheme
   | StoreLocation,
-  NoStoreFound | Schema.SchemaError,
+  NoStoreFound | NotAStore | ConfigUnreadable,
   FileSystem.FileSystem | Path.Path
 > =>
   Layer.unwrap(Effect.gen(function* () {

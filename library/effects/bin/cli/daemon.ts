@@ -155,10 +155,24 @@ export const daemon = Command.make("daemon", {
   ),
 }, ({ allowHost, allowOrigin, host, otlp, port, store }) =>
   Effect.never.pipe(
-    Effect.provide(layerDaemonAt({ store, host, port, otlp, allowOrigin, allowHost })),
-    Effect.provide(layerStderrLogs),
+    // One provide, not two: the log layer is fed to the daemon
+    // composition rather than chained beneath it, so the whole store
+    // is built under the same logger and the two layers share one
+    // lifecycle (effect(multipleEffectProvide)).
+    Effect.provide(Layer.provideMerge(
+      layerDaemonAt({ store, host, port, otlp, allowOrigin, allowHost }),
+      layerStderrLogs,
+    )),
     userFacing,
-  )).pipe(Command.withDescription(
+  )).pipe(
+    // The verb table gets the one line; `daemon --help` gets the rest.
+    // Same reason `serve` carries a short form: without it the whole
+    // paragraph below is repeated inside `cas --help`'s subcommand
+    // listing.
+    Command.withShortDescription(
+      "serve this store on one port, long-lived — both wire planes, no TLS of its own; see daemon --help",
+    ),
+    Command.withDescription(
     [
       "serve this store on one port, long-lived: cas-http/0 (data, control, roots), MCP over HTTP at /mcp, Prometheus at /metrics, emitted artifacts at /projections",
       "",

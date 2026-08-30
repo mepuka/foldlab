@@ -11,6 +11,10 @@ content, hosts are code).
 Indexed with decision record in [docs/SPECS.md](../../docs/SPECS.md).
 Binding: [EFFECTS-BACKEND.md](../cas/EFFECTS-BACKEND.md),
 [SCHEMA-MATERIALIZATION.md](../cas/SCHEMA-MATERIALIZATION.md).
+Distribution and release posture: [PACKAGING.md](PACKAGING.md) (what
+the package is as a distributable, what flips at publish time, the
+Windows honesty list) and [RELEASING.md](RELEASING.md) (the gate
+sequence a release runs).
 Active designs touching this lane:
 [PLAIN-LANGUAGE](../../.staging/operational-structure/PLAIN-LANGUAGE.md)
 (emitter inventory E1–E6),

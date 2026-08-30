@@ -82,18 +82,37 @@ const linkedNodeWire = {
   refs: [{ expectedTag: 1, id: addressA }],
 }
 
-/** A two-instruction straight-line program: a value node, then a tree
- * node naming the first answer by INDEX. `source` is an answer index
- * and never an address — the carrier has no field for one. */
+/** A four-instruction straight-line program, exercising every arm the
+ * document has since queue item 22: a value node, a tree node naming
+ * the first answer BY INDEX, a tree node naming a LITERAL ADDRESS, and
+ * a LOAD. The last two had no spelling at all before the growth. */
 const runWire = {
   instructions: [
-    { version: Cas.SchemeVersion, tag: 1, payloadHex: helloHex, refs: [] },
     {
+      _tag: "put",
+      version: Cas.SchemeVersion,
+      tag: 1,
+      payloadHex: helloHex,
+      refs: [],
+    },
+    {
+      _tag: "put",
       version: Cas.SchemeVersion,
       tag: 9,
       payloadHex: "",
-      refs: [{ expectedTag: 1, source: 0 }],
+      refs: [{ expectedTag: 1, source: { _tag: "answer", index: 0 } }],
     },
+    {
+      _tag: "put",
+      version: Cas.SchemeVersion,
+      tag: 9,
+      payloadHex: "",
+      refs: [{
+        expectedTag: 1,
+        source: { _tag: "literal", addressHex: addressA },
+      }],
+    },
+    { _tag: "load", source: { _tag: "answer", index: 0 } },
   ],
 }
 

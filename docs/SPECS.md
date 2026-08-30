@@ -39,6 +39,8 @@ deleted.
 | [library/effects/BACKEND.md](../library/effects/BACKEND.md) | store backends | The backend seam law (ByteReader/ByteWriter/RootStore; invariants above the seam) |
 | [library/cas/REGISTRY.md](../library/cas/REGISTRY.md) | kind registry | GENERATED human registry (projection of Cas.Grammar.manifestV0; byte-gated) |
 | [library/cas/UNION-DESIGN.md](../library/cas/UNION-DESIGN.md) | union semantics | The ratified union design (order is identity; mode is identity) |
+| [library/effects/PACKAGING.md](../library/effects/PACKAGING.md) | distribution | Operating record of implemented, gated state (2026-08-29, decision 26 seat 2): publish-capable-not-published posture, the exhaustive flip list, the effectProvenance field, the repo+bun+mise bar implemented, the Windows honesty list (T7 retired `a5fb51a9`, not rebuilt) |
+| [library/effects/RELEASING.md](../library/effects/RELEASING.md) | releases | Operating procedure (2026-08-29): the seven-step gate sequence a release runs, check:ci-on-fresh-clone as the floor; steps 6–7 fire only on operator order |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 
@@ -70,6 +72,7 @@ deleted.
 | [.staging/operational-structure/STATE-OF-MECHANIZATION.md](../.staging/operational-structure/STATE-OF-MECHANIZATION.md) | status | The proof-ladder status report (L5 rock-solid → L0 paper) with the waiting list and critical-path order; two-hour audit cadence scheduled |
 | [docs/lab-core/SERVING.md](lab-core/SERVING.md) | serving plane | Operational law (decision 26 seat 1, 2026-08-29): the two hosts (`cas serve` stdio, `cas daemon` HTTP — both planes one port), per-transport ServePolicy rulings, the daemon's front door (Origin/Host, refuse-first credentials), the stated protocol ceiling (2025-11-25 pin; 2026-07-28 verified and OWED), telemetry + the hoover log-field vocabulary, crash/shutdown semantics, litestream sidecar. Wire authority stays PROFILE-CAS-HTTP-0.md |
 | [.staging/operational-structure/CLI-AUDIT.md](../.staging/operational-structure/CLI-AUDIT.md) | CLI | Pre-dogfood audit (2026-08-29): verb matrix, freshness defects F1-F5, the E-transcript with grades — found the PHANTOM STORE (BROKEN-SILENT: an explicit --store typo silently creates a store, contradicting init-is-the-only-creator); fix lane dispatched; 5 ruling asks (cas doctor the highest-leverage) |
+| [.staging/operational-structure/PROPOSED-LOGIC.md](../.staging/operational-structure/PROPOSED-LOGIC.md) | proposed theorems | The friction-proposed logic ledger (operator directive): P1-P6 from the CLI lane, P1-P4 from the brain stem, house hazard notes — all PROPOSED, awaiting the grill |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -347,3 +350,35 @@ records the 2026-08-29 session rulings that cut across specs.
     production level; (3) CAS_WORD — the receipts/history spine
     (WordSig, since, the three theorems, the CLI surface): the last
     unwired critical-path semantics.
+    **Addendum to 26 (same night):** (a) the cas_word seat must
+    answer the WORD REGISTRY question — the word-log record and mark
+    spellings are registered, gated artifacts, never ad-hoc JSON;
+    where no registry surface exists for the word's carriers, the
+    seat MAKES it, no excuses, with any ratification event
+    documented rather than deferred. (b) MERGE PROTOCOL for the
+    Fable seats: each seat's output is reviewed by TWO independent
+    Opus reviewers (adversarial, non-overlapping lenses) before the
+    coordinator merges — no slip in standards.
+    **Second addendum to 26 (same night): Lean permission granted to
+    all Fable seats** under production methods — statement triage
+    first, the axiom trio, citations for every imported
+    determination, ledgers regenerated, every gate green; EVIDENCE
+    IS THE LICENSE: a Lean change lands with its reasons and audit
+    trail or not at all. The Mcp.lean fence stands. The operator's
+    words, verbatim: "the types the algebra serves — but only
+    through our honesty does she grace us with expression."
+27. **The new deep-engineering push** (2026-08-29 late): Fable fence
+    officially lifted for the topic lanes — (a) research: continued
+    development and refinement of the algebra semantics; (b) tooling
+    for falsification, theorem-proven development, and code
+    analysis; (c) planning for FULL ingestion of Effect code
+    fixtures; (d) analysis for CAS search and self-reasoning gates;
+    (e) UX/front-end open: algebra-driven front-end ORNAMENTATION
+    (deep dive at .staging/ornamentation/ — dir to be created),
+    data-dense but practical utility and aesthetics; (f) production
+    hardening: backend FILE-HANDLING audit against reference code;
+    (g) CODEGEN full push. **GATEKEEPER FIRST**: before the topic
+    gates open, one agent audits every open issue and attempts to
+    PROVE each is not a problem; where that cannot be done without
+    error, it must FIX and prove it fixed. Temporary Lean fixtures
+    and Lean scratch allowed for theorem scratch work.

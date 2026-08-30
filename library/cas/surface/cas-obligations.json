@@ -1,6 +1,6 @@
 {
   "counters": {
-    "discharged": 20,
+    "discharged": 21,
     "emptyDenotations": 4,
     "formless": 0,
     "owed": 11,
@@ -8,6 +8,13 @@
     "pinPending": 1
   },
   "declarations": [
+    {
+      "declaration": "Cas.Backend.Mcp.ofPProg_isSome",
+      "excerpt": "THE TOTALITY THEOREM (queue item 22, discharged): every well-formed table has a document. This is what the…",
+      "keyword": "discharged",
+      "module": "Cas.Backend.Mcp",
+      "state": "discharged"
+    },
     {
       "declaration": "Cas.Lang.handle_step_agree",
       "excerpt": "…lision` applied once — with `hresident` discharged from the PROVER's clause succeeding (`prove_load_clause`),…",

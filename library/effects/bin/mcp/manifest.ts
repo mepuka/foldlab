@@ -80,11 +80,18 @@ export type ToolManifest = typeof ToolManifest.Type
  * The manifest revision this host implements. `Mcp.lean` says the
  * number is "bumped only by ruling", so a bump is a ruling this host
  * has not read yet — it refuses rather than serving a revision it was
- * not written against. This is also the seam the `cas_emit_layers`
- * verb lands through (G6-a): when that row is emitted the version
- * bumps, this constant follows, and a handler joins the table.
+ * not written against.
+ *
+ * Revision 1 (2026-08-29, the brain-stem package) is the first time
+ * this constant has moved, and it moved exactly as the seam was
+ * designed to move: `RunParams` grew literal-address operands and the
+ * `load` instruction, `cas_run_ref` joined the table, Lean's
+ * `manifestVersion` bumped, and this followed in the same change with
+ * a carrier and a handler beside it. A host that had only the carriers
+ * would now be refused at boot rather than at the first call, which is
+ * the whole point of the gate.
  */
-export const implementedManifestVersion = 0
+export const implementedManifestVersion = 1
 
 /** The emitted manifest, relative to this file: `library/cas/mcp/`. */
 const manifestFileUrl = new URL("../../../cas/mcp/cas-tools.json", import.meta.url)

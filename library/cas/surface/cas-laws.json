@@ -182,13 +182,13 @@
     {
       "bindings": [
         {
-          "clause": "this spells the puts-with-answer-indices sub-fragment",
+          "clause": "this spells the WHOLE program table — literal-address",
           "declaration": "Cas.Backend.Mcp.RunParams",
           "module": "Cas.Backend.Mcp"
         }
       ],
       "id": "SM-22",
-      "statement": "the run manifest spells the puts-with-answer-indices sub-fragment and does not grow to the whole program table",
+      "statement": "the run manifest spells the whole program table — literal-address operands and loads included — so a stored program can be named by the document that runs it",
       "status": "bound"
     },
     {

@@ -261,11 +261,12 @@ outputs = ["../effects/src/cas/generated/SchemaAdmission.ts"]
 run = "lake exe emitgate"
 
 [tasks."gen:backend-programs"]
-description = "Regenerate the straight-line Effect programs of the registered grammar terms, and the lift documents the recognizer must answer for them (P3's Lean half)"
+description = "Regenerate the straight-line Effect programs of the registered grammar terms, the lift documents the recognizer must answer for them (P3's Lean half), and the step/cont addresses each program has as store content (R7's stamp clause — the cross-host codec gate)"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
 outputs = [
   "../effects/test/generated/VectorPrograms.ts",
+  "../effects/test/generated/VectorProgramAddresses.json",
   "../effects/test/generated/VectorProgramLifts.json",
 ]
 run = "lake exe emitprograms"
@@ -436,7 +437,7 @@ sources = [
   "../../experiments/entity-store-extract/inventory.json",
 ]
 run = [
-  "lake --wfail build",
+  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
   "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
   "mise run check:cas:surface",
   "mise run check:cas:obligations",
@@ -622,6 +623,7 @@ run = [
   "mise run check:effects:ts",
   "mise run check:effects:research",
   "mise run check:ledger",
+  "mise run check:workbench",
 ]
 
 [tasks."check:lift-roundtrip"]
@@ -631,6 +633,24 @@ run = [
   "bun install --frozen-lockfile",
   "bun x vitest run test/T12-roundtrip.test.ts",
 ]
+
+[tasks."check:workbench"]
+description = "Frozen install, lint, typecheck, test, and production build of the workbench front end"
+dir = "{{config_root}}/experiments/workbench"
+run = [
+  "bun install --frozen-lockfile",
+  "bun run lint",
+  "bun run typecheck",
+  "bun run test",
+  "bun run build",
+]
+
+# No `gen:workbench` task yet, deliberately. Nothing in
+# experiments/workbench is derived from a declared source: the page is
+# hand-written because there is nothing to generate it from. The moment a
+# surface arrives that the store language already describes — the MCP tool
+# manifest, the canonical schemas, the wire profile — its TypeScript is
+# emitted by a task here and never typed by hand.
 
 [tasks."check:extract-twin"]
 description = """
