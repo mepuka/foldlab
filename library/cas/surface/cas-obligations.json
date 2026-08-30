@@ -1,10 +1,10 @@
 {
   "counters": {
     "discharged": 21,
-    "emptyDenotations": 4,
+    "emptyDenotations": 6,
     "formless": 0,
     "owed": 11,
-    "parked": 4,
+    "parked": 5,
     "pinPending": 1
   },
   "declarations": [
@@ -328,6 +328,12 @@
       "keyword": "obligation",
       "module": "Cas.Schema.El",
       "state": "obligation"
+    },
+    {
+      "excerpt": "…codes' denotation — REFUSED for v1, not parked `El (.reference _) = Empty` and `El (.susp _) = Empty`, an…",
+      "keyword": "parked",
+      "module": "Cas.Schema.El",
+      "state": "parked"
     },
     {
       "excerpt": "…`WF` is load-bearing The value plane's obligation can only conclude equality up to `Value.numNorm`, the numbe…",

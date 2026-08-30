@@ -140,6 +140,36 @@ obligation:
 Until then a tuple is carried and not inhabited: mintable, addressable,
 re-emittable, materializable into a live Effect validator, with every
 value-plane law holding vacuously rather than falsely.
+
+## The C6 codes' denotation — REFUSED for v1, not parked
+
+`El (.reference _) = Empty` and `El (.susp _) = Empty`, and these two
+arms are different in kind from the four above. The others are parked:
+the carrier exists, the shape is known, and a later increment writes it.
+These two are REFUSED, and the refusal is the ticket's own claim scope
+(PDD-3, plan HARD PARTS 2): v1 states no denotational adequacy for
+recursive codes AT ALL.
+
+The reason is not effort. `El` is a CLOSED STRUCTURAL function — it
+reads a code and nothing else — and a reference's target does not live
+in the code. It lives in the document's references table, one level up.
+Denoting `.reference n` therefore needs either fuel-indexed semantics or
+an `El` relativised to a table, and both are real theory that no
+consumer has asked for. Writing `Empty` here is the honest answer and
+not a placeholder for an obvious one: the value-plane laws hold over the
+grown carrier vacuously rather than falsely, exactly as they do for the
+four parked arms, and the recursive schemas the estate admits are
+CARRIED — mintable, addressable, re-emittable, and materializable into a
+live Effect validator, which handles `Schema.suspend` natively.
+
+What v1 does claim about these codes is decode, encode, and guardedness,
+and it claims them in `Cas/Schema/Guarded.lean` and the ingestion door.
+The value-plane verdict gap for recursive codes is a KNOWN, RECORDED
+hole, named in `contracts/PDD-3.contract.md`. Named obligation:
+
+    recursiveEl : a denotation for `.reference` and `.susp` — fuel
+                  indexed, or relative to a references table — with the
+                  codec arms and the round trip that follow from it.
 -/
 
 mutual
@@ -158,6 +188,8 @@ def El : Ast → Type
   | .union ms _ => cond (discriminatedB ms) (ElMembers ms) Empty
   | .enum _ => Empty
   | .tuple _ _ _ => Empty
+  | .reference _ => Empty
+  | .susp _ => Empty
 
 /-- Field components, right-nested: `(first, rest)`. -/
 def ElFields : List (String × Bool × Ast) → Type

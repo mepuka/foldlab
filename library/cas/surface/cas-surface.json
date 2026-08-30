@@ -8,14 +8,14 @@
     "IR": 137,
     "Lang": 305,
     "Lift": 77,
-    "Schema": 665,
+    "Schema": 667,
     "Values": 460,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 240,
-    "Quot.sound": 412,
-    "propext": 572
+    "Classical.choice": 242,
+    "Quot.sound": 414,
+    "propext": 574
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -30,13 +30,13 @@
     "Cas.Lang.Status": 55,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 94,
-    "Cas.Schema.Ast": 343,
+    "Cas.Schema.Ast": 344,
     "Cas.Schema.Described": 48,
     "Cas.Schema.El": 42,
     "Cas.Word": 111
   },
-  "declarations": 2026,
-  "documented": 1024,
+  "declarations": 2028,
+  "documented": 1026,
   "library": "Cas",
   "modules": [
     {
@@ -8463,8 +8463,8 @@
       ]
     },
     {
-      "declarations": 52,
-      "documented": 15,
+      "declarations": 54,
+      "documented": 17,
       "module": "Cas.Schema.Ast",
       "surface": [
         {
@@ -8858,11 +8858,28 @@
         },
         {
           "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.reference_empty_not_wf",
+          "signature": "¬(Cas.Schema.Ast.reference \"\").WF",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
           "carriers": ["Cas.Schema.Ast"],
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Schema.sorted_names_nodup",
           "signature": "∀ {fs : List (String × Bool × Cas.Schema.Ast)}, List.Pairwise (fun a b => a.fst < b.fst) fs → (List.map (fun f => f.fst) fs).Nodup",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Schema.susp_wf_iff_thunk",
+          "signature": "∀ {a : Cas.Schema.Ast}, a.susp.WF ↔ a.WF",
           "touches": ["Schema"]
         },
         {
@@ -15923,6 +15940,6 @@
     "inductive": 51,
     "instance": 111,
     "structure": 69,
-    "theorem": 680
+    "theorem": 682
   }
 }

@@ -159,6 +159,57 @@ inductive Ast where
   trailing-rest semantics the admission map defers stay deferred, and
   the refusal is structural. -/
   | tuple (first : Bool × Ast) (more : List (Bool × Ast)) (rest : Option Ast)
+  /-- The reference code (increment C6): Effect's `Reference` as content
+  — a NAME into the document's references table, exactly the persisted
+  shape `{"$ref":"…","_tag":"Reference"}`
+  (`SchemaRepresentation.ts:171-174`, `:1066-1069`).
+
+  **Two constructors, not one** (operator-ruled 2026-08-30, amending
+  CORE-ABSTRACTIONS-PLAN.md:127-131). Effect spells recursion with two
+  different nodes and a real recursive document carries both: this one
+  is the EDGE — it names a table entry — and `.susp` is the GUARD. The
+  one-constructor design the plan first carried cannot decode what
+  Effect writes, and it makes the guardedness law a tautology: if the
+  only node naming a table entry is also the guard, then every cycle
+  passes through a guard for free and the door refuses nothing. The
+  probe that pinned the spellings is
+  `library/effects/test/SchemaReferencesPin.test.ts`; the ruling and the
+  break are recorded in `contracts/PDD-3.contract.md`.
+
+  `WF` asks NONEMPTINESS of the name and nothing else — the same
+  constraint Effect puts on the field itself (`$ref` is
+  `Schema.NonEmptyString`, so an empty name is not a spelling Effect can
+  persist). The ADDRESS discipline — "the name is the target's content
+  address, or an annotated name" — is deliberately NOT here: it is the
+  door's and the materializer's question, per the ruling's own text, and
+  a `WF` clause about it would put a store fact inside a structural
+  predicate. RESOLVABILITY is likewise not asked: a name with no table
+  entry is admitted, exactly as Effect's own codec admits it (pinned by
+  the probe), and it can lie on no cycle because it has no outgoing
+  edge. -/
+  | reference (name : String)
+  /-- The suspend code (increment C6): Effect's `Suspend` as content — a
+  lazily resolved INLINE representation, exactly the persisted shape
+  `{"_tag":"Suspend","checks":[],"thunk":<representation>}`
+  (`SchemaRepresentation.ts:158-163`, `:984-989`).
+
+  The thunk is a nested CODE, not a name — which is what makes this a
+  different constructor from `.reference` rather than a spelling of it.
+  Effect's `checks` field here is `Schema.Tuple([])`, the EMPTY tuple, so
+  a `Suspend` can never carry a check and the carrier needs no term for
+  one; Effect's own decoder refuses a `Suspend` that carries one, which
+  the probe pins.
+
+  **This is the GUARD the guardedness law is about.** `Ast.bareRefs`
+  stops dead at this constructor, so a cycle in the references table
+  that passes through a `.susp` contributes no edge to the relation the
+  door checks — which is exactly "every cycle passes through a `susp`",
+  stated as acyclicity of the non-suspend relation
+  (`Cas/Schema/Guarded.lean`).
+
+  `WF` asks only that the thunk is a code: a `Suspend` imposes no
+  discipline of its own. -/
+  | susp (thunk : Ast)
 
 mutual
 
@@ -190,7 +241,15 @@ empty enum is refused for the same reason the empty union is: it admits
 nothing, which is `Never`, which is not admitted. Names are distinct
 because the name IS the member's identity. Order is again not
 constrained — it is the identity — and neither are the VALUES, which
-TypeScript is free to alias. -/
+TypeScript is free to alias.
+
+On a reference it is NONEMPTINESS of the name, and nothing else. The
+address discipline and resolvability are both deliberately outside this
+predicate — see the constructor. On a suspend it is the thunk being a
+code, and nothing else. GUARDEDNESS is not asked here either, and could
+not be: it is a property of a DOCUMENT — the table plus its root — not
+of a code in isolation, so it lives on `Document.WF`
+(`Cas/Schema/Guarded.lean`). -/
 def Ast.WF : Ast → Prop
   | .arr a => a.WF
   | .struct fs => List.Pairwise (fun a b => a.1 < b.1) fs ∧ WFFields fs
@@ -199,6 +258,8 @@ def Ast.WF : Ast → Prop
   | .enum ms =>
     ms ≠ [] ∧ List.Pairwise (fun a b : String × EnumValue => a.1 ≠ b.1) ms
   | .tuple e es r => WFElement e ∧ WFElements es ∧ WFRest r
+  | .reference n => n ≠ ""
+  | .susp a => a.WF
   | _ => True
 
 def WFFields : List (String × Bool × Ast) → Prop
@@ -254,6 +315,17 @@ theorem union_nil_not_wf (m : UnionMode) : ¬ (Ast.union [] m).WF :=
 no members admits no value, which is `Never`, which is not admitted. -/
 theorem enum_nil_not_wf : ¬ (Ast.enum []).WF :=
   fun h => h.1 rfl
+
+/-- The empty reference name is refused at `WF`. Effect refuses it too —
+`$ref` is `Schema.NonEmptyString` — so the two doors agree on this
+spelling by construction rather than by coincidence. -/
+theorem reference_empty_not_wf : ¬ (Ast.reference "").WF :=
+  fun h => h rfl
+
+/-- A suspend is well-formed exactly when its thunk is: the constructor
+adds no discipline of its own, stated once so the fact is citable rather
+than read off the clause. -/
+theorem susp_wf_iff_thunk {a : Ast} : (Ast.susp a).WF ↔ a.WF := Iff.rfl
 
 /-- Distinct member names never repeat — the `Nodup` reading of the
 enum's own clause, stated once so the discipline is citable. -/

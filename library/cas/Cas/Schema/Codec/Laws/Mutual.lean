@@ -451,6 +451,14 @@ private theorem roundtrip_all :
     -- And the tuple denotes `Empty` too (the named `tupleEl`
     -- obligation), for the same reason and with the same closure.
     | tuple _ _ _ => exact x.elim
+    -- The two C6 codes denote `Empty` as well, and there the emptiness
+    -- is a REFUSAL rather than a parked obligation: v1 states no
+    -- denotational adequacy for recursive codes at all (the named
+    -- `recursiveEl` obligation, `Cas/Schema/El.lean`). The closure is
+    -- the same — no value exists to have been encoded — so this law
+    -- holds over the grown carrier vacuously rather than falsely.
+    | reference _ => exact x.elim
+    | susp _ => exact x.elim
   case case16 => intro v hd hwf x _; exact Empty.elim x
   case case17 => intro a v ihv hd hwf x hv; exact ihv hwf.1 x hv
   case case18 =>

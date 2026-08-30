@@ -131,6 +131,8 @@ def Ast.wf : Ast → Bool
   | .union ms _ => !ms.isEmpty && wfMembers ms
   | .enum ms => !ms.isEmpty && distinctEnumNames ms
   | .tuple e es r => wfElement e && wfElements es && wfRest r
+  | .reference n => n != ""
+  | .susp a => a.wf
   | _ => true
 
 def wfFields : List (String × Bool × Ast) → Bool
@@ -202,6 +204,8 @@ theorem Ast.wf_iff : ∀ (a : Ast), a.wf = true ↔ a.WF
   | .tuple e es r => by
     simp [Ast.wf, Ast.WF, wfElement_iff e, wfElements_iff es, wfRest_iff r,
       and_assoc]
+  | .reference _ => by simp [Ast.wf, Ast.WF]
+  | .susp a => by simp [Ast.wf, Ast.WF, Ast.wf_iff a]
 
 theorem wfMembers_iff : ∀ ms, wfMembers ms = true ↔ WFMembers ms
   | [] => by simp [wfMembers, WFMembers]
@@ -564,6 +568,66 @@ private def headAndTail : Ast := .tuple (false, .str) [] (some .int)
         | .error .notASchema => true
         | _ => false)
 
+/-! ## The C6 codes at the door — worked, at elaboration
+
+The round-trip witnesses the ticket asks for, one per new case, run
+through the door so the carrier's behaviour is in the source. The
+GUARDEDNESS calls are not here — they are document-level and live with
+the document door (`Cas/Schema/Guarded.lean`). -/
+
+private def nodeRef : Ast := .reference "Node"
+
+/-- THE admitted check spelling, read off the `Number` node's own
+projection rather than retyped — the same move `Admission.lean` makes. -/
+private def theIntCheck : Json.Value :=
+  match (Ast.int).toRepresentationJson with
+  | .obj [_, ("checks", .arr [c])] => c
+  | _ => .null
+
+private def suspendedList : Ast :=
+  .susp (.struct [("next", true, .reference "Node"), ("value", false, .str)])
+
+-- A reference survives the door as itself: same canonical bytes out.
+#guard (match ingest nodeRef.envelope with
+        | .ok a => a.payload == nodeRef.payload
+        | .error _ => false)
+
+-- A suspend round-trips with its thunk intact, nested code and all.
+#guard (match ingest suspendedList.envelope with
+        | .ok a => a.payload == suspendedList.payload
+        | .error _ => false)
+
+-- THE TWO ARE DIFFERENT CODES, and that is the whole point of the
+-- ruling: a name is not a thunk, so `reference "x"` and a suspend over
+-- anything are two codes at two addresses.
+#guard nodeRef.payload != (Ast.susp .str).payload
+
+-- The EMPTY reference name is refused at the gate — Effect refuses it
+-- too (`$ref` is `Schema.NonEmptyString`), so the two doors agree here
+-- by construction.
+#guard (match ingest (Ast.reference "").envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+-- A `Reference` carrying a `checks` key is not a reference spelling at
+-- all: Effect's own node has exactly two keys, and the decoder is exact.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [("$ref", .str "Node"),
+              ("_tag", .str "Reference"), ("checks", .arr [])])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
+-- A `Suspend` carrying a check dies the same way. Effect's own field is
+-- the EMPTY tuple, so a non-empty one is not a Suspend at either door.
+#guard (match ingest (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [("references", .obj []),
+            ("representation", .obj [("_tag", .str "Suspend"),
+              ("checks", .arr [theIntCheck]),
+              ("thunk", (Ast.str).toRepresentationJson)])])]) with
+        | .error .notASchema => true
+        | _ => false)
+
 /-! ## The bytes-in door
 
 `ingest` takes a VALUE. Everything that arrives from outside — a stored
@@ -668,5 +732,16 @@ theorem ingestBytes_payload' {a : Ast} (ha : a.WF) (hn : a.RepNormal) :
 #guard (match ingestBytes "[]" with
         | .error .notASchema => true
         | _ => false)
+
+-- The two C6 codes through the BYTES door. A reference's payload is a
+-- STRING, so the number collapse never touches it; a suspend's thunk
+-- goes through whatever its own code needs.
+#guard (match ingestBytes nodeRef.payload with
+        | .ok a => a.payload == nodeRef.payload
+        | .error _ => false)
+
+#guard (match ingestBytes suspendedList.payload with
+        | .ok a => a.payload == suspendedList.payload
+        | .error _ => false)
 
 end Cas.Schema

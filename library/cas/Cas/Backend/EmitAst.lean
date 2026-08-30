@@ -157,6 +157,26 @@ private def constructorGo (env : List (String × Ast)) (atRoot : Bool)
         .call (schema "TupleWithRest") [
           .call (schema "Tuple") [elements],
           .arr [constructorGo env false item]]
+    -- A reference lowers to the NAME it carries, which is the same move
+    -- this emitter already makes for a shared code: `env.find?` above
+    -- answers `.ident name`, and a references-table entry is that
+    -- binding named ahead of time rather than discovered. Making those
+    -- names RESOLVE — emitting the table as a block of consts, in
+    -- dependency order — is the materialization slice's work
+    -- (Lane A slice 4), which this ticket does not open.
+    | .reference name => .ident name
+    -- A suspend lowers to its THUNK. Effect's faithful spelling is
+    -- `Schema.suspend(() => …)`, and the estate cannot print it yet: the
+    -- TypeScript fragment (`Cas/Backend/Ts.lean`) has no arrow, and the
+    -- fragment grows only with a real consumer, which is the
+    -- materialization slice and not this one. The simplification is safe
+    -- where it can currently be reached — a `susp` breaks a DEFINITION
+    -- cycle, and in a materialized module the const binding is what
+    -- provides the laziness — but it is a simplification, so it is owed
+    -- rather than assumed. OWED (slice 4): the arrow, and
+    -- `Schema.suspend(() => thunk)` printed verbatim. No registered
+    -- fixture reaches this arm today, so no emitted byte depends on it.
+    | .susp thunk => constructorGo env false thunk
 
 private def constructorElement (env : List (String × Ast)) :
     Bool × Ast → Expr

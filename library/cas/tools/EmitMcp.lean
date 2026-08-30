@@ -81,7 +81,14 @@ private def codeExpr : Ast → Option Expr
     (codeMembers members).map fun ms =>
       .object [("_tag", .str "Union"), ("members", .arr ms),
         ("mode", .str mode.wire)]
-  | .ref _ | .decl _ _ _ | .enum _ | .tuple _ _ _ =>
+  -- Outside the fragment the emitted type declares. The two C6 codes
+  -- join the list for the same reason the others are on it: the MCP
+  -- manifest's declared param/result type has no arm for them, and a
+  -- partial spelling of a total carrier is how a fragment silently
+  -- narrows. A tool that wants a recursive schema in its signature is a
+  -- fragment-growth ruling, not a lowering that quietly appears here.
+  | .ref _ | .decl _ _ _ | .enum _ | .tuple _ _ _
+  | .reference _ | .susp _ =>
     none
 
 /-- A struct's fields as record entries, in the code's order — the
