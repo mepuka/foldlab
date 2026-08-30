@@ -451,3 +451,10 @@ records the 2026-08-29 session rulings that cut across specs.
     image-generation output never are. All generated visuals and
     Paper output are pre-grade conception evidence with no trust
     contribution.
+    **Correction to 33 (same sitting, operator):** Claude and the
+    Fable fleet DRIVE; Codex is support — guidance, research,
+    investigation, proof analysis, independent overwatch — on
+    bounded, non-overlapping tasks the coordinator assigns. Codex
+    owns no lane and no files; the ornament synthesis and images are
+    optional input, not a parallel workstream. COORDINATION.md
+    rewritten to match.
