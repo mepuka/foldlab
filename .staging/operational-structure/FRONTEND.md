@@ -113,7 +113,7 @@ The projections are **files**, and this is the fact that collapses most of the "
 
 `kindTags.ts`'s own docstring calls `manifest.json` "its machine one" and `REGISTRY.md` "the same table's human rendering" — one described value, three surfaces, all byte-gated. `PLAIN-LANGUAGE.md:140` already names the front end as the literature projection's **second consumer**, not an alternative to it.
 
-**So tier 0 serving is: a static host.** A build step copies the emitted JSON into the workbench's asset tree and the browser `fetch`es it. There is no server in that story, and inventing one is scope creep. What genuinely needs a server is (a) store reads beyond a static directory and (b) writes.
+**So tier 0 serving is: the daemon, read-only** — superseding this section's original static-host answer. Decision 32(a) ruled it: tier-0 projections are daemon-served, read-only, at `/projections` and `/projections/{name}`, from the same byte-gated files the gates check, read per request so a regenerate needs no restart. The daemon was already standing for (a) store reads beyond a static directory and (b) writes, so the static copy step was a second serving story for the same bytes, not a cheaper one. The files remain files: a static host is still a legitimate deployment of the same artifacts, and nothing about the artifacts changes — what the ruling settles is which surface the workbench reads first. See [library/effects/SERVING.md](../../library/effects/SERVING.md) for the route table and the repo-checkout scope of the served set.
 
 #### Does cas-http/0 finally stand up?
 

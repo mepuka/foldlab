@@ -46,8 +46,14 @@ current verb set, read off.
 | refused | a put that broke a store law; every refusal carries its clause name | the admission judgment, clause-named errors |
 | verify | re-hash and re-decode everything reachable from a root | `Graph.verify` and the loader law |
 | history | the record of a run: what was admitted, in order | the store word — see collision 5 |
-| in flight | how many store-touching calls the host runs at once | `ServePolicy.maxInFlight`, the host's own bound — `cas status` prints it |
+| in flight | how many store-touching calls a host runs at once — one bound PER PLANE, so a daemon with both planes saturated can be at twice it | `ServePolicy.maxInFlight`; stdio holds one gate, the daemon one per plane and says so at startup — `cas status` prints the number |
 | doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
+| host | the process that serves a store to callers; `--host` is the address one binds | `cas serve` is the stdio host, `cas daemon` the HTTP one — see collision 6 |
+| daemon | the long-lived host: one port, both wire planes, running until stopped | `cas daemon` |
+| plane | one wire surface on a host's port; the daemon serves two | the abstraction over the two wire names — see collision 7 |
+| heartbeat | the line a host prints on period, carrying its own numbers | `layerHeartbeat`, every 2 s, both hosts |
+| stall | a beat that did not arrive: the host is blocked, and the silence is the evidence | the detected event; a late beat carries how late |
+| origin | the web page a browser request came from; a daemon answers only the ones it was named | the `Origin` header, allowed with `--allow-origin` |
 
 ## The protocol register
 
@@ -68,6 +74,9 @@ current verb set, read off.
 | canonical | one spelling per content; the exact bytes the digest sees | invisible: it is why addresses work |
 | form address | the address of a value's canonical representative under a named method | reference-level, new mint |
 | signature, operation, handler, program, fuel, status | the store-language machinery | the CLI itself — its verbs are programs |
+| cas-http/0, MCP over HTTP | the two wire surfaces a plane can be | "plane" — see collision 7 |
+| `Host` header | the name a request claims it dialed, checked against the daemon's allowlist | "host": it is named as a header wherever it appears |
+| logfmt, OTLP, Prometheus, CORS | borrowed names of external formats and mechanisms | nothing — a borrowed proper name is not estate vocabulary, and is spoken as itself |
 
 ## Collisions, resolved
 
@@ -98,3 +107,20 @@ current verb set, read off.
    conformance gate). Human output says "history": doctor's human line
    reads "identical admission history", and its `--json` line says
    word.
+6. "Host" is three things, and the register keeps them apart by how
+   each is spelled. The everyday noun is the PROCESS that serves a
+   store — "the stdio host", "the daemon". The daemon's bind ADDRESS
+   is the second, and it is never a noun in prose: it is spelled
+   `--host`, always as the flag. The HTTP `Host` HEADER is the third
+   and stays protocol register; it appears only in `--allow-host`'s
+   description and is named there as a header. No rendered surface
+   uses the bare word for either of the last two.
+7. "Plane" is the abstraction, and the two wire names are its tags —
+   the same act as collision 3. `cas daemon` summoned a family of
+   words, and what entered the everyday register is "plane", not
+   `cas-http/0` and "MCP over HTTP", which stay protocol register and
+   appear only where a caller must dial one of them by name
+   (`daemon --help`'s long form, SERVING.md, the profile). "Heartbeat"
+   and "stall" entered the same way and are their own words, because
+   nothing abstracts them: the beat is the evidence and its absence is
+   the event.

@@ -16,6 +16,7 @@
  */
 import { Command } from "effect/unstable/cli"
 import { doctor, init, ls, publish, put, run, serve, show, status, verify } from "./commands.ts"
+import { daemon } from "./daemon.ts"
 import { vocabulary } from "./vocabulary.ts"
 
 export const cas = Command.make("cas").pipe(
@@ -23,7 +24,10 @@ export const cas = Command.make("cas").pipe(
     `a content-addressed store as a data structure\n\n${vocabulary}`,
   ),
   // Roughly the order a newcomer meets them: make a store, ask what it
-  // is, ask whether it is well, put something in, name it, look.
+  // is, ask whether it is well, put something in, name it, look. The
+  // two hosts come last, in the order a reader meets them: `serve`
+  // speaks one store over stdio to one client, `daemon` binds a port
+  // and serves both wire planes to many.
   Command.withSubcommands([
     init,
     status,
@@ -35,5 +39,6 @@ export const cas = Command.make("cas").pipe(
     run,
     verify,
     serve,
+    daemon,
   ]),
 )

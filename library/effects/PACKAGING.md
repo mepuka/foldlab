@@ -23,8 +23,8 @@ publish needs is staged and gated now:
 - **`files` whitelist** — `dist` (the surface), `src` (shipped for
   sourcemap/declarationMap fidelity and because the Bun-native bin
   runs the TypeScript directly), `bin`, `mcp` (below), and the law
-  documents (README, BACKEND, PROFILE-CAS-HTTP-0, VOCABULARY,
-  PACKAGING, RELEASING, LICENSE). Every entry's existence is asserted
+  documents (README, BACKEND, PROFILE-CAS-HTTP-0, SERVING,
+  VOCABULARY, PACKAGING, RELEASING, LICENSE). Every entry's existence is asserted
   by `scripts/check-dist-consumer.ts`, which also resolves the bare
   specifier through a linked `node_modules` — the exports map
   exercised exactly as a foreign consumer would, under both bun and

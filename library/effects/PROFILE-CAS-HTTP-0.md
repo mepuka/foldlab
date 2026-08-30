@@ -19,7 +19,9 @@ wire and points here for protocol law.
 
 - One authority per layer; three resource spaces: the data plane
   `{authority}/cas/{hex}`, the control plane `{authority}/control/…`,
-  and the root registry `{authority}/roots/{hex}`.
+  and the root registry `{authority}/roots/{hex}`. A host may serve
+  other prefixes on the same authority; those are co-tenants and §14
+  governs what the profile does and does not claim there.
 - Every request and response body is `application/octet-stream` with
   a closed binary framing. The framing is the codec; the profile
   carries no JSON. Media-type comparison is exact.
@@ -263,3 +265,47 @@ and range-verified streams whose wire language is exactly the
 verified-streaming decoder's input alphabet, an advisory event plane
 that never constitutes admission, and root-registry reads. Nothing in
 this section binds until ratified here.
+
+## 14. Co-tenancy on one authority (implemented — additive at `/0`)
+
+Added 2026-08-29 by decision 32(c). Additive: no existing exchange
+changes meaning, so this is a `/0` clause and not `cas-http/1`.
+
+Nothing in §1 ever said the authority was the profile's alone, and
+`cas daemon` is the first host to bind another wire beside it on one
+port. This clause says what that costs and what it does not.
+
+**What the profile owns.** Within an authority the profile owns its
+three resource spaces and only those: `/cas/…`, `/control/…`, and
+`/roots/…`. Its media-type rule (`application/octet-stream`, exact
+comparison), its `cas-profile` requirement, and its status→event
+table are the law of those spaces.
+
+**Co-tenant prefixes.** A host MAY serve other prefixes on the same
+authority. Such a prefix is a CO-TENANT: it is outside this profile's
+media-type and status law, and a client MUST NOT read its answers
+through the exchange alphabet. `cas daemon` declares three, and they
+are named here so a conforming client knows they are not the
+profile's:
+
+| Prefix | Co-tenant | Not governed by |
+|---|---|---|
+| `/mcp` | MCP over HTTP (Streamable HTTP, POST-only) | media type (JSON), status table (405 on the wrong method is the adapter's) |
+| `/metrics` | Prometheus exposition | media type (text), status table |
+| `/projections`, `/projections/{name}` | the emitted byte-gated JSON artifacts, read-only (decision 32(a)) | media type (JSON), status table (404 is "not emitted", not an exchange event) |
+
+**Totality, restated exactly.** The profile's status table answers
+every UNCLAIMED exchange on the authority — every path a co-tenant
+prefix does not claim, including unknown paths and wrong methods,
+which stay `400`/`405` from §1's table and never a host `404`. It
+does not answer exchanges inside a declared co-tenant prefix. A
+server that serves co-tenants MUST NOT let one shadow a profile
+resource space: `/cas`, `/control`, and `/roots` are reserved to the
+profile on any authority that serves it.
+
+**What a client may assume.** A client that speaks only this profile
+never addresses a co-tenant prefix, so co-tenancy is invisible to it
+and no conformance vector changes. A client that discovers an
+unexpected media type or an unexpected status on a path it believes
+is a profile resource has found a server defect, not a co-tenant —
+the reservation above is what makes that inference sound.

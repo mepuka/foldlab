@@ -61,9 +61,37 @@ export const calls = Metric.counter("cas.host.calls", {
   incremental: true,
 })
 
+/** Bucket boundaries for the SQL path, in milliseconds, and FINITE on
+ * purpose — the same reason `cas.daemon.request` carries its own set.
+ * `Metric.timer`'s default boundaries END in `Infinity`, and the
+ * Prometheus exposition renders every boundary as a bucket AND then
+ * appends its own `le="+Inf"` row, so the default publishes a
+ * duplicate overflow bucket labelled `le="Infinity"` — not a number
+ * Prometheus parses. Anything past the top lands in the histogram's
+ * overflow slot, which the exporter reports as `+Inf`.
+ *
+ * The ladder is the shape this path actually has: sub-millisecond
+ * when the connection is free, seconds when the head-of-line stall
+ * the audit measured is in progress. */
+export const sqlWaitBoundaries: ReadonlyArray<number> = [
+  0.5,
+  1,
+  2,
+  5,
+  10,
+  25,
+  50,
+  100,
+  250,
+  500,
+  1000,
+  5000,
+]
+
 /** How long the SQL path took, wait included. */
 export const sqlWait = Metric.timer("cas.store.sql_wait", {
   description: "time spent in the SQL path, including the wait for a connection",
+  boundaries: sqlWaitBoundaries,
 })
 
 /** Typed refusals, by the clause they carried. */

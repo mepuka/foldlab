@@ -121,6 +121,17 @@ export const layerStderrLogs: Layer.Layer<never> = Logger.layer([
   Logger.withConsoleError(Logger.formatLogFmt),
 ])
 
+/** The protocol revisions this host offers, newest first — one list,
+ * shared by every transport, so stdio and the daemon cannot drift. A
+ * client naming a revision outside it gets the first, which is the
+ * adapter list's documented fallback. */
+export const offeredProtocols = [
+  McpProtocol.v2025_11_25,
+  McpProtocol.v2025_06_18,
+  McpProtocol.v2025_03_26,
+  McpProtocol.v2024_11_05,
+] as const
+
 /** A store whose policy gates reads has no stdio spelling. */
 export class CredentialedPolicyUnservable
   extends Schema.TaggedError<CredentialedPolicyUnservable>()(
@@ -250,12 +261,7 @@ export const layerServeStdio = (limits: HostLimits) =>
     Layer.provideMerge(layerHeartbeat),
     Layer.provideMerge(McpServer.layerStdio({
       ...serverIdentity,
-      protocols: [
-        McpProtocol.v2025_11_25,
-        McpProtocol.v2025_06_18,
-        McpProtocol.v2025_03_26,
-        McpProtocol.v2024_11_05,
-      ],
+      protocols: offeredProtocols,
     })),
   )
 

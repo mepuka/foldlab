@@ -830,7 +830,11 @@ const checkupStoreLines = (
     row("store", `${location.store}  (${backendLabel(backend, location.origin)})`),
     // "reads" is the finding, not decoration: `readConfig` has already
     // refused the invocation if it does not, so a config named here is
-    // a config this build decoded.
+    // a config this build decoded — and "none" now means ABSENT and
+    // nothing else. It used to also cover a config that was there but
+    // would not open, which made this line report open defaults for a
+    // store whose own config gates reads; `readConfig` refuses that
+    // case at boot instead.
     row("config", Option.isSome(config) ? `${location.configPath} — reads` : "none"),
     row("objects", objects === null ? `in ${location.store}/cas.db` : String(objects)),
     row("roots", `${roots} published`),

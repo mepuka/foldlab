@@ -11,7 +11,11 @@
  *
  * The register is consumer-gated — a word is here because a verb says
  * it. "in flight" is `cas status`'s (`maxInFlight`), and "doctor" is
- * `cas doctor`'s.
+ * `cas doctor`'s. The last six are `cas daemon`'s: its verb line and
+ * its flags speak them unprompted, so they entered by the same rule.
+ * What entered is the ABSTRACTION, exactly as collision 3 ruled for
+ * `cas run` — "plane", not `cas-http/0` and "MCP over HTTP", which
+ * stay protocol register.
  *
  * It lives in its own module rather than in `bin/cas.ts` because the
  * entry point runs the CLI on import: the gate has to be able to read
@@ -36,6 +40,12 @@ export const vocabularyWords: ReadonlyArray<readonly [string, string]> = [
   ["history", "the record of a run: what was admitted, in order"],
   ["in flight", "how many store-touching calls the host runs at once"],
   ["doctor", "the checkup: what this store is, and what the lab has proved"],
+  ["host", "the process serving a store; --host is the address one binds"],
+  ["daemon", "the long-lived host: one port, both wire planes"],
+  ["plane", "one wire surface on a host's port; the daemon serves two"],
+  ["heartbeat", "the line a host prints on period, carrying its numbers"],
+  ["stall", "a beat that did not arrive — the host is blocked"],
+  ["origin", "the web page a browser request came from"],
 ]
 
 /** The words as `--help` prints them, one per line under a heading. */
