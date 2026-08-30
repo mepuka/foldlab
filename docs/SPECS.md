@@ -356,3 +356,11 @@ records the 2026-08-29 session rulings that cut across specs.
     Fable seats: each seat's output is reviewed by TWO independent
     Opus reviewers (adversarial, non-overlapping lenses) before the
     coordinator merges — no slip in standards.
+    **Second addendum to 26 (same night): Lean permission granted to
+    all Fable seats** under production methods — statement triage
+    first, the axiom trio, citations for every imported
+    determination, ledgers regenerated, every gate green; EVIDENCE
+    IS THE LICENSE: a Lean change lands with its reasons and audit
+    trail or not at all. The Mcp.lean fence stands. The operator's
+    words, verbatim: "the types the algebra serves — but only
+    through our honesty does she grace us with expression."
