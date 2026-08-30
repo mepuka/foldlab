@@ -118,6 +118,27 @@ path says `Backend` and the module is not backend code.** Promoting it
 to `Cas/Lang/` is a one-line lakefile change and a ruling, not a side
 effect, and it is listed as owed at the end of this packet.
 
+**The placement is verified, not reasoned.** PDD-8's builder found the
+same trap by experiment mid-flight — a module planted under `Cas/Lang/`
+with a `sorry` in it stayed GREEN, because nothing builds it — and the
+coordinator circulated the warning. Two controls were run here rather
+than trusting the argument above:
+
+1. `Cas.Backend.SumAlgebra` appears by name in the build job list
+   (`[72/95] Replayed Cas.Backend.SumAlgebra`), so it is a target and
+   not a file the toolchain never opens.
+2. A `sorry` planted in this module turns `lake --wfail build Cas
+   CasBackend CasExamples CasWp` RED — exit 1, `declaration uses
+   'sorry'`. Removing it returns exit 0, 95 jobs. So the gate that
+   vouches for these theorems can fail, which is the only thing that
+   makes its passing worth anything.
+
+That second control is the estate's own discipline applied to itself:
+`check:cas:obligations` runs `--self-test` before `--check` for exactly
+this reason ("a gate that cannot fail proves nothing"). A green build
+over an unbuilt module is the failure mode this packet's whole
+escalation claim would otherwise rest on.
+
 ## The algebra
 
 Carriers, all shipped, none introduced:
@@ -525,7 +546,24 @@ git status                                            (clean)
 ```
 
 No `sorry`, no `native_decide`, no new axiom: an axiom census over
-every declaration in the module lands with the run.
+every headline declaration in the module is printed BY the run
+(`#print axioms`, module tail), so the claim is read off the build
+rather than asserted here.
+
+**Results at `03ca1435`.** All green. `lake --wfail build` completed
+(95 jobs); `mise run check:cas` exited 0 with every byte gate `ok`;
+the three supportInterpreter ledgers are byte-identical and unmoved —
+`surface/cas-surface.json` 955041 bytes, 2026 declarations;
+`surface/cas-obligations.json` 17363 bytes, 68 obligations;
+`surface/cas-laws.json` 9825 bytes, 9 of 37 rulings bound. The
+declaration count is the mechanical confirmation that the new module is
+outside `Walk.libraryImports`: the module carries 52 public
+declarations and one private helper, and the surface ledger did not
+move by one byte. `git status` clean.
+
+The census itself: `propext` and `Quot.sound` only, across every
+headline theorem — `Prog.op_bind` depends on no axiom at all. No
+`sorryAx`, no `Classical.choice`.
 
 ## Owed, not done here
 
@@ -544,11 +582,107 @@ every declaration in the module lands with the run.
 ## Breaks
 
 The ledger of successful falsifications, per CONTRACT.md §The break
-ledger. **Empty at this commit** — the packet is committed before any
-theorem exists, so no falsifier has been run and no law has been
-attacked. A row lands here the moment one fires, with the law verbatim,
-the concrete witness, its obligation class, and the fixing commit; the
-law is never quietly rewritten in place.
+ledger. It was empty when this packet was committed at `8e7fe66a`,
+before any theorem existed. One row has landed since.
 
-ADQ-DBL is the row most likely to produce an entry, and it is stated
-above in the record's own words for exactly that reason.
+```
+BROKE      the RECORD, not an implementation. The falsifier fired
+           against a claim in `.staging/algebraic-review/`, and no
+           shipped declaration is wrong — every law in this packet is
+           true and every one of them stays.
+LAW        THE-ALGEBRA.md §3.2, verbatim:
+             "KILLED BY  interpret_inl (L23) together with `inl` is a
+              monad morphism (L25); nothing weaker separates them"
+           and prog-carrier.md H-3, identically:
+             "KILLED BY  S3 (interpret_inl) together with S5 (inl is a
+              monad morphism); nothing weaker separates them."
+           Read as stated, the claim has two parts: L23 does not
+           suffice alone, and L25 supplies what is missing.
+WITNESS    `doubleInl` — THE-ALGEBRA §3.2's own ADVERSARY 2, the
+           injection that performs every operation twice and keeps the
+           first answer — SATISFIES L25 in full, and L26 besides:
+
+             Adversary.doubleInl_pure       (Prog.pure a) ↦ Prog.pure a
+             Adversary.doubleInl_bind       (p.bind f) ↦ p.bind (·∘f)
+             Adversary.doubleInl_injective  injective
+
+           all kernel-checked in
+           `library/cas/Cas/Backend/SumAlgebra.lean` at `03ca1435`,
+           by the same induction the real injection uses. So L25
+           excludes the adversary from nothing and cannot be half of
+           what separates it.
+
+           The second half of the same finding, from the other
+           direction: `Prog.inl_unique` proves L23 CATEGORICAL —
+           satisfying it at every lawful target monad and every handler
+           pair forces `Prog.inl` pointwise, `doubleInl` included. So
+           "nothing weaker separates them" is false twice over: L23
+           alone already separates them, and the thing offered as the
+           needed supplement separates nothing.
+
+           The refutation of the adversary is `interpret_inl` and it
+           alone: `Adversary.doubleInl_not_interpret_inl`, witnessed at
+           `TickSig` and a handler into `StateT Nat Id`, where the
+           doubled program spends 2 operations against the real one's
+           1.
+CLASS      claim-scope. The stated boundary of the record's claim did
+           not equal its actual coverage — the attribution of which law
+           does the work was wrong, in the direction of crediting a law
+           that does none. It is the same shape as PDD-1's second
+           breaker row (right theorem, wrong subject), and it matters
+           for the same reason: a later hand reading §3.2 would think
+           L25 was load-bearing for adequacy and might weaken L23 while
+           keeping it.
+FIXED-BY   03ca1435. The corrected attribution is carried in the
+           module's own prose (the section "What L25 contributes to
+           killing it — nothing") and by the three theorems that
+           witness it, so the claim cannot be quietly restored without
+           a red build. NOT fixed by amending `.staging/`: those are
+           review documents of a dated pass, this packet is the
+           estate's answer to them, and rewriting the reviewer's text
+           would destroy the record the ledger exists to keep.
+```
+
+What the break is worth beyond this ticket. The general lesson is about
+where a separating law must be QUANTIFIED, not about sums. L25 is an
+equation between two programs, so it can only see structure that
+survives being written down; the doubling injection's defect is not
+structural — it is a defect in what the program DOES, and the doubling
+is structurally as lawful as the original. Only a law quantified over
+target monads reaches an observation (here: the operation count) that
+separates them. Any future law meant to exclude a
+performs-too-much/too-little implementation — for `Roots.stepRooted`,
+for the incoming `WordSig` split, for a transport handler — inherits
+the same requirement, and the estate now has one proved instance of
+it to copy rather than a plausible-sounding pair to copy.
+
+Two smaller findings, recorded rather than filed:
+
+- **The cited exhibits files do not exist.**
+  THE-ALGEBRA's Sources block (`:42-44`) names
+  `handlers-semantics-exhibits.lean` and `word-store-exhibits.lean` as
+  "the kernel-checked exhibit files" it is written against. Neither has
+  ever been committed on any branch in this history: the only commit
+  that ever added files to `.staging/algebraic-review/` is `5e93b29f`,
+  and it added seven `.md` files and no `.lean`. The consequence is
+  not cosmetic — **nine OWED rows of the law ledger cite them as the
+  carrier of their proof**: L5, L16, L17, L18, L23, L24, L31, L34, L35
+  ("proved in `handlers-semantics-exhibits.lean` §2", "exhibits §4,
+  nine lines"), plus L79's witness in `word-store-exhibits.lean` and
+  four prose citations down to a line number
+  (`handlers-semantics-exhibits.lean:137`, `:155`, `:171`). PDD-7's
+  and PDD-8's tickets both send their agents to read the file. So
+  "proved in exhibits §N" currently reads as a discharge and is a
+  citation to nothing.
+
+  Nothing was lost for this ticket — every proof here was developed
+  from the carriers and kernel-checked, which is what the ticket asked
+  for ("trust nothing unchecked"). Four of those nine rows (L5, L23,
+  L24, L31) are now genuinely carried, by this slice. But a reader
+  auditing the OWED column needs to know that its Carrier entries are
+  not all citations to things that exist, and PDD-8 will meet the same
+  absence on L16/L17/L18/L34/L35.
+- **`Handler.sum` still has no call site**, and this packet does not
+  give it one. It now has laws and a categoricity theorem, so the
+  hand-rolled consumers can be claimed against it; making that claim
+  edits fenced files and is the next ticket's work, not this one's.
