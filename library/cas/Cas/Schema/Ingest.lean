@@ -383,21 +383,21 @@ theorem pairwiseRefNames_iff : ∀ rs, pairwiseRefNames rs = true ↔
       pairwiseRefNames_iff rest]
 
 /-- Boolean twin of `Document.WF` — the runtime gate of the document
-door. The guardedness conjunct is `Document.guarded`, and
-`references_guarded_decidable` is what says it decides the real
-property rather than approximating it. -/
+door. The guardedness conjunct is `Document.guardedMemo`, the walk that
+settles each name once, and `references_guarded_decidable_memo` is what
+says it decides the real property rather than approximating it. -/
 def Document.wf (d : Document) : Bool :=
   pairwiseRefNames d.references
     && d.references.all (fun e => e.1 != "")
     && wfReferences d.references
     && d.representation.wf
-    && d.guarded
+    && d.guardedMemo
 
 /-- The gate decides exactly the discipline. -/
 theorem Document.wf_iff (d : Document) : d.wf = true ↔ d.WF := by
   simp only [Document.wf, Document.WF, Bool.and_eq_true, List.all_eq_true,
     pairwiseRefNames_iff, wfReferences_iff, Ast.wf_iff,
-    references_guarded_decidable, and_assoc]
+    references_guarded_decidable_memo, and_assoc]
   constructor
   · rintro ⟨hp, hne, hwr, hrep, hg⟩
     exact ⟨hp, fun e he => by simpa using hne e he, hwr, hrep, hg⟩
@@ -489,8 +489,9 @@ theorem ingestDocument_nil {a : Ast} (ha : a.WF) :
     Document.ofEnvelope_envelope (Document.mk [] a)]
   simp only [Document.repNorm, List.map_nil]
   rw [if_pos]
-  simp only [Document.wf, pairwiseRefNames, wfReferences, Document.guarded,
-    Document.names, List.map_nil, List.all_nil, Bool.and_true,
+  simp only [Document.wf, pairwiseRefNames, wfReferences, Document.guardedMemo,
+    Document.settleAll, Document.names, List.map_nil, List.all_nil,
+    Bool.and_true, Option.isSome_some,
     (Ast.wf_iff _).mpr (Ast.repNorm_wf a ha)]
 
 /-- Exactness on the nose, for the codes the revision-1 projection
@@ -853,6 +854,13 @@ def bareStructCycle : Document :=
 -- says which discipline failed, not merely that something did.
 #guard !aliasCycle.guarded
 #guard !bareStructCycle.guarded
+
+-- The walk the door RUNS answers the same, on all three. A name on a
+-- cycle never enters the memo, because a name is memoized on the way
+-- back out and the walk never gets there.
+#guard guardedList.guardedMemo
+#guard !aliasCycle.guardedMemo
+#guard !bareStructCycle.guardedMemo
 
 /-- The alias table really does have a cycle, and the proof EXHIBITS
 it rather than deciding it: `A` steps to `B`, `B` edges back to `A`.

@@ -629,18 +629,43 @@ const bareRefs = (value: Schema.Json | undefined): ReadonlyArray<string> => {
   return out
 }
 
-/** The fuel-bounded search of `Document.settles`, interpreted: does
- * every bare path out of `name` run out within `fuel` steps? */
+/** The memoized search of `Document.settleAll`, interpreted: does every
+ * bare path out of `name` run out within `fuel` steps?
+ *
+ * `settled` is the names already known to settle. Without it the search
+ * re-walks every path and the door is `Θ(2ⁿ)` in the table size — a
+ * table whose entries each name the next one twice took 18 271 ms at 23
+ * ACYCLIC entries, and doubles per entry. That is the shape the break
+ * pass measured (PDD-3 finding F3), and this is the ingestion door for
+ * foreign content, so the input is attacker-chosen.
+ *
+ * A name enters `settled` only after its whole subtree settled, so
+ * membership means "no bare path out of this name goes on forever" — a
+ * property of the table and not of the fuel that happened to be left.
+ * That is what makes a hit at one fuel sound at another, and it is why
+ * a name on a cycle never enters the set: the walk never gets back out
+ * to add it. Lean's `references_guarded_decidable_memo` is the same
+ * statement over the same schedule. */
 const settles = (
   references: Schema.JsonObject,
   fuel: number,
   name: string,
+  settled: Set<string>,
 ): boolean => {
+  if (settled.has(name)) return true
   const successors = Object.hasOwn(references, name)
     ? bareRefs(references[name])
     : []
-  if (fuel === 0) return successors.length === 0
-  return successors.every((next) => settles(references, fuel - 1, next))
+  if (fuel === 0) {
+    if (successors.length !== 0) return false
+    settled.add(name)
+    return true
+  }
+  for (const next of successors) {
+    if (!settles(references, fuel - 1, next, settled)) return false
+  }
+  settled.add(name)
+  return true
 }
 
 /** The document gate: the references table and one admitted root.
@@ -669,8 +694,13 @@ const admitDocument = (value: Schema.Json): void => {
   }
   // Fuel is the table's own size, exactly as in Lean: a failing path
   // then visits one more name than the table has entries, which is what
-  // forces a repeat and makes the search complete.
-  const unguarded = names.filter((name) => !settles(references, names.length, name))
+  // forces a repeat and makes the search complete. The memo is shared
+  // across the whole table, so each name is settled once however many
+  // other names reach it.
+  const settled = new Set<string>()
+  const unguarded = names.filter((name) =>
+    !settles(references, names.length, name, settled)
+  )
   if (unguarded.length > 0) {
     refuseBy("unguardedCycle", "document.references", unguarded)
   }
