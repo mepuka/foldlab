@@ -397,8 +397,70 @@ signature. Both are operator calls.
 
 | Slice | State |
 |---|---|
-| 4 — the arrow, the faithful lowering, assembly from store words | see §Breaks and the commit log |
-| 5 — the recursive byte-gate fixture | see §Breaks and the commit log |
+| 4 — the arrow, the faithful lowering, assembly from store words | LANDED |
+| 5 — the recursive byte-gate corpus | LANDED, three rows |
+| 5' — a recursive SCHEMAS-registry fixture | BLOCKED, below |
+
+### Slice 5, as the plan states it — and what it needed
+
+The plan's slice 5 (:150-153) is "one self-referential struct
+(linked-list shape) admitted through both doors; the verdicts corpus
+gains the recursive rows; `emitgate`/`verdicts` regenerate". PDD-3
+banked most of it early, because its own theorem needed the witnesses:
+`admit-guarded-recursion` IS the linked list (`guardedList`), and the
+two unguarded cycles are its refusal partners. The fix pass added
+`admit-reference-chain` and `admit-reference-chain-two` on finding F4 —
+that every admitted C6 row had an EMPTY bare-edge relation, so a door
+with fuel zero agreed with the shipped one on the whole corpus.
+
+What was still missing is the OTHER half of that same gap. The rows in
+service ask one question each: a cycle with an empty bare relation
+(`guardedList`), or a bare relation with no cycle (`refChain`). Nothing
+asked both at once. Three rows now do, and each names the door it kills:
+
+| Row | The door it kills |
+|---|---|
+| `admit-guarded-chain` | one that follows edges but does not stop at the guard, or stops at the guard but never follows an edge — every earlier admitted row passes both |
+| `refuse-partly-guarded-cycle` | one reading the predicate as "SOME path to the recursion is guarded". One pair of names joined both ways; the bare path decides |
+| `refuse-dead-unguarded-entry` | one that walks from the ROOT inward. Guardedness is a property of the TABLE. It is also where "a dead entry is admitted" stops: a dead WELL-FORMED entry is, a dead cyclic one is not |
+
+Honest about what they found: nothing. Both doors already answer all
+three the same way, and the cross-door gate went green on the first
+run. What the rows buy is discrimination — the corpus can now tell
+apart three doors it previously could not, which is the property F4
+showed it was missing.
+
+### Slice 5' — the SCHEMAS-registry fixture is BLOCKED
+
+There is a second reading of "the recursive byte-gate fixture": a row in
+`tools/Schemas.lean`, so the linked list becomes a committed
+`schemas/*.json` payload with an address, a hand mirror in
+`CanonicalSchemaPin.test.ts`, and a materialization in BOTH registers of
+the P6 differential. It is not attempted, and the reason is the debt
+this packet already named rather than a new discovery.
+
+- **The registry cannot spell it.** `SchemasMain.registry` is
+  `List (String × Ast)`, and an `Ast` is finite: a self-referential code
+  needs the TABLE, so the row type would have to become `Document`,
+  rippling through `schemaNodeOf`, `addressOf`, `indexDocument`,
+  `tools/Materialize.lean`'s `loadRows` (which reads through
+  `ingestBytes`, the BARE-CODE door that refuses a table by name), the
+  hand mirror, and the differential.
+- **And the estate register would emit a module that does not
+  typecheck.** `lake exe materialize` writes into
+  `test/generated/materialized/estate/`, which `tsc -p
+  tsconfig.test.json --noEmit` checks. The emitted table entry is a
+  const that reads itself through the new arrow, and the bare arrow
+  fails `TS7022`/`TS7024` — the evidence is in §The arrow, and what it
+  does not yet carry, taken before slice 4 was written. The annotation
+  Effect writes needs an `Ast → TypeExpr` lowering the estate does not
+  have.
+
+The packet's own instruction for exactly this position is followed:
+*"If slice 5 reaches the estate register before the type lowering does,
+the honest answer is to say so and stop, not to widen the annotation to
+`Schema.Top`."* OWED, in order: the `Ast → TypeExpr` lowering, then the
+document-shaped schemas registry, then the fixture.
 
 ## Breaks
 

@@ -33,10 +33,15 @@ byte-identity gate. Run from the package root (`library/cas`).
 The corpus is deliberately narrow, and every restriction names the
 reason it exists rather than hiding it:
 
-- **non-recursive.** `Ast` has no `Suspend`/`Reference`/μ constructor
-  (survey B3), and a revision-1 document with a non-empty `references`
-  table is refused by name (`nonEmptyReferences`). The corpus therefore
-  carries recursion only as a refusal case.
+- **recursion as CODES only.** Increment C6 gave the carrier
+  `Ast.reference` and `Ast.susp`, so a document with a non-empty
+  `references` table is read rather than refused and the corpus carries
+  recursive admissions, not only refusals. What it still carries no
+  VALUE triples for is the recursive codes themselves: `El` is not
+  extended over the two constructors (PDD-3's claim scope), so Lean
+  holds no values of a code that reaches the table and `decode` has
+  nothing to answer. The fuel-indexed decode that would change this is
+  the named follow-on.
 - **non-float.** `Cas.Json.Value` has no float (ruling 15, the float
   ceiling): `1.5` is unwritable as a Lean value, so no float triple can
   be emitted at all — not even a refusal one.
@@ -633,6 +638,19 @@ def corpus : List Case := [
   { name := "refuse-duplicate-reference-key-last",
     note := "the same duplicate with the pairs swapped, which reverses which reader sees the cycle — the other direction of the split, and the same refusal",
     source := .raw dupKeyRefLast },
+  -- PDD-13's rows. The C6 rows above ask ONE question each: a cycle
+  -- with an empty bare relation, or a bare relation with no cycle.
+  -- These three ask both at once, and each kills a door the corpus
+  -- could not tell from the shipped one.
+  { name := "admit-guarded-chain",
+    note := "a GUARDED cycle whose bare relation is not empty: A names B bare and B reaches A again under a Suspend, so the search must follow a real edge AND stop at the guard. A door that does only one of the two passes every earlier admitted row and fails here",
+    source := .raw guardedChain.envelope },
+  { name := "refuse-partly-guarded-cycle",
+    note := "one pair of names joined BOTH ways — A reaches B bare and again under a guard, B reaches A. The guarded path does not excuse the bare one: some-path-is-guarded is not the predicate, and a door that reads it that way admits a table whose resolution never finishes",
+    source := .raw partlyGuardedCycle.envelope },
+  { name := "refuse-dead-unguarded-entry",
+    note := "an unguarded cycle among entries the ROOT NEVER REACHES. Guardedness is a property of the table, not of the part of it the representation uses, so a door that walks from the root inward admits this. It is also where a dead entry stops being harmless: a dead well-formed entry is admitted, a dead cyclic one is not",
+    source := .raw deadUnguardedEntry.envelope },
   -- NO ROW for the empty reference name, deliberately. Both doors
   -- refuse it; they NAME the refusal differently, and this corpus
   -- asserts agreement on names. Lean's decoder reads the shape and its

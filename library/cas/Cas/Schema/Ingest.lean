@@ -1083,6 +1083,72 @@ def dupKeyRefLast : Json.Value :=
         | .ok _ => true
         | .error _ => false)
 
+/-! ### The recursion witnesses the corpus was still missing — PDD-13
+
+`contracts/PDD-13.contract.md`, slice 5. The C6 rows in service divide
+cleanly: a cycle with an EMPTY bare relation (`guardedList`), and a
+non-empty bare relation with NO cycle (`refChain`). Nothing yet asked
+the two questions at once, and two doors that pass every row above
+still disagree here.
+
+Each witness below names the door it kills. -/
+
+/-- A GUARDED cycle whose bare relation is not empty: `A` names `B`
+BARE, and `B` reaches `A` again under a `susp`. So the search has to
+follow a real edge AND stop at the guard — the first row that needs
+both. `guardedList` needs only the stop, `refChain` only the follow. -/
+def guardedChain : Document :=
+  { references := [("A", .reference "B"),
+      ("B", .struct [("a", false, .susp (.reference "A"))])],
+    representation := .reference "A" }
+
+/-- The same pair of names joined BOTH ways: `A` reaches `B` bare and
+again under a guard, and `B` reaches `A`. The guarded path does not
+excuse the bare one — "some path is guarded" is not the predicate, and
+a door that reads it that way admits a table whose resolution never
+finishes. -/
+def partlyGuardedCycle : Document :=
+  { references := [("A", .union [.reference "B", .susp (.reference "B")] .anyOf),
+      ("B", .reference "A")],
+    representation := .reference "A" }
+
+/-- An unguarded cycle among entries the ROOT NEVER REACHES. Guardedness
+is a property of the TABLE, not of the part of it the representation
+uses, so this is refused — and a door that walks from the root inward
+admits it. It is also the boundary of "a dead entry is admitted": a dead
+WELL-FORMED entry is, a dead cyclic one is not. -/
+def deadUnguardedEntry : Document :=
+  { references := [("A", .str), ("B", .reference "C"), ("C", .reference "B")],
+    representation := .reference "A" }
+
+-- The bare relations, so each row's claim about itself is checked and
+-- not merely written down.
+#guard guardedChain.out "A" == ["B"]
+#guard guardedChain.out "B" == []
+#guard partlyGuardedCycle.out "A" == ["B"]
+#guard partlyGuardedCycle.out "B" == ["A"]
+#guard deadUnguardedEntry.out "B" == ["C"]
+#guard deadUnguardedEntry.out "C" == ["B"]
+
+#guard guardedChain.guardedMemo
+#guard !partlyGuardedCycle.guardedMemo
+#guard !deadUnguardedEntry.guardedMemo
+
+theorem guardedChain_guarded : guardedChain.Guarded :=
+  (references_guarded_decidable guardedChain).mp (by decide)
+
+#guard (match ingestDocument guardedChain.envelope with
+        | .ok d => d.payload == guardedChain.payload
+        | .error _ => false)
+
+#guard (match ingestDocument partlyGuardedCycle.envelope with
+        | .error .unguardedCycle => true
+        | _ => false)
+
+#guard (match ingestDocument deadUnguardedEntry.envelope with
+        | .error .unguardedCycle => true
+        | _ => false)
+
 /-! ## The bytes-in door
 
 `ingest` takes a VALUE. Everything that arrives from outside — a stored

@@ -8,14 +8,14 @@
     "IR": 137,
     "Lang": 305,
     "Lift": 77,
-    "Schema": 755,
+    "Schema": 759,
     "Values": 478,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 259,
-    "Quot.sound": 445,
-    "propext": 615
+    "Classical.choice": 260,
+    "Quot.sound": 446,
+    "propext": 616
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
@@ -35,8 +35,8 @@
     "Cas.Schema.El": 42,
     "Cas.Word": 111
   },
-  "declarations": 2122,
-  "documented": 1106,
+  "declarations": 2126,
+  "documented": 1109,
   "library": "Cas",
   "modules": [
     {
@@ -11607,8 +11607,8 @@
       ]
     },
     {
-      "declarations": 66,
-      "documented": 45,
+      "declarations": 70,
+      "documented": 48,
       "module": "Cas.Schema.Ingest",
       "surface": [
         {
@@ -11719,6 +11719,13 @@
         {
           "documented": true,
           "kind": "def",
+          "name": "Cas.Schema.deadUnguardedEntry",
+          "signature": "Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
           "name": "Cas.Schema.distinctEnumNames",
           "signature": "List (String × Cas.Schema.EnumValue) → Bool",
           "touches": ["Schema"]
@@ -11751,6 +11758,21 @@
           "name": "Cas.Schema.duplicateReferenceKey",
           "signature": "Cas.Json.Value → Bool",
           "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.guardedChain",
+          "signature": "Cas.Schema.Document",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Schema.guardedChain_guarded",
+          "signature": "Cas.Schema.guardedChain.Guarded",
+          "touches": ["Schema"]
         },
         {
           "documented": true,
@@ -11954,6 +11976,13 @@
           "kind": "theorem",
           "name": "Cas.Schema.pairwiseRefNames_iff",
           "signature": "∀ (rs : List (String × Cas.Schema.Ast)), Cas.Schema.pairwiseRefNames rs = true ↔ List.Pairwise (fun a b => a.fst < b.fst) rs",
+          "touches": ["Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Schema.partlyGuardedCycle",
+          "signature": "Cas.Schema.Document",
           "touches": ["Schema"]
         },
         {
@@ -16669,10 +16698,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1159,
+    "def": 1162,
     "inductive": 52,
     "instance": 112,
     "structure": 70,
-    "theorem": 725
+    "theorem": 726
   }
 }
