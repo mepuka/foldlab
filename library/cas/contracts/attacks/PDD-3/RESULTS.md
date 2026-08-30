@@ -551,3 +551,350 @@ and the module's status is the mechanical proof of what closed:
 Nothing in this file is imported by any lake target, so a red `#guard`
 here reddens only this file — which is the point: it is evidence, not a
 gate.
+
+---
+---
+
+# RE-RUN — the break pass, against the fix
+
+```
+SUBJECT     branch agent/opus-cc-mac/pdd-3, tip c700279d (fix-pass close)
+            766d695f packet · f8a2da76 F2/N2 · 599ef9eb F3 · c6a70338 F1/F4/F5
+METHOD      the fix merged onto attack/opus-cc-mac/pdd-3; every probe re-run
+            from that tree.  The FIRST-PASS record above is untouched.
+ATTACK      ./Attack.lean  — unchanged, re-run, exactly one red (below)
+            ./Attack2.lean — the re-attack, elaborates clean
+```
+
+## VERDICT — STANDS-AMENDED
+
+Five findings closed, two notes closed, one narrowed by ruling rather than
+by code and saying so, and **one of my own first-pass gradings withdrawn**.
+Two small new divergences fall out of the F1 gate itself; both are naming,
+neither is admit-versus-refuse, and both are recorded here rather than
+carried silently.
+
+| # | Grade now | Evidence |
+|---|---|---|
+| F1 | **CLOSED — and DOWNGRADED from BREAK** | one name, both key orders, five spellings; my BREAK grade was an artifact of my entry point |
+| F2 | **CLOSED BY NARROWING** — prose only, ruling owed | witnesses cited in `Guarded.lean`; semantics deliberately untouched |
+| F3 | **CLOSED** | 41 entries: Lean 0 ms, TypeScript 147 ms; was `Θ(2ⁿ)` |
+| F4 | **CLOSED** | re-derived over all 76 corpus rows, not my four names |
+| F5 | **CLOSED**, TypeScript moved to Lean | seven order rows, both hosts identical |
+| N1 | CLOSED | claim-scope line now reads "not refused FOR BEING DEAD" |
+| N2 | CLOSED | the stale twin narrowed like its sibling |
+| N3–N6 | unchanged, correctly | fence / flake / bytes-arm / dead clause, all still true and all recorded |
+| R1 | **new HOLE** | the two duplicate gates are not the same gate |
+| R2 | **new NOTE** | the scanner unescapes for a reader with no `\u` case |
+
+## WITHDRAWN — my F1 grade was wrong
+
+F1 said "a references table Lean refuses and TypeScript ADMITS", graded
+BREAK. The admit was real, but I obtained it through
+`CanonicalSchema.fromEnvelope(JSON.parse(payload))`. The SHIPPED bytes
+door is `Materialize.fromPayload`, and it has always run
+`decodedVersionedEnvelope` first, which re-renders the parsed value and
+refuses when the bytes differ. At `92a64ec4`:
+
+```
+library/effects/src/cas/Value.ts:218
+        throw new TypeError("Projection payload is not canonical JSON")
+library/effects/src/cas/Materialize.ts:120
+    const envelope = yield* decodedVersionedEnvelope(payload)
+```
+
+A duplicate key makes a payload non-canonical, so the shipped door
+already refused my witness at the subject commit — ANONYMOUSLY, as a
+`TypeError`, which `SchemaVerdicts.test.ts` reads as "refused without a
+name". The defect was real and worth the fix, but it was a NAMING
+divergence on the shipped path, not an admission one, and BREAK
+overstated it. The builder reached the same correction independently and
+wrote it into the packet (§The assumed ruling: "already turned these
+payloads away … but ANONYMOUSLY"). The record stands corrected here
+rather than quietly.
+
+## F1 — CLOSED. Both key orders, five spellings, one name
+
+`ingestDocument` now asks `duplicateReferenceKey` BEFORE the decoder, and
+`admitPayloadSpelling` reads the payload bytes ahead of any parser, wired
+into `Materialize.fromPayload` and `get`. Every row, both hosts:
+
+| payload | Lean | TypeScript |
+|---|---|---|
+| `{"A":ref A,"A":String}` — reference FIRST | `illFormed` | `illFormed` |
+| `{"A":String,"A":ref A}` — reference LAST | `illFormed` | `illFormed` |
+| `{"A":String,"A":String}` — IDENTICAL values | `illFormed` | `illFormed` |
+| `{"A":String,"A":Null,"A":ref A}` — THREE-way | `illFormed` | `illFormed` |
+| `{"A":Null,"A":Null,"A":Null}` — three identical | `illFormed` | — |
+| `{"A":String,"B":Null}` — partner | ADMIT | ADMIT |
+| `{"A":String}` — partner | ADMIT | ADMIT |
+
+The last two are the partner without which refusing every table would
+pass. Corpus rows `refuse-duplicate-reference-key` and
+`refuse-duplicate-reference-key-last` carry the first two.
+
+**The node-level twin is recorded owed, not silently fixed** — confirmed,
+which is what the fix's scoping claims:
+
+| payload | Lean | TypeScript |
+|---|---|---|
+| duplicate `_tag` on the ROOT node | `notASchema` | refused UNNAMED (`TypeError: … not canonical JSON`) |
+| duplicate `_tag` INSIDE a table entry | `notASchema` | refused UNNAMED |
+
+Both refuse; TypeScript still refuses without a name. That is exactly the
+packet's owed row — "one 'the bytes are not a canonical spelling'
+refusal, named, on both hosts" — and the gate did not quietly widen to
+cover it.
+
+## R1 — new HOLE: the two duplicate gates are not the same gate
+
+Lean's `duplicateReferenceKey` pattern-matches the CANONICAL envelope
+(`revision`/`value`, then `references`/`representation`, exactly two keys
+each) and answers `false` for anything else. TypeScript's is a byte
+scanner keyed on the container path `["value","references"]`, and it does
+not care what else the envelope carries. A payload that is both
+shape-broken and duplicate-keyed therefore splits:
+
+```
+{"revision":1,"value":{"extra":0,
+  "references":{"A":{"_tag":"String","checks":[]},"A":{"_tag":"Null","checks":[]}},
+  "representation":{"_tag":"String","checks":[]}}}
+
+Lean:       REFUSE notASchema   (the gate's pattern misses; the decoder answers)
+TypeScript: REFUSE illFormed    (the scanner fires first)
+```
+
+Both refuse, so this is a naming divergence and not an admission one —
+but `SchemaVerdicts.test.ts` gates refusal names, so a corpus row for it
+would go red. Cheapest repair: let Lean's gate find the references object
+wherever it sits, or let the TypeScript scanner stand down when the
+envelope is not the canonical two-key shape. Either is a small change
+plus a corpus row. `Attack2.lean` §1, `extraKeyAndDuplicate`.
+
+## R2 — new NOTE: the scanner unescapes for a reader with no `\u` case
+
+`CanonicalSchema.ts`'s `stringLiteral` exists so that a plain `"A"` and an
+escaped `"A"` compare equal, and its stated reason is that they "are
+the same name to Lean's reader". They are not. `Cas.Json.parse` has no
+`\uXXXX` case at all and refuses the payload outright — in a key or in a
+value — while `\n`, `\"` and `\\` all parse:
+
+```
+plain              true
+A in value    false
+A in key      false
+\n in value        true
+escaped quote      true
+escaped backslash  true
+```
+
+So the escaped-duplicate spelling is `illFormed` in TypeScript and
+`notASchema` in Lean, and the premise written into the new docstring is
+false. The parser gap is pre-existing and far outside C6; the sentence
+claiming the agreement is new in `c6a70338`. `Attack2.lean` §1.
+
+## F2 — CLOSED BY NARROWING, and the semantics were right to stay
+
+`Guarded.lean` now opens with "a cycle with no guard on it cannot be
+BUILT" and carries a "What this does NOT decide" section naming all three
+witnesses, the `guardedList` control, the `headName` sketch and the branch
+this record sits on; `IngestRefusal.unguardedCycle` is narrowed the same
+way. The admission semantics did not move, and that is correct — the
+productivity relation is an open ruling, recorded owed in the packet's
+follow-on list.
+
+Verified untouched:
+
+```
+w1  {A: susp(reference A)}               guarded=true  memo=true  door=ADMIT
+w2  {A: susp(union[reference A, null])}  guarded=true  memo=true  door=ADMIT
+w3  {A: susp(ref B), B: ref A}           guarded=true  memo=true  door=ADMIT
+```
+
+## F3 — CLOSED. The memo, and the classic error probed
+
+`Document.guardedMemo` is the procedure the door RUNS, not a paper twin:
+`Document.wf` (`Ingest.lean:394`) and `documentRefusal` (`:415`) both call
+it, `Document.wf_iff` goes through `references_guarded_decidable_memo`,
+and the only surviving uses of the naive `Document.guarded` in
+`Ingest.lean` are three `#guard` witnesses. So `guardedMemo_eq_guarded`'s
+subject is the shipped procedure.
+
+The first pass's `fanTable`, re-run on both hosts:
+
+| entries | Lean, first pass | Lean, now | TypeScript, first pass | TypeScript, now |
+|---|---|---|---|---|
+| 13 | 22 ms | 0 ms | — | — |
+| 26 | 302 915 ms (at 25) | **0 ms** | — | **149 ms** (7 972 B) |
+| 31 | out of reach | **1 ms** | out of reach | **147 ms** (9 547 B) |
+| 41 | out of reach | **0 ms** | out of reach | **147 ms** (12 697 B) |
+
+And the two walks still agree wherever the naive one can be run
+(`fanT 8`, `fanT 12`).
+
+**The on-ENTRY memo control fires.** A memo that records a name on the way
+IN calls a cycle settled. I implemented that error on both hosts and ran
+it against the builder's control — the fan with its tail wired back to its
+head:
+
+```
+Lean        shipped memo  fanCycle 8  = false    ENTRY memo = true
+            shipped memo  fanCycle 40 = false    ENTRY memo = true
+            shipped memo  aliasCycle  = false    ENTRY memo = true
+TypeScript  shipped  fanCycle 8 / 40 / aliasCycle -> REFUSE unguardedCycle
+            ERROR    fanCycle 8 / 40 / aliasCycle -> ADMIT
+            both agree on the ACYCLIC fan 40      -> ADMIT
+```
+
+So the control discriminates, and it is over-covered: the two cycle
+witnesses that predate the memo catch the same error, so it is a second
+net rather than the only one. `Attack2.lean` §3. The shipped door answers
+the tail-wired fan at 41 entries by name — `unguardedCycle`, 16 ms.
+
+## F4 — CLOSED, re-derived from the CORPUS
+
+The builder's note asked a follow-on breaker to read the corpus instead of
+naming four rows. Done — all 76 rows, decoded and compared:
+
+```
+corpus rows read: 76
+decodable rows compared : 61 (undecodable: 15)
+fuel-zero AGREES on     : 59
+fuel-zero DISAGREES on  : 2
+    admit-reference-chain      (fuel-zero false, door true)
+    admit-reference-chain-two  (fuel-zero false, door true)
+rows with NON-EMPTY bare edges: 6
+    refuse-unguarded-alias-cycle    out:[A, B]
+    refuse-unguarded-struct-cycle   out:[A]
+    admit-reference-chain           out:[A]
+    admit-reference-chain-two       out:[A, B]
+    refuse-unguarded-and-illformed  out:[A]
+    refuse-duplicate-reference-key  out:[A, A]
+corpus replay against the door — mismatches: 0
+```
+
+Two rows now separate the fuel-zero door from the shipped one, where none
+did; six rows carry a non-empty edge relation, where two did. The replay
+also confirms the door still answers every recorded verdict AND every
+recorded refusal name. `Attack2.lean` §5 re-derives the separation as a
+proposition.
+
+## F5 — CLOSED, and TypeScript moved to Lean
+
+Seven order rows, both hosts, identical answers:
+
+| table | Lean | TypeScript |
+|---|---|---|
+| cycle + ill-formed entry | `unguardedCycle` | `unguardedCycle` |
+| ill-formed entry alone (control) | `illFormed` | `illFormed` |
+| cycle + empty table key | `unguardedCycle` | `unguardedCycle` |
+| cycle + ill-formed ROOT | `unguardedCycle` | `unguardedCycle` |
+| **cycle + UNDECODABLE entry** | **`notASchema`** | **`notASchema`** |
+| **cycle + unknown declaration** | **`unknownDeclaration`** | **`unknownDeclaration`** |
+| undecodable root, guarded table | `notASchema` | `notASchema` |
+
+The held-refusal replay is right: `illFormed` is held and replayed after
+the guardedness filter, while `notASchema` and `unknownDeclaration` — the
+decoder's own answers — are rethrown at once. **Undecodable still wins.**
+
+## The three prediction divergences
+
+§Regression objects above predicted three receipts. All three were wrong,
+and each was wrong in the same direction — I assumed a fix would move
+semantics where it correctly moved a claim:
+
+1. **"F2 closed ⇒ §2's three theorems STOP ELABORATING."** They still
+   elaborate. The fix narrowed the prose and left admission alone, because
+   the productivity relation is a ruling. My prediction assumed the only
+   honest close was a semantic one; narrowing the claim is the other
+   honest close, and the cheaper one.
+2. **"F4 closed ⇒ §3's `guardedWrong` agreement guards go red."** They are
+   still green. They name the four ORIGINAL corpus rows, which did not
+   move; the separation lives in the two NEW rows. The prediction was
+   written against a battery I had hard-coded instead of read — which is
+   exactly the note the builder left for a follow-on breaker, and §F4
+   above is me taking it.
+3. **"F1/F3/F5 closed ⇒ §7's `dupHarmlessLast` AND §4's
+   `unsortedAndCyclic` change answer."** Only the first did.
+   `unsortedAndCyclic` was always `unguardedCycle` in Lean; F5 closed by
+   TypeScript adopting Lean's order, so the Lean-side guard could not move.
+
+## Attack.lean re-run — exactly one red, as predicted
+
+```
+contracts/attacks/PDD-3/Attack.lean:454:0: error: Expression
+  match ingestDocumentBytes dupHarmlessLast with
+  | Except.error IngestRefusal.unguardedCycle => true
+  | x => false
+did not evaluate to `true`
+```
+
+One guard, and it is F1's receipt: the duplicate-key payload that earned
+`unguardedCycle` now earns `illFormed`. Everything else in the module —
+§1's edge census, §2's three theorems, §3's `guardedWrong` sweep and
+`guardedWrong_is_not_the_decision`, §4's taxonomy, §5's fan, §6's twelve
+failed attacks, §7's bytes composition — still elaborates. The file is
+left as it is: a red that is a receipt is evidence, and editing it would
+destroy the trace.
+
+`Attack2.lean` elaborates clean.
+
+## Gates — re-run, verbatim
+
+`lake build` and `mise run --force check:cas` → exit 0:
+
+```
+ok conformance/schema-verdicts.json (77310 bytes) — 76 cases
+ok conformance/admission-map.json (10774 bytes) — 22 rows (12 admitted, 8 deferred, 2 rejected)
+ok ../effects/src/cas/generated/SchemaAdmission.ts (14580 bytes) — 12 nodes, 36 clauses
+ok schemas/addresses.json (1321 bytes) — 10 addresses
+ok surface/cas-surface.json (983228 bytes) — 2122 declarations
+ok surface/cas-obligations.json (18399 bytes) — 72 obligations
+ok surface/cas-laws.json (9825 bytes) — 9 of 37 rulings bound, 28 unbound
+10 of 10 controls fire
+13 of 13 controls fire
+Build completed successfully (92 jobs).
+```
+
+`schemas/addresses.json` is byte-for-byte what it was at `92a64ec4` — the
+fix moved no address. `git status --porcelain` after the forced run: EMPTY.
+
+`bun --bun vitest run`:
+
+```
+ Test Files  47 passed (47)
+      Tests  336 passed (336)
+```
+
+47 files where there were 46 (`SchemaGuardednessCost.test.ts` is new), 336
+tests where there were 334. **All green, including `BrainStem.test.ts`** —
+N4's cold-start flake did not reproduce on this run, so it stays a note
+about the 5 s margin rather than a finding.
+
+## Axiom census — the fix-pass theorems
+
+Every new declaration on the memo path depends on
+`[propext, Classical.choice, Quot.sound]` or a subset. No `sorryAx`, no
+`Lean.ofReduceBool` — so no `native_decide`, and the well-founded
+`settleAll` recursion introduced no axiom of its own:
+
+```
+'Cas.Schema.references_guarded_decidable_memo'    [propext, Classical.choice, Quot.sound]
+'Cas.Schema.Document.guardedMemo_eq_guarded'      [propext, Classical.choice, Quot.sound]
+'Cas.Schema.Document.settleAll_grows'             [propext, Quot.sound]
+'Cas.Schema.Document.settleAll_settling'          [propext, Quot.sound]
+'Cas.Schema.Document.settleAll_isSome'            [propext, Quot.sound]
+'Cas.Schema.Document.settles_succ / _mono / _uniform'  [propext, Quot.sound]
+'Cas.Schema.Document.settling_of_out'             [propext, Quot.sound]
+'Cas.Schema.Document.wf_iff'                      [propext, Classical.choice, Quot.sound]
+'Cas.Schema.ingestDocument_wf / _guarded / _nil'  [propext, Classical.choice, Quot.sound]
+'Cas.Schema.refChain_guarded / refChainTwo_guarded'    [propext, Classical.choice, Quot.sound]
+```
+
+## What is still owed
+
+Nothing that blocks the landing. R1 and R2 are new and small; the first
+pass's N3 (a fence crossed under totality), N5 (`ingestDocumentBytes`) and
+N6 (the dead `WF` clause) stand as recorded; and the packet already
+carries the productivity ruling, the registry row, the node-level
+duplicate-key refusal and the `Suspend` lowering as owed.
