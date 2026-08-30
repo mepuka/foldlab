@@ -41,6 +41,7 @@ deleted.
 | [library/cas/UNION-DESIGN.md](../library/cas/UNION-DESIGN.md) | union semantics | The ratified union design (order is identity; mode is identity) |
 | [library/effects/PACKAGING.md](../library/effects/PACKAGING.md) | distribution | Operating record of implemented, gated state (2026-08-29, decision 26 seat 2): publish-capable-not-published posture, the exhaustive flip list, the effectProvenance field, the repo+bun+mise bar implemented, the Windows honesty list (T7 retired `a5fb51a9`, not rebuilt) |
 | [library/effects/RELEASING.md](../library/effects/RELEASING.md) | releases | Operating procedure (2026-08-29): the seven-step gate sequence a release runs, check:ci-on-fresh-clone as the floor; steps 6–7 fire only on operator order |
+| [.staging/operational-structure/GRILLING-DOCKET-2026-08-29.md](../.staging/operational-structure/GRILLING-DOCKET-2026-08-29.md) | cross-spec rulings | The ratified grilling docket (decision 28, "agreed on all counts"): Tier-1 rulings, Tier-2 postures, the proof-grill batch, the language ranking; strikeout ledger of asks answered by landed work |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 
@@ -381,3 +382,36 @@ records the 2026-08-29 session rulings that cut across specs.
     PROVE each is not a problem; where that cannot be done without
     error, it must FIX and prove it fixed. Temporary Lean fixtures
     and Lean scratch allowed for theorem scratch work.
+28. **The grilling docket ratified whole** (2026-08-29 late, "AGREED
+    ON ALL COUNTS FULL STEAM AHEAD"): every recommendation in
+    [GRILLING-DOCKET-2026-08-29](../.staging/operational-structure/GRILLING-DOCKET-2026-08-29.md)
+    is ruled as written. Tier 1: C6 references as proposed (address
+    is the reference name); the annotation bag is STORED; RootStore-
+    over-SQL answered by compare-and-set, RootStore.list
+    unimplementable until then; EmitProg lowers from PProg; CANON-1
+    canonicalizes at the door; D1 re-ruled NO FORK, six asks one act
+    (tree-sitter defects gate only tree-sitter legs, census stamped
+    provisional); annotation tag + subject arms one versioning
+    event; the cas_word seat's registered word spelling wins, the
+    Word.toStore non-injectivity theorem commissioned as its
+    license; NAMING PUBLISHES (roots carry annotations until item
+    23's index exists). Tier 2 postures, the proof-grill batch, and
+    the language ranking as the docket states. Propagation of each
+    ruling into its owning spec's queue rides the planning lane.
+    **Protocol: one Fable writes the plan, Opus 5 hard-reviews it —
+    plans cited, proofs sketched and decomposed, hard parts named.
+    "These are core abstractions, no compromise."**
+29. **The front end authorized** (same breath): the ornamentation
+    deep dive opens at `.staging/ornamentation/` (decision 27e's
+    dir) — design and aesthetics review, algebra-driven, data-dense
+    but practical. Paper and the Paper MCP are TIER-ONE front-end
+    inspiration — details and subtleties studied, not copied; the
+    front end speaks the language. The lane names and lands the
+    front-end proof obligations.
+30. **The productization call**: harness and productize the
+    algebraic-effect coding semantics for real developers doing
+    AI-driven development. The philosophy: no compromise on the
+    sanctity of rigor — and software exists to abstract complexity.
+    The standing question every lane answers: where more is that
+    calling met; where more is the complexity of design, language,
+    and operations conquered.
