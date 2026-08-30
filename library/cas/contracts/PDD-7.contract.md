@@ -385,6 +385,26 @@ FALS ADQ-INL  exhibit ι satisfying the hypothesis at every lawful
               p. `doubleInl` is the candidate the ticket names, and the
               theorem says the exhibit does not exist.
 BATT ADQ-INL  `Prog.inl_unique`, `Prog.inr_unique`.
+NOTE ADQ-INL  The hypothesis is STRONG — it quantifies over every
+              lawful target monad — so the obvious attack is that the
+              theorem is vacuous: a uniqueness result whose premise
+              nothing satisfies proves nothing at all. It is not
+              vacuous, and the witness is in the same file: L23
+              (`interpret_inl`) IS the statement that `Prog.inl`
+              satisfies the premise, proved for every `M` with a bare
+              `Monad` instance — weaker than the `LawfulMonad` the
+              premise asks for. So the premise has exactly one
+              inhabitant and `interpret_inl` exhibits it.
+
+              The strength is also not an accident of convenience. It
+              is the packet's central methodological claim: an
+              injection's defect here is not structural — `doubleInl`
+              is as lawful a program as the real one, satisfying L25
+              and L26 — so no equation between programs separates them.
+              Only an observation can, and a handler into an arbitrary
+              monad is where observations live. Weakening the
+              quantifier to `RefM` would make the law exactly as blind
+              as the word gate.
 
 LAW  ADQ-DBL  THE-ALGEBRA §3.2, verbatim, on the doubling injection:
                 "KILLED BY interpret_inl (L23) together with `inl` is a
