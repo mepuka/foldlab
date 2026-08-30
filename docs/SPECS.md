@@ -346,3 +346,12 @@ records the 2026-08-29 session rulings that cut across specs.
     production level; (3) CAS_WORD — the receipts/history spine
     (WordSig, since, the three theorems, the CLI surface): the last
     unwired critical-path semantics.
+    **Addendum to 26 (same night):** (a) the cas_word seat must
+    answer the WORD REGISTRY question — the word-log record and mark
+    spellings are registered, gated artifacts, never ad-hoc JSON;
+    where no registry surface exists for the word's carriers, the
+    seat MAKES it, no excuses, with any ratification event
+    documented rather than deferred. (b) MERGE PROTOCOL for the
+    Fable seats: each seat's output is reviewed by TWO independent
+    Opus reviewers (adversarial, non-overlapping lenses) before the
+    coordinator merges — no slip in standards.
