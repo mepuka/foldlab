@@ -1278,15 +1278,30 @@ export const serve = Command.make("serve", {
   // gate and its "store opened" line must see both, and on stdio a
   // boot-time log routed through a default logger would corrupt the
   // protocol stream — and the store and logger are merged back in for
-  // the serving loop itself. The same layer values appear once each,
-  // so memoization builds each of them once.
+  // the serving loop itself, which is what `provideMerge` says.
+  //
+  // `provideMerge` and NOT `Layer.mergeAll` over the three, which is
+  // the same context by every type this file can see and a host that
+  // never exits at runtime. The stdio transport's shutdown is a
+  // FIBER CAPTURE, not a scope: `makeProtocolStdio` takes
+  // `Fiber.getCurrent()` while it is being BUILT and interrupts that
+  // fiber when stdin reaches EOF (`effect/unstable/rpc/RpcServer.ts`
+  // makeProtocolStdio), which is the only thing that ever ends
+  // `serveUntilClosed`'s `Effect.never`. `Layer.mergeAll` builds its
+  // members concurrently — a forked fiber each (`Layer.ts`
+  // mergeAllEffect) — so the captured fiber is an ephemeral build
+  // fiber that is already dead by the time EOF arrives, the interrupt
+  // lands on nothing, and the host serves a closed pipe forever.
+  // `provideMerge` builds sequentially on the fiber that goes on to
+  // run the serving loop, so the fiber the transport captures is the
+  // fiber it needs to interrupt.
   const layerStoreHere = layerStoreAt(store)
   return serveUntilClosed.pipe(
-    Effect.provide(Layer.mergeAll(
-      layerServeHere.pipe(Layer.provide(Layer.mergeAll(layerStoreHere, layerStderrLogs))),
-      layerStoreHere,
-      layerStderrLogs,
-    )),
+    Effect.provide(
+      layerServeHere.pipe(
+        Layer.provideMerge(Layer.merge(layerStoreHere, layerStderrLogs)),
+      ),
+    ),
     userFacing,
   )
 }).pipe(
