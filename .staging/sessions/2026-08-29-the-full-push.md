@@ -180,3 +180,11 @@ with SPECS rows per the maintenance law.
 ## code — no ratified work un-landed. Confirms 31(b)/(d) absent (A3-A6).
 ## Did NOT know of the Gatekeeper WIP — add Lane-D-already-exists as a
 ## blocker amendment before the plan is committed.
+## CLI FIX PASS GREEN (merge/cli-naming a70b2654): typecheck exit 0
+## (kills main's known-red commands.ts:766), lint 138 zero-delta, 341
+## tests, check:cas green (perturb-checks red on AnnotationKindWord +
+## SystemKindTag). Independent of the Brain Stem carrier (annotations,
+## not Programs). READY, NOT MERGED — merge hold is the operator's call.
+## REVIEW-ATTENTION carried: dashed-value predicate reshaped under
+## evidence; SystemKindTag emitted into annotation-plane module (moves
+## when a system mirror lands); show exits 0 on roots-listing failure.
