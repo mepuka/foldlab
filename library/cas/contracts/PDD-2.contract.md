@@ -38,6 +38,16 @@ direct run `runP` and, through the estate's existing bridge, the
 big-step denotation `interpretRef` of the table's embedding. Kernel-
 checked, no `sorry`, no new axiom beyond the estate's clean three.
 
+Axiom census, exact (corrected by the breaker's NOTE-1; the summary
+this packet first carried said "two" where the answer is six):
+`propext` throughout, and `Quot.sound` on six declarations —
+`Wp.lean:333` (`wp_meet`), `:341` (`wp_forall`), `:501`
+(`wpAux_append`), `:528` (`wp_append`), `:538` (`wp_append_le_total`),
+`:866` (`Battery.check`). `wp_forall` is an INDEPENDENT carrier, not
+downstream of `wp_meet` or `wpAux_append`; the three `:528`/`:538`
+declarations are downstream of `wpAux_append`. No `Classical.choice`,
+no `sorryAx`.
+
 ## The carrier judgment, chosen and defended
 
 **Chosen: the fueled `runP` on the defunctionalized table
@@ -254,6 +264,18 @@ BATT L11 `wpB_iff_wp`; the demonstration is a registered-program-shaped
   gate consumes `wp` yet. A3's decidable menu is untouched.
 - **Not claimed: a new sort, kind, or registry row.** Statement
   apparatus in the proof stratum only (decision 2; A1's licence).
+- **Not claimed: that this module is in the library's ledgers.**
+  `Cas.Lang.Wp` rides its OWN Lake library (`CasWp`,
+  `globs = ["Cas.Lang.Wp"]`, in `defaultTargets`), the device
+  `CasBackend` already uses. `lake build` kernel-checks every theorem
+  here; because the module is outside `Cas`'s import closure it is also
+  outside `Walk.libraryImports`, so it is INVISIBLE to the surface,
+  obligation and law ledgers — which is exactly why this ticket's
+  "moves no bytes" gate holds. Promoting `Cas.Lang.Wp` into that walk
+  is a promotion, and a promotion is a ruling. (Added on the breaker's
+  NOTE-2: the device was disclosed in the lakefile, the module
+  docstring and the commit message, but the packet is the artifact the
+  estate reads later, so it belongs here too.)
 - **Not claimed: that `wp` is defined on `Prog`.** It is defined on
   `PProg`. The `Prog`-level reading is the corollary L2 and goes
   through `embed`.
@@ -310,3 +332,46 @@ an append has to re-derive them. `Wp.lean` names the missing three
 (`runPFrom_put_dangling`, `runPFrom_put_error`, `runPFrom_put_ok`)
 rather than editing a fenced file. If they belong in `Defun.lean`, that
 is a promotion and a promotion is a ruling.
+
+## The attack — the independent breaker's pass
+
+Record: `library/cas/contracts/attacks/PDD-2/` (`Attack.lean`,
+`RESULTS.md`) on branch `attack/opus-cc-mac/pdd-2`, commit `c6f74608`.
+Verdict **STANDS** — no BREAK, no HOLE; fifteen attack families failed,
+seven NOTEs, four of them places where the theorem is STRONGER than the
+sentence describing it.
+
+The decisive result runs in the packet's favour and is evidence FOR it,
+so it is recorded here rather than left in the attack tree:
+
+```
+RESULT     anchor_pins_wp (Attack.lean) — any transformer wp'
+           satisfying L1 at every table, precondition and
+           postcondition agrees with `wp` POINTWISE. Instantiate the
+           anchor at the singleton precondition (· = w) and the
+           transformer's value is forced everywhere.
+CLASS      adequacy — discharged, not argued. The obligation class the
+           whole process turns on ("is Q strong enough that no wrong
+           implementation passes?") has NO ROOM in it here: there is
+           no wrong-but-passing transformer. The adequacy question
+           reduces to whether `Triple` and `runP` say what they should,
+           and both are read off the run the estate already trusts.
+```
+
+Two amendments were adopted from that pass and are in this document and
+in `Wp.lean`:
+
+- **NOTE-1** — the axiom census above is corrected: six `Quot.sound`
+  carriers, not two, with `wp_forall` independent. Re-verified here by
+  a `#print axioms` sweep over every declaration in the module, not
+  copied.
+- **NOTE-2** — the Lake-library device now has its claim-scope bullet.
+- **NOTE-4** — `Triple_two_state` states the two-state reading at a
+  UNIVERSAL starting word, which is the two-state triple at
+  precondition `⊤`; the debt object's `σ` asks for it relative to `P`.
+  The breaker derived the relative form, and it is ADOPTED into
+  `Wp.lean` as `Triple_two_state_rel`, credited in its docstring. The
+  breaker proved it first; the packet says so.
+
+NOTE-3, NOTE-5, NOTE-6 and NOTE-7 stand as record in `RESULTS.md` and
+are not restated here.
