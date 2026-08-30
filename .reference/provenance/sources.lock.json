@@ -1,5 +1,6 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "schemaNote": "v2 (2026-08-29, production-package lane): pendingRepositoryPins rows MAY carry a `revision` object (same shape as repositories[].revision: kind/algorithm/digest/url, optional tag or selector note) and a `receipt` path when the pin is already observed and receipted but its full lock promotion (rootTree, per-artifact digests) is still owed. A row WITHOUT `revision` remains what v1 meant: an unresolved selector. Migration was faithful: no v1 field changed shape or meaning; the three tree-sitter rows gained the revisions their admission receipt already carried, closing the cleanup lane's caveat that a lock-driven sweep could see the repositories but not their pins.",
   "kind": "reference-source-lock",
   "location": ".reference/provenance",
   "snapshotDate": "2026-08-26",
@@ -415,17 +416,41 @@
     {
       "id": "lean4-tree-sitter",
       "repository": "https://github.com/predictable-machines/lean4-tree-sitter",
-      "requiredBefore": "source-extraction-or-compilation"
+      "requiredBefore": "source-extraction-or-compilation",
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "3a57f55e1401484251cfe80e26583d9ed94c82c8",
+        "url": "https://github.com/predictable-machines/lean4-tree-sitter/commit/3a57f55e1401484251cfe80e26583d9ed94c82c8",
+        "selector": "v0.2.4, HEAD observed 2026-08-28"
+      },
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
     },
     {
       "id": "tree-sitter",
       "repository": "https://github.com/tree-sitter/tree-sitter",
-      "requiredBefore": "source-extraction-or-compilation"
+      "requiredBefore": "source-extraction-or-compilation",
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "5e8760bf462ce7b19b3d2396d5b7860f3906a297",
+        "url": "https://github.com/tree-sitter/tree-sitter/commit/5e8760bf462ce7b19b3d2396d5b7860f3906a297",
+        "selector": "v0.24.7 (the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors)"
+      },
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
     },
     {
       "id": "tree-sitter-typescript",
       "repository": "https://github.com/tree-sitter/tree-sitter-typescript",
-      "requiredBefore": "source-extraction-or-compilation"
+      "requiredBefore": "source-extraction-or-compilation",
+      "revision": {
+        "kind": "commit",
+        "algorithm": "sha1",
+        "digest": "75b3874edb2dc714fb1fd77a32013d0f8699989f",
+        "url": "https://github.com/tree-sitter/tree-sitter-typescript/commit/75b3874edb2dc714fb1fd77a32013d0f8699989f",
+        "selector": "the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors"
+      },
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
     }
   ]
 }
