@@ -57,12 +57,14 @@ compile error.
 
 ## Install and consume
 
-The package remains private while publication is an operator decision.
-The built package is ESM-only and publishes JavaScript plus declarations
-from `dist`:
+The package remains private while publication is an operator decision;
+it is kept publish-capable, and the full distribution posture — the
+exports map, the bin shim, what flips at publish time, and the Windows
+honesty list — is [`PACKAGING.md`](PACKAGING.md). The built package is
+ESM-only and publishes JavaScript plus declarations from `dist`:
 
 ```sh
-bun add @foldlab/cas@0.1.0 effect@4.0.0-rc.111
+bun add @foldlab/cas@0.1.0 effect@4.0.0-rc.112
 ```
 
 ```ts
