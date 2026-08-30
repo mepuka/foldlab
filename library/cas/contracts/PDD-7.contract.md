@@ -854,9 +854,10 @@ Two smaller findings, recorded rather than filed:
   than quietly adopting the citation.
 
   What the exhibits do NOT carry, and this slice adds: L7, L8, L21,
-  L22, L25, L26, L30, INJ-H, and both categoricity theorems
-  (`Handler.sum_unique`, `Prog.inl_unique`/`inr_unique`), plus the
-  three adversaries and their refutations. The exhibits show the named
+  L22, L25, L26, L30, INJ-H, and all three categoricity theorems
+  (`Handler.sum_unique`, `inl_unique_one_target`/`Prog.inr_unique`,
+  `llmOracleHandler_unique`), plus the four adversaries and their
+  refutations. The exhibits show the named
   laws are provable — the report's own claim that "the gap is a
   statement gap and not a proof gap". They do not ask whether the law
   SET is strong enough to exclude a wrong implementation, which is the

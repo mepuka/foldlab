@@ -38,25 +38,49 @@ the word unchanged (`Handler.lean:85`), a second `load` is `Word.find`
 again, and `fail` answers `Empty` so the doubled node is unreachable.
 The statement is therefore the whole of the protection.
 
-Two results carry that weight, and both are stronger than "the law
+Three results carry that weight, and each is stronger than "the law
 holds":
 
 - `Handler.sum_unique` — any handler agreeing with `h` on the left
   operations and with `g` on the right IS `h.sum g`.
-- `Prog.inl_unique` / `Prog.inr_unique` — any injection satisfying
-  `interpret (h.sum g) (ι p) = interpret h p` at every lawful target
-  monad and every handler pair IS `Prog.inl`.
+- `inl_unique_one_target` (and its corollary `Prog.inl_unique`),
+  `Prog.inr_unique` — any injection satisfying
+  `interpret (h.sum g) (ι p) = interpret h p` IS `Prog.inl`.
+- `llmOracleHandler_unique` — the oracle summand L30 names is the ONLY
+  handler that presents `handleLlm` as an interpretation.
 
-So there is no wrong-but-passing implementation to find. The three
-adversaries the review documents name are kept in the `Adversary`
-section with their refutations, as record rather than as scratch.
+So there is no wrong-but-passing implementation to find, in any of the
+three places this slice touches. The adversaries are kept in the
+`Adversary` section with their refutations, as record rather than as
+scratch.
 
-The load-bearing detail in `Prog.inl_unique` is the quantification
-over EVERY target monad. It is not generality for its own sake: it is
-what puts an operation-COUNTING observation inside the law's reach,
-and the operation count is precisely what the word gate cannot see.
-The refutation of the doubling injection is carried out at a handler
-into `StateT Nat Id` for exactly that reason.
+### What makes the categoricity work — corrected
+
+An earlier draft of this docstring said the quantification over EVERY
+target monad was the load-bearing detail and "not generality for its
+own sake". The independent breaker refuted that
+(`contracts/attacks/PDD-7/`, `b509cb20`, HOLE-1), and the correction is
+recorded here rather than softened:
+
+- **The law is SYNTACTICALLY categorical.** `Prog.inl_unique`'s proof
+  consumes exactly ONE instance of its hypothesis — the INITIAL monad
+  `Prog (S ⊕ₛ T)` with the two injection handlers — and at that
+  instance the hypothesis is EQUIVALENT to the conclusion, by the same
+  two rewrites the proof performs (`syntactic_hyp_iff`). So
+  `inl_unique_one_target` is the real theorem and `Prog.inl_unique` is
+  its corollary; that is how they are stated below.
+- **The counting target never enters the categoricity.**
+  `StateT Nat Id` is the device of the REFUTATION
+  (`doubleInl_not_interpret_inl`) and of nothing else.
+- **The quantifier is generality, not mechanism — but it is not free.**
+  The honest constraint is provable: the target must RECORD effects.
+  `Id` does not, and `narrowing_to_Id_fails` proves ADQ-INL becomes
+  FALSE when narrowed to it. The initial monad does.
+- **Nothing here says the word gate IS blind.** The old text claimed
+  weakening to `RefM` "would make the law exactly as blind as the word
+  gate". That needs `ObsEq H (liftCas p) (doubleInl p)`, which this
+  slice declines to prove and which the breaker also failed to close.
+  It is OPEN in both directions and is not implied.
 
 Prior art, verified rather than trusted: the law rows of
 `THE-ALGEBRA.md` §2.1/§2.3, `handlers-semantics.md` C.2 §3 (row 3.3 —
@@ -77,10 +101,21 @@ with the private helper below — arrived at independently, same
 statements, same proof ideas, so the credit for those five is the
 reviewer's as much as this file's. Everything else here — the sum
 projections, the morphism and injectivity laws, L30, the injection
-handlers, both categoricity theorems, and the three adversaries — is
-new. The exhibits establish that the named laws are PROVABLE; the
-question this file is built around is whether the law set is STRONG
-ENOUGH, which is a different question and the one hole §3.2 turns on.
+handlers, the categoricity theorems, and the adversaries — is new. The
+exhibits establish that the named laws are PROVABLE; the question this
+file is built around is whether the law set is STRONG ENOUGH, which is
+a different question and the one hole §3.2 turns on.
+
+Second prior-art debt, credited in place at each declaration: the
+independent breaker's attack record,
+`library/cas/contracts/attacks/PDD-7/` @ `b509cb20`. Its verdict was
+STANDS with two HOLEs, both prose against kernel-checked fact, and
+both are fixed above. Eight of its results are adopted here —
+`syntactic_hyp_iff`, `inl_unique_one_target`,
+`doubleInl_interpret_inl_Id`, `narrowing_to_Id_fails`, `dup` with
+`doubleInl_factors`, `llmOracleHandler_unique`, `handleLlm_bind`, and
+the `badHandleLlm` adversary. The breaker proved each first and this
+file says so at each one.
 -/
 
 namespace Cas.Lang
@@ -329,17 +364,51 @@ The proof is one instantiation. Take the target to be the sum's own
 program type and the handler pair to be the injection handlers; their
 sum is the identity handler (`sum_inlHandler_inrHandler`), so the left
 side collapses by `interpret_id` to `ι p` and the right side is
-`Prog.inl p` by `interpret_inlHandler`. -/
+`Prog.inl p` by `interpret_inlHandler`.
 
-/-- **ADQ-INL.** Any injection satisfying L23 everywhere is `Prog.inl`. -/
+That instantiation is the WHOLE proof, and the next two declarations
+say so outright rather than leaving it to be inferred from the tactic
+block. Both are the breaker's, adopted with credit:
+`contracts/attacks/PDD-7/Attack.lean` §2 @ `b509cb20`. -/
+
+/-- The hypothesis of ADQ-INL, taken at the ONE instance its proof
+consumes, is the conclusion up to two rewrites. Breaker's, adopted:
+`contracts/attacks/PDD-7/Attack.lean` §2 @ `b509cb20`. -/
+theorem syntactic_hyp_iff {S T : Sig}
+    (ι : {A : Type} → Prog S A → Prog (S ⊕ₛ T) A) {A : Type} (p : Prog S A) :
+    (interpret ((inlHandler S T).sum (inrHandler S T)) (ι p)
+        = interpret (inlHandler S T) p)
+      ↔ ι p = Prog.inl p := by
+  rw [sum_inlHandler_inrHandler, interpret_id, interpret_inlHandler]
+
+/-- **ADQ-INL, the real statement.** Any injection satisfying L23 at
+the INITIAL monad with the two injection handlers — one target, one
+handler pair — is `Prog.inl`. Strictly stronger than the ∀-quantified
+form below, which is now its corollary.
+
+Breaker's, adopted: `contracts/attacks/PDD-7/Attack.lean` §2 @
+`b509cb20` (HOLE-1). The packet's first draft claimed the wide
+quantifier was the mechanism; it is not, and this is the theorem that
+shows it. -/
+theorem inl_unique_one_target {S T : Sig}
+    (ι : {A : Type} → Prog S A → Prog (S ⊕ₛ T) A)
+    (hι : ∀ {A : Type} (p : Prog S A),
+        interpret ((inlHandler S T).sum (inrHandler S T)) (ι p)
+          = interpret (inlHandler S T) p)
+    {A : Type} (p : Prog S A) : ι p = Prog.inl p :=
+  (syntactic_hyp_iff ι p).mp (hι p)
+
+/-- **ADQ-INL**, the ∀-quantified form the packet states — now a
+COROLLARY of `inl_unique_one_target`, obtained by instantiating the
+quantifier at the one target the proof ever used. -/
 theorem Prog.inl_unique {S T : Sig}
     (ι : {A : Type} → Prog S A → Prog (S ⊕ₛ T) A)
     (hι : ∀ (M : Type → Type) [Monad M] [LawfulMonad M]
             (h : Handler S M) (g : Handler T M) {A : Type} (p : Prog S A),
             interpret (h.sum g) (ι p) = interpret h p)
-    {A : Type} (p : Prog S A) : ι p = Prog.inl p := by
-  have key := hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) p
-  rwa [sum_inlHandler_inrHandler, interpret_id, interpret_inlHandler] at key
+    {A : Type} (p : Prog S A) : ι p = Prog.inl p :=
+  inl_unique_one_target ι
+    (fun {_} q => hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) q) p
 
 /-- **ADQ-INL**, mirror: any injection satisfying L24 everywhere is
 `Prog.inr`. -/
@@ -401,11 +470,64 @@ theorem handleLlm_eq_interpret_fun (oracle : String → String) (A : Type) :
       = interpret (idHandler.sum (llmOracleHandler oracle)) :=
   funext fun p => handleLlm_eq_interpret oracle p
 
+/-- **ADQ-L30.** L30's right summand is FORCED: `llmOracleHandler
+oracle` is the ONLY handler that presents `handleLlm` as an
+interpretation. L30 alone does not say this, and the packet's first
+draft omitted the row.
+
+Breaker's, adopted: `contracts/attacks/PDD-7/Attack.lean` §5 @
+`b509cb20`. -/
+theorem llmOracleHandler_unique (oracle : String → String)
+    (g : Handler LlmSig (Prog CasSig))
+    (hg : ∀ (A : Type) (p : Prog AgentSig A),
+        p.handleLlm oracle = interpret (idHandler.sum g) p) :
+    g = llmOracleHandler oracle := by
+  refine handler_eq_of_handle (fun op => ?_)
+  match op with
+  | LlmE.infer q =>
+    have h := hg String (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
+    have hl : Prog.handleLlm oracle
+          (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
+        = Prog.pure (oracle q) := rfl
+    have hr : interpret (idHandler.sum g)
+          (Prog.vis (S := AgentSig) (Sum.inr (LlmE.infer q)) Prog.pure)
+        = (g.handle (LlmE.infer q)).bind Prog.pure := rfl
+    exact (Prog.bind_pure_right (g.handle (LlmE.infer q))).symm.trans
+      (hr.symm.trans (h.symm.trans hl))
+
+/-- **L32**, which THE-ALGEBRA lists as ASSERTED and the packet's first
+draft left OWED: `handleLlm` respects `bind`. Two lines from L30 plus
+core `interpret_bind` at the shipped `LawfulMonad (Prog S)` — no
+induction of its own.
+
+This DISCHARGES the estate's standing assertion at `Interp.lean:19,
+181-183` ("interprets by monad morphism"), which is prose with no
+declaration behind it anywhere in `library/cas`. Nothing in this slice
+depended on that assertion; this supplies what it was claiming.
+
+Breaker's, adopted: `contracts/attacks/PDD-7/Attack.lean` §5 @
+`b509cb20`. -/
+theorem handleLlm_bind (oracle : String → String) {A B : Type}
+    (p : Prog AgentSig A) (f : A → Prog AgentSig B) :
+    (p.bind f).handleLlm oracle
+      = (p.handleLlm oracle).bind (fun a => (f a).handleLlm oracle) := by
+  simp only [handleLlm_eq_interpret]
+  exact interpret_bind (idHandler.sum (llmOracleHandler oracle)) p f
+
 /-- **L31.** Lifting a store program into the agent language and
-handling inference away returns the program itself, on the nose. The
-law every `runAgent` client assumes. Proved by direct induction, so it
-holds at every universe — unlike L30, which `interpret` pins to
-`Type`. -/
+handling inference away returns the program itself, on the nose.
+Proved by direct induction, so it holds at every universe — unlike
+L30, which `interpret` pins to `Type`.
+
+**Its reach stops at `Prog.inl`'s image, and it is NOT a client
+guarantee on its own.** An earlier draft called this "the law every
+`runAgent` client assumes", which reads as one. It is not:
+`liftCas p` contains no `infer` node, so L31 says nothing whatever
+about the oracle, and `Adversary.badHandleLlm` — which DISCARDS the
+oracle entirely — satisfies it at every universe. A client wanting an
+oracle guarantee must cite **L30** (`handleLlm_eq_interpret`), which is
+what kills that adversary. Breaker's finding:
+`contracts/attacks/PDD-7/` @ `b509cb20`, HOLE-2. -/
 theorem handleLlm_liftCas (oracle : String → String) {A : Type u} (p : Prog CasSig A) :
     (liftCas p).handleLlm oracle = p := by
   induction p with
@@ -435,9 +557,17 @@ without a red build.
 The observation the refutations rely on is deliberate. `CasSig`'s
 handlers cannot be counted at the WORD — that is the whole content of
 hole §3.2 — so the counting is done in a target monad where an
-operation is visible: `StateT Nat Id`, a handler that increments. That
-target is inside L23's quantifier and outside the word gate's reach,
-which is exactly the asymmetry the law exists to supply. -/
+operation is visible: a handler that increments a state.
+
+**The recipe does not transfer to `CasSig` as written.** Breaker's
+NOTE-2 (`contracts/attacks/PDD-7/` @ `b509cb20`):
+`Handler CasSig (StateT Nat Id)` is UNINHABITED, because `CasE.fail`
+answers `Empty` and `Id` has no branch to put it in. The counting
+target below is therefore available only at the toy `TickSig`; the
+refutations remain sound, since each refutes a ∀-statement and one
+witness anywhere suffices. A reader carrying the recipe to the store
+language needs `StateT Nat (Except Unit)` instead — the breaker built
+exactly that to attack `CasSig` directly. -/
 
 namespace Adversary
 
@@ -614,6 +744,14 @@ conjunct of the separating pair — it is the whole of it, as
 `Prog.inl_unique` independently shows by pinning `Prog.inl` from L23
 alone.
 
+**Read the heading as scoped, and no wider** (breaker's NOTE-3). "L25
+excludes THE ADVERSARY from nothing" is what is true; "L25 excludes
+nothing" would be false. The breaker's own injections — one that
+REORDERS two operations, one that ELIDES an operation whose answer is
+unused — die to L25 and L26 respectively. Those laws earn their place;
+they are idle against `doubleInl` specifically, and
+`doubleInl_factors` below says exactly which family they cannot see.
+
 This is recorded in the packet's break ledger. The finding does not
 weaken anything: both laws are true and both are worth having. What
 falls is the record's account of which law does the work. -/
@@ -664,15 +802,171 @@ theorem doubleInl_injective {S T : Sig} {A : Type u} :
       injection congrFun (eq_of_heq hk) r with _ h2
       exact congrFun h2 r
 
+/-! #### Why L25 and L26 cannot see it — the adversary FACTORS
+
+The structural account of the break, adopted from the breaker:
+`contracts/attacks/PDD-7/Attack.lean` §3 @ `b509cb20`. The packet's
+closing paragraph stated this as a lesson; the breaker made it a
+theorem, and the generalization is what makes it worth keeping.
+
+`doubleInl` is the real injection precomposed with a monad-morphism
+ENDOMORPHISM of `Prog S`. L25 and L26 are closed under precomposition
+with any such endomorphism, so they are blind to the whole family
+`Prog.inl ∘ φ` and not merely to this one member. Any future law meant
+to exclude a performs-too-much or performs-too-little implementation
+inherits the same limitation, and needs an observation rather than an
+equation between programs. -/
+
+/-- The doubling endomorphism, inside one signature. -/
+def dup {S : Sig} {A : Type u} : Prog S A → Prog S A
+  | .pure a => .pure a
+  | .vis e k => .vis e fun r => .vis e fun _ => dup (k r)
+
+theorem dup_bind {S : Sig} {A B : Type u} (p : Prog S A) (f : A → Prog S B) :
+    dup (p.bind f) = (dup p).bind (fun a => dup (f a)) := by
+  induction p with
+  | pure a => rfl
+  | vis e k ih =>
+    exact congrArg (Prog.vis (S := S) (A := B) e) (funext fun r =>
+      congrArg (Prog.vis (S := S) (A := B) e) (funext fun _ => ih r))
+
+theorem dup_injective {S : Sig} {A : Type u} :
+    ∀ (p q : Prog S A), dup p = dup q → p = q := by
+  intro p
+  induction p with
+  | pure a =>
+    intro q hq
+    cases q with
+    | pure b => simpa [dup] using hq
+    | vis e' k' => simp [dup] at hq
+  | vis e k ih =>
+    intro q hq
+    cases q with
+    | pure b => simp [dup] at hq
+    | vis e' k' =>
+      have hq' : Prog.vis (S := S) e (fun r => Prog.vis (S := S) e (fun _ => dup (k r)))
+               = Prog.vis (S := S) e' (fun r => Prog.vis (S := S) e' (fun _ => dup (k' r))) := hq
+      injection hq' with he hk
+      subst he
+      refine congrArg (Prog.vis e) (funext fun r => ih r (k' r) ?_)
+      injection congrFun (eq_of_heq hk) r with _ h2
+      exact congrFun h2 r
+
+/-- **The structural explanation of the break.** Breaker's, adopted. -/
+theorem doubleInl_factors {S T : Sig} {A : Type u} (p : Prog S A) :
+    doubleInl (T := T) p = Prog.inl (dup p) := by
+  induction p with
+  | pure a => rfl
+  | vis e k ih =>
+    exact congrArg (Prog.vis (S := S ⊕ₛ T) (A := A) (Sum.inl e)) (funext fun r =>
+      congrArg (Prog.vis (S := S ⊕ₛ T) (A := A) (Sum.inl e)) (funext fun _ => ih r))
+
+/-- L25 for the adversary, re-derived from the factorization with no
+induction over the adversary at all — which is the point: the law is
+inherited, so it cannot discriminate. -/
+theorem doubleInl_bind' {S T : Sig} {A B : Type u} (p : Prog S A) (f : A → Prog S B) :
+    doubleInl (T := T) (p.bind f)
+      = (doubleInl (T := T) p).bind (fun a => doubleInl (T := T) (f a)) := by
+  simp only [doubleInl_factors, dup_bind, Prog.inl_bind]
+
+/-- L26 for the adversary, likewise inherited. -/
+theorem doubleInl_injective' {S T : Sig} {A : Type u} (p q : Prog S A)
+    (h : doubleInl (T := T) p = doubleInl (T := T) q) : p = q :=
+  dup_injective p q (Prog.inl_injective (T := T) _ _
+    (by rw [← doubleInl_factors, ← doubleInl_factors]; exact h))
+
+/-! #### The honest constraint on L23's quantifier — `Id` is not enough
+
+Breaker's NOTE-1, adopted (`Attack.lean` §2 @ `b509cb20`). The packet's
+first draft justified L23's wide quantifier with a claim about `RefM`
+that neither side has proved. This is the version that IS proved, and
+it is a lower bound rather than a characterization: a separating target
+must RECORD effects. `Id` does not, and narrowing ADQ-INL to it makes
+the law FALSE. -/
+
+theorem doubleInl_interpret_inl_Id {S T : Sig}
+    (h : Handler S Id) (g : Handler T Id) {A : Type} (p : Prog S A) :
+    interpret (h.sum g) (doubleInl (T := T) p) = interpret h p := by
+  induction p with
+  | pure a => rfl
+  | vis e k ih => exact ih (h.handle e)
+
+/-- Narrowing ADQ-INL's target quantifier to `Id` makes it FALSE. -/
+theorem narrowing_to_Id_fails :
+    ¬ (∀ (S T : Sig) (ι : {A : Type} → Prog S A → Prog (S ⊕ₛ T) A),
+        (∀ (h : Handler S Id) (g : Handler T Id) {A : Type} (p : Prog S A),
+           interpret (h.sum g) (ι p) = interpret h p) →
+        ∀ {A : Type} (p : Prog S A), ι p = Prog.inl p) := by
+  intro hyp
+  have hEq := hyp TickSig TickSig (fun {_} p => doubleInl p)
+    (fun h g {_} p => doubleInl_interpret_inl_Id h g p) tick
+  have hc := congrArg
+    (fun x => (interpret (tickHandler.sum tickHandler) x) 0) hEq
+  rw [doubleInl_tick_count, inl_tick_count] at hc
+  have h2 : (2 : Nat) = 1 := congrArg Prod.snd hc
+  omega
+
+/-! ### Adversary 4 — the oracle-discarding `handleLlm`
+
+Breaker's HOLE-2 witness, adopted into the castle so the boundary
+cannot be relaxed without a red build
+(`contracts/attacks/PDD-7/Attack.lean` §5 @ `b509cb20`).
+
+This one attacks a LAW OF THIS PACKET rather than a definition of the
+library, and it is the only adversary here that found a real gap: L31
+was described as a client guarantee and is not one. -/
+
+/-- An adversarial `handleLlm` that IGNORES the oracle and answers
+every inference with the empty string. -/
+def badHandleLlm (oracle : String → String) : Prog AgentSig A → Prog CasSig A
+  | .pure a => .pure a
+  | .vis (Sum.inl e) k => .vis e (fun r => badHandleLlm oracle (k r))
+  | .vis (Sum.inr (LlmE.infer _)) k => badHandleLlm oracle (k "")
+
+/-- The adversary satisfies **L31 in full**, at every universe — so L31
+pins nothing outside `Prog.inl`'s image. -/
+theorem badHandleLlm_liftCas (oracle : String → String) {A : Type u}
+    (p : Prog CasSig A) : badHandleLlm oracle (liftCas p) = p := by
+  induction p with
+  | pure a => rfl
+  | vis e k ih => exact congrArg (Prog.vis e) (funext ih)
+
+def wildOracle : String → String := fun s => s ++ "!"
+
+theorem badHandleLlm_differs :
+    badHandleLlm wildOracle (infer "x") ≠ Prog.handleLlm wildOracle (infer "x") := by
+  intro h
+  have h1 : (Prog.pure "" : Prog CasSig String) = Prog.pure "x!" := h
+  injection h1 with h2
+  exact absurd h2 (by decide)
+
+/-- **L30 is what kills it.** The law a `runAgent` client must cite for
+an oracle guarantee is L30, never L31 alone. -/
+theorem badHandleLlm_not_interpret :
+    badHandleLlm wildOracle (infer "x")
+      ≠ interpret (idHandler.sum (llmOracleHandler wildOracle)) (infer "x") := by
+  rw [← handleLlm_eq_interpret]
+  exact badHandleLlm_differs
+
 end Adversary
 
 /-! ## Axiom census
 
 Printed at build time so the claim is read off the run rather than
-asserted in a document. `propext`, `funext` and `Quot.sound` are the
-estate's clean three; anything else — in particular `sorryAx` or
+asserted in a document. The two axioms this module may use are
+`propext` and `Quot.sound`; anything else — in particular `sorryAx` or
 `Classical.choice` — is a finding, and this file is where it would
-show. -/
+show.
+
+**`funext` is not on that list, and cannot be** (breaker's NOTE-4,
+`contracts/attacks/PDD-7/` @ `b509cb20`). An earlier version of this
+note named "`propext`, `funext` and `Quot.sound`" as the three the
+census watches for. In Lean 4 `funext` is a THEOREM derived from
+`Quot.sound`, not an axiom, so it can never appear in a
+`#print axioms` output. The instrument was sound; the prose named a
+watch-item the instrument cannot report, which would have let a reader
+mistake its absence for evidence. The heavy use of `funext` throughout
+this module is accounted for by the `Quot.sound` entries. -/
 
 #print axioms Prog.op_bind
 #print axioms failWith_bind
@@ -681,13 +975,20 @@ show. -/
 #print axioms interpret_inr
 #print axioms Prog.inl_bind
 #print axioms Prog.inl_injective
+#print axioms inl_unique_one_target
 #print axioms Prog.inl_unique
 #print axioms Prog.inr_unique
+#print axioms llmOracleHandler_unique
+#print axioms handleLlm_bind
 #print axioms handleLlm_eq_interpret_fun
 #print axioms handleLlm_liftCas
 #print axioms handleLlm_liftCas_via_laws
 #print axioms Adversary.doubleInl_not_interpret_inl
 #print axioms Adversary.doubleInl_bind
+#print axioms Adversary.doubleInl_factors
+#print axioms Adversary.narrowing_to_Id_fails
+#print axioms Adversary.badHandleLlm_liftCas
+#print axioms Adversary.badHandleLlm_not_interpret
 #print axioms Adversary.badAgentSum_not_interpret_inr
 #print axioms Adversary.swapSum_not_sum_handle_inl
 
