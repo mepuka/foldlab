@@ -141,6 +141,7 @@ describe("the MCP host agrees with the emitted manifest", () => {
         "cas_put",
         "cas_load",
         "cas_run",
+        "cas_run_ref",
         "cas_publish_root",
         "cas_list_roots",
       ])
@@ -157,7 +158,7 @@ describe("the MCP host agrees with the emitted manifest", () => {
           ? { ...tool, name: "cas_admit" }
           : index === 1
           ? { ...tool, description: "load a node" }
-          : index === 4
+          : index === 5
           ? { ...tool, result: { _tag: "Struct", fields: {} } }
           : tool
       )
@@ -193,7 +194,7 @@ describe("the serve policy", () => {
     }))
 })
 
-describe("the five tools, over the protocol", () => {
+describe("the six tools, over the protocol", () => {
   it.live("lists exactly the manifest's tools, with its own descriptions", () =>
     withStoreRoot((storeRoot) =>
       Effect.gen(function* () {
@@ -265,19 +266,23 @@ describe("the five tools, over the protocol", () => {
           call(2, "cas_run", {
             instructions: [
               {
+                _tag: "put",
                 version: Cas.SchemeVersion,
                 tag: 1,
                 payloadHex: helloHex,
                 refs: [],
               },
               {
+                _tag: "put",
                 version: Cas.SchemeVersion,
                 tag: 9,
                 payloadHex: "",
                 // The second instruction names the first answer by
-                // index — the one thing the document can say about a
-                // reference.
-                refs: [{ expectedTag: 1, source: 0 }],
+                // index. Since queue item 22 an operand can also be a
+                // literal address, and an instruction can be a load;
+                // this one stays inside the older fragment on purpose,
+                // so the growth is additive here rather than a rewrite.
+                refs: [{ expectedTag: 1, source: { _tag: "answer", index: 0 } }],
               },
             ],
           }),
@@ -312,10 +317,11 @@ describe("the five tools, over the protocol", () => {
           ...handshake,
           call(2, "cas_run", {
             instructions: [{
+              _tag: "put",
               version: Cas.SchemeVersion,
               tag: 9,
               payloadHex: "",
-              refs: [{ expectedTag: 1, source: 0 }],
+              refs: [{ expectedTag: 1, source: { _tag: "answer", index: 0 } }],
             }],
           }),
         ])

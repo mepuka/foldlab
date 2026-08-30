@@ -21,8 +21,19 @@
  * code outside this union still compares exactly. */
 export type McpToolCode =
   | { readonly _tag: "Null" | "Boolean" | "Integer" | "String" }
+  | { readonly _tag: "Literal"; readonly value: McpToolCodeLiteral }
   | { readonly _tag: "Array"; readonly item: McpToolCode }
   | { readonly _tag: "Struct"; readonly fields: McpToolCodeFields }
+  | {
+    readonly _tag: "Union"
+    readonly members: ReadonlyArray<McpToolCode>
+    readonly mode: "anyOf" | "oneOf"
+  }
+
+/** A literal code's value. `LitVal` is the four-row carrier, and
+ * this is its projection: the discriminator of a derived union is
+ * always a string, but the type says what the carrier says. */
+export type McpToolCodeLiteral = null | boolean | number | string
 
 /** A struct code's fields: the name-keyed record `fieldsToJson`
  * builds, each entry an optionality flag beside the field's own
@@ -113,7 +124,7 @@ export const McpToolCodes: ReadonlyArray<McpToolRow> = [
   },
   {
     name: "cas_run",
-    description: "Run a straight-line program: instructions in admission order, references naming earlier answers by index. The reply is the word — the run's history, byte-decidable evidence.",
+    description: "Run a straight-line program submitted inline: instructions in admission order, operands naming an earlier answer by index or a literal address, and loads requiring the address to be there. The reply is the word — the run's history, byte-decidable evidence.",
     params: {
       _tag: "Struct",
       fields: {
@@ -122,28 +133,113 @@ export const McpToolCodes: ReadonlyArray<McpToolRow> = [
           schema: {
             _tag: "Array",
             item: {
-              _tag: "Struct",
-              fields: {
-                payloadHex: { optional: false, schema: { _tag: "String" } },
-                refs: {
-                  optional: false,
-                  schema: {
-                    _tag: "Array",
-                    item: {
-                      _tag: "Struct",
-                      fields: {
-                        expectedTag: { optional: false, schema: { _tag: "Integer" } },
-                        source: { optional: false, schema: { _tag: "Integer" } },
+              _tag: "Union",
+              members: [
+                {
+                  _tag: "Struct",
+                  fields: {
+                    _tag: { optional: false, schema: { _tag: "Literal", value: "load" } },
+                    source: {
+                      optional: false,
+                      schema: {
+                        _tag: "Union",
+                        members: [
+                          {
+                            _tag: "Struct",
+                            fields: {
+                              _tag: { optional: false, schema: { _tag: "Literal", value: "answer" } },
+                              index: { optional: false, schema: { _tag: "Integer" } },
+                            },
+                          },
+                          {
+                            _tag: "Struct",
+                            fields: {
+                              _tag: { optional: false, schema: { _tag: "Literal", value: "literal" } },
+                              addressHex: { optional: false, schema: { _tag: "String" } },
+                            },
+                          },
+                        ],
+                        mode: "oneOf",
                       },
                     },
                   },
                 },
-                tag: { optional: false, schema: { _tag: "Integer" } },
-                version: { optional: false, schema: { _tag: "Integer" } },
+                {
+                  _tag: "Struct",
+                  fields: {
+                    _tag: { optional: false, schema: { _tag: "Literal", value: "put" } },
+                    payloadHex: { optional: false, schema: { _tag: "String" } },
+                    refs: {
+                      optional: false,
+                      schema: {
+                        _tag: "Array",
+                        item: {
+                          _tag: "Struct",
+                          fields: {
+                            expectedTag: { optional: false, schema: { _tag: "Integer" } },
+                            source: {
+                              optional: false,
+                              schema: {
+                                _tag: "Union",
+                                members: [
+                                  {
+                                    _tag: "Struct",
+                                    fields: {
+                                      _tag: { optional: false, schema: { _tag: "Literal", value: "answer" } },
+                                      index: { optional: false, schema: { _tag: "Integer" } },
+                                    },
+                                  },
+                                  {
+                                    _tag: "Struct",
+                                    fields: {
+                                      _tag: { optional: false, schema: { _tag: "Literal", value: "literal" } },
+                                      addressHex: { optional: false, schema: { _tag: "String" } },
+                                    },
+                                  },
+                                ],
+                                mode: "oneOf",
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    tag: { optional: false, schema: { _tag: "Integer" } },
+                    version: { optional: false, schema: { _tag: "Integer" } },
+                  },
+                },
+              ],
+              mode: "oneOf",
+            },
+          },
+        },
+      },
+    },
+    result: {
+      _tag: "Struct",
+      fields: {
+        word: {
+          optional: false,
+          schema: {
+            _tag: "Array",
+            item: {
+              _tag: "Struct",
+              fields: {
+                address: { optional: false, schema: { _tag: "String" } },
               },
             },
           },
         },
+      },
+    },
+  },
+  {
+    name: "cas_run_ref",
+    description: "Run the program stored at an address: load the cont node, recover its table from the step nodes it names, and run it through the same admission doors. The reply is the word. A program is content, so this names one the way everything else in the store is named.",
+    params: {
+      _tag: "Struct",
+      fields: {
+        root: { optional: false, schema: { _tag: "String" } },
       },
     },
     result: {
@@ -194,7 +290,8 @@ export const McpToolCodes: ReadonlyArray<McpToolRow> = [
 export const McpToolDescriptions = {
   cas_put: "Admit one node; the reply is its content address. Admission is the only gate: well-formedness, reference presence, and kind agreement are checked, duplicates are inert, collisions refuse.",
   cas_load: "Load the node at an address, fail-closed: the frame is parsed exactly and the kind is answered as stored.",
-  cas_run: "Run a straight-line program: instructions in admission order, references naming earlier answers by index. The reply is the word — the run's history, byte-decidable evidence.",
+  cas_run: "Run a straight-line program submitted inline: instructions in admission order, operands naming an earlier answer by index or a literal address, and loads requiring the address to be there. The reply is the word — the run's history, byte-decidable evidence.",
+  cas_run_ref: "Run the program stored at an address: load the cont node, recover its table from the step nodes it names, and run it through the same admission doors. The reply is the word. A program is content, so this names one the way everything else in the store is named.",
   cas_publish_root: "Publish an address as a root.",
   cas_list_roots: "List the published roots.",
 }

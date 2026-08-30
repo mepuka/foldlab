@@ -30,6 +30,7 @@ export const vocabularyWords: ReadonlyArray<readonly [string, string]> = [
   ["file", "a named file over a blob"],
   ["schema", "the shape a value claims — itself content, with an address"],
   ["roots", "the addresses published as entry points"],
+  ["program", "a table of steps, itself content — put it, publish it, run it"],
   ["refused", "a put that broke a store law; every refusal carries its clause"],
   ["verify", "re-hash and re-decode everything reachable"],
   ["history", "the record of a run: what was admitted, in order"],

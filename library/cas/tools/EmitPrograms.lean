@@ -1,6 +1,7 @@
 import Cas.Vectors.Registry
 import Cas.Backend.EmitProg
 import Cas.Backend.ProgProse
+import Cas.Codec.Sha256
 import Gate
 
 /-!
@@ -68,18 +69,60 @@ def schemaRow : IO Row := do
   else
     throw (IO.userError "schema program: payload exceeds the node byte bound")
 
+/-! ## The program's own address — R7's stamp clause, discharged
+
+R7 requires that any static projection generated for ergonomics be
+STAMPED with the address of the term it projects, "so parity is a
+digest check". Until now `VectorPrograms.ts` and
+`VectorProgramLifts.json` carried names and no addresses, which is the
+estate's flagship generated-program artifact failing the estate's
+flagship program ruling.
+
+The address a program HAS is not a new notion invented here. It is
+`Cas.Lang.encodeProg`'s: a table is laid down children-first as step
+nodes (tag 14), then one cont node (tag 15) naming them all in program
+order, and the program's address is that cont node's. Under the
+production digest (`Cas.sha256Addr`, the same one the vector lane runs)
+the address is a computed fact about the term, not a convention — which
+is exactly what makes it a CROSS-HOST gate: a host that mirrors
+`encodeProg` must compute these same 64 hex characters or go red.
+
+Note what is NOT emitted: no word. The direction law says words are
+minted by RUNNING and by nothing else; an address is laid down by
+encoding, so it is the encoder's to answer and the runner's to ignore. -/
+
+/-- One code point's step-node address under the production digest. -/
+def stepAddressOf (l : Cas.Lang.PLine) : String :=
+  Cas.hexS (Cas.Lang.lineAddr Cas.sha256Addr l).val
+
+/-- A table's cont-node address under the production digest — THE
+program's address, the one a `cont` root is published at. -/
+def contAddressOf (p : Cas.Lang.PProg) : String :=
+  Cas.hexS
+    (Cas.sha256Addr (Cas.encodeNode (Cas.Lang.tableNode Cas.sha256Addr p))).val
+
+/-- The stamp line carried in the generated program's own docstring —
+R7's "stamped with the address of the term it projects", spelled where
+a reader of the TypeScript meets it. -/
+def stampLine (p : Cas.Lang.PProg) : String :=
+  s!"Its address as content — the cont node `Cas.Lang.encodeProg` lays "
+    ++ s!"down for this table under the production digest — is "
+    ++ s!"{contAddressOf p}."
+
 /-- The emitter is partial on `PProg` (puts only, earlier-answer
 operands only — `Cas.Backend.progProgram`). Every registered term
 lowers inside that domain, so a `none` here is a defect in the walk and
 is named as one rather than silently skipped.
 
-The doc block is `point :: envelope`: the authored sentence first, then
-the computed lines. Only the first line is transcribed, and it is
-transcribed because it is not derivable; the byte gate still checks the
-whole block, so the envelope half cannot drift from the term. -/
+The doc block is `point :: envelope ++ stamp`: the authored sentence
+first, then the computed lines, then R7's address stamp. Only the first
+line is transcribed, and it is transcribed because it is not derivable;
+the byte gate still checks the whole block, so neither the envelope half
+nor the stamp can drift from the term. -/
 def progDecl (name : String) (point : String) (tree : (t : Ty) × Tree t) :
     IO Decl := do
-  match treeProgram (point :: tree.2.docLines) name tree.2 with
+  let doc := (point :: tree.2.docLines) ++ [stampLine (treeProg tree.2)]
+  match treeProgram doc name tree.2 with
   | some d => return .prog d
   | none => throw (IO.userError
       s!"program {name}: the lowered table is outside the recognized surface")
@@ -151,6 +194,33 @@ def liftsDocument (rows : List Row) : IO String := do
   let docs ← rows.mapM fun (name, _, _, tree) => liftDocumentOf name tree
   return Cas.Json.renderCompact (.arr docs) ++ "\n"
 
+/-! ## The address document (O1's cross-host gate)
+
+The third artifact, and the one that turns `encodeProg` from a theorem
+into an operational claim a second host must meet. For each registered
+program: the step-node address of every code point, in program order,
+and the cont-node address that names them — all under
+`Cas.sha256Addr`.
+
+A host mirroring `Cas.Lang.encodeProg` puts the same nodes into a real
+store and reads its OWN digest's answers back. Those answers must equal
+these bytes. That is the whole gate, and it is a stronger one than the
+lift document's: the lift document pins what a program SAYS, this pins
+what a program IS. -/
+
+/-- One program's addresses as the canonical document. -/
+def addressDocumentOf (name : String) (tree : (t : Ty) × Tree t) :
+    Cas.Json.Value :=
+  let p := treeProg tree.2
+  .obj [
+    ("contAddress", .str (contAddressOf p)),
+    ("name", .str name),
+    ("stepAddresses", .arr (p.map fun l => .str (stepAddressOf l)))]
+
+def addressesDocument (rows : List Row) : IO String := do
+  let docs := rows.map fun (name, _, _, tree) => addressDocumentOf name tree
+  return Cas.Json.renderCompact (.arr docs) ++ "\n"
+
 /-- Where the generated programs live in the effects package — the
 registry's own knowledge of its artifact. A positional argument
 overrides it; the lift documents follow it to the sibling path. -/
@@ -163,13 +233,22 @@ def liftsTargetOf (programs : System.FilePath) : System.FilePath :=
   | some dir => dir / "VectorProgramLifts.json"
   | none => "VectorProgramLifts.json"
 
+/-- The address document's path, derived the same way. -/
+def addressesTargetOf (programs : System.FilePath) : System.FilePath :=
+  match programs.parent with
+  | some dir => dir / "VectorProgramAddresses.json"
+  | none => "VectorProgramAddresses.json"
+
 def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) := do
   let rows := pureRows ++ [← schemaRow]
   let programs := target.getD defaultTarget
   let text ← rendered rows
   let lifts ← liftsDocument rows
+  let addresses ← addressesDocument rows
   return [
     ⟨programs, text, s!"{rows.length} programs"⟩,
+    ⟨addressesTargetOf programs, addresses,
+      s!"{rows.length} program addresses"⟩,
     ⟨liftsTargetOf programs, lifts,
       s!"{rows.length} lift documents (round-tripped)"⟩]
 

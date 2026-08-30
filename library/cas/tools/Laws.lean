@@ -294,9 +294,18 @@ the Lean decoder refuses them" },
   { id := "SM-21", status := .owed
   , statement := "a Declaration's annotation bag is read tolerantly, \
 with the registry's own keys consumed as required" },
+  -- SM-22 MOVED, 2026-08-29 (the brain-stem package). The ruling used
+  -- to be a LIMIT: the run manifest spells the puts-with-answer-indices
+  -- sub-fragment and does not grow to the whole program table. It was
+  -- ruled the other way — a program stored at an address cannot be run
+  -- unless the document can name an address — so the manifest grew,
+  -- `manifestVersion` bumped to 1, and the two theorems that pinned the
+  -- limit flipped into `Mcp.ofPProg_isSome`. The row is amended here
+  -- rather than deleted, which is what the index exists to force.
   { id := "SM-22", status := .bound
-  , statement := "the run manifest spells the puts-with-answer-indices \
-sub-fragment and does not grow to the whole program table" },
+  , statement := "the run manifest spells the whole program table — \
+literal-address operands and loads included — so a stored program can \
+be named by the document that runs it" },
   { id := "SM-23", status := .owed
   , statement := "the program emitter routes through the \
 defunctionalized table rather than lowering trees straight to source" },
