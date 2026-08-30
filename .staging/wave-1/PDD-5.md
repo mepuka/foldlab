@@ -2,10 +2,10 @@
 
 CATEGORIES contracts, mutation-frames, specification-design,
            abstraction-modules
-STATUS     WRITTEN, not dispatched — blocked on the daemon-spine
-           and cas-word merges (the collector rides the daemon and
-           writes words; both are pending). Dispatch after they
-           land, on the standing approval.
+STATUS     BACKLOG, deprioritized (operator, 2026-08-30: core work
+           first). Not in any wave queue; dispatches only on an
+           explicit operator order, and never before the
+           daemon-spine and cas-word merges land.
 
 ## The operator's ruling (2026-08-30)
 
