@@ -24,13 +24,21 @@ A release of `@foldlab/cas` runs, in order, stopping at the first red:
 4. **Version + label.** Bump `version` (0.x honesty — see
    PACKAGING.md), and the CLI's `Command.run` version string in
    `bin/cas.ts` with it. One commit, both files.
-5. **Tarball inspection.** `bun pm pack` (or `npm pack --dry-run`);
-   confirm the contents are exactly the `files` whitelist and that
-   `scripts/check-dist-consumer.ts` ran green against the built dist
-   (it is part of `check:effects:ts`, so step 1 already forced it —
-   this step is reading the tarball listing with eyes).
+5. **Tarball inspection.** `bun pm pack`; confirm the contents are
+   exactly the `files` whitelist. The consumer smoke
+   (`scripts/check-dist-consumer.ts`, forced by step 1 inside
+   `check:effects:ts`) already packed a tarball, installed it with
+   only declared dependencies, executed the bin (`--version`, `init`,
+   one MCP handshake through the manifest boot gate), and typechecked
+   a consumer under node16 and bundler resolution — this step is
+   reading the tarball listing with eyes on top of that. (The
+   `prepare` hook is pack-safe: `scripts/patch-toolchain.ts` skips
+   when `@effect/tsgo` is absent instead of killing the pack.)
 6. **The flip.** Remove `"private": true` (publishConfig is staged);
    publish with npm provenance from CI, never from a laptop.
+   Provenance requires an OIDC-capable workflow (`permissions:
+   id-token: write`) that does not exist yet — writing it is part of
+   the first publish, per PACKAGING.md's flip list item 4.
 7. **Record.** Tag the commit; the release notes name the rulings the
    surface moved under since the previous tag.
 

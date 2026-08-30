@@ -39,6 +39,8 @@ deleted.
 | [library/effects/BACKEND.md](../library/effects/BACKEND.md) | store backends | The backend seam law (ByteReader/ByteWriter/RootStore; invariants above the seam) |
 | [library/cas/REGISTRY.md](../library/cas/REGISTRY.md) | kind registry | GENERATED human registry (projection of Cas.Grammar.manifestV0; byte-gated) |
 | [library/cas/UNION-DESIGN.md](../library/cas/UNION-DESIGN.md) | union semantics | The ratified union design (order is identity; mode is identity) |
+| [library/effects/PACKAGING.md](../library/effects/PACKAGING.md) | distribution | Operating record of implemented, gated state (2026-08-29, decision 26 seat 2): publish-capable-not-published posture, the exhaustive flip list, the effectProvenance field, the repo+bun+mise bar implemented, the Windows honesty list (T7 retired `a5fb51a9`, not rebuilt) |
+| [library/effects/RELEASING.md](../library/effects/RELEASING.md) | releases | Operating procedure (2026-08-29): the seven-step gate sequence a release runs, check:ci-on-fresh-clone as the floor; steps 6–7 fire only on operator order |
 
 ## Category 2 — Pre-grade designs (grilled or awaiting grill; build only what a ruling has released)
 
@@ -68,8 +70,6 @@ deleted.
 | [.staging/operational-structure/BACKEND-ROBUSTNESS.md](../.staging/operational-structure/BACKEND-ROBUSTNESS.md) | server robustness | Probed sweep (2026-08-29): store crash-safe by construction (2097/2097 verified post-SIGKILL); host NOT live-safe — oversized frames silently lost, SQLite busy = whole-process stall; BS-1 slice specified; adopt-vs-build table per Rust/Go ruling; hashing centralized-as-service is a virtue, scheme identification the real gap; 6 ruling asks |
 | [.staging/operational-structure/DOGFOOD.md](../.staging/operational-structure/DOGFOOD.md) | dogfooding | The wave plan (decision 24): five personalities, successive release, capability baseline, rules of engagement |
 | [.staging/operational-structure/STATE-OF-MECHANIZATION.md](../.staging/operational-structure/STATE-OF-MECHANIZATION.md) | status | The proof-ladder status report (L5 rock-solid → L0 paper) with the waiting list and critical-path order; two-hour audit cadence scheduled |
-| [library/effects/PACKAGING.md](../library/effects/PACKAGING.md) | distribution | Packaging record (2026-08-29, decision 26 seat 2): publish-capable-not-published posture, the exhaustive flip list, the effectProvenance field, the repo+bun+mise bar implemented, the Windows honesty list (T7 retired `a5fb51a9`, not rebuilt) |
-| [library/effects/RELEASING.md](../library/effects/RELEASING.md) | releases | Stub (2026-08-29): the seven-step gate sequence a release runs, check:ci-on-fresh-clone as the floor |
 | [.staging/operational-structure/CLI-AUDIT.md](../.staging/operational-structure/CLI-AUDIT.md) | CLI | Pre-dogfood audit (2026-08-29): verb matrix, freshness defects F1-F5, the E-transcript with grades — found the PHANTOM STORE (BROKEN-SILENT: an explicit --store typo silently creates a store, contradicting init-is-the-only-creator); fix lane dispatched; 5 ruling asks (cas doctor the highest-leverage) |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)

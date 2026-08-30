@@ -22,13 +22,29 @@ publish needs is staged and gated now:
   map points at `src`.
 - **`files` whitelist** — `dist` (the surface), `src` (shipped for
   sourcemap/declarationMap fidelity and because the Bun-native bin
-  runs the TypeScript directly), `bin`, and the law documents
-  (README, BACKEND, PROFILE-CAS-HTTP-0, VOCABULARY, PACKAGING,
-  LICENSE). Every entry's existence is asserted by
-  `scripts/check-dist-consumer.ts`, which also resolves the bare
+  runs the TypeScript directly), `bin`, `mcp` (below), and the law
+  documents (README, BACKEND, PROFILE-CAS-HTTP-0, VOCABULARY,
+  PACKAGING, RELEASING, LICENSE). Every entry's existence is asserted
+  by `scripts/check-dist-consumer.ts`, which also resolves the bare
   specifier through a linked `node_modules` — the exports map
   exercised exactly as a foreign consumer would, under both bun and
-  node (the pinned claim-target engine).
+  node (the pinned claim-target engine) — and then goes the rest of
+  the way: it packs a real tarball, installs it into a scratch
+  package so only declared `dependencies` exist, EXECUTES the bin
+  (`--version`, `init`, and one full MCP `initialize` handshake
+  against `cas serve`), and typechecks a consumer against the
+  installed declarations under both `node16` and `bundler`
+  resolution.
+- **`mcp/cas-tools.json`, the shipped manifest** — `cas serve`'s boot
+  gate reads the Lean-emitted tool manifest at one fixed relative
+  path which resolves to `library/cas/mcp/cas-tools.json` in the
+  repository and to `<packageRoot>/mcp/cas-tools.json` in an
+  installed package (the package directory is named `cas`, so the
+  loader's `../../../cas/` segment lands back inside it). The build
+  (`scripts/copy-mcp-manifest.ts`) materializes that package-local
+  copy byte-for-byte from the byte-gated authority; it is gitignored
+  here, derived never committed, and the tarball smoke's handshake
+  leg proves the installed server boots on it.
 - **`publishConfig`** — `access: public`, `provenance: true` (npm
   provenance attestation from CI), inert while `private` stands.
 - **`engines.bun >= 1.4.0`** — the CLI's honest requirement, see
@@ -47,7 +63,13 @@ publish needs is staged and gated now:
    `effect@4.0.0-rc.112` exactly (estate-wide Wave-1 ruling,
    docs/SPECS.md decision 23). A published 0.x keeps the exact pin —
    an rc dependency range would be a lie about compatibility.
-4. Nothing else. If a publish needs a step this list does not name,
+4. A publish WORKFLOW exists before the first publish, and it is
+   owed, not written: `publishConfig.provenance` requires npm
+   provenance attestation, which only works from a CI run with OIDC
+   (`permissions: id-token: write`) — it cannot be satisfied from a
+   laptop. The `repository` field (with `directory`) is already
+   staged because provenance verification requires it.
+5. Nothing else. If a publish needs a step this list does not name,
    the step lands here first.
 
 ## Version story: 0.x, honestly
@@ -87,10 +109,15 @@ half-porting:
 
 - `bin.cas` → `bin/cas.cjs`, a dependency-free CommonJS launcher that
   runs under plain Node: under Bun it hands to the CLI in-process;
-  under Node it re-executes through the `bun` on PATH propagating the
-  exit code; with no bun present it prints exactly what is missing and
-  the two install routes (mise or bun.sh) and exits 127.
-- `engines.bun` states the requirement machine-readably.
+  under Node it SUPERVISES a `bun` child faithfully — stdio
+  inherited, SIGINT/SIGTERM/SIGHUP forwarded (a killed supervisor
+  must not orphan a store-holding server; probed), the child's exit
+  code propagated, signal-death reported as 128+signal; with no bun
+  present it prints exactly what is missing and the two install
+  routes (mise or bun.sh) and exits 127.
+- `engines` states both requirements machine-readably: `bun >= 1.4.0`
+  (the CLI's runtime) and `node >= 22` (the supervising shim and the
+  ESM dist surface).
 - A Node-hosted CLI is not promised, so none is pretended.
 
 ## Windows honesty
@@ -106,8 +133,13 @@ surface.
 - Every script under `scripts/` is TypeScript run by bun — paths via
   `node:path`, separators normalized where compared
   (`replaceAll("\\", "/")`); no shell strings.
-- `bin/cas.cjs` spawns `bun` without a shell; Bun ships a real
-  `bun.exe`, which Node's spawn resolves from PATH.
+- `bin/cas.cjs` spawns `bun` without a shell, which resolves Bun's
+  usual real `bun.exe` from PATH. Where the PATH entry is a
+  `.cmd`/`.bat` shim instead, post-CVE-2024-27980 Node refuses that
+  spawn with EINVAL — the launcher retries once through the shell
+  with quoted arguments on win32 EINVAL, so both install shapes work;
+  the shell-retry path itself is untested on a real PC and is part of
+  the windows-latest CI verification below.
 - `scripts/litestream-check.ts` documents its PowerShell invocation
   verbatim, including the litestream 0.5.12 `file://` drive-letter
   gotcha and its workaround.
@@ -137,9 +169,13 @@ surface.
 
 ## What CI runs (the one-line summary)
 
-`.github/workflows/check.yml` → `mise run check:ci`: every emitter
-forced (`gen:ci`), `git diff --exit-code`, every gate forced. The
-skip-list authority is the `residence` column of
-`docs/lab-core/ENVIRONMENT.json` — CI attempts no host-local gate and
-skips no portable one. The workflow's own comments carry the job
-structure and its stated tradeoff.
+`.github/workflows/check.yml` → an install prelude for the three
+package trees the gen chain reads, then `mise run check:ci`: every
+emitter forced (`gen:ci`), `git diff --exit-code`, every gate forced.
+The skip-list authority is `docs/lab-core/ENVIRONMENT.json` —
+precisely: CI attempts no host-local task, forces every task inside
+the chain, and the portable tasks it does not run are exactly the
+portable members of that ledger's `excludedGates` (the three frozen
+archive tasks and `check:lift-roundtrip`), each excluded with its own
+stated reason. The workflow's own comments carry the job structure,
+the caching rationale, and their stated tradeoffs.

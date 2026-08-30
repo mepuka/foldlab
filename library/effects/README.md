@@ -61,10 +61,15 @@ The package remains private while publication is an operator decision;
 it is kept publish-capable, and the full distribution posture — the
 exports map, the bin shim, what flips at publish time, and the Windows
 honesty list — is [`PACKAGING.md`](PACKAGING.md). The built package is
-ESM-only and publishes JavaScript plus declarations from `dist`:
+ESM-only and publishes JavaScript plus declarations from `dist`; its
+runtime needs (`effect`, `@effect/platform-bun`,
+`@effect/sql-sqlite-bun`, all pinned to the same rc) ship as ordinary
+`dependencies`, so the install line is one package. This is the
+POST-PUBLISH shape — today the honest install is the repository
+itself (repo + bun + mise):
 
 ```sh
-bun add @foldlab/cas@0.1.0 effect@4.0.0-rc.112
+bun add @foldlab/cas@0.1.0
 ```
 
 ```ts

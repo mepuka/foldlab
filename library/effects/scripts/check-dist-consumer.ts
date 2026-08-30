@@ -6,7 +6,7 @@
  * `node_modules/@foldlab/cas`, never a relative path into dist) gets
  * the same surface, under both pinned runtimes (bun, and node — the
  * claim-target engine). Run after `bun run build`. */
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import {
   existsSync,
   mkdirSync,
@@ -165,11 +165,189 @@ try {
   rmSync(consumerDir, { force: true, recursive: true })
 }
 
+// ─── The tarball consumer ───────────────────────────────────────────
+// The linked-node_modules leg above structurally cannot catch a
+// missing runtime dependency or a file outside the whitelist (it links
+// the whole dev tree). This leg can: pack a real tarball, install it
+// into a scratch package so ONLY declared `dependencies` exist, then
+// EXECUTE the bin — `--version`, and one full MCP handshake against a
+// fresh store, which forces the shipped manifest through `cas serve`'s
+// boot gate. Finally, typecheck a consumer against the installed d.ts
+// under both `node16` and `bundler` resolution.
+const run = (
+  label: string,
+  executable: string,
+  args: ReadonlyArray<string>,
+  options: {
+    readonly cwd: string
+    readonly input?: string
+    readonly okStatuses?: ReadonlyArray<number>
+  },
+): { readonly ok: boolean; readonly stdout: string } => {
+  const result = spawnSync(executable, [...args], {
+    cwd: options.cwd,
+    encoding: "utf8",
+    input: options.input,
+    timeout: 120_000,
+  })
+  const accepted = options.okStatuses ?? [0]
+  const ok = result.error === undefined
+    && result.status !== null
+    && accepted.includes(result.status)
+  if (!ok) {
+    const detail = result.error !== undefined
+      ? String(result.error)
+      : `exit ${result.status}\n${result.stdout ?? ""}${result.stderr ?? ""}`.trim()
+    failures.push(`${label}: ${detail}`)
+  }
+  return { ok, stdout: result.stdout ?? "" }
+}
+
+const tarballDir = mkdtempSync(join(tmpdir(), "cas-tarball-"))
+try {
+  run("bun pm pack", "bun", ["pm", "pack", "--destination", tarballDir], {
+    cwd: packageRoot,
+  })
+  const tarball = readdirSync(tarballDir).find((file) => file.endsWith(".tgz"))
+  if (tarball === undefined) {
+    failures.push("bun pm pack produced no tarball")
+  } else {
+    const consumer = join(tarballDir, "consumer")
+    mkdirSync(consumer, { recursive: true })
+    writeFileSync(
+      join(consumer, "package.json"),
+      JSON.stringify({
+        name: "cas-tarball-consumer",
+        private: true,
+        type: "module",
+        dependencies: {
+          "@foldlab/cas": `file:${join(tarballDir, tarball).replaceAll("\\", "/")}`,
+        },
+      }),
+    )
+    const installed = run("tarball install", "bun", ["install"], { cwd: consumer })
+    const shippedBin = join(consumer, "node_modules", "@foldlab", "cas", "bin", "cas.cjs")
+
+    if (installed.ok) {
+      // The bin, node-supervised, from the installed tree only.
+      const version = run("installed bin --version", "node", [shippedBin, "--version"], {
+        cwd: consumer,
+      })
+      if (version.ok && !version.stdout.includes("cas")) {
+        failures.push(`installed bin --version answered oddly: ${version.stdout.trim()}`)
+      }
+
+      // One real MCP handshake: init a store, then `serve` must pass
+      // its manifest boot gate (the shipped mcp/cas-tools.json) and
+      // answer `initialize`. stdin closing after the handshake is the
+      // session ending, so the process exits on its own.
+      const storeDir = join(consumer, "store")
+      mkdirSync(storeDir, { recursive: true })
+      run("installed bin init", "node", [shippedBin, "init"], { cwd: storeDir })
+      const handshake = [
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2025-06-18",
+            capabilities: {},
+            clientInfo: { name: "dist-smoke", version: "0" },
+          },
+        }),
+        JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
+        "",
+      ].join("\n")
+      // The session must stay open until the host answers (an
+      // immediate stdin EOF interrupts the serving fiber before the
+      // reply flushes), so this leg is a live child: write the
+      // handshake, hold stdin, wait for the id:1 frame, then end the
+      // session. The answered frame proves the boot gate accepted the
+      // SHIPPED manifest and the protocol spoke from the installed
+      // tree.
+      const serveFailure = await new Promise<string | undefined>((resolve) => {
+        const child = spawn("node", [shippedBin, "serve"], { cwd: storeDir })
+        let out = ""
+        let err = ""
+        let settled = false
+        const done = (failure: string | undefined): void => {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          child.stdin.end()
+          child.kill("SIGTERM")
+          resolve(failure)
+        }
+        const timer = setTimeout(
+          () => done(`serve answered no initialize frame in 30s; stderr: ${err.trim()}`),
+          30_000,
+        )
+        child.stdout.on("data", (chunk: Buffer) => {
+          out += chunk.toString()
+          if (out.includes(`"id":1`)) done(undefined)
+        })
+        child.stderr.on("data", (chunk: Buffer) => {
+          err += chunk.toString()
+        })
+        child.on("error", (error) => done(`serve failed to start: ${String(error)}`))
+        child.on("exit", (code) =>
+          done(out.includes(`"id":1`)
+            ? undefined
+            : `serve exited ${code} before answering; stderr: ${err.trim()}`))
+        child.stdin.write(handshake)
+      })
+      if (serveFailure !== undefined) {
+        failures.push(`installed bin serve handshake: ${serveFailure}`)
+      }
+
+      // The d.ts surface, resolved as consumers resolve it.
+      writeFileSync(
+        join(consumer, "consumer.ts"),
+        [
+          `import { Cas, Server } from "@foldlab/cas"`,
+          `export const memory: typeof Cas.layerMemory = Cas.layerMemory`,
+          `export const app: typeof Server.httpApp = Server.httpApp`,
+        ].join("\n"),
+      )
+      for (const resolution of ["node16", "bundler"] as const) {
+        const config = join(consumer, `tsconfig.${resolution}.json`)
+        writeFileSync(
+          config,
+          JSON.stringify({
+            compilerOptions: {
+              module: resolution === "node16" ? "node16" : "esnext",
+              moduleResolution: resolution,
+              strict: true,
+              noEmit: true,
+              // Mirrors tsconfig.test.json: upstream rc declaration
+              // defects are not this gate's subject; the consumer's
+              // own resolution of our d.ts is.
+              skipLibCheck: true,
+              types: [],
+            },
+            files: [join(consumer, "consumer.ts")],
+          }),
+        )
+        // `bun x` resolves the package's own patched tsc from
+        // packageRoot; the tsconfig's directory governs resolution,
+        // so the consumer tree is what gets typechecked.
+        run(`type-level consumer (${resolution})`, "bun", ["x", "tsc", "-p", config], {
+          cwd: packageRoot,
+        })
+      }
+    }
+  }
+} finally {
+  rmSync(tarballDir, { force: true, recursive: true })
+}
+
 if (failures.length > 0) {
   console.error(failures.join("\n"))
   process.exit(1)
 }
 console.log(
   "dist consumer smoke: exact exports and inventory, namespaces present, specifiers rewritten, "
-    + "packaging paths present, bare-specifier resolution green under bun and node",
+    + "packaging paths present, bare-specifier resolution green under bun and node, "
+    + "tarball install executes the bin (--version, init, one MCP handshake through the manifest "
+    + "boot gate), d.ts consumable under node16 and bundler resolution",
 )

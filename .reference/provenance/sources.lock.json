@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "schemaNote": "v2 (2026-08-29, production-package lane): pendingRepositoryPins rows MAY carry a `revision` object (same shape as repositories[].revision: kind/algorithm/digest/url, optional tag or selector note) and a `receipt` path when the pin is already observed and receipted but its full lock promotion (rootTree, per-artifact digests) is still owed. A row WITHOUT `revision` remains what v1 meant: an unresolved selector. Migration was faithful: no v1 field changed shape or meaning; the three tree-sitter rows gained the revisions their admission receipt already carried, closing the cleanup lane's caveat that a lock-driven sweep could see the repositories but not their pins.",
+  "schemaNote": "v2 (2026-08-29, production-package lane): pendingRepositoryPins rows MAY carry a `revision` object (same shape as repositories[].revision: kind/algorithm/digest/url, plus `tag` when the pin is a resolution of a MUTABLE upstream tag — see below — and a `selector` note), a `rootTree`, a `receipt` path, and a `receiptRow` naming the receipt's own row id where it differs from this row's. Such a row is an OBSERVED pin awaiting full promotion into repositories[] — what remains owed for these rows is the per-artifact digest set only. A row WITHOUT `revision` keeps the v1 meaning: an unresolved selector ('pending' in the section name reads as pending-promotion for observed rows, pending-resolution for bare ones). Why `tag` is substantive, not cosmetic: lean4-tree-sitter's ffi/language_definitions.json pins tree-sitter-core BY TAG (rev = v0.24.7) while pinning the typescript grammar by sha — so the tree-sitter row's commit digest is this lock's RESOLUTION of a mutable tag, this row is the only place that fact is recorded, and a moved tag upstream is a re-resolution event. Migration was faithful: no v1 field changed shape or meaning; the three tree-sitter rows gained the pins their admission receipt already carried, closing the cleanup lane's caveat that a lock-driven sweep could see the repositories but not their pins. Corroboration 2026-08-29 (double-review + this lane): all three commit digests independently checked against local clones; the typescript rootTree re-derived from the clone's object store byte-for-byte; the tree-sitter-core rootTree is the review's resolution from its clone (delta-packed locally, not re-derived here — see that row's rootTreeSource).",
   "kind": "reference-source-lock",
   "location": ".reference/provenance",
   "snapshotDate": "2026-08-26",
@@ -422,9 +422,15 @@
         "algorithm": "sha1",
         "digest": "3a57f55e1401484251cfe80e26583d9ed94c82c8",
         "url": "https://github.com/predictable-machines/lean4-tree-sitter/commit/3a57f55e1401484251cfe80e26583d9ed94c82c8",
-        "selector": "v0.2.4, HEAD observed 2026-08-28"
+        "tag": "v0.2.4",
+        "selector": "HEAD observed 2026-08-28; describe corroborates v0.2.4"
       },
-      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "69fbf71c8e202c38047c3c8d85a71758bb82a1bb"
+      },
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json",
+      "receiptRow": "lean4-tree-sitter"
     },
     {
       "id": "tree-sitter",
@@ -435,9 +441,16 @@
         "algorithm": "sha1",
         "digest": "5e8760bf462ce7b19b3d2396d5b7860f3906a297",
         "url": "https://github.com/tree-sitter/tree-sitter/commit/5e8760bf462ce7b19b3d2396d5b7860f3906a297",
-        "selector": "v0.24.7 (the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors)"
+        "tag": "v0.24.7",
+        "selector": "TAG-DERIVED: lean4-tree-sitter's ffi/language_definitions.json pins this dependency by the mutable tag v0.24.7; this digest is the lock's resolution of that tag (corroborated 2026-08-29 against the release's Cargo.toml). A moved tag upstream is a re-resolution event."
       },
-      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "8423d2133d2baa31a9befd571bbb0174b12f0b3e"
+      },
+      "rootTreeSource": "resolved 2026-08-29 by the double-review against its local clone; the commit is delta-packed in the estate clone, so this lane recorded the review's derivation rather than re-deriving — the next receipt regeneration should confirm it",
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json",
+      "receiptRow": "tree-sitter-core"
     },
     {
       "id": "tree-sitter-typescript",
@@ -448,9 +461,14 @@
         "algorithm": "sha1",
         "digest": "75b3874edb2dc714fb1fd77a32013d0f8699989f",
         "url": "https://github.com/tree-sitter/tree-sitter-typescript/commit/75b3874edb2dc714fb1fd77a32013d0f8699989f",
-        "selector": "the revision lean4-tree-sitter's ffi/language_definitions.json pins and vendors"
+        "selector": "the sha lean4-tree-sitter's ffi/language_definitions.json pins and vendors (sha-pinned upstream, unlike tree-sitter core)"
       },
-      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json"
+      "rootTree": {
+        "algorithm": "sha1",
+        "digest": "c458e52d122028abd51475c8614dbc6e185631b4"
+      },
+      "receipt": ".reference/provenance/receipts/lean4-tree-sitter-stage1-standup.json",
+      "receiptRow": "tree-sitter-typescript"
     }
   ]
 }
