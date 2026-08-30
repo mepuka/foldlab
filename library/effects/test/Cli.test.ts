@@ -22,6 +22,7 @@ import {
   Effect,
   FileSystem,
   Layer,
+  Option,
   Path,
   Sink,
   Stdio,
@@ -31,8 +32,11 @@ import {
 import { CliError } from "effect/unstable/cli"
 import { ChildProcessSpawner } from "effect/unstable/process"
 import { runCas as runEntry } from "../bin/cli/entry.ts"
+import { subjectFor } from "../bin/cli/naming.ts"
 import { cas } from "../bin/cli/tree.ts"
 import { vocabularyWords } from "../bin/cli/vocabulary.ts"
+import { AnnotationSubjectArms } from "../src/cas/generated/annotationPlane.ts"
+import { Cas } from "../src/index.ts"
 import { layerDiskFs } from "./fixtures/diskFs.ts"
 
 /** THE tree and THE runner the binary uses — imported, not composed
@@ -636,6 +640,19 @@ it.effect("--json: init answers the store it made", () =>
     })
   })).pipe(Effect.provide(layerDiskFs)))
 
+it.effect("show --json: the canonical binding document, machine-parseable and nothing else", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const address = addressOf(yield* invoke("put", file, "--store", store))
+      // `show` keeps the round-2 register: the described canonical
+      // document — address and node, the exact bytes the identity is
+      // computed over — with no report keys wrapped around it.
+      const binding = oneObject(yield* invoke("show", address, "--store", store, "--json"))
+      expect(Object.keys(binding).toSorted()).toEqual(["address", "node"])
+      expect(binding["address"]).toBe(address)
+      expect(binding["node"]).toMatchObject({ tag: 1, version: 0 })
+    })))
+
 /* ── the checkup ───────────────────────────────────────────────────── */
 
 it.effect("doctor: the emitted ledgers are read, and their counters said out loud", () =>
@@ -717,7 +734,7 @@ it.effect("a shape mistake answers in the everyday register, with no help dump",
       // A misspelled verb: the verbs are listed.
       const verb = yield* printedRefusal("frobnicate")
       expect(verb).toContain("no such verb: frobnicate")
-      expect(verb).toContain("the verbs are: init, status, doctor, put")
+      expect(verb).toContain("the verbs are: help, init, status, doctor, put")
       expect(verb).not.toContain("GLOBAL FLAGS")
 
       // A missing argument: named, with its own description.
@@ -744,6 +761,224 @@ it.effect("help asked for is still help", () =>
     expect(bare.out).toContain("SUBCOMMANDS")
     expect(bare.out).toContain("the words (see library/effects/VOCABULARY.md)")
     expect(bare.err).toBe("")
+  }).pipe(Effect.provide(layerDiskFs)))
+
+/* ── the naming seat ───────────────────────────────────────────────── */
+
+it.effect("name: a nameable node gets a published name, and show reads it back first", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      // A schema-kind node: one of the five planes the subject union
+      // spans, so a name can be said about it.
+      const subject = addressOf(yield* invoke("put", file, "--kind-tag", "83", "--store", store))
+      const named = yield* invoke("name", subject, "the pin sample", "--store", store)
+      expect(named[0]).toBe(`named      ${subject}`)
+      expect(named[1]).toBe("kind       schema (0x53)  (scheme 0)")
+      expect(named[2]).toBe("name       the pin sample")
+      const annotation = named[3]!.replace("annotation", "").trim().split(" ")[0]!
+      expect(annotation).toMatch(/^[0-9a-f]{64}$/u)
+
+      // The name is store content, published: `ls` lists it at the
+      // annotation working tag, `verify` audits it and walks the typed
+      // edge to its subject, and `show` prints it back, name first.
+      expect(yield* invoke("ls", "--store", store)).toEqual([
+        `${annotation}  kind annotation (0x41)  1 links`,
+      ])
+      expect(yield* invoke("verify", "--store", store)).toEqual([
+        `${annotation}  verified  2 nodes`,
+      ])
+      const shown = yield* invoke("show", subject, "--store", store)
+      expect(shown.at(-1)).toBe(
+        `name       the pin sample  (annotation ${annotation})`,
+      )
+
+      // Content addressing makes naming idempotent: the same name said
+      // twice is the same annotation node, and still one root.
+      const again = yield* invoke("name", subject, "the pin sample", "--store", store)
+      expect(again[3]).toContain(annotation)
+      expect(yield* invoke("ls", "--store", store)).toHaveLength(1)
+    })))
+
+it.effect("name: --json answers the annotation, the subject, and the plane", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const subject = addressOf(yield* invoke("put", file, "--kind-tag", "83", "--store", store))
+      const named = oneObject(
+        yield* invoke("name", subject, "the pin sample", "--store", store, "--json"),
+      )
+      expect(named["named"]).toBe(subject)
+      expect(named["key"]).toBe("foldlab/name")
+      expect(named["plane"]).toBe("schema")
+      expect(named["text"]).toBe("the pin sample")
+      expect(named["annotation"]).toMatch(/^[0-9a-f]{64}$/u)
+    })))
+
+it.effect("name: a plane outside the subject union is refused by name", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      // The default kind is `value`, and the union has no value arm.
+      const subject = addressOf(yield* invoke("put", file, "--store", store))
+      const refused = refusalText(
+        yield* Effect.flip(invoke("name", subject, "nope", "--store", store)),
+      )
+      expect(refused).toContain("nothing can be said about kind value (0x01) yet")
+      expect(refused).toContain(
+        "exchange (0x58), git (0x47), program (0x0f), schema (0x53), system (0x54)",
+      )
+      expect(refused).toContain("a Lean ruling")
+      // Nothing was stored or published on the way to the refusal.
+      expect(yield* invoke("ls", "--store", store)).toEqual(["no roots published"])
+
+      // And an address with nothing behind it is refused fail-closed,
+      // like publish: a name claims there is something there to name.
+      const absent = "0".repeat(64)
+      expect(refusalText(yield* Effect.flip(invoke("name", absent, "ghost", "--store", store))))
+        .toContain(`nothing in the store at ${absent}`)
+      expect(refusalText(yield* Effect.flip(invoke("name", "nope", "x", "--store", store))))
+        .toContain("not an address")
+    })))
+
+it("every emitted annotation arm dispatches to a constructor", () => {
+  // The emitted table (`annotationPlane.ts`, from the Lean union's own
+  // code) is data; the arm constructors are code. This walk is the
+  // seam's gate: a union widened in Lean re-emits the table, and this
+  // case fails until the CLI can actually spell the new arm — so the
+  // NotNameable refusal can never lie about a plane being unspellable.
+  expect(AnnotationSubjectArms.length).toBeGreaterThan(0)
+  const id = Cas.ContentId.make("0".repeat(64))
+  for (const row of AnnotationSubjectArms) {
+    const subject = subjectFor(row.tag, id)
+    expect(Option.isSome(subject)).toBe(true)
+    expect(Option.getOrThrow(subject)._tag).toBe(row.arm)
+  }
+})
+
+/* ── the program verbs, from the shell ─────────────────────────────── */
+
+/** One lift document from the emitted fixture, written where a test
+ * needs a file. The fixture is an ARRAY of documents; `put --program`
+ * takes exactly one, which is also what the conflict case exercises. */
+const withLiftDocument = (
+  directory: string,
+): Effect.Effect<string, unknown, FileSystem.FileSystem> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const fixture = yield* fs.readFileString(
+      new URL("./generated/VectorProgramLifts.json", import.meta.url).pathname,
+    )
+    const documents = JSON.parse(fixture) as ReadonlyArray<unknown>
+    const target = `${directory}/program.json`
+    yield* fs.writeFileString(target, JSON.stringify(documents[1]))
+    return target
+  })
+
+it.effect("put --program then run: the table goes in, and the run answers its history", () =>
+  withWorkspace(({ store }) =>
+    Effect.gen(function* () {
+      const document = yield* withLiftDocument(store)
+      const put = yield* invoke("put", document, "--program", "--store", store)
+      const program = addressOf(put)
+      expect(program).toMatch(/^[0-9a-f]{64}$/u)
+      // The everyday overlay: "program", never "cont", never bare hex.
+      expect(put[1]).toBe("kind       program (0x0f)  (scheme 0)")
+      expect(put[2]).toBe("program    blobTwoLeaves")
+      expect(put[3]).toBe("lines      6 steps")
+
+      // The machine register carries the same facts, with the
+      // registry's own row name — the emitted fact, not the rendering.
+      const json = oneObject(yield* invoke("put", document, "--program", "--store", store, "--json"))
+      expect(json["address"]).toBe(program)
+      expect(json["kind"]).toEqual({ name: "cont", registered: true, tag: 15, version: 0 })
+      expect(json["lines"]).toBe(6)
+      expect(json["program"]).toBe("blobTwoLeaves")
+
+      // Run it: the human line says history, the machine line says
+      // word, and the two carry the same six admissions.
+      const ran = yield* invoke("run", program, "--store", store)
+      expect(ran[0]).toBe(`program    ${program}`)
+      expect(ran[2]).toBe("history    6 admitted")
+      const word = oneObject(yield* invoke("run", program, "--store", store, "--json"))
+      expect(word["program"]).toBe(program)
+      expect((word["word"] as ReadonlyArray<unknown>)).toHaveLength(6)
+
+      // A program is on the `program` plane, so it is nameable.
+      const named = yield* invoke("name", program, "blobTwoLeaves", "--store", store)
+      expect(named[1]).toBe("kind       program (0x0f)  (scheme 0)")
+    })))
+
+it.effect("put --program: the flag contradictions and wrong documents are refused by name", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      // --kind-tag beside --program is a contradiction, judged before
+      // the store is even resolved — so it wins over a bad path too.
+      const contradiction = refusalText(yield* Effect.flip(
+        invoke("put", file, "--program", "--kind-tag", "5", "--store", `${store}/not-there`),
+      ))
+      expect(contradiction).toContain("--kind-tag 5 does not apply to --program")
+      expect(contradiction).toContain("carries its own kinds")
+
+      // A file that is not a lift document dies at the door.
+      expect(refusalText(yield* Effect.flip(
+        invoke("put", file, "--program", "--store", store),
+      ))).toContain("not a program document")
+
+      // And the missing-file refusal is the same one plain put gives.
+      expect(refusalText(yield* Effect.flip(
+        invoke("put", `${store}/absent.json`, "--program", "--store", store),
+      ))).toContain(`no file at ${store}/absent.json`)
+
+      // Running an address that is not a program is the store's own
+      // clause, not a stack trace.
+      const value = addressOf(yield* invoke("put", file, "--store", store))
+      const notAProgram = refusalText(yield* Effect.flip(invoke("run", value, "--store", store)))
+      expect(notAProgram.length).toBeGreaterThan(0)
+      expect(notAProgram).not.toContain("    at ")
+    })))
+
+/* ── the file gate, and the parser's dashed-value seam ─────────────── */
+
+it.effect("put: a directory is refused as what it is, not as BadResource", () =>
+  withWorkspace(({ store }) =>
+    Effect.gen(function* () {
+      const refused = refusalText(yield* Effect.flip(invoke("put", store, "--store", store)))
+      expect(refused).toContain(`not a file: ${store} — the path names a directory`)
+      expect(refused).toContain("put reads one file's bytes")
+      expect(refused).not.toContain("BadResource")
+    })))
+
+it.effect("a negative flag value is answered with the = spelling, not two riddles", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const refusal = yield* printedRefusal(
+        "put", file, "--kind-tag", "-1", "--store", store,
+      )
+      expect(refusal).toContain("-1 was read as a flag")
+      expect(refusal).toContain("--kind-tag=-1")
+      expect(refusal).not.toContain("no such flag: -1")
+      // The = spelling then reaches the estate's own byte-law refusal.
+      const spelled = refusalText(yield* Effect.flip(
+        invoke("put", file, "--kind-tag=-1", "--store", store),
+      ))
+      expect(spelled).toContain("not a kind tag: -1")
+    })))
+
+/* ── the landing page ──────────────────────────────────────────────── */
+
+it.effect("help: the landing page answers, and answers at exit zero", () =>
+  Effect.gen(function* () {
+    // `help` is what every other tool has taught a newcomer to type.
+    // It must answer the estate in a dozen lines — and it must not be
+    // the refusal it was before the verb existed.
+    const landing = yield* printed("help")
+    expect(landing.err).toBe("")
+    expect(landing.out).toContain("cas init")
+    expect(landing.out).toContain("cas doctor")
+    expect(landing.out).toContain("cas serve --help")
+    expect(landing.out).toContain("exit codes: 0")
+    expect(landing.out).toContain("library/cas/REGISTRY.md")
+    // The verb also answers through the ordinary success channel.
+    const lines = yield* invoke("help")
+    expect(lines.join("\n")).toContain("content in, address back")
   }).pipe(Effect.provide(layerDiskFs)))
 
 /* ── the vocabulary, gated against its seed ────────────────────────── */

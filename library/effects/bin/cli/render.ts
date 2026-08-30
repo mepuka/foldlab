@@ -16,7 +16,8 @@
 import { Schema } from "effect"
 import { Cas } from "../../src/index.ts"
 import { canonicalJson } from "../../src/cas/Value.ts"
-import { KindTagRows } from "../../src/cas/generated/grammar/kindTags.ts"
+import { KindTagRows, KindTagsByName } from "../../src/cas/generated/grammar/kindTags.ts"
+import { AnnotationKindTag } from "./naming.ts"
 
 /** A loaded node as the described binding document: the Lean-computed
  * address and the node it binds — the vector wire shape. */
@@ -61,19 +62,39 @@ const kindNames: ReadonlyMap<number, string> = new Map(
  * is a working tag, and `put` says so. */
 export const isRegisteredTag = (tag: number): boolean => kindNames.has(tag)
 
-/** A kind in the everyday register: the registry's name with the wire
- * byte beside it, `schema (0x53)`. A tag the registry gives no row has
- * no name to print, so it renders as the byte alone. */
+/** The everyday overlay on the registry names (vocabulary collision
+ * 3): a `cont` node is never named in a rendered surface — it is the
+ * program — and a `step` node is one of the program's steps. Only the
+ * human register wears this; the machine register keeps the registry
+ * names, which are the emitted facts. */
+const everydayNames: ReadonlyMap<number, string> = new Map([
+  [KindTagsByName.cont, "program"],
+  [KindTagsByName.step, "program step"],
+  // The annotation plane's working tag — the Lean pin's own choice
+  // (`pinAnnotationKindTag`, 0x41), the tag `cas name` writes at. A
+  // working tag has no registry row, so `isRegisteredTag` still says
+  // false and `put` still says so out loud; this row only keeps a
+  // published name from rendering as an unexplained hex byte in `ls`.
+  [AnnotationKindTag, "annotation"],
+])
+
+/** A kind in the everyday register: its name with the wire byte beside
+ * it, `schema (0x53)` — the everyday word where the vocabulary rules
+ * one (`program (0x0f)`), the registry's name otherwise. A tag the
+ * registry gives no row has no name to print, so it renders as the
+ * byte alone. */
 export const tagLabel = (tag: number): string => {
-  const name = kindNames.get(tag)
+  const name = everydayNames.get(tag) ?? kindNames.get(tag)
   return name === undefined ? tagHex(tag) : `${name} (${tagHex(tag)})`
 }
 
 /**
  * A kind in the machine register: the registry name when there is one,
  * the wire tag as a number, and whether the registry gives it a row —
- * the same three facts `tagLabel` renders for a person, spelled so an
- * agent does not have to parse `schema (0x53)` back apart.
+ * spelled so an agent does not have to parse `schema (0x53)` back
+ * apart. The everyday overlay is prose-only on purpose: `name` here is
+ * the emitted registry's own word (`cont`, `step`), because the machine
+ * register reports emitted facts, not renderings of them.
  */
 export const kindJson = (tag: number, version: number): Schema.Json => ({
   name: kindNames.get(tag) ?? null,

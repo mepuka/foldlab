@@ -15,7 +15,7 @@
  * vocabulary law.
  */
 import { Command } from "effect/unstable/cli"
-import { doctor, init, ls, publish, put, run, serve, show, status, verify } from "./commands.ts"
+import { doctor, help, init, ls, name, publish, put, run, serve, show, status, verify } from "./commands.ts"
 import { vocabulary } from "./vocabulary.ts"
 
 export const cas = Command.make("cas").pipe(
@@ -25,6 +25,7 @@ export const cas = Command.make("cas").pipe(
   // Roughly the order a newcomer meets them: make a store, ask what it
   // is, ask whether it is well, put something in, name it, look.
   Command.withSubcommands([
+    help,
     init,
     status,
     doctor,
@@ -32,6 +33,7 @@ export const cas = Command.make("cas").pipe(
     publish,
     ls,
     show,
+    name,
     run,
     verify,
     serve,

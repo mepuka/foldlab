@@ -18,11 +18,13 @@ import {
   Layer,
   Match,
   Option,
+  Predicate,
   Result,
   Schema,
 } from "effect"
 import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
 import { canonicalJson } from "../../src/cas/Value.ts"
+import { KindTagsByName } from "../../src/cas/generated/grammar/kindTags.ts"
 import { Cas } from "../../src/index.ts"
 import {
   backendOf,
@@ -58,6 +60,14 @@ import {
   type ObligationLedger,
 } from "./ledgers.ts"
 import {
+  AnnotationNode,
+  annotationsAbout,
+  NameKey,
+  nameablePlanes,
+  subjectFor,
+  type FoundAnnotation,
+} from "./naming.ts"
+import {
   layerServe,
   layerStderrLogs,
   policyOrDefault,
@@ -69,9 +79,16 @@ import {
  * runner prints the message through its own formatter and marks it
  * reported, so a refusal reads as guidance instead of a stack trace.
  * Store refusals go through the library's own error fold, so each
- * clause arrives named; anything else is normalized by `prettyErrors`,
- * which turns an Error, a string, or a bare primitive into one message
- * without this module reaching for `.message` itself.
+ * clause arrives named; the estate's own tagged refusals carry their
+ * curated sentences; and anything ELSE is a shape nobody wrote a
+ * sentence for, which is said out loud instead of being dressed up as
+ * a refusal the reader caused. A platform error slipping past a gate,
+ * a codec failing on a value this package built — the honest answer is
+ * the underlying detail verbatim, marked as uncurated, because a
+ * dressed-up sentence would claim an understanding this module does
+ * not have. (`prettyErrors` still normalizes the detail line, so
+ * an Error, a string, or a bare primitive all render without this
+ * module reaching for `.message` itself.)
  *
  * Only the typed error channel is mapped: defects keep their stack
  * traces and interrupts stay interrupts, because neither is something
@@ -81,11 +98,26 @@ const userFacing = <A, E, R>(
   program: Effect.Effect<A, E, R>,
 ): Effect.Effect<A, CliError.UserError, R> =>
   Effect.mapError(program, (error) => {
+    const detail = Cause.prettyErrors(Cause.fail(error))
+      .map((pretty) => pretty.message)
+      .join("\n")
+    // A curated refusal is one this estate wrote the sentence for: a
+    // tagged error minted in the CLI (`cli/…`) or the MCP host
+    // (`mcp/…`), whose `message` is already the everyday register.
+    // Read via `Reflect`, because the whole point here is being
+    // honestly unsure what `error` is.
+    const tag = Predicate.isObject(error) ? Reflect.get(error, "_tag") : undefined
+    const curated = Predicate.isString(tag)
+      && (tag.startsWith("cli/") || tag.startsWith("mcp/"))
     const message = Cas.isCasError(error)
       ? casErrorMessage(error)
-      : Cause.prettyErrors(Cause.fail(error))
-        .map((pretty) => pretty.message)
-        .join("\n")
+      : curated
+      ? detail
+      : [
+        `unexpected: ${detail}`,
+        "  cas has no curated sentence for this failure — the line above is the underlying",
+        "  answer, verbatim; if it does not explain itself, this is worth reporting",
+      ].join("\n")
     return new CliError.UserError({ cause: error, userMessage: message })
   })
 
@@ -180,11 +212,70 @@ export class NotAKindTag extends Schema.TaggedError<NotAKindTag>()(
   }
 }
 
+/** `--kind-tag` and `--program` contradict: a program document's nodes
+ * carry their own kinds, so a tag said beside it would be a claim with
+ * nothing to attach to. Refused rather than ignored — a flag that is
+ * silently dropped teaches a false model of the verb. */
+export class KindTagOnProgram extends Schema.TaggedError<KindTagOnProgram>()(
+  "cli/KindTagOnProgram",
+  { given: Schema.Int },
+) {
+  override get message(): string {
+    return [
+      `--kind-tag ${this.given} does not apply to --program`,
+      "  a program document's table carries its own kinds, node by node",
+      "  drop --kind-tag, or drop --program and put the file's bytes as one node",
+    ].join("\n")
+  }
+}
+
+/** The path exists but is not one file — a directory, most likely.
+ * `put`'s contract is a file's bytes, and this used to answer with the
+ * platform's own `BadResource`, which names neither the mistake nor
+ * the fix. `kind` is the platform's word for what the path actually
+ * is (`Directory`, `SymbolicLink`, …), said in lowercase. */
+export class NotAFile extends Schema.TaggedError<NotAFile>()(
+  "cli/NotAFile",
+  { file: Schema.String, kind: Schema.String },
+) {
+  override get message(): string {
+    return [
+      `not a file: ${this.file} — the path names a ${
+        this.kind.replaceAll(/(?<=[a-z])(?=[A-Z])/gu, " ").toLowerCase()
+      }`,
+      "  put reads one file's bytes; name a file, not the thing that holds it",
+    ].join("\n")
+  }
+}
+
+/** The addressed content sits on a plane the annotation subject union
+ * does not span, so nothing can be said ABOUT it yet. The refusal
+ * prints the five planes from the same table the arm switch reads, so
+ * the sentence and the union move together. */
+export class NotNameable extends Schema.TaggedError<NotNameable>()(
+  "cli/NotNameable",
+  { address: Schema.String, tag: Schema.Int },
+) {
+  override get message(): string {
+    const planes = nameablePlanes
+      .map(([plane, tag]) => `${plane} (${tagHex(tag)})`)
+      .join(", ")
+    return [
+      `nothing can be said about kind ${tagLabel(this.tag)} yet — the annotation plane does not span it`,
+      `  a name is an annotation, and an annotation's subject must be one of: ${planes}`,
+      `  the address ${this.address} holds kind ${tagLabel(this.tag)}`,
+      "  widening the subject union is a Lean ruling (Cas.Schema.AnnotationSubject), not a flag",
+    ].join("\n")
+  }
+}
+
 /* ── init ────────────────────────────────────────────────────────── */
 
 export const init = Command.make("init", {
   backend: Flag.choice("backend", ["file", "sqlite"]).pipe(
-    Flag.withDefault("file" as StoreBackend),
+    // Annotated, not asserted: the default is one of the choices, and
+    // the annotation is what keeps the flag's type the full union.
+    Flag.withDefault<StoreBackend>("file"),
     Flag.withDescription(
       "where the bytes live: file, a directory of objects; sqlite, one cas.db a litestream replica backs up",
     ),
@@ -388,6 +479,18 @@ export const ls = Command.make("ls", {
 
 /* ── show ────────────────────────────────────────────────────────── */
 
+/** One found annotation as a rendered line. The name seat's key wears
+ * the everyday label; any other key is shown as the annotation it is,
+ * key and all. A `ref`-valued annotation points, so its line does. */
+const annotationLine = (found: FoundAnnotation): string => {
+  const said = found.value._tag === "text"
+    ? found.value.text
+    : `-> ${found.value.address.address}`
+  return found.key === NameKey
+    ? `name       ${said}  (annotation ${found.annotation})`
+    : `annotation ${found.key} — ${said}  (${found.annotation})`
+}
+
 const showProgram = (address: string, json: boolean) =>
   Effect.gen(function* () {
     const id = yield* decodeAddress(address)
@@ -400,10 +503,18 @@ const showProgram = (address: string, json: boolean) =>
     yield* Console.log(`kind       ${tagLabel(node.kind.tag)}  (scheme ${node.kind.version})`)
     yield* Console.log(`payload    ${renderPayload(node.payload)}`)
     if (node.refs.length === 0) {
-      return yield* Console.log("links      none")
+      yield* Console.log("links      none")
     }
     for (const [index, ref] of node.refs.entries()) {
       yield* Console.log(`link ${index}     ${ref.id}  expects ${tagLabel(ref.expectedTag)}`)
+    }
+    // What the naming plane says ABOUT this node, names first — read
+    // off the published roots, because that is where `cas name` puts
+    // annotations so they can be found again. Sidecar content: it is
+    // reported after the node's own facts and never among them, and
+    // `--json` above stays the canonical document alone.
+    for (const found of yield* annotationsAbout(id)) {
+      yield* Console.log(annotationLine(found))
     }
   })
 
@@ -427,8 +538,125 @@ export const show = Command.make("show", {
     Effect.provide(layerStoreAt(store)),
     userFacing,
   )).pipe(Command.withDescription(
-    "one node, loaded and re-verified: its kind, payload, and typed links",
+    "one node, loaded and re-verified: its kind, payload, its typed links, and any published names it carries",
   ))
+
+/* ── name ────────────────────────────────────────────────────────── */
+
+/**
+ * THE NAMING SEAT (backend backlog wave 1, the convergent naming
+ * ruling): names are annotations, never identity. This verb writes one
+ * `Annotation` node — the Lean-pinned wire, key `foldlab/name`, working
+ * tag 0x41 at revision 1 — whose subject is the addressed content, and
+ * publishes it as a root so `show` can find it again. The named
+ * content itself does not move: equal content keeps its equal address,
+ * named or not.
+ */
+const nameProgram = (address: string, text: string, json: boolean) =>
+  Effect.gen(function* () {
+    const id = yield* decodeAddress(address)
+    const loader = yield* Cas.Loader
+    // Loaded first, fail-closed like `publish`: a name claims there is
+    // something there to name, so an address that will not load is
+    // refused before an annotation about it can exist.
+    const node = yield* loader.load(id)
+    const subject = subjectFor(node.kind.tag, id)
+    if (Option.isNone(subject)) {
+      return yield* new NotNameable({ address: id, tag: node.kind.tag })
+    }
+    const annotation = Cas.Annotations.annotationOn(subject.value)({
+      key: NameKey,
+      value: Cas.Annotations.text(text),
+    })
+    // Through the ordinary doors, both steps: the projection's put (so
+    // admission checks the typed edge to the subject), then fail-closed
+    // publication (so the name is findable, and audited with the rest).
+    const stored = yield* AnnotationNode.put(annotation)
+    const roots = yield* Cas.RootStore
+    yield* roots.publish(stored)
+    if (json) {
+      return yield* Console.log(renderJson({
+        annotation: stored,
+        key: NameKey,
+        named: id,
+        plane: subject.value._tag,
+        text,
+      }))
+    }
+    yield* Console.log(`named      ${id}`)
+    yield* Console.log(`kind       ${tagLabel(node.kind.tag)}  (scheme ${node.kind.version})`)
+    yield* Console.log(`name       ${text}`)
+    yield* Console.log(
+      `annotation ${stored}  (published as a root — cas show ${id} reads it back)`,
+    )
+  })
+
+/** The nameable planes as one prose clause, off the same table the arm
+ * switch reads — help and refusal say the same five, always. */
+const nameablePlanesListed = nameablePlanes
+  .map(([plane, tag]) => `${plane} (${tagHex(tag)})`)
+  .join(", ")
+
+export const name = Command.make("name", {
+  store: storeFlag,
+  json: jsonFlag,
+  address: Argument.string("address").pipe(
+    Argument.withDescription("the 64-hex address of the content to name"),
+  ),
+  text: Argument.string("text").pipe(
+    Argument.withDescription("the name — a human word for what lives at that address"),
+  ),
+}, ({ address, json, store, text }) =>
+  nameProgram(address, text, json).pipe(
+    Effect.provide(layerStoreAt(store)),
+    userFacing,
+  )).pipe(
+    Command.withShortDescription(
+      "give the content at an address a human name — an annotation, itself stored and published",
+    ),
+    Command.withDescription([
+      "give the content at an address a human name — an annotation, itself stored and published",
+      "",
+      "  A name is store content, never identity: one annotation node is written (key",
+      "  foldlab/name, the Lean pin's own spelling) whose subject is the address you",
+      "  named, and it is published as a root so it can be found again. The named",
+      "  content does not change and its address does not move. `cas show <address>`",
+      "  prints the names it finds; the same name said twice is one node, said once,",
+      "  and a second name never replaces a first — the store only grows.",
+      `  The annotation plane spans five kinds today: ${nameablePlanesListed}.`,
+      "  Anything else is refused by name: widening the plane is a Lean ruling",
+      "  (Cas.Schema.AnnotationSubject), not a flag. Add --wizard to be walked through it.",
+    ].join("\n")),
+  )
+
+/* ── help ────────────────────────────────────────────────────────── */
+
+/**
+ * The landing page — the estate in a dozen lines, for the reader who
+ * types `cas help` the way every other tool has taught them to. It is
+ * a real verb rather than an alias for `--help` because it answers a
+ * different question: not "what are the flags" but "where do I start".
+ */
+const landing = [
+  "cas — a content-addressed store: content in, address back; equal content, equal address",
+  "",
+  "  start        cas init                     make a store here (the only verb that ever creates one)",
+  "  look         cas status · cas doctor      what this store is; what the lab it sits in has proved",
+  "  write        cas put <file>               a file's bytes become one node; the address is the answer",
+  "  entry points cas publish <address>        loaded first, fail-closed · cas ls lists every root",
+  "  read         cas show <address>           one node, re-verified · cas verify audits everything reachable",
+  "  name         cas name <address> <text>    a human word on stored content — itself stored content",
+  "  run          cas run <address>            run the program stored at an address; the answer is its history",
+  "  serve        cas serve                    MCP over stdio for agents — see cas serve --help before relying on it",
+  "",
+  "  every verb answers --json (serve excepted: stdout is the protocol), and --wizard walks you through one",
+  "  exit codes: 0, the verb answered (help included); 1, refused — the reason reads under ERROR on stderr",
+  "  depth: cas <verb> --help · library/cas/REGISTRY.md (the kinds) · library/effects/VOCABULARY.md (the words)",
+].join("\n")
+
+export const help = Command.make("help", {}, () => Console.log(landing)).pipe(
+  Command.withDescription("where to start — the estate in a dozen lines"),
+)
 
 /* ── put ─────────────────────────────────────────────────────────── */
 
@@ -461,6 +689,23 @@ const workingTagNote = (tag: number): string =>
     "  the named kinds are in library/cas/REGISTRY.md",
   ].join("\n")
 
+/** The file gate both put registers share: the path must exist, and it
+ * must be a FILE. Without the second check a directory reaches the
+ * platform reader and answers `BadResource: FileSystem.readFile`,
+ * which names neither the mistake nor the fix (transcript row A7). */
+const requireFile = (
+  file: string,
+): Effect.Effect<void, NoSuchFile | NotAFile, FileSystem.FileSystem> =>
+  FileSystem.FileSystem.pipe(
+    Effect.flatMap((fs) => fs.stat(file)),
+    Effect.mapError(() => new NoSuchFile({ file })),
+    Effect.filterOrFail(
+      (info) => info.type === "File",
+      (info) => new NotAFile({ file, kind: info.type }),
+    ),
+    Effect.asVoid,
+  )
+
 const putProgram = (file: string, kindTag: number, json: boolean) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
@@ -469,9 +714,7 @@ const putProgram = (file: string, kindTag: number, json: boolean) =>
     if (!Number.isInteger(kindTag) || kindTag < 0 || kindTag > 0xff) {
       return yield* new NotAKindTag({ given: kindTag })
     }
-    if (!(yield* fs.exists(file).pipe(Effect.orElseSucceed(() => false)))) {
-      return yield* new NoSuchFile({ file })
-    }
+    yield* requireFile(file)
     const payload = yield* fs.readFile(file)
     const store = yield* Cas.Store
     // One node, no links: `put` is the store law's own door, so every
@@ -522,20 +765,34 @@ const putProgram = (file: string, kindTag: number, json: boolean) =>
  * would be a hoover-side artifact claiming an execute-side result, and
  * the decoder refuses it. Words come from running.
  */
-const putProgramDocument = (file: string) =>
+const putProgramDocument = (file: string, json: boolean) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
+    yield* requireFile(file)
     const document = yield* decodeLiftDocument(yield* fs.readFileString(file))
     const store = yield* Cas.Store
     const stored = yield* Cas.Programs.putProgram(store, document.program)
-    yield* Console.log([
-      `address    ${stored.address}`,
-      // "kind program", not "kind 0x0f": the tag is protocol register
-      // and this verb speaks the everyday one.
-      `kind       program  (scheme ${Cas.SchemeVersion})`,
-      `program    ${document.name}`,
+    if (json) {
+      // The same facts as the prose, and the same kind spelling every
+      // other verb's machine register uses — the registry row, named.
+      return yield* Console.log(renderJson({
+        address: stored.address,
+        kind: kindJson(KindTagsByName.cont, Cas.SchemeVersion),
+        lines: stored.steps.length,
+        program: document.name,
+      }))
+    }
+    yield* Console.log(`address    ${stored.address}`)
+    // "kind program", not "kind cont" and not bare hex: the everyday
+    // overlay (vocabulary collision 3), through the one renderer
+    // every verb's kind line goes through — and one log per line, the
+    // way every other verb prints, so the two registers of `put` read
+    // as one voice.
+    yield* Console.log(`kind       ${tagLabel(KindTagsByName.cont)}  (scheme ${Cas.SchemeVersion})`)
+    yield* Console.log(`program    ${document.name}`)
+    yield* Console.log(
       `lines      ${stored.steps.length} ${stored.steps.length === 1 ? "step" : "steps"}`,
-    ].join("\n"))
+    )
   })
 
 /** The lift document, in the shape the emitter writes it.
@@ -622,10 +879,18 @@ export const put = Command.make("put", {
   file: Argument.string("file").pipe(
     Argument.withDescription("the file whose bytes become the payload"),
   ),
-}, ({ file, json, kindTag, program, store }) =>
-  (program
-    ? putProgramDocument(file).pipe(Effect.provide(layerStoreAt(store)), userFacing)
-    : putProgram(file, kindTag, json).pipe(Effect.provide(layerStoreAt(store)), userFacing))).pipe(Command.withDescription(
+}, ({ file, json, kindTag, program, store }) => {
+  // The two flags contradict, and the contradiction is judged before
+  // the store is even resolved: a usage mistake must not come back as
+  // a store refusal when the path happens to be wrong too.
+  if (program && kindTag !== defaultKindTag) {
+    return Effect.fail(new KindTagOnProgram({ given: kindTag })).pipe(userFacing)
+  }
+  if (program) {
+    return putProgramDocument(file, json).pipe(Effect.provide(layerStoreAt(store)), userFacing)
+  }
+  return putProgram(file, kindTag, json).pipe(Effect.provide(layerStoreAt(store)), userFacing)
+}).pipe(Command.withDescription(
     "put a file's bytes in the store as one node — the address is the answer, and equal bytes give it back unchanged; --program puts a program document's whole table instead",
   ))
 
@@ -650,22 +915,25 @@ const runStoredProgram = (address: string, json: boolean) =>
     const store = yield* Cas.Store
     const program = yield* Cas.Programs.loadProgram(store, id)
     const outcome = yield* Cas.Programs.runProgram(store, program)
-    yield* Console.log(json
+    if (json) {
       // `word` is the model's name and it stays the name in --json,
       // because word equality is the conformance gate. The bytes go
       // through the ratified canonical printer, like every other
       // --json surface in this package.
-      ? canonicalJson({
+      return yield* Console.log(canonicalJson({
         program: id,
         lines: program.length,
         word: outcome.word.map((admitted) => ({ address: admitted })),
-      })
-      : [
-        `program    ${id}`,
-        `lines      ${program.length} ${program.length === 1 ? "step" : "steps"}`,
-        `history    ${outcome.word.length} admitted`,
-        ...outcome.word.map((admitted, position) => `  ${position}  ${admitted}`),
-      ].join("\n"))
+      }))
+    }
+    // One log per line, like every other verb — the suite reads lines,
+    // and so does a person.
+    yield* Console.log(`program    ${id}`)
+    yield* Console.log(`lines      ${program.length} ${program.length === 1 ? "step" : "steps"}`)
+    yield* Console.log(`history    ${outcome.word.length} admitted`)
+    for (const [position, admitted] of outcome.word.entries()) {
+      yield* Console.log(`  ${position}  ${admitted}`)
+    }
   })
 
 export const run = Command.make("run", {
@@ -733,16 +1001,24 @@ export const publish = Command.make("publish", {
  * config — and handed to the host, which knows about policies and
  * nothing about where stores live.
  */
-const layerServeHere = Layer.unwrap(Effect.gen(function* () {
-  const location = yield* StoreLocation
-  const config = yield* readConfig(location)
-  yield* Effect.logInfo("store opened").pipe(
-    Effect.annotateLogs({ store: location.store, origin: location.origin }),
-  )
-  return layerServe(policyOrDefault(
-    Option.isSome(config) ? config.value.serve : undefined,
-  ))
-}))
+const layerServeHere = Layer.unwrap(
+  StoreLocation.pipe(
+    Effect.flatMap((location) =>
+      readConfig(location).pipe(
+        Effect.tap(() =>
+          Effect.logInfo("store opened").pipe(
+            Effect.annotateLogs({ store: location.store, origin: location.origin }),
+          )
+        ),
+      )
+    ),
+    Effect.map((config) =>
+      layerServe(policyOrDefault(
+        Option.isSome(config) ? config.value.serve : undefined,
+      ))
+    ),
+  ),
+)
 
 /**
  * The MCP host, over the store this invocation resolves — the verb the
@@ -761,13 +1037,26 @@ const layerServeHere = Layer.unwrap(Effect.gen(function* () {
  */
 export const serve = Command.make("serve", {
   store: storeFlag,
-}, ({ store }) =>
-  serveUntilClosed.pipe(
-    Effect.provide(layerServeHere),
-    Effect.provide(layerStoreAt(store)),
-    Effect.provide(layerStderrLogs),
+}, ({ store }) => {
+  // ONE provide, one composed layer — a chain of provides re-scopes
+  // service lifecycles call by call (the tsc rule's exact complaint).
+  // The shape is the chain's meaning, spelled as layers: the host
+  // layer is BUILT over the store and the stderr logger — its boot
+  // gate and its "store opened" line must see both, and on stdio a
+  // boot-time log routed through a default logger would corrupt the
+  // protocol stream — and the store and logger are merged back in for
+  // the serving loop itself. The same layer values appear once each,
+  // so memoization builds each of them once.
+  const layerStoreHere = layerStoreAt(store)
+  return serveUntilClosed.pipe(
+    Effect.provide(Layer.mergeAll(
+      layerServeHere.pipe(Layer.provide(Layer.mergeAll(layerStoreHere, layerStderrLogs))),
+      layerStoreHere,
+      layerStderrLogs,
+    )),
     userFacing,
-  )).pipe(
+  )
+}).pipe(
     // The verb table gets the one line; `serve --help` gets what BS-1
     // landed. Without the short form the whole boot-gate paragraph is
     // repeated inside `cas --help`'s subcommand listing.

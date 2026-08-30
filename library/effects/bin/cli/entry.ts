@@ -114,6 +114,32 @@ const refusalLines = (
     }
 }
 
+/**
+ * The one parse mistake the runner cannot even see straight: a flag
+ * VALUE that begins with a dash. `--kind-tag -1` is tokenized as an
+ * empty `--kind-tag` plus an unknown flag `-1`, so the reader gets two
+ * complaints about a mistake they did not make. When that exact pair
+ * is present, collapse it to the one sentence that helps: the `=`
+ * spelling. Anything else falls through to the ordinary rendering.
+ */
+const dashedValueLines = (
+  errors: ReadonlyArray<CliError.NonShowHelpErrors>,
+): ReadonlyArray<string> | undefined => {
+  const dashed = errors.find(
+    (error) => error._tag === "UnrecognizedOption" && /^-\d/u.test(error.option),
+  )
+  const emptied = errors.find(
+    (error) => error._tag === "InvalidValue" && error.kind === "flag" && error.value === "",
+  )
+  if (dashed?._tag !== "UnrecognizedOption" || emptied?._tag !== "InvalidValue") {
+    return undefined
+  }
+  return [
+    `${emptied.option} was left empty, and ${dashed.option} was read as a flag`,
+    `a value that starts with "-" needs the = spelling: --${emptied.option}=${dashed.option}`,
+  ]
+}
+
 /** The refusal as the runner's formatter would have laid it out — the
  * same ERROR heading and two-space indent every other refusal in this
  * CLI already uses, so the register does not change with the source of
@@ -124,7 +150,7 @@ const renderRefusal = (
   doc: HelpDoc.HelpDoc,
 ): string =>
   [
-    ...errors.flatMap((error) => refusalLines(error, doc)),
+    ...dashedValueLines(errors) ?? errors.flatMap((error) => refusalLines(error, doc)),
     `usage: ${doc.usage}`,
   ].map((line) => `  ${line}`).join("\n")
 
@@ -150,9 +176,9 @@ const showRefusal = (
   leadIn: string,
 ): Effect.Effect<void> =>
   Console.error(`${leadIn}ERROR\n${message}`).pipe(
-    Effect.andThen(Effect.sync(() => {
-      ;(error as { [Runtime.errorReported]?: boolean })[Runtime.errorReported] = false
-    })),
+    // `Reflect.set` rather than a cast: the property is the runtime's
+    // own symbol on a value this module does not otherwise shape.
+    Effect.andThen(Effect.sync(() => Reflect.set(error, Runtime.errorReported, false))),
   )
 
 /**
@@ -163,6 +189,22 @@ const showRefusal = (
  * `CliOutput.Formatter` is a record of SYNCHRONOUS functions, so there
  * is no effect to run inside it, and the cell lives and dies inside one
  * invocation of this function.
+ *
+ * ## Stream discipline
+ *
+ * The deferring formatter answers the runner's `Console.log` with an
+ * empty string, and without countermeasures that call still lands: one
+ * bare newline on STDOUT, at the top of `--help` and — worse — on
+ * every parse refusal, where stdout is supposed to stay empty so a
+ * pipe reading it sees nothing. So the runner is given a Console whose
+ * `log` swallows exactly that one write: the formatter arms a one-shot
+ * flag when it defers, and the very next empty `log` is dropped. The
+ * flag is one-shot and the two `formatHelpDoc` call sites in the
+ * runner (`Command.ts` `showHelp`, `GlobalFlag.ts` `--help`) both log
+ * immediately after formatting, so a verb's own deliberate blank line
+ * — `doctor` prints one — can never be the write that is swallowed.
+ * Everything else (`error`, verb output, `--version`) passes through
+ * the Console that was already in context, untouched.
  */
 export const runCas = <Name extends string, Input, E, R, ContextInput>(
   command: Command.Command<Name, Input, ContextInput, E, R>,
@@ -170,48 +212,65 @@ export const runCas = <Name extends string, Input, E, R, ContextInput>(
 ) =>
 (args: ReadonlyArray<string>) => {
   let held: HelpDoc.HelpDoc | undefined
+  let swallowEmptyLog = false
   const base = CliOutput.defaultFormatter()
   const deferring: CliOutput.Formatter = {
     ...base,
     formatHelpDoc: (doc) => {
       held = doc
+      swallowEmptyLog = true
       return ""
     },
   }
+  /** The Console in context, with the formatter's one empty write
+   * dropped. Built over whatever Console the invocation already has,
+   * so a capturing test Console is wrapped, never replaced. */
+  const quieted = (real: Console.Console): Console.Console =>
+    Object.assign(Object.create(real), {
+      log: (...parts: ReadonlyArray<unknown>) => {
+        if (swallowEmptyLog && parts.length === 1 && parts[0] === "") {
+          swallowEmptyLog = false
+          return
+        }
+        return real.log(...parts)
+      },
+    })
   /** The document the runner tried to print, printed. */
   const releaseHeld = Effect.suspend(() =>
     held === undefined ? Effect.void : Console.log(base.formatHelpDoc(held))
   )
-  return Command.runWith(command, { ...options, renderErrors: false })(args).pipe(
-    // Success with a held document is help that was asked for: the
-    // `--help` flag prints through the same formatter (`GlobalFlag.ts`),
-    // and it is the only thing that reaches here having stored one.
-    Effect.tap(() => releaseHeld),
-    Effect.tapError((error) => {
-      if (!CliError.isCliError(error)) return Effect.void
-      if (error._tag === "UserError") {
-        // The estate's own multi-line refusals already carry the
-        // two-space indent on their continuation lines, so only the
-        // first needs one — exactly what the runner's formatter does.
-        // Nothing has been written yet on this path, so the blank line
-        // that separates a refusal from the command above it is ours.
-        return showRefusal(`  ${error.userMessage ?? String(error.cause)}`, error, "\n")
-      }
-      if (error._tag !== "ShowHelp") return Effect.void
-      // No errors beneath it means the document IS the answer: `cas`
-      // with no verb, whose help is what a bare invocation should
-      // print. Errors beneath it mean a refusal, and a refusal is not
-      // a help request.
-      if (error.errors.length === 0) return releaseHeld
-      // The runner has already written one blank line here — the empty
-      // string the deferring formatter handed its `Console.log` — so
-      // this path must not write a second.
-      return Effect.suspend(() =>
-        held === undefined
-          ? Effect.void
-          : showRefusal(renderRefusal(error.errors, held), error, "")
-      )
-    }),
-    Effect.provideService(CliOutput.Formatter, deferring),
-  )
+  return Effect.flatMap(Console.Console, (real) =>
+    Command.runWith(command, { ...options, renderErrors: false })(args).pipe(
+      // Success with a held document is help that was asked for: the
+      // `--help` flag prints through the same formatter (`GlobalFlag.ts`),
+      // and it is the only thing that reaches here having stored one.
+      Effect.tap(() => releaseHeld),
+      Effect.tapError((error) => {
+        if (!CliError.isCliError(error)) return Effect.void
+        if (error._tag === "UserError") {
+          // The estate's own multi-line refusals already carry the
+          // two-space indent on their continuation lines, so only the
+          // first needs one — exactly what the runner's formatter does.
+          // Nothing has been written yet on this path, so the blank line
+          // that separates a refusal from the command above it is ours.
+          return showRefusal(`  ${error.userMessage ?? String(error.cause)}`, error, "\n")
+        }
+        if (error._tag !== "ShowHelp") return Effect.void
+        // No errors beneath it means the document IS the answer: `cas`
+        // with no verb, whose help is what a bare invocation should
+        // print. Errors beneath it mean a refusal, and a refusal is not
+        // a help request.
+        if (error.errors.length === 0) return releaseHeld
+        // The runner's own blank line was swallowed to keep stdout
+        // empty on a refusal, so the separating newline is owed here,
+        // on stderr with the rest of the message.
+        return Effect.suspend(() =>
+          held === undefined
+            ? Effect.void
+            : showRefusal(renderRefusal(error.errors, held), error, "\n")
+        )
+      }),
+      Effect.provideService(CliOutput.Formatter, deferring),
+      Effect.provideService(Console.Console, quieted(real)),
+    ))
 }
