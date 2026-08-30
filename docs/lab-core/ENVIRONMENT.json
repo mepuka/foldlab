@@ -63,7 +63,7 @@
       "supportInterpreter": false
     },
     {
-      "declaredOutputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramLifts.json"],
+      "declaredOutputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramAddresses.json", "../effects/test/generated/VectorProgramLifts.json"],
       "drivenBy": "gen:backend-programs",
       "gatedBy": {
         "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
@@ -476,7 +476,7 @@
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:backend-programs",
-      "outputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramLifts.json"],
+      "outputs": ["../effects/test/generated/VectorPrograms.ts", "../effects/test/generated/VectorProgramAddresses.json", "../effects/test/generated/VectorProgramLifts.json"],
       "residence": "portable",
       "residenceReason": "all inputs tracked",
       "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]

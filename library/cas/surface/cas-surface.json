@@ -1,25 +1,25 @@
 {
   "areaCensus": {
     "Architecture": 34,
-    "Backend": 122,
-    "Codec": 267,
-    "Core": 347,
+    "Backend": 132,
+    "Codec": 269,
+    "Core": 348,
     "Grammar": 130,
     "IR": 137,
-    "Lang": 291,
+    "Lang": 296,
     "Lift": 77,
-    "Schema": 623,
+    "Schema": 626,
     "Values": 456,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 236,
-    "Quot.sound": 407,
-    "propext": 567
+    "Classical.choice": 238,
+    "Quot.sound": 410,
+    "propext": 570
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 190,
+    "Cas.Addr32": 191,
     "Cas.Binding": 54,
     "Cas.Grammar.Tree": 30,
     "Cas.Grammar.Ty": 42,
@@ -30,13 +30,13 @@
     "Cas.Lang.Status": 55,
     "Cas.Lang.interpret": 14,
     "Cas.Node": 93,
-    "Cas.Schema.Ast": 336,
-    "Cas.Schema.Described": 41,
+    "Cas.Schema.Ast": 338,
+    "Cas.Schema.Described": 43,
     "Cas.Schema.El": 42,
     "Cas.Word": 111
   },
-  "declarations": 1916,
-  "documented": 956,
+  "declarations": 1932,
+  "documented": 965,
   "library": "Cas",
   "modules": [
     {
@@ -747,8 +747,8 @@
       ]
     },
     {
-      "declarations": 52,
-      "documented": 24,
+      "declarations": 68,
+      "documented": 33,
       "module": "Cas.Backend.Mcp",
       "surface": [
         {
@@ -789,9 +789,23 @@
         },
         {
           "documented": true,
-          "kind": "structure",
+          "kind": "inductive",
           "name": "Cas.Backend.Mcp.RunInstruction",
           "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.ctorElim",
+          "signature": "{motive : Cas.Backend.Mcp.RunInstruction → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Mcp.RunInstruction) → ctorIdx = t.ctorIdx → Cas.Backend.Mcp.RunInstruction.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunInstruction.ctorElimType",
+          "signature": "{motive : Cas.Backend.Mcp.RunInstruction → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
         },
         {
           "documented": true,
@@ -805,28 +819,14 @@
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Backend.Mcp.RunInstruction.ofPLine_load",
-          "signature": "∀ (src : Cas.Lang.PIn), Cas.Backend.Mcp.RunInstruction.ofPLine (Cas.Lang.PLine.load src) = none",
+          "signature": "∀ (src : Cas.Lang.PIn), Cas.Backend.Mcp.RunInstruction.ofPLine (Cas.Lang.PLine.load src) = Option.map Cas.Backend.Mcp.RunInstruction.load (Cas.Backend.Mcp.RunOperand.ofPIn src)",
           "touches": ["Backend", "Lang"]
-        },
-        {
-          "documented": false,
-          "kind": "def",
-          "name": "Cas.Backend.Mcp.RunInstruction.payloadHex",
-          "signature": "Cas.Backend.Mcp.RunInstruction → String",
-          "touches": ["Backend"]
         },
         {
           "documented": false,
           "kind": "def",
           "name": "Cas.Backend.Mcp.RunInstruction.rawSchema",
           "signature": "String"
-        },
-        {
-          "documented": false,
-          "kind": "def",
-          "name": "Cas.Backend.Mcp.RunInstruction.refs",
-          "signature": "Cas.Backend.Mcp.RunInstruction → List Cas.Backend.Mcp.RunRef",
-          "touches": ["Backend"]
         },
         {
           "carriers": ["Cas.Schema.Ast"],
@@ -837,10 +837,11 @@
           "touches": ["Schema"]
         },
         {
-          "documented": false,
-          "kind": "def",
-          "name": "Cas.Backend.Mcp.RunInstruction.tag",
-          "signature": "Cas.Backend.Mcp.RunInstruction → Cas.Schema.SafeInt",
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.RunInstruction.schemaDiscriminated",
+          "signature": "(Cas.Schema.Described.code Cas.Backend.Mcp.RunInstruction).discriminated = true",
           "touches": ["Backend", "Schema"]
         },
         {
@@ -851,11 +852,69 @@
           "touches": ["Backend", "Lang"]
         },
         {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.Mcp.RunOperand",
+          "signature": "Type"
+        },
+        {
           "documented": false,
           "kind": "def",
-          "name": "Cas.Backend.Mcp.RunInstruction.version",
-          "signature": "Cas.Backend.Mcp.RunInstruction → Cas.Schema.SafeInt",
+          "name": "Cas.Backend.Mcp.RunOperand.ctorElim",
+          "signature": "{motive : Cas.Backend.Mcp.RunOperand → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.Mcp.RunOperand) → ctorIdx = t.ctorIdx → Cas.Backend.Mcp.RunOperand.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunOperand.ctorElimType",
+          "signature": "{motive : Cas.Backend.Mcp.RunOperand → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunOperand.ofPIn",
+          "signature": "Cas.Lang.PIn → Option Cas.Backend.Mcp.RunOperand",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.RunOperand.ofPIn_lit",
+          "signature": "∀ (a : Cas.Addr32), Cas.Backend.Mcp.RunOperand.ofPIn (Cas.Lang.PIn.lit a) = some (Cas.Backend.Mcp.RunOperand.literal (Cas.hexS a.val))",
+          "touches": ["Backend", "Codec", "Core", "Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunOperand.rawSchema",
+          "signature": "String"
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunOperand.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.RunOperand.schemaDiscriminated",
+          "signature": "(Cas.Schema.Described.code Cas.Backend.Mcp.RunOperand).discriminated = true",
           "touches": ["Backend", "Schema"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunOperand.toPIn",
+          "signature": "Cas.Backend.Mcp.RunOperand → Option Cas.Lang.PIn",
+          "touches": ["Backend", "Lang"]
         },
         {
           "documented": true,
@@ -932,8 +991,8 @@
           "documented": true,
           "kind": "theorem",
           "name": "Cas.Backend.Mcp.RunRef.ofPRef_lit",
-          "signature": "∀ (t : UInt8) (a : Cas.Addr32), Cas.Backend.Mcp.RunRef.ofPRef (t, Cas.Lang.PIn.lit a) = none",
-          "touches": ["Backend", "Core", "Lang"]
+          "signature": "∀ (t : UInt8) (a : Cas.Addr32), Cas.Backend.Mcp.RunRef.ofPRef (t, Cas.Lang.PIn.lit a) = some { expectedTag := Cas.Backend.Mcp.safeOfUInt8✝ t, source := Cas.Backend.Mcp.RunOperand.literal (Cas.hexS a.val) }",
+          "touches": ["Backend", "Codec", "Core", "Lang"]
         },
         {
           "documented": false,
@@ -953,15 +1012,42 @@
           "documented": false,
           "kind": "def",
           "name": "Cas.Backend.Mcp.RunRef.source",
-          "signature": "Cas.Backend.Mcp.RunRef → Cas.Schema.SafeInt",
-          "touches": ["Backend", "Schema"]
+          "signature": "Cas.Backend.Mcp.RunRef → Cas.Backend.Mcp.RunOperand",
+          "touches": ["Backend"]
         },
         {
           "documented": true,
           "kind": "def",
           "name": "Cas.Backend.Mcp.RunRef.toPRef",
-          "signature": "Cas.Backend.Mcp.RunRef → UInt8 × Cas.Lang.PIn",
+          "signature": "Cas.Backend.Mcp.RunRef → Option (UInt8 × Cas.Lang.PIn)",
           "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.Mcp.RunRefParams",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRefParams.rawSchema",
+          "signature": "String"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRefParams.root",
+          "signature": "Cas.Backend.Mcp.RunRefParams → String",
+          "touches": ["Backend"]
+        },
+        {
+          "carriers": ["Cas.Schema.Ast"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.RunRefParams.schemaCode",
+          "signature": "Cas.Schema.Ast",
+          "touches": ["Schema"]
         },
         {
           "documented": true,
@@ -1035,6 +1121,14 @@
           "carriers": ["Cas.Schema.Described"],
           "documented": false,
           "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunOperand",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunOperand",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
           "name": "Cas.Backend.Mcp.instDescribedRunParams",
           "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunParams",
           "touches": ["Backend", "Schema"]
@@ -1045,6 +1139,14 @@
           "kind": "instance",
           "name": "Cas.Backend.Mcp.instDescribedRunRef",
           "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunRef",
+          "touches": ["Backend", "Schema"]
+        },
+        {
+          "carriers": ["Cas.Schema.Described"],
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.Mcp.instDescribedRunRefParams",
+          "signature": "Cas.Schema.Described Cas.Backend.Mcp.RunRefParams",
           "touches": ["Backend", "Schema"]
         },
         {
@@ -1084,6 +1186,14 @@
           "touches": ["Backend", "Lang"]
         },
         {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.Mcp.ofPProg_isSome",
+          "signature": "∀ {p : Cas.Lang.PProg}, (∀ (l : Cas.Lang.PLine), l ∈ p → l.WF) → (Cas.Backend.Mcp.RunParams.ofPProg p).isSome = true",
+          "touches": ["Backend", "Lang"]
+        },
+        {
           "documented": true,
           "kind": "def",
           "name": "Cas.Backend.Mcp.ofPRefs",
@@ -1112,6 +1222,13 @@
           "kind": "theorem",
           "name": "Cas.Backend.Mcp.toPProg_ofPProg",
           "signature": "∀ {p : Cas.Lang.PProg} {d : Cas.Backend.Mcp.RunParams}, Cas.Backend.Mcp.RunParams.ofPProg p = some d → d.toPProg = some p",
+          "touches": ["Backend", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.Mcp.toPRefs",
+          "signature": "List Cas.Backend.Mcp.RunRef → Option (List (UInt8 × Cas.Lang.PIn))",
           "touches": ["Backend", "Lang"]
         },
         {
@@ -15114,10 +15231,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1024,
-    "inductive": 47,
-    "instance": 104,
+    "def": 1032,
+    "inductive": 49,
+    "instance": 106,
     "structure": 63,
-    "theorem": 674
+    "theorem": 678
   }
 }

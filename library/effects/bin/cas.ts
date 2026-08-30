@@ -18,7 +18,7 @@
 import { BunRuntime, BunServices } from "@effect/platform-bun"
 import { Effect } from "effect"
 import { Command } from "effect/unstable/cli"
-import { init, ls, publish, put, serve, show, status, verify } from "./cli/commands.ts"
+import { init, ls, publish, put, run, serve, show, status, verify } from "./cli/commands.ts"
 
 /** The everyday register, seeded from VOCABULARY.md — the words every
  * rendered surface uses, and no others. */
@@ -29,6 +29,8 @@ const vocabulary = [
   "  kind     the form a thing takes: value, file, blob, schema",
   "  link     a typed edge to another address, declaring the kind it expects",
   "  roots    the addresses published as entry points",
+  "  program  a table of steps, itself content — put it, publish it, run it",
+  "  history  the record of a run: what was admitted, in order",
   "  refused  a put that broke a store law; every refusal carries its clause",
   "  verify   re-hash and re-decode everything reachable",
 ].join("\n")
@@ -37,7 +39,7 @@ const cas = Command.make("cas").pipe(
   Command.withDescription(
     `a content-addressed store as a data structure\n\n${vocabulary}`,
   ),
-  Command.withSubcommands([init, status, put, publish, ls, show, verify, serve]),
+  Command.withSubcommands([init, status, put, publish, ls, show, run, verify, serve]),
 )
 
 BunRuntime.runMain(

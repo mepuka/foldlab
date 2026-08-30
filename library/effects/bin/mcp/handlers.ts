@@ -22,7 +22,7 @@ import { Cause, Effect, Exit, Metric, Option, Semaphore } from "effect"
 import { Cas } from "../../src/index.ts"
 import { casErrorMessage, toBinding } from "../cli/render.ts"
 import * as Telemetry from "./telemetry.ts"
-import { casToolkit, Refused } from "./tools.ts"
+import { casToolkit, Refused, type RunInstruction, type RunOperand } from "./tools.ts"
 
 /** A store refusal in the tools' register: the library's clause tag,
  * and the CLI's own rendering of it as the detail. */
@@ -38,18 +38,13 @@ const refuseBackend = (error: Cas.BackendFailure): Refused =>
     detail: `the store could not answer: ${error.reason}`,
   })
 
-/** A refusal that is the document's, not the store's: an instruction
- * naming an answer that has not been given yet. The document's
- * references are answer INDICES, so this is the one thing a
- * well-formed instruction list can still get wrong. */
-const unresolved = (instruction: number, source: number, answered: number): Refused =>
-  new Refused({
-    clause: "mcp/UnresolvedAnswer",
-    detail:
-      `refused: instruction ${instruction} names answer ${source}, but only ${answered} ${
-        answered === 1 ? "answer precedes" : "answers precede"
-      } it — a reference names an EARLIER answer by index`,
-  })
+/* The `mcp/UnresolvedAnswer` clause that stood here is gone, and the
+ * fact it named has not. A code point naming an answer that has not
+ * been given is refused by `Cas.Programs.runProgram` — the library
+ * door every semantic step in this file goes through — so it arrives
+ * with the library's own clause and the same sentence, and this host
+ * no longer owns a second refusal register for a fact the store plane
+ * already judges. */
 
 /** The `ServePolicy` numbers that mean the same thing on every
  * transport: a cap on the payload of a node this host will admit, and
@@ -78,6 +73,45 @@ const withinLimit = (
   payload.length > limits.maxNodeBytes
     ? Effect.fail(tooLarge(payload.length, limits.maxNodeBytes))
     : Effect.void
+
+/** One submitted instruction as one code point of the carrier —
+ * `RunInstruction.toPLine`, on this side of the wire.
+ *
+ * Total, because the carrier decoded the document already: the hex is
+ * bytes by the time it arrives, and an address is a `ContentId`. What
+ * this does own is the SIZE cap, which is the host's policy and not the
+ * store's law, so it is applied here where the payload is still one
+ * instruction rather than after the table is assembled. */
+const toProgram = (
+  instructions: ReadonlyArray<typeof RunInstruction.Type>,
+  limits: NodeLimits,
+): Effect.Effect<Cas.Programs.Program, Refused> =>
+  Effect.forEach(instructions, (instruction) =>
+    instruction._tag === "load"
+      ? Effect.succeed<Cas.Programs.Line>({
+        _tag: "load",
+        source: toOperand(instruction.source),
+      })
+      : withinLimit(instruction.payloadHex, limits).pipe(
+        Effect.as<Cas.Programs.Line>({
+          _tag: "put",
+          version: instruction.version,
+          tag: instruction.tag,
+          payload: instruction.payloadHex,
+          refs: instruction.refs.map((ref) => ({
+            expectedTag: ref.expectedTag,
+            source: toOperand(ref.source),
+          })),
+        }),
+      ))
+
+/** A document operand as the carrier's — `RunOperand.toPIn`. */
+const toOperand = (
+  operand: typeof RunOperand.Type,
+): Cas.Programs.Operand =>
+  operand._tag === "literal"
+    ? Cas.Programs.literal(operand.addressHex)
+    : Cas.Programs.answer(operand.index)
 
 /**
  * The whole handler table. `Toolkit.toLayer` turns it into the
@@ -187,36 +221,55 @@ export const layerHandlers = (limits: NodeLimits) =>
       cas_run: ({ instructions }) =>
         served("cas_run", Effect.gen(function* () {
           const store = yield* Cas.Store
-          // The word, in admission order. A self-contained program starts
-          // from the empty word: the document carries every instruction it
-          // depends on, and an index that reaches past what has been
-          // answered is refused rather than resolved against store state.
-          const word: Array<Cas.ContentId> = []
-          for (const [index, instruction] of instructions.entries()) {
-            const refs: Array<Cas.Reference> = []
-            for (const reference of instruction.refs) {
-              const answered = word[reference.source]
-              if (answered === undefined) {
-                return yield* unresolved(index, reference.source, word.length)
-              }
-              refs.push({ id: answered, expectedTag: reference.expectedTag })
-            }
-            yield* withinLimit(instruction.payloadHex, limits)
-            const address = yield* store.put(Cas.NodeInput.make({
-              kind: { version: instruction.version, tag: instruction.tag },
-              payload: instruction.payloadHex,
-              refs,
-            })).pipe(Effect.mapError(refuse))
-            word.push(address)
-            yield* Effect.logDebug("instruction admitted").pipe(
-              Effect.annotateLogs({ instruction: index, address }),
-            )
-          }
-          yield* Effect.logInfo("ran").pipe(
-            Effect.annotateLogs({ instructions: instructions.length, word: word.join(",") }),
+          // The document IS a table (`RunParams.toPProg`), so the
+          // handler converts once and runs the carrier's own runner.
+          // Before queue item 22 this loop was open-coded here because
+          // the document could only spell puts; now that it spells the
+          // whole table, open-coding it would be a second interpreter.
+          const program = yield* toProgram(instructions, limits)
+          const outcome = yield* Cas.Programs.runProgram(store, program).pipe(
+            Effect.mapError(refuse),
           )
-          return { word: word.map((address) => ({ address })) }
+          yield* Effect.logInfo("ran").pipe(
+            Effect.annotateLogs({
+              instructions: instructions.length,
+              word: outcome.word.join(","),
+            }),
+          )
+          return { word: outcome.word.map((address) => ({ address })) }
         })),
+
+      // The whole brain stem in one call: load the cont node, recover
+      // its table from the step nodes it names, run it through the SAME
+      // admission doors every other verb uses. Nothing is inlined and
+      // nothing is trusted — a program that will not load is refused
+      // before a single node is admitted, which is `loadProgram`'s
+      // fail-closed law and not a check written here.
+      cas_run_ref: ({ root }) =>
+        served(
+          "cas_run_ref",
+          Cas.Store.pipe(
+            Effect.flatMap((store) =>
+              Cas.Programs.loadProgram(store, root).pipe(
+                Effect.flatMap((program) =>
+                  Cas.Programs.runProgram(store, program).pipe(
+                    Effect.tap((outcome) =>
+                      Effect.logInfo("ran by address").pipe(Effect.annotateLogs({
+                        root,
+                        lines: program.length,
+                        word: outcome.word.join(","),
+                      }))
+                    ),
+                  )
+                ),
+              )
+            ),
+            Effect.mapError(refuse),
+            Effect.map((outcome) => ({
+              word: outcome.word.map((address) => ({ address })),
+            })),
+          ),
+        ),
 
       cas_publish_root: ({ address }) =>
         served("cas_publish_root", Effect.gen(function* () {

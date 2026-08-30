@@ -42,6 +42,7 @@ current verb set, read off.
 | file | a named file over a blob | `file` sort (0x0B) |
 | schema | the shape a value claims, itself stored content with an address | `schema` sort (0x53), canonical schema plane |
 | roots | the addresses published as entry points | `RootSig` — `publish` (fail-closed) / `listRoots` |
+| program | a table of steps, itself content: put it, publish it, run it by address | `cont` sort (0x0F) over `step` (0x0E) — `Cas.Lang.PProg`, laid down by `encodeProg` |
 | refused | a put that broke a store law; every refusal carries its clause name | the admission judgment, clause-named errors |
 | verify | re-hash and re-decode everything reachable from a root | `Graph.verify` and the loader law |
 | history | the record of a run: what was admitted, in order | the store word — see collision 5 |
@@ -61,7 +62,7 @@ current verb set, read off.
 | entry | journal record / genesis (0x0C) | no verb yet; stays here until one lands |
 | context | grouping node of typed edges with no payload (0x0D) | no verb yet; stays here until one lands |
 | git | a git object as content, its SHA-1 derivable (0x47) | interop surface, opt-in |
-| step / cont | F3 code points and program tables (tags 14/15, registry rows owed) | "program", when a run verb lands |
+| step / cont | F3 code points and program tables (tags 14/15, registry rows 14 and 15) | "program" — the run verb landed 2026-08-29, so the word is in the everyday register and these two are not |
 | canonical | one spelling per content; the exact bytes the digest sees | invisible: it is why addresses work |
 | form address | the address of a value's canonical representative under a named method | reference-level, new mint |
 | signature, operation, handler, program, fuel, status | the store-language machinery | the CLI itself — its verbs are programs |
@@ -79,7 +80,12 @@ current verb set, read off.
    up only when reading raw documents.
 3. "Entry" and "context" are ratified sorts with no consumer verb, so
    the gating rule keeps them in the protocol register — undocumented
-   in help until a journal or grouping verb exists.
+   in help until a journal or grouping verb exists. "Step" and "cont"
+   were in that same position and left it on 2026-08-29: `cas run` and
+   `cas put --program` are the verbs that summoned them, and what
+   entered help is the abstraction — "program" — not the two tags. A
+   `cont` node is never named in a rendered surface; it is "the
+   program", and the address it sits at is "the program's address".
 4. "Root" is three things. The everyday word "roots" means published
    entry points, and only that. The location of a store is "store",
    never "root", in every rendered surface. `Root α`, the typed handle

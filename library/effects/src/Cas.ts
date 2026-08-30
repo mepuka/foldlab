@@ -162,6 +162,12 @@ export * as Annotations from "./cas/Annotations.ts"
 // addresses either a schema node or the exchange before it.
 export * as Exchanges from "./cas/Exchanges.ts"
 
+// Programs as content (R7): the host mirror of `Cas.Lang.encodeProg` —
+// a defunctionalized table laid down children-first as step nodes under
+// one cont node, whose address IS the program's. Put one, load one by
+// address, run one against the same store through the same doors.
+export * as Programs from "./cas/Programs.ts"
+
 // The registered replay surface: the Lean-emitted conformance vector
 // as a first-class type, wire schemas hand-mirroring the emitter.
 export * as ConformanceVector from "./cas/ConformanceVector.ts"
