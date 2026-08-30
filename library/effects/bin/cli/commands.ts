@@ -22,6 +22,7 @@ import {
   Schema,
 } from "effect"
 import { Argument, CliError, Command, Flag } from "effect/unstable/cli"
+import { canonicalJson } from "../../src/cas/Value.ts"
 import { Cas } from "../../src/index.ts"
 import {
   backendOf,
@@ -497,6 +498,107 @@ const putProgram = (file: string, kindTag: number, json: boolean) =>
     yield* Console.log(`payload    ${payload.length} bytes`)
   })
 
+/* ── put --program ───────────────────────────────────────────────── */
+
+/**
+ * A PROGRAM DOCUMENT as store content.
+ *
+ * The everyday register gains one word here, and it gains it the way
+ * the vocabulary law says words are gained: consumer-gated. `step` and
+ * `cont` sat in the protocol register with the note "abstracted by
+ * 'program', when a run verb lands". The run verb lands below, so the
+ * word is now the store's and the two tags stay invisible — this verb
+ * says "program", never "cont", and `run` answers a history, never a
+ * word.
+ *
+ * The input is a lift document: the recognizer's own answer about a
+ * program, the same canonical JSON `lake exe emitprograms` writes
+ * beside the generated modules. It is READ, never trusted — the table
+ * it denotes is laid into the store through the store's own admission
+ * door, children-first, and the address that comes back is computed by
+ * this host's digest and nobody's claim.
+ *
+ * The document carries no word and cannot: a document that brought one
+ * would be a hoover-side artifact claiming an execute-side result, and
+ * the decoder refuses it. Words come from running.
+ */
+const putProgramDocument = (file: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const document = yield* decodeLiftDocument(yield* fs.readFileString(file))
+    const store = yield* Cas.Store
+    const stored = yield* Cas.Programs.putProgram(store, document.program)
+    yield* Console.log([
+      `address    ${stored.address}`,
+      // "kind program", not "kind 0x0f": the tag is protocol register
+      // and this verb speaks the everyday one.
+      `kind       program  (scheme ${Cas.SchemeVersion})`,
+      `program    ${document.name}`,
+      `lines      ${stored.steps.length} ${stored.steps.length === 1 ? "step" : "steps"}`,
+    ].join("\n"))
+  })
+
+/** The lift document, in the shape the emitter writes it.
+ *
+ * Only the fields this verb reads are decoded, and the `kind` literal
+ * is one of them: a refusal document is not a program, and a document
+ * of another kind must die at the door rather than be coaxed into one.
+ */
+const LiftDocument = Schema.Struct({
+  instructions: Schema.Array(Schema.Struct({
+    payloadHex: Schema.Uint8ArrayFromHex,
+    refs: Schema.Array(Schema.Struct({
+      expectedTag: Cas.Byte,
+      source: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    })),
+    tag: Cas.Byte,
+    version: Cas.Byte,
+  })),
+  kind: Schema.Literal("lifted"),
+  name: Schema.String,
+})
+
+/** A file that is not a program document. The CLI's own clause, so a
+ * wrong file reads as guidance rather than as a schema issue. */
+class NotAProgramDocument extends Schema.TaggedError<NotAProgramDocument>()(
+  "cli/NotAProgramDocument",
+  { detail: Schema.String },
+) {
+  override get message(): string {
+    return [
+      "that file is not a program document",
+      `  ${this.detail}`,
+      "  a program document is the lift document the recognizer answers —",
+      "  see library/effects/test/generated/VectorProgramLifts.json",
+    ].join("\n")
+  }
+}
+
+const decodeLiftDocument = (text: string) =>
+  // One door: the Schema JSON codec parses and validates in one step,
+  // so nothing here reaches for `JSON.parse` and there is no
+  // intermediate `unknown` to be careless with.
+  Schema.decodeUnknownEffect(Schema.fromJsonString(LiftDocument))(text).pipe(
+    Effect.mapError(() =>
+      new NotAProgramDocument({
+        detail: "it is not a JSON document carrying a lifted program's instructions",
+      })
+    ),
+    Effect.map((document) => ({
+      name: document.name,
+      program: document.instructions.map((instruction): Cas.Programs.Line => ({
+        _tag: "put",
+        version: instruction.version,
+        tag: instruction.tag,
+        payload: instruction.payloadHex,
+        refs: instruction.refs.map((ref) => ({
+          expectedTag: ref.expectedTag,
+          source: Cas.Programs.answer(ref.source),
+        })),
+      })) satisfies Cas.Programs.Program,
+    })),
+  )
+
 export const put = Command.make("put", {
   store: storeFlag,
   json: jsonFlag,
@@ -506,15 +608,81 @@ export const put = Command.make("put", {
       "the kind the content takes, as a tag byte, 0 to 255 (default: 1, an opaque value payload)",
     ),
   ),
+// Not a second verb. `put` already means "put this file in the
+  // store", and `--kind-tag` already means "as this kind"; a program
+  // is a kind whose content is a subgraph rather than one node, so it
+  // is one more thing the same verb can be told about the same file.
+  // A hyphenated `put-program` would spell a second verb for one act.
+  program: Flag.boolean("program").pipe(
+    Flag.withDefault(false),
+    Flag.withDescription(
+      "the file is a program document; its table is put and the address is the program's",
+    ),
+  ),
   file: Argument.string("file").pipe(
     Argument.withDescription("the file whose bytes become the payload"),
   ),
-}, ({ file, json, kindTag, store }) =>
-  putProgram(file, kindTag, json).pipe(
+}, ({ file, json, kindTag, program, store }) =>
+  (program
+    ? putProgramDocument(file).pipe(Effect.provide(layerStoreAt(store)), userFacing)
+    : putProgram(file, kindTag, json).pipe(Effect.provide(layerStoreAt(store)), userFacing))).pipe(Command.withDescription(
+    "put a file's bytes in the store as one node — the address is the answer, and equal bytes give it back unchanged; --program puts a program document's whole table instead",
+  ))
+
+/* ── run ─────────────────────────────────────────────────────────── */
+
+/**
+ * RUN THE PROGRAM AT AN ADDRESS — the verb that makes a stored program
+ * a citizen rather than a document someone happens to hold.
+ *
+ * Every arrow goes through a library door: load the cont node, recover
+ * the table from the step nodes it names, run it against this same
+ * store. Nothing is inlined, nothing is replayed, and the history that
+ * comes back is minted by the run and by nothing else — the direction
+ * law, spelled as a verb.
+ *
+ * The human line says "history"; `--json` says `word`. That is
+ * collision 5 in the vocabulary, resolved the way it was ruled.
+ */
+const runStoredProgram = (address: string, json: boolean) =>
+  Effect.gen(function* () {
+    const id = yield* decodeAddress(address)
+    const store = yield* Cas.Store
+    const program = yield* Cas.Programs.loadProgram(store, id)
+    const outcome = yield* Cas.Programs.runProgram(store, program)
+    yield* Console.log(json
+      // `word` is the model's name and it stays the name in --json,
+      // because word equality is the conformance gate. The bytes go
+      // through the ratified canonical printer, like every other
+      // --json surface in this package.
+      ? canonicalJson({
+        program: id,
+        lines: program.length,
+        word: outcome.word.map((admitted) => ({ address: admitted })),
+      })
+      : [
+        `program    ${id}`,
+        `lines      ${program.length} ${program.length === 1 ? "step" : "steps"}`,
+        `history    ${outcome.word.length} admitted`,
+        ...outcome.word.map((admitted, position) => `  ${position}  ${admitted}`),
+      ].join("\n"))
+  })
+
+export const run = Command.make("run", {
+  store: storeFlag,
+  json: Flag.boolean("json").pipe(
+    Flag.withDefault(false),
+    Flag.withDescription("render the run's word as one JSON document"),
+  ),
+  address: Argument.string("address").pipe(
+    Argument.withDescription("the 64-hex address of the program to run"),
+  ),
+}, ({ address, json, store }) =>
+  runStoredProgram(address, json).pipe(
     Effect.provide(layerStoreAt(store)),
     userFacing,
   )).pipe(Command.withDescription(
-    "put a file's bytes in the store as one node — the address is the answer, and equal bytes give it back unchanged",
+    "run the program stored at an address — its table is recovered from the store and run against it, and the answer is the history it admitted",
   ))
 
 /* ── publish ─────────────────────────────────────────────────────── */

@@ -52,6 +52,16 @@ the one layout law every other generated module obeys. -/
 
 mutual
 
+/-- A literal's value, as `LitVal.toJson` spells it. Only the string
+and integer rows are reachable from a derived union's discriminator —
+but the arm is total, because a partial spelling of a total carrier is
+how a fragment silently narrows. -/
+private def litExpr : LitVal → Expr
+  | .null => .ident "null"
+  | .bool b => .bool b
+  | .int i => .int i.val
+  | .str s => .str s
+
 /-- One code as a TypeScript object literal, or `none` when the code
 leaves the fragment the emitted type declares. -/
 private def codeExpr : Ast → Option Expr
@@ -59,13 +69,19 @@ private def codeExpr : Ast → Option Expr
   | .bool => some (.object [("_tag", .str "Boolean")])
   | .int => some (.object [("_tag", .str "Integer")])
   | .str => some (.object [("_tag", .str "String")])
+  | .lit v =>
+    some (.object [("_tag", .str "Literal"), ("value", litExpr v)])
   | .arr item =>
     (codeExpr item).map fun e =>
       .object [("_tag", .str "Array"), ("item", e)]
   | .struct fields =>
     (codeFields fields).map fun fs =>
       .object [("_tag", .str "Struct"), ("fields", .objectML fs)]
-  | .lit _ | .ref _ | .decl _ _ _ | .union _ _ | .enum _ | .tuple _ _ _ =>
+  | .union members mode =>
+    (codeMembers members).map fun ms =>
+      .object [("_tag", .str "Union"), ("members", .arr ms),
+        ("mode", .str mode.wire)]
+  | .ref _ | .decl _ _ _ | .enum _ | .tuple _ _ _ =>
     none
 
 /-- A struct's fields as record entries, in the code's order — the
@@ -77,6 +93,14 @@ private def codeFields :
     (codeExpr a).bind fun e =>
       (codeFields rest).map fun es =>
         (name, .object [("optional", .bool opt), ("schema", e)]) :: es
+
+/-- A union's members, in the code's order. Order is identity here
+(operator-ratified 2026-08-29), so nothing sorts, flattens, or
+deduplicates on the way through. -/
+private def codeMembers : List Ast → Option (List Expr)
+  | [] => some []
+  | a :: rest =>
+    (codeExpr a).bind fun e => (codeMembers rest).map fun es => e :: es
 
 end
 
@@ -126,8 +150,19 @@ private def typeBlock : String :=
   " * code outside this union still compares exactly. */\n" ++
   "export type McpToolCode =\n" ++
   "  | { readonly _tag: \"Null\" | \"Boolean\" | \"Integer\" | \"String\" }\n" ++
+  "  | { readonly _tag: \"Literal\"; readonly value: McpToolCodeLiteral }\n" ++
   "  | { readonly _tag: \"Array\"; readonly item: McpToolCode }\n" ++
   "  | { readonly _tag: \"Struct\"; readonly fields: McpToolCodeFields }\n" ++
+  "  | {\n" ++
+  "    readonly _tag: \"Union\"\n" ++
+  "    readonly members: ReadonlyArray<McpToolCode>\n" ++
+  "    readonly mode: \"anyOf\" | \"oneOf\"\n" ++
+  "  }\n" ++
+  "\n" ++
+  "/** A literal code's value. `LitVal` is the four-row carrier, and\n" ++
+  " * this is its projection: the discriminator of a derived union is\n" ++
+  " * always a string, but the type says what the carrier says. */\n" ++
+  "export type McpToolCodeLiteral = null | boolean | number | string\n" ++
   "\n" ++
   "/** A struct code's fields: the name-keyed record `fieldsToJson`\n" ++
   " * builds, each entry an optionality flag beside the field's own\n" ++

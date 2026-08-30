@@ -261,11 +261,12 @@ outputs = ["../effects/src/cas/generated/SchemaAdmission.ts"]
 run = "lake exe emitgate"
 
 [tasks."gen:backend-programs"]
-description = "Regenerate the straight-line Effect programs of the registered grammar terms, and the lift documents the recognizer must answer for them (P3's Lean half)"
+description = "Regenerate the straight-line Effect programs of the registered grammar terms, the lift documents the recognizer must answer for them (P3's Lean half), and the step/cont addresses each program has as store content (R7's stamp clause — the cross-host codec gate)"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
 outputs = [
   "../effects/test/generated/VectorPrograms.ts",
+  "../effects/test/generated/VectorProgramAddresses.json",
   "../effects/test/generated/VectorProgramLifts.json",
 ]
 run = "lake exe emitprograms"
