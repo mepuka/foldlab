@@ -105,3 +105,19 @@ with SPECS rows per the maintenance law.
   planning lane).
 - main is ~38 commits ahead of origin — push when the operator
   chooses.
+
+## Blackout log — completions after the record was cut
+- FABLE PLANNER DONE: .staging/operational-structure/CORE-
+  ABSTRACTIONS-PLAN.md written (UNCOMMITTED — decision 28 protocol:
+  Opus 5 HARD REVIEW before commit; that review is the NEXT
+  SESSION'S FIRST DISPATCH). Plan highlights the next session must
+  heed: §1 four docket entries ALREADY DISCHARGED on main (proof-
+  grill E and F closed by 698b2f18/Defun.lean; Tier-1 item 4's
+  lowering landed 659a909d; CANON-1 implemented at the authoring
+  door System.lean:89-100) — land the strikeouts before any lane
+  re-plans landed work. MERGE CAUTION from §0: the seat branches
+  were cut pre-docket — when merging to main, VERIFY docs/SPECS.md
+  decisions 28-33 survive each merge. Hard-parts register §4 (9
+  items) includes: CANON-1 permutation theorem FALSE without Nodup
+  keys; annotation-bag size unmeasured (measurement slice first);
+  Prop spelling scout-only.
