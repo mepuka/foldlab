@@ -94,7 +94,7 @@ export const renderJson = (value: Schema.Json): string => canonicalJson(value)
  * is the library's own, so a new clause cannot slip through unworded. */
 export const casErrorMessage: (error: Cas.Error) => string = Cas.matchError({
   AddressMismatch: (error) =>
-    `refused: the bytes stored at ${error.expected} hash to ${error.actual} — storage returned content the address does not name`,
+    `refused: the bytes stored at ${error.expected} hash to ${error.actual} — storage returned content the address does not name (corrupt content, or a possible scheme mismatch: the store verifies with its own address scheme)`,
   ContentNotFound: (error) => `nothing in the store at ${error.id}`,
   DanglingReference: (error) =>
     `refused: a link points at ${error.missing}, which is not in the store`,
