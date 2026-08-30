@@ -185,7 +185,8 @@ commit `2600f62f4532026928454dcea8d1c48557b3f942`,
 the library rather than reading it, so the pins are observations, not
 transcriptions.
 
-Battery: `library/effects/test/SchemaReferencesPin.test.ts`.
+Battery: `library/effects/test/SchemaReferencesPin.test.ts` — 12 tests,
+green.
 
 The pinned spellings:
 
@@ -255,15 +256,28 @@ Three consequences, in order of severity:
    specification is the bug, not the implementation.
 3. **The carrier cannot decode what Effect emits.** `Reference` has two
    keys and `Suspend` has three, one of them a nested representation.
-   The Lean decoder is exact on keys (Admission.lean:24-39), and one
-   constructor's projection can spell only one tag — so the other node
-   family has no spelling, and slice 3's "references table decoded and
-   emitted through the envelope" would not decode a real recursive
-   document.
+   `Ast.ofRepresentationJson` (SelfCodec.lean:1351-1385) matches EXACT
+   object literals, key order and all — one arm per node family, each
+   answering with one code. One constructor is one projection shape,
+   hence one arm, so the other family has no spelling at all and slice
+   3's "references table decoded and emitted through the envelope"
+   would not decode a real recursive document.
 
-The estate's existing `Ast.ref (tag : UInt8)` is **not** a candidate:
-it is registry row zero `foldlab/cas/ref`, a `Declaration`, unrelated
-to the references table (Ast.lean:74-86).
+The estate's own code already treats these as TWO missing
+constructors, in both places that name the gap:
+
+- `Ast.ofRepresentationDocument` — "revision 1's `references` is
+  unreachable from the Lean side today (**no `Suspend`, no `Reference`
+  constructor**)" (SelfCodec.lean:1444-1452);
+- `IngestRefusal.nonEmptyReferences` — the same sentence, verbatim
+  (Ingest.lean:93-97).
+
+So the one-constructor collapse is drift introduced by the plan's
+slice-2 line, not the estate's reading of the source.
+
+The existing `Ast.ref (tag : UInt8)` is **not** a candidate for either
+role: it is registry row zero `foldlab/cas/ref`, a `Declaration`,
+unrelated to the references table (Ast.lean:74-86).
 
 ### The single question
 
