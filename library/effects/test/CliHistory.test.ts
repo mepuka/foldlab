@@ -152,3 +152,55 @@ it.live("history: admission order, marks, kinds, and the registered --json docum
 
 it.live("history: the same claims over the database layout", () =>
   historyClaims("sqlite"))
+
+/* ── the diagnostics reach the person ──────────────────────────────── */
+
+/** What the CLI actually says when the invocation refuses. The word
+ * log refuses with `BackendFailure`, which is not a `Cas.Error`, so it
+ * renders through `prettyErrors` — and `prettyErrors` reads `message`.
+ * Every one of these strings used to arrive as an EMPTY line at exit
+ * 1: the log knew exactly what was wrong and the person was told
+ * nothing. */
+const refusalOf = (
+  ...args: ReadonlyArray<string>
+): Effect.Effect<string, never, FileSystem.FileSystem> =>
+  Effect.flip(invoke(...args)).pipe(
+    Effect.map((error) =>
+      (error as { readonly userMessage?: string; readonly message?: string })
+        .userMessage ?? String(error)
+    ),
+    Effect.orDie,
+  )
+
+it.live("history: every word-log diagnostic reaches the person, never a blank line at exit 1", () =>
+  withWorkspace(({ file, store }) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      const log = `${store}/word.jsonl`
+      yield* invoke("put", file, "--store", store)
+      yield* invoke("put", file, "--kind-tag", "12", "--store", store)
+      const clean = yield* fs.readFileString(log)
+
+      // 1. A line that is not a receipt, mid-file — corruption, and
+      //    the line number is the whole point of saying it out loud.
+      yield* fs.writeFileString(log, `{"not":"a receipt"}\n${clean}`)
+      const undecodable = yield* refusalOf("history", "--store", store)
+      expect(undecodable).toContain("word log line 0 is not a receipt")
+
+      // 2. A mark issued twice — the writer race, named as itself.
+      yield* fs.writeFileString(log, `${clean}${clean}`)
+      const duplicated = yield* refusalOf("history", "--store", store)
+      expect(duplicated).toContain("one mark, issued twice")
+      expect(duplicated).toContain("two writers appended to this log at once")
+
+      // 3. A mark out of order — the hand edit, named as itself.
+      yield* fs.writeFileString(log, clean.replace("\"seq\":0", "\"seq\":9"))
+      const edited = yield* refusalOf("history", "--store", store)
+      expect(edited).toContain("order is semantics")
+      expect(edited).toContain("marks are dense from zero")
+
+      // Restored, the verb answers again — the refusals were about the
+      // file, not about the verb.
+      yield* fs.writeFileString(log, clean)
+      expect(yield* invoke("history", "--store", store)).toHaveLength(3)
+    })))

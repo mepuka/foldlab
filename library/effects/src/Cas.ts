@@ -89,6 +89,8 @@ export {
   makeMemoryWordLog,
   makeSqlWordLog,
   WordLog,
+  wordLogColumns,
+  wordLogLockRelativePath,
   wordLogRelativePath,
 } from "./cas/WordLog.ts"
 export type {
@@ -140,6 +142,7 @@ export {
   layerMemoryWith,
   layerReadStore,
   layerStore,
+  layerWorded,
   makeCasLoaderOver as makeLoaderOver,
   makeCasStore as makeStore,
   makeCasStoreOver as makeStoreOver,

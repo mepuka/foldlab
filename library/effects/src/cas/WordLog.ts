@@ -7,8 +7,16 @@
  * existed the running system dropped it: `cas_run`'s reply was the
  * word for that call and nothing persisted it. This seam is where the
  * running system keeps its word. `append` records one admission;
- * `since` answers the word's suffix from a mark, which is the Lean
- * model's `WordE.since` (`Cas/Lang/Worded.lean`) realized as a read.
+ * `since` answers the RECEIPTS from a mark.
+ *
+ * Receipts are a PROJECTION of the Lean model's `WordE.since`
+ * (`Cas/Lang/Worded.lean`), not that operation realized: the model's
+ * answer is a suffix of the word, and a word carries bindings —
+ * address AND node — while a receipt deliberately drops the node. What
+ * this seam shares with the model is the mark arithmetic and the
+ * order; the full bindings are the join `log ⋈ store`, which
+ * `Cas/Lang/WordWire.lean` states and a consumer performs by loading
+ * each receipted address.
  *
  * ## The record is registered, never ad hoc
  *
@@ -48,7 +56,10 @@
  * never made, which is the one thing the store never does. A log
  * whose middle is undecodable is corruption and fails typed; only a
  * torn FINAL line of the file realization — the crash artifact — is
- * tolerated, because the put it belonged to never answered.
+ * tolerated, because the put it belonged to never answered. A final
+ * line that DECODES but has lost its newline is not that artifact and
+ * is not dropped: see `makeFileWordLog`, where the two are told apart
+ * and only one of them costs a receipt.
  */
 import { Context, Effect, Layer, Option, Schema, Semaphore } from "effect"
 import { FileSystem, PlatformError } from "effect"
@@ -89,7 +100,11 @@ export interface WordLogShape {
   ) => Effect.Effect<void, BackendFailure>
   /** The word's suffix from a mark (zero-based, half-open — never a
    * timestamp): `since(0)` is the whole history, an empty `word` is
-   * "nothing happened since the mark". */
+   * "nothing happened since the mark". A mark past the end still
+   * answers the true cursor; a negative or fractional one is floored;
+   * one that is not a finite number is REFUSED rather than read as
+   * zero, because "the whole history" is a different answer than the
+   * caller asked for. */
   readonly since: (
     mark: number,
   ) => Effect.Effect<WordHistory, BackendFailure>
@@ -103,11 +118,27 @@ export class WordLog extends Context.Service<WordLog, WordLogShape>()(
   "foldlab/cas/WordLog",
 ) {}
 
-/** A mark off a caller: word indexes are whole and non-negative, and
- * a negative or fractional one must not reach `Array.slice`'s
- * from-the-end reading or a SQL comparison. */
-const flooredMark = (mark: number): number =>
-  Number.isFinite(mark) ? Math.max(0, Math.floor(mark)) : 0
+/** A mark off a caller: word indexes are whole and non-negative, so a
+ * negative or fractional one is floored rather than reaching
+ * `Array.slice`'s from-the-end reading or a SQL comparison.
+ *
+ * A mark that is not a finite number is not a mark at all, and is
+ * REFUSED here at the library boundary. Answering `0` for it — which
+ * is what a lenient floor does, since `Math.floor(NaN)` is `NaN` and
+ * `NaN >= 0` is false — hands the WHOLE history to a caller who asked
+ * for a position, and a seam that silently answers a different
+ * question than the one it was asked is the one thing the receipts
+ * plane must never do. */
+const flooredMark = (mark: number): Effect.Effect<number, BackendFailure> =>
+  Number.isFinite(mark)
+    ? Effect.succeed(Math.max(0, Math.floor(mark)))
+    : Effect.fail(new BackendFailure({
+      reason: [
+        `${String(mark)} is not a mark: a mark is a finite number`,
+        "  a mark is a zero-based word index — a count of receipts, never a timestamp",
+        "  read the whole history from mark 0, or what is new from the `next` a previous read answered",
+      ].join("\n"),
+    }))
 
 /* ── memory ──────────────────────────────────────────────────────── */
 
@@ -125,10 +156,10 @@ export const makeMemoryWordLog = (): WordLogShape => {
         tag: entry.tag,
       })
     }),
-    since: (mark) => Effect.sync(() => {
-      const from = flooredMark(mark)
-      return { next: entries.length, word: entries.slice(from) }
-    }),
+    since: (mark) => Effect.map(flooredMark(mark), (from) => ({
+      next: entries.length,
+      word: entries.slice(from),
+    })),
   }
 }
 
@@ -151,6 +182,23 @@ const sqlFailure = (error: SqlError): BackendFailure =>
 
 const decodeEntry = Schema.decodeUnknownEffect(wordLogEntrySchema)
 
+/** The columns the receipt table has, in the registered spelling —
+ * READ OFF the generated schema rather than re-typed here, so the DDL
+ * below and the record cannot drift apart silently. `test/WordLog.test.ts`
+ * binds them to the columns SQLite actually created. */
+export const wordLogColumns: ReadonlyArray<string> = Object.keys(
+  wordLogEntrySchema.fields,
+)
+
+/** The cursor aggregate, in the registered spelling: `next` decodes
+ * through `wordHistorySchema`'s OWN field, so the SQL shortcut that
+ * computes it and the document a client receives cannot disagree about
+ * what a mark is. A bare cast would have made that agreement a
+ * comment. */
+const decodeCursor = Schema.decodeUnknownEffect(
+  Schema.Struct({ next: wordHistorySchema.fields.next }),
+)
+
 /** One JSONL line to one receipt, in a single schema step — parse and
  * decode through the registered spelling, no bare `JSON.parse`. */
 const decodeLine = Schema.decodeUnknownEffect(
@@ -166,7 +214,15 @@ const decodeLine = Schema.decodeUnknownEffect(
  * + 1` — so the mark is assigned under the same write lock that lands
  * the row: the single-statement atomic append of the root-store
  * precedent, and what keeps `seq` dense and zero-based with no
- * counter held anywhere. `since` reads `WHERE seq >= mark ORDER BY
+ * counter held anywhere. This is why the db-backed store needs no
+ * lock file where the file realization does: the mark assignment is
+ * inside the insert rather than around it.
+ *
+ * The DDL spells its columns with their types, so the NAMES are bound
+ * to the generated record by a gate rather than by this text —
+ * `wordLogColumns` is read off `wordLogEntrySchema.fields`, and
+ * `test/WordLog.test.ts` asserts the table SQLite actually created
+ * carries exactly those. `since` reads `WHERE seq >= mark ORDER BY
  * seq`; a row that does not decode as a receipt fails typed, because
  * order is semantics and a filtered row would silently renumber
  * history.
@@ -204,7 +260,7 @@ export const makeSqlWordLog = (
 
     const since: WordLogShape["since"] = Effect.fn("SqlWordLog.since")(
       function* (mark) {
-        const from = flooredMark(mark)
+        const from = yield* flooredMark(mark)
         const rows = yield* client<typeof wordLogEntrySchema.Encoded>`
           SELECT seq, address, tag, size, at FROM ${table}
           WHERE seq >= ${from} ORDER BY seq
@@ -226,11 +282,18 @@ export const makeSqlWordLog = (
         }
         // An empty suffix still owes the true cursor: the mark may lie
         // beyond the word, and `next` must say where the word ends.
-        const heads = yield* client<{ readonly next: number }>`
+        const heads = yield* client`
           SELECT COALESCE(MAX(seq), -1) + 1 AS next FROM ${table}
         `.pipe(Effect.mapError(sqlFailure))
-        const next = Number(heads.at(0)?.next ?? 0)
-        return { next: Number.isFinite(next) ? next : 0, word }
+        // Decoded, not cast: the aggregate is a database answer like
+        // any other, and `next` is a mark in the registered spelling.
+        const cursor = yield* decodeCursor(heads.at(0)).pipe(
+          Effect.mapError((issue) => new BackendFailure({
+            reason: `word log cursor is not a mark: ${String(issue)}`,
+            cause: issue,
+          })),
+        )
+        return { next: cursor.next, word }
       },
     )
 
@@ -243,29 +306,104 @@ export const makeSqlWordLog = (
  * the store root, beside `objects/` and `roots/`. */
 export const wordLogRelativePath = "word.jsonl"
 
+/** The lock file that serializes appends ACROSS processes, beside the
+ * log. Transient: it exists only while one writer holds the log. */
+export const wordLogLockRelativePath = "word.jsonl.lock"
+
 const isNotFound = (error: PlatformError.PlatformError): boolean =>
   error.reason._tag === "NotFound"
+
+const isAlreadyExists = (error: PlatformError.PlatformError): boolean =>
+  error.reason._tag === "AlreadyExists"
 
 const fileFailure = (error: PlatformError.PlatformError): BackendFailure =>
   new BackendFailure({ reason: error.message, cause: error })
 
 const utf8Encoder = new TextEncoder()
 
+const noBytes = new Uint8Array(0)
+
+/** How long a writer waits for the lock before refusing, as attempts
+ * and the pause between them. Three seconds is far longer than any
+ * append takes and far shorter than a person will wait wondering. */
+const lockAttempts = 300
+const lockPause = "10 millis"
+
+/**
+ * The refusal a mark out of place earns. Two defects wear the same
+ * shape and must not wear the same words: a mark BEHIND its line is
+ * one mark issued twice — two writers appended without the lock, and
+ * both receipts are real — while a mark ahead of its line, or below
+ * zero, is a line removed or renumbered by hand.
+ *
+ * Neither is repaired on READ. The log is the store's word: dropping
+ * a duplicate would discard a receipt for content that is resident,
+ * and renumbering the remainder would hand a client a history that
+ * never happened. So the read refuses, names which defect it found,
+ * and names the truncation that keeps every receipt still in order —
+ * a repair the operator performs, because it decides what the store
+ * remembers.
+ */
+const markOutOfOrder = (path: string, index: number, seq: number): string =>
+  seq >= 0 && seq < index
+    ? [
+      `word log line ${index} claims mark ${seq}, which line ${seq} already holds — one mark, issued twice`,
+      "  two writers appended to this log at once without the lock; both receipts are real, so neither is dropped here",
+      `  the receipts before line ${index} are intact — truncate ${path} to its first ${index} lines to keep them, or open this store on the sqlite backend, which assigns the mark inside the insert`,
+    ].join("\n")
+    : [
+      `word log line ${index} claims mark ${seq}, and marks are dense from zero — line ${index} owes mark ${index}`,
+      "  a line has been removed or renumbered by hand, and order is semantics: the rest is not renumbered past it",
+      `  restore ${path} from a copy, or truncate it to its first ${index} lines to keep the receipts still in order`,
+    ].join("\n")
+
 /**
  * The word log over the store root's `FileSystem` — one JSONL file,
  * each line a receipt in the registered canonical spelling, appended
  * with the platform's own append flag so a line is one write.
  *
- * Single-writer honest, like the file layout it lives beside: appends
- * within one process are serialized by a semaphore and each read
- * re-counts the file, but two PROCESSES appending concurrently can
- * tear the mark assignment. The db-backed store is the composition
- * for concurrent hosts; this one is for the store you carry in a
- * directory. A torn final line — the crash artifact of an append that
- * never answered — is tolerated on read and repaired by the next
- * append (truncated to the clean prefix under the write permit, so
- * the tear can never sit mid-file and read as corruption); an
+ * ## Two writers, one mark plane
+ *
+ * Assigning a mark here is a read-modify-write: the mark IS the count
+ * `readLog` just returned. A semaphore serializes that sequence within
+ * one process; it says nothing about a second process, and two `cas
+ * put`s racing in two shells would each read N and each write mark N.
+ * The duplicate is not a lost update — both receipts are real — and
+ * the order check below then refuses every later read, so the store's
+ * history wedges on a race the store never warned about.
+ *
+ * So the sequence is taken under a LOCK FILE too, created with the
+ * platform's exclusive flag (`wx` — O_CREAT|O_EXCL): the create is the
+ * compare-and-swap, one syscall, no window between test and take. A
+ * writer that dies holding it leaves the file behind, so the wait is
+ * bounded and the refusal names the lock and the fix; silently seizing
+ * a lock whose holder might still be running would be the very race
+ * the lock exists to prevent. Reads take no lock — a torn read of an
+ * in-flight append lands in the tolerance below.
+ *
+ * ## Two damaged tails, and why they are not the same tail
+ *
+ * One append is one write of `line + "\n"`, so a file that does not
+ * end in a newline ends in a partial write. There are two of those,
+ * and reading them alike destroys receipts.
+ *
+ * A final line that does not DECODE is a torn write: the put it
+ * belonged to never answered, so under-reporting it is the crash
+ * matrix's safe direction, and the next append truncates it away. An
  * undecodable line anywhere else IS corruption and fails typed.
+ *
+ * A final line that DECODES but has no newline after it is a
+ * different artifact. No proper prefix of a canonical receipt is
+ * valid JSON — every one of them ends mid-token or mid-object — so
+ * decoding is proof that the record's bytes are all present and only
+ * the separator is missing. That receipt is real and stays read. What
+ * must not happen is leaving the file that way: the next append opens
+ * with the platform's append flag and would run its line straight onto
+ * the unterminated one, fusing two receipts into a single undecodable
+ * line — which loses the acknowledged receipt AND re-issues its mark
+ * for different content, the one shape of lie a receipts plane cannot
+ * tell. So the missing separator is repaired first, by the same temp +
+ * rename rewrite the torn tail gets.
  *
  * No fsync is asserted, the same honest posture the byte plane keeps
  * (crash matrix, finding c): a power loss — not a process crash — can
@@ -279,17 +417,26 @@ export const makeFileWordLog = (
     const fs = yield* FileSystem.FileSystem
     const writing = yield* Semaphore.make(1)
     const path = `${storeRoot}/${wordLogRelativePath}`
+    const lockPath = `${storeRoot}/${wordLogLockRelativePath}`
 
-    /** The log as read: the decoded receipts, and the raw text split
-     * into the clean prefix and any torn tail. The tail is the crash
-     * artifact of an append that never answered — its put never
-     * acknowledged, so under-reporting it is the crash matrix's safe
-     * direction. `append` repairs it; `since` merely tolerates it. */
+    /** The log as read: the decoded receipts, the clean prefix they
+     * spell, and the two ways the file's tail can differ from it.
+     *
+     * `torn` — the final line is not a receipt: the crash artifact of
+     * an append whose put never answered, so under-reporting it is the
+     * crash matrix's safe direction. `unterminated` — the file's last
+     * receipt has no newline after it: nothing is missing from the
+     * record, only its separator, so the receipt is kept.
+     *
+     * Either one means the bytes on disk are not `cleanPrefix`, and
+     * `append` must make them so before it writes. `since` tolerates
+     * both and repairs neither. */
     const readLog: Effect.Effect<
       {
         readonly entries: Array<WordLogEntry>
         readonly cleanPrefix: string
         readonly torn: boolean
+        readonly unterminated: boolean
       },
       BackendFailure
     > = Effect.gen(function* () {
@@ -298,6 +445,12 @@ export const makeFileWordLog = (
           ? Effect.succeed("")
           : Effect.fail(fileFailure(error))),
       )
+      // An append writes the newline in the same call as the line, so
+      // a file that does not end in one ends in a partial write. Which
+      // KIND of partial write is settled by whether the line decodes,
+      // below — not by this flag, which only says the separator is
+      // missing and the file must be rewritten before it grows.
+      const unterminated = raw !== "" && !raw.endsWith("\n")
       const lines = raw.split("\n")
       // A trailing newline leaves one empty tail; drop it before the
       // torn-line reading below, so a clean file has no "torn" line.
@@ -320,62 +473,110 @@ export const makeFileWordLog = (
           ? yield* parsed.pipe(Effect.option)
           : Option.some(yield* parsed)
         if (Option.isNone(entry)) {
-          return { entries, cleanPrefix, torn: true }
+          return { entries, cleanPrefix, torn: true, unterminated }
         }
         if (entry.value.seq !== index) {
           return yield* new BackendFailure({
-            reason: `word log line ${index} claims mark ${entry.value.seq} — the log's order has been edited, and order is semantics`,
+            reason: markOutOfOrder(path, index, entry.value.seq),
           })
         }
         entries.push(entry.value)
+        // Every receipt is spelled with its separator here, so the
+        // clean prefix is well-formed even when the file is not — it
+        // is what the repair writes.
         cleanPrefix = `${cleanPrefix}${line}\n`
       }
-      return { entries, cleanPrefix, torn: false }
+      return { entries, cleanPrefix, torn: false, unterminated }
     })
 
     const platformFailure = <A>(
       effect: Effect.Effect<A, PlatformError.PlatformError>,
     ): Effect.Effect<A, BackendFailure> => Effect.mapError(effect, fileFailure)
 
+    /** Take the cross-process lock, or wait for it. `wx` is
+     * O_CREAT|O_EXCL: the create IS the compare-and-swap. Only an
+     * already-taken lock is waited on — any other platform failure is
+     * this store's own and travels immediately. */
+    const takeLock = (
+      remaining: number,
+    ): Effect.Effect<void, BackendFailure> =>
+      fs.writeFile(lockPath, noBytes, { flag: "wx" }).pipe(
+        Effect.catchTag("PlatformError", (error) => {
+          if (!isAlreadyExists(error)) return Effect.fail(fileFailure(error))
+          if (remaining === 0) {
+            return Effect.fail(new BackendFailure({
+              reason: [
+                `another writer holds this store's word log and did not release it: ${lockPath}`,
+                "  a store's appends take turns, and this one waited three seconds for its turn",
+                "  if no other cas process is running, that lock is stale: remove the file and retry",
+              ].join("\n"),
+            }))
+          }
+          return Effect.flatMap(
+            Effect.sleep(lockPause),
+            () => takeLock(remaining - 1),
+          )
+        }),
+      )
+
+    /** One append, with the log's write turn already held. */
+    const appendHeld = Effect.fn("FileWordLog.appendHeld")(
+      function* (entry: WordLogAppend) {
+        const log = yield* readLog
+        if (log.torn || log.unterminated) {
+          // Make the file BE the clean prefix before appending, for
+          // either damage. A torn line left in place would sit mid-file
+          // after this append and poison every later read as
+          // corruption; truncating it discards only an admission that
+          // never acknowledged — the safe direction, made durable. A
+          // missing separator left in place would be worse: this
+          // append would run onto the line below it and fuse two
+          // receipts into one undecodable line, so the rewrite puts
+          // the newline back and every receipt survives.
+          //
+          // The rewrite is temp + rename — the byte plane's own
+          // atomicity idiom — because an in-place rewrite would hand a
+          // concurrent reader a half-written prefix, which is worse
+          // than the damage being repaired.
+          const repair = `${path}.repair`
+          yield* fs.writeFile(
+            repair,
+            utf8Encoder.encode(log.cleanPrefix),
+          ).pipe(platformFailure)
+          yield* fs.rename(repair, path).pipe(platformFailure)
+        }
+        const row = Schema.encodeSync(wordLogEntrySchema)({
+          address: entry.address,
+          at: entry.at,
+          seq: log.entries.length,
+          size: entry.size,
+          tag: entry.tag,
+        })
+        yield* fs.writeFile(path, utf8Encoder.encode(`${canonicalJson(row)}\n`), {
+          flag: "a",
+        }).pipe(platformFailure)
+      },
+    )
+
     const append: WordLogShape["append"] = Effect.fn("FileWordLog.append")(
       function* (entry) {
-        return yield* writing.withPermits(1)(Effect.gen(function* () {
-          const log = yield* readLog
-          if (log.torn) {
-            // Repair the crash artifact BEFORE appending: a torn line
-            // left in place would sit mid-file after this append and
-            // poison every later read as corruption. Truncating to the
-            // clean prefix discards only an admission that never
-            // acknowledged — the safe direction, made durable. The
-            // truncation is temp + rename — the byte plane's own
-            // atomicity idiom — because an in-place rewrite would hand
-            // a concurrent reader a half-written prefix, which is
-            // worse than the tear being repaired.
-            const repair = `${path}.repair`
-            yield* fs.writeFile(
-              repair,
-              utf8Encoder.encode(log.cleanPrefix),
-            ).pipe(platformFailure)
-            yield* fs.rename(repair, path).pipe(platformFailure)
-          }
-          const row = Schema.encodeSync(wordLogEntrySchema)({
-            address: entry.address,
-            at: entry.at,
-            seq: log.entries.length,
-            size: entry.size,
-            tag: entry.tag,
-          })
-          yield* fs.writeFile(path, utf8Encoder.encode(`${canonicalJson(row)}\n`), {
-            flag: "a",
-          }).pipe(platformFailure)
-        }))
+        // The permit serializes this process's writers and the lock
+        // file serializes the processes; the read-modify-write that
+        // assigns the mark needs both, because the mark IS the count
+        // it just read. The release runs on every exit — a refused
+        // append must not leave the store's history locked.
+        return yield* writing.withPermits(1)(Effect.acquireUseRelease(
+          takeLock(lockAttempts),
+          () => appendHeld(entry),
+          () => fs.remove(lockPath).pipe(Effect.ignore),
+        ))
       },
     )
 
     const since: WordLogShape["since"] = Effect.fn("FileWordLog.since")(
       function* (mark) {
+        const from = yield* flooredMark(mark)
         const log = yield* readLog
-        const from = flooredMark(mark)
         return { next: log.entries.length, word: log.entries.slice(from) }
       },
     )

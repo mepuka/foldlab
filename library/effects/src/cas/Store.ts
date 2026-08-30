@@ -369,6 +369,33 @@ export const layerStore: Layer.Layer<
   ),
 )
 
+/**
+ * The store law over a backend AND a word log — the worded
+ * composition, spelled once.
+ *
+ * The optionality ruling stands: `makeCasStore` reads `WordLog` as an
+ * optional service, so a composition that provides none gets the store
+ * law unchanged. What that ruling costs is an ordering that must be
+ * got right every time — the log has to stand UNDER the law's build,
+ * where the law can see it. Merged BESIDE the law instead, the build
+ * finds no log and every admission goes unreceipted, SILENTLY, because
+ * "no log" is a legal composition. That is a trap worth spelling in
+ * one place rather than in every caller.
+ *
+ * The address scheme and any realization the pieces need stay visible
+ * requirements: this combinator decides the ordering and nothing else.
+ */
+export const layerWorded = <ROut, E, RIn, EW, RW>(
+  backend: Layer.Layer<ROut, E, RIn>,
+  wordLog: Layer.Layer<WordLog, EW, RW>,
+): Layer.Layer<
+  CasStore | CasLoader | WordLog | ROut,
+  E | EW,
+  | RIn
+  | RW
+  | Exclude<ByteReader | ByteWriter | AddressScheme, WordLog | ROut>
+> => layerStore.pipe(Layer.provideMerge(Layer.merge(backend, wordLog)))
+
 /** The load-only law over the read seam alone — what a read-only
  * composition (a path-reader host) provides so typed reads work with
  * no writer anywhere. */

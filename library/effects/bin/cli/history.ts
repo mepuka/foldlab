@@ -48,7 +48,15 @@ const storeFlag = Flag.string("store").pipe(
 )
 
 /** Typed failures rendered as guidance, defects kept as defects — the
- * command boundary's error fold. */
+ * command boundary's error fold, respelled from `commands.ts` for the
+ * same reason this module is separate.
+ *
+ * The word log refuses with `BackendFailure`, which is NOT a member of
+ * the `Cas.Error` union, so it takes the `prettyErrors` branch: it
+ * reaches a person only because that class carries its `reason` as its
+ * `message`. Without that it rendered as an empty line at exit 1 —
+ * every word-log diagnostic silently swallowed. `test/CliHistory.test.ts`
+ * holds the three of them to the surface. */
 const userFacing = <A, E, R>(
   program: Effect.Effect<A, E, R>,
 ): Effect.Effect<A, CliError.UserError, R> =>

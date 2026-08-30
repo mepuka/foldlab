@@ -4,9 +4,13 @@ import Cas.Lang.Roots
 # The word extension — history as an operation (ruling: cas_word)
 
 The word is the run's history: bindings in admission order, strictly
-more information than the store it projects onto (`Word.toStore` is
-many-to-one — the `shared-chunk` vector's fifth binding is history, not
-content, and no program of `CasSig` recovers it). Until this module,
+more information than the store it projects onto — `Word.toStore` is
+many-to-one, and the `shared-chunk` vector's fifth binding is history,
+not content. That the extra information is unreachable from inside
+`CasSig` — that no program of the store language recovers it — is
+COMMISSIONED, not proved here (decision 28, docket item 8): the
+many-to-one-ness of `Word.toStore` is a fact about the projection, and
+an unreachability claim quantifies over programs. Until this module,
 the word was interpreter state only: threaded by `step`, carried by
 `RootedState`, answered per `cas_run` call, and never readable from
 inside the language. This module makes reading it an operation.
@@ -32,15 +36,16 @@ still lives in one place; `since` reads and never writes.
 The laws carried here: `since_suffix` (the answer is `w.drop mark`,
 a suffix of the word, and the state is untouched), `since_zero`
 (`since 0` answers the whole word), `since_cas_agrees` (on a Cas
-operation the word evolves exactly as `step` evolves it and the roots
-are unchanged — wording changes no Cas answer), and
-`stepWorded_preserves_wf` (the worded interpreter preserves word
-admission, through the delegation). Beside them, the feed laws:
-`since_next` (reading from your last cursor answers exactly what
-happened since — why the history document's `next` can be trusted
-across growth), `since_compose` (marks compose, so re-marking inside
-a fetched page agrees with the store), and `runWorded_preserves_wf`
-(preservation through any fuel).
+operation the worded STATE evolves exactly as `step` evolves the word,
+and the roots are unchanged — the state component only; see its own
+docstring), and `stepWorded_preserves_wf` (the worded interpreter
+preserves word admission, through the delegation). Beside them, the
+feed laws: `since_next` (reading from your last cursor answers exactly
+what happened since — why the history document's `next` can be trusted
+across growth), `since_compose` (the answer at a composed mark IS the
+fetched page re-marked, so a client may re-mark inside a page and the
+store agrees), and `runWorded_preserves_wf` (preservation through any
+fuel).
 
 Statement triage against the commissioned shape
 (`.staging/paper-notes/11-api-contract.md:454-503`): the contract
@@ -117,9 +122,15 @@ theorem since_zero {A} (k : Word → Prog WordedSig A)
       = (.running (k w), (w, roots)) := by
   simp [stepWorded]
 
-/-- On a Cas operation the worded state evolves exactly as `step`
-evolves the word, and the roots are unchanged — wording changes no Cas
-answer. Delegation through `stepRooted`, stated end to end. -/
+/-- On a Cas operation the worded STATE evolves exactly as `step`
+evolves the word, and the roots are unchanged. Delegation through
+`stepRooted`, stated end to end.
+
+The equation is over the state component — the `.2` — and constrains
+nothing else: it does not say what status the step returns, and so it
+is not the claim that wording changes no Cas answer. That the answer
+is the same one `step` binds is `stepWorded`'s delegation clause by
+construction, which is a different kind of fact than this theorem. -/
 theorem since_cas_agrees {A} (e : CasE)
     (k : CasE.Ans e → Prog WordedSig A) (w : Word) (roots : List Addr32) :
     (stepWorded H (.vis (Sum.inl (Sum.inl e)) k) (w, roots)).2
@@ -155,12 +166,20 @@ theorem since_next {A} (k : Word → Prog WordedSig A)
       = (.running (k v), (w ++ v, roots)) := by
   simp [stepWorded]
 
-/-- Marks compose: the suffix from `a`, read again from `b`, is the
-suffix from `a + b` — so a client may re-mark inside a fetched page
-and the store agrees with the page. -/
-theorem since_compose (w : Word) (a b : Nat) :
-    (w.drop a).drop b = w.drop (a + b) := by
-  rw [List.drop_drop, Nat.add_comm]
+/-- MARKS COMPOSE, as an operation of the language: what the store
+answers at mark `a + b` IS the page fetched at mark `a`, re-marked
+from `b` inside it. So a client holding a page may re-mark within it
+and be sure the store agrees — the client never has to re-fetch to
+find out. Stated over `stepWorded` rather than over `List.drop`,
+because the claim is about what the operation answers; the drop lemma
+is how the proof goes, not what the theorem says. -/
+theorem since_compose {A} (a b : Nat) (k : Word → Prog WordedSig A)
+    (w : Word) (roots : List Addr32) :
+    stepWorded H (.vis (Sum.inr (.since (a + b))) k) (w, roots)
+      = (.running (k ((w.drop a).drop b)), (w, roots)) := by
+  have h : (w.drop a).drop b = w.drop (a + b) := by
+    rw [List.drop_drop, Nat.add_comm]
+  simp [stepWorded, h]
 
 /-- Iterated `stepWorded` with fuel, mirroring `runRooted`. -/
 def runWorded (fuel : Nat) (p : Prog WordedSig A) (s : RootedState) :

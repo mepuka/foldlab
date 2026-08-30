@@ -748,7 +748,7 @@ it.effect("help asked for is still help", () =>
 
 /* ── the vocabulary, gated against its seed ────────────────────────── */
 
-it.effect("the help vocabulary carries every word VOCABULARY.md's everyday register does", () =>
+it.effect("the help vocabulary carries every word VOCABULARY.md's everyday register does, and glosses it in the seed's own words", () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
     // VOCABULARY.md calls itself "the seed that content derives from —
@@ -761,12 +761,58 @@ it.effect("the help vocabulary carries every word VOCABULARY.md's everyday regis
     )
     const table = source.split("## The everyday register")[1]!
       .split("## The protocol register")[0]!
-    const seeded = table.split("\n")
+    const rows = table.split("\n")
       .filter((line) => line.startsWith("|"))
-      .map((line) => line.split("|")[1]!.trim())
+      .map((line) => line.split("|").slice(1, 3).map((cell) => cell.trim()))
       // The header row and its dashes are not words.
-      .filter((word) => word !== "Word" && !word.startsWith("---"))
+      .filter(([word]) => word !== "Word" && !word!.startsWith("---"))
 
-    expect(seeded.length).toBeGreaterThan(0)
-    expect(vocabularyWords.map(([word]) => word)).toEqual(seeded)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(vocabularyWords.map(([word]) => word)).toEqual(rows.map(([word]) => word))
+
+    // The glosses too, and not only the words. A help gloss is
+    // SHORTENED for a terminal column — so it must be a word-for-word
+    // prefix of the seed's, never a rewording, or a reader who meets a
+    // term in help and again in the document is quietly given two
+    // definitions. The cas_word review found the three receipts rows
+    // drifted a word each; this is what would have caught them.
+    //
+    // Six rows predate the rule and are held as a named ledger rather
+    // than reworded here — each one paraphrases the seed instead of
+    // shortening it, and closing them means editing the seed's own
+    // wording, which is a vocabulary ruling and not a test's business.
+    // The ledger only shrinks: a row leaving it can never come back,
+    // and a new row is never added to it.
+    const paraphrased = new Set([
+      "store", // "(or db file)" for "or a database file"
+      "address", // "equal content, equal address" for "…means equal…"
+      "value", // drops "JSON"; "got back" for "got"
+      "schema", // "— itself content, with an address" for "…stored…"
+      "program", // "—" for ":", and drops "by address"
+      "doctor", // drops "it sits in" and "so far"
+    ])
+    const seeded = new Map(rows.map(([word, gloss]) => [word!, gloss!]))
+    for (const [word, gloss] of vocabularyWords) {
+      const full = seeded.get(word)
+      expect(full, `${word} has no row in the seed`).toBeDefined()
+      if (!paraphrased.has(word)) {
+        expect(
+          full!.startsWith(gloss),
+          `the help gloss for "${word}" is not the seed's own words:\n  help: ${gloss}\n  seed: ${full}`,
+        ).toBe(true)
+      }
+      // Either way it fits the column help prints it in.
+      expect(`  ${word.padEnd(11)}${gloss}`.length).toBeLessThanOrEqual(80)
+    }
+    // The ledger names only rows that are really drifted, so it cannot
+    // quietly become an exemption list for rows that have since been
+    // aligned.
+    for (const word of paraphrased) {
+      const gloss = vocabularyWords.find(([term]) => term === word)?.[1]
+      expect(gloss, `${word} is in the drift ledger but not in help`).toBeDefined()
+      expect(
+        seeded.get(word)!.startsWith(gloss!),
+        `"${word}" now agrees with the seed — take it out of the drift ledger`,
+      ).toBe(false)
+    }
   }).pipe(Effect.provide(layerDiskFs)))

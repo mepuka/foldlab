@@ -6,8 +6,14 @@
  * calls itself "the seed that content derives from — never a second,
  * drifting copy", so this hand copy is GATED rather than trusted:
  * `test/Cli.test.ts` reads that table and fails when the two disagree
- * by a word or by a count. Glosses are shortened for a terminal
- * column; the words themselves are not.
+ * by a word, by a count, or by an order.
+ *
+ * A gloss here is the seed's gloss SHORTENED for an eighty-column
+ * terminal — a word-for-word prefix of it, never a paraphrase, so a
+ * reader who meets a term in help and again in the document is never
+ * given two definitions. Six rows predate that rule and paraphrase
+ * instead; the gate names them one by one, holds them, and lets no
+ * seventh join them.
  *
  * The register is consumer-gated — a word is here because a verb says
  * it. "in flight" is `cas status`'s (`maxInFlight`), "doctor" is
@@ -34,7 +40,7 @@ export const vocabularyWords: ReadonlyArray<readonly [string, string]> = [
   ["program", "a table of steps, itself content — put it, publish it, run it"],
   ["refused", "a put that broke a store law; every refusal carries its clause"],
   ["verify", "re-hash and re-decode everything reachable"],
-  ["history", "what was admitted, in order — a run's, and the store's own"],
+  ["history", "what was admitted, in order — a run's record, and the store's own"],
   ["receipt", "the store's persisted note that one admission happened"],
   ["mark", "how far into the history a reader stands: a count, not a time"],
   ["in flight", "how many store-touching calls the host runs at once"],

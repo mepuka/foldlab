@@ -450,7 +450,7 @@ export const locateStore = (
  * each of them is built over.
  *
  * The write side is built FIRST, and it is what creates the file and
- * both tables: a `readonly: true` client is opened with `create:
+ * all three tables: a `readonly: true` client is opened with `create:
  * false`, so it cannot make the database and must not be asked to make
  * a table.
  *
@@ -463,8 +463,10 @@ export const locateStore = (
  * "the word does not sync": backup is the same device remembering,
  * never two devices merging. A future device-sync deployment must
  * exclude `cas_word` from replication or move it to a local session
- * database; that is a composition change here, not a seam change. The writable client opens the database in WAL mode by default,
- * which is what Litestream requires; nothing here configures it, and
+ * database; that is a composition change here, not a seam change.
+ *
+ * The writable client opens the database in WAL mode by default, which
+ * is what Litestream requires; nothing here configures it, and
  * `test/KvsSqlite.test.ts` asserts it.
  */
 const kvsOver = (client: SqlClient.SqlClient) =>
@@ -473,9 +475,9 @@ const kvsOver = (client: SqlClient.SqlClient) =>
     Effect.provideService(SqlClient.SqlClient, client),
   )
 
-/** The writable connection and the two seams that use it. This is also
- * what creates the file and both tables — `CREATE TABLE IF NOT EXISTS`
- * is a build step of each of these constructors. */
+/** The writable connection and the three seams that use it. This is
+ * also what creates the file and all three tables — `CREATE TABLE IF
+ * NOT EXISTS` is a build step of each of these constructors. */
 const sqliteWriteSide = (filename: string) =>
   SqliteClient.make({ filename }).pipe(
     Effect.flatMap((client) =>
@@ -491,7 +493,7 @@ const sqliteWriteSide = (filename: string) =>
     ),
   )
 
-/** The readonly connection and the two seams that use it. Opened with
+/** The readonly connection and the three seams that use it. Opened with
  * `create: false` by the driver, so it is built only after the write
  * side has made the file and the tables. */
 const sqliteReadSide = (filename: string) =>
@@ -589,17 +591,14 @@ export const layerCasAt = (
 > =>
   backend === "sqlite"
     ? layerSqliteCasAt(store)
-    // The file composition is spelled from the same pieces `layerFile`
-    // composes, with the word log merged BESIDE the backend — it must
-    // stand under `layerStore`'s build, where the store law reads it
-    // as an optional service, or admissions would go unreceipted.
-    : Cas.layerStore.pipe(
-        Layer.provideMerge(Layer.merge(
-          Cas.layerFileBackend(store),
-          Cas.layerFileWordLog(store),
-        )),
-        Layer.provideMerge(Cas.layerAddressSha256Live),
-      )
+    // The file composition, through the library's own worded
+    // combinator: the ordering it carries — the log UNDER the store
+    // law's build, where the law reads it as an optional service — is
+    // the one a hand-spelled copy gets wrong silently.
+    : Cas.layerWorded(
+        Cas.layerFileBackend(store),
+        Cas.layerFileWordLog(store),
+      ).pipe(Layer.provideMerge(Cas.layerAddressSha256Live))
 
 /** Where this invocation's store was found, as a dependency — so a
  * verb that prints paths asks the context for them instead of

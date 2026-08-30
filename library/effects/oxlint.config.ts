@@ -4,12 +4,18 @@
  * from ./lint/foldlab-rules.ts, all error; `prefer-pipe` warns — the frozen
  * tree predates the ruling and stays visible, never red.
  *
- * Named exceptions, each the file that IS the law it would trip:
- * - src/cas/Value.ts     — canonicalJson is the one lawful JSON site: its
- *                          throws are the ratified defect boundary
- *                          (test-asserted), the one unparsed `as` boundary
- *                          and typeof scan are its recognizer, TextEncoder
- *                          is its byte plane.
+ * Named exceptions, each the file that IS the law it would trip. They
+ * come LAST in `overrides`, after the tree-wide downgrades, because a
+ * later override wins — an exemption spelled before the `src/**` block
+ * is silently re-armed by it.
+ * - src/internal/canonicalJson.ts — the one lawful JSON site: the canonical
+ *                          printer's throws are the ratified defect
+ *                          boundary (test-asserted), its typeof scan is the
+ *                          recognizer, TextEncoder is its byte plane. It
+ *                          lives here, not in Value.ts, since the move that
+ *                          broke the Value→Store cycle.
+ * - src/cas/Value.ts     — the value plane over that printer: the one
+ *                          unparsed `as Schema.Json` boundary is its.
  * - src/cas/CanonicalSchema.ts — `literal()`'s safe-integer TypeError
  *                          mirrors canonicalJson's law in a pure
  *                          constructor (test-asserted).
@@ -91,15 +97,46 @@ export default defineConfig({
     "foldlab/prefer-pipe": "warn",
   },
   ignorePatterns: ["node_modules", "dist", "conformance"],
+  // ORDER IS THE RULING HERE: a later override wins, so the tree-wide
+  // downgrades come FIRST and the named per-file exemptions after them.
+  // Spelled the other way round — which is how this list read until the
+  // cas_word review — the `src/**` block re-armed every
+  // `foldlab/no-throw: "off"` below it back to "warn": three ratified
+  // exemptions over four files, doing nothing at all, and sixteen
+  // warnings standing against code the estate had already ruled on.
   overrides: [
     {
-      // The one lawful JSON site (RATIFIED 2026-08-28): canonicalJson's
-      // throws are its defect boundary and are test-asserted; the single
-      // `as Schema.Json` is the commented unparsed boundary; the typeof
-      // scan is the recognizer; TextEncoder is the byte plane. The
-      // printer itself now lives in `src/internal/canonicalJson.ts`
-      // (moved to break the Value→Store cycle for seams below the
-      // store law); the exemption follows the code, not the old path.
+      // Frozen tree: internal throws feeding Effect.try are the deliberate
+      // defect boundary. Visible as warnings, never red; new code errors.
+      files: ["src/**"],
+      rules: {
+        "foldlab/no-throw": "warn",
+        // Frozen-tree findings ledger: real hits held at warn pending a
+        // ratified cleanup slice; new code (scratch, lint) errors on these.
+        "no-unused-vars": "warn",
+        "no-shadow": "warn",
+        "no-loop-func": "warn",
+        "array-callback-return": "warn",
+        "require-unicode-regexp": "warn",
+        "unicorn/explicit-length-check": "warn",
+        "unicorn/no-array-sort": "warn",
+        "unicorn/no-immediate-mutation": "warn",
+        "unicorn/no-useless-undefined": "warn",
+        "unicorn/prefer-array-flat": "warn",
+        "unicorn/prefer-native-coercion-functions": "warn",
+        "unicorn/consistent-function-scoping": "warn",
+        "unicorn/no-new-array": "warn",
+      },
+    },
+    {
+      // The one lawful JSON site (RATIFIED 2026-08-28): the canonical
+      // printer's throws are its defect boundary and are test-asserted;
+      // the single `as Schema.Json` is the commented unparsed boundary;
+      // the typeof scan is the recognizer; TextEncoder is the byte
+      // plane. The printer lives in `src/internal/canonicalJson.ts`
+      // (moved to break the Value→Store cycle for seams below the store
+      // law) and `src/cas/Value.ts` is the value plane over it, so the
+      // exemption names both — the code, not the old path.
       files: ["src/cas/Value.ts", "src/internal/canonicalJson.ts"],
       rules: {
         "foldlab/no-json-codec": "off",
@@ -146,29 +183,6 @@ export default defineConfig({
       // it runs before any Effect code can exist.
       files: ["bin/cas.cjs"],
       rules: { "effect/noDynamicImports": "off" },
-    },
-    {
-      // Frozen tree: internal throws feeding Effect.try are the deliberate
-      // defect boundary. Visible as warnings, never red; new code errors.
-      files: ["src/**"],
-      rules: {
-        "foldlab/no-throw": "warn",
-        // Frozen-tree findings ledger: real hits held at warn pending a
-        // ratified cleanup slice; new code (scratch, lint) errors on these.
-        "no-unused-vars": "warn",
-        "no-shadow": "warn",
-        "no-loop-func": "warn",
-        "array-callback-return": "warn",
-        "require-unicode-regexp": "warn",
-        "unicorn/explicit-length-check": "warn",
-        "unicorn/no-array-sort": "warn",
-        "unicorn/no-immediate-mutation": "warn",
-        "unicorn/no-useless-undefined": "warn",
-        "unicorn/prefer-array-flat": "warn",
-        "unicorn/prefer-native-coercion-functions": "warn",
-        "unicorn/consistent-function-scoping": "warn",
-        "unicorn/no-new-array": "warn",
-      },
     },
     {
       // Peer independence keeps node:http in harness peers BY DESIGN;

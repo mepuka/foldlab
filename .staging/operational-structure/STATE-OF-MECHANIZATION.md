@@ -116,9 +116,12 @@ by-address IN FLIGHT (P0). LAYER/BUILD DEPENDENCIES: layers YES
 PLAIN LANGUAGE FOR ALL OPERATIONS: programs + tools + registry YES;
 verdict notes and the literature NO (E2/E5 owed). HAND A USER THEIR
 OWN HISTORY: YES (L2, hours old) — every admission is receipted per
-store, `cas history --since <mark>` answers the registered history
-document, and the word semantics behind it is proved; the MCP
-`cas_word` tool row and the front-end pane remain owed.
+store BY A COMPOSITION THAT PROVIDES THE LOG (the word log is an
+optional service, and both CLI layouts provide it; a composition that
+does not gets the store law unchanged and no receipts), `cas history
+--since <mark>` answers the registered history document, and the word
+semantics behind it is proved; the MCP `cas_word` tool row and the
+front-end pane remain owed.
 INTELLIGIBLE AND USABLE: unmeasured — dogfood exists to answer it.
 
 ## Waiting on the operator (top asks only)
