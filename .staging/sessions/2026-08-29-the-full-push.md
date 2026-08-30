@@ -149,3 +149,8 @@ with SPECS rows per the maintenance law.
   grants origin write trust) — BOTH ROUTED to the daemon fix pass as
   required fixes. Secrets clean across both history eras. TURSO
   ROTATION UPGRADED TO URGENT: the token is non-expiring READ-WRITE.
+- STREAMING RESEARCH COMPLETE and rowed: since(n) resumption beats
+  the field; cas_word pull-first; extension posture = described kind
+  + manifest row, never loadable code; 11 ruling asks in its §6 for
+  the next docket. Nit routed to daemon pass: SERVING.md "five
+  tools" vs six in cas-tools.json.
