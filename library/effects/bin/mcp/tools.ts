@@ -119,7 +119,16 @@ export const RunInstruction = Schema.Union([
   }),
 ], { mode: "oneOf" })
 
-/** A self-contained straight-line program. */
+/** A straight-line program, submitted inline.
+ *
+ * It is no longer SELF-CONTAINED and the word was struck rather than
+ * softened. A document whose operands only name earlier answers depends
+ * on nothing but itself; one that can name a literal address, or load
+ * one, is asking about what this store already holds. So a run's
+ * meaning is relative to its starting word — which, on this host, is
+ * the store. Two hosts handed the same document over different stores
+ * can honestly answer different words, and that is the semantics, not
+ * a defect. */
 export const RunDocument = Schema.Struct({
   instructions: Schema.Array(RunInstruction),
 })

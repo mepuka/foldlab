@@ -122,7 +122,16 @@ operands and loads included — so a stored program can be named by the
 document that runs it. The ruling MOVED on 2026-08-29; it used to say
 the opposite, and `Law.registry`'s row moved with it.
 
-The run tool's params: a self-contained straight-line program. -/
+The run tool's params: a straight-line program.
+
+NOT "self-contained", and the word was struck rather than softened. It
+was true of the answer-index fragment — a document whose operands only
+name earlier answers depends on nothing but itself, and `RunParams.run`
+could be handed the empty word. It is FALSE of the grown document: a
+literal-address operand and a `load` are questions about what the store
+already holds, so a run's meaning is relative to its STARTING WORD.
+`RunParams.run` has always taken that word as an argument; what changed
+is that it is now load-bearing rather than ceremonial. -/
 cas_struct RunParams where
   instructions : List RunInstruction
 

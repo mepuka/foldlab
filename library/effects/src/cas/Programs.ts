@@ -49,6 +49,23 @@
  * else — which is why `putProgram` answers an ADDRESS and never a word,
  * even though it admitted nodes to compute one.
  *
+ * ## A run's meaning is relative to its starting word
+ *
+ * `Cas.Lang.runP H p w` takes a starting word, and the argument is not
+ * ceremonial: a `load` resolves against `w`, and so does a literal
+ * operand's later use. On this host the starting word is THE STORE —
+ * `runProgram` loads through the same store it puts into — so a table
+ * whose first line loads an address put by some earlier program runs
+ * here and would refuse from the empty word.
+ *
+ * That is the semantics and not a divergence, but it has a consequence
+ * worth stating where a host implementer meets it: two stores that hold
+ * different content can honestly answer different words for one
+ * program. Word equality is a cross-host gate only when the stores are
+ * in the same state, which for the registered programs they are —
+ * every one of them is a table of puts alone, so its word is a function
+ * of the table and the digest, and nothing else.
+ *
  * ## Recovery has a premise, and it is the store's own honesty
  *
  * `decodeProg_encodeProg` carries `hsep` — the address function must
