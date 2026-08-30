@@ -188,3 +188,13 @@ with SPECS rows per the maintenance law.
 ## REVIEW-ATTENTION carried: dashed-value predicate reshaped under
 ## evidence; SystemKindTag emitted into annotation-plane module (moves
 ## when a system mirror lands); show exits 0 on roots-listing failure.
+## CAS_WORD FIX PASS GREEN (merge/cas-word df92ada1): F1/F2/F3 fixed,
+## each falsified (revert breaks it); F4-F9 + L1-L5 done. 336 tests,
+## lint 133 (0 new, 24 inert removed), check:cas green. Decision-28
+## citations are forward-refs that resolve on merge into current main.
+## Open: F7 skipped; 6 more vocab glosses + stale-lock --force escape
+## are vocabulary rulings, not the pass's call; Decision 34 still owed
+## at integration. READY, NOT MERGED.
+## MERGE STATE: CLI (a70b2654) + cas_word (df92ada1) both GREEN & held.
+## Daemon fix pass still running. Merge hold + Brain Stem carrier =
+## operator's open rulings.
