@@ -217,10 +217,34 @@ captured fiber — close the layer's scope on EOF, or expose a `Latch` /
 any build order. Failing that, `makeProtocolStdio` should at minimum
 refuse to build off the calling fiber silently.
 
+## The composition rule (verified 2026-08-30)
+
+There is no setting: `mergeAllEffect`'s `concurrency: layers.length`
+is hardcoded and no option or fiber-ref reaches it. But `provideWith`
+builds `self` on the calling fiber even when given an ARRAY of
+dependencies — only the dependencies fork among themselves. So the
+rule is: **the fiber-capturing layer must be `self` in a
+provide-family call, never a member of a merge list.** Run against
+rc.112:
+
+```
+mergeAll(transport, b1, b2)          : HUNG, 3004ms
+transport |> provideMerge([b1, b2])  : SHUT DOWN, 202ms
+```
+
+`transport.pipe(Layer.provideMerge([dep1, dep2]))` is also a single
+provide, so it satisfies the multiple-provide lint that motivated the
+bad rewrite — the refactor had a safe landing spot; nothing marks it.
+
 ## Owed
 
-- Upstream issue against `effect` with the repro above.
-- Estate question, separate: whether the multiple-provide lint rule
-  should know that `Layer.mergeAll` and a provide chain are not
-  interchangeable. The rewrite that caused this was lint-motivated and
-  every gate the estate had was green on it.
+- Upstream issue against `effect` with the repro above — drafted and
+  handed to the operator to post, 2026-08-30.
+- Estate question, sharpened by the composition rule above: the
+  multiple-provide lint's fix-suggestion should steer to
+  `provideMerge([deps])`, never `mergeAll`, when the provided stack
+  contains a transport.
+- Optional hardening, build-order-proof: the stdio host awaits its
+  own stdin-EOF latch instead of `Effect.never`, so no future
+  `mergeAll` regression can hang it; the `serve </dev/null` probe
+  stays as the gate either way.
