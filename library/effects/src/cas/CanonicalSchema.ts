@@ -1241,6 +1241,14 @@ export const assemble: (
               actualTag: node.kind.tag,
             })
           }
+          // The BYTES gate, ahead of the parser, exactly as `get` runs
+          // it: assembly is a THIRD byte entry point, and a door that
+          // skips this one would resolve a spelling the other two refuse
+          // by name.
+          yield* Effect.try({
+            try: () => admitPayloadSpelling(node.payload),
+            catch: (issue) => projectionFailure(id, issue),
+          })
           const envelope = yield* decodedVersionedEnvelope(node.payload, id)
           const target = yield* Effect.try({
             try: () => fromEnvelope(envelope),
