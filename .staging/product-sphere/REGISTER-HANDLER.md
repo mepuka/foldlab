@@ -94,6 +94,23 @@ dictated:
   the hosted chain is the product half, and the register handler
   above is how non-formal users read the same chain.
 
+## Collection is the front end (operator, 2026-08-30)
+
+The non-local idea's local root: a daemon process running a DEFAULT
+CAS PROGRAM — turn on file watching and it passively collects diffs
+(creation, change) with a very modest API: set the file types,
+nothing more. Passive collection; the collection itself becomes an
+API. This is the streaming study's ruling made product ("the word is
+the feed, pull-first").
+
+And it is HOW THE FRONT END IS DESIGNED: everything in the UI is an
+action on the store or derived from one. If you want something in
+your UI, you start collecting it — simple as that. Our job is
+exactly two guarantees: they can collect WHATEVER they want, and it
+still functions and still looks good. The front end never has a
+data model of its own; it has collections and derivations over the
+store, rendered through the register handler above.
+
 ## Pending considerations (recorded, not ruled)
 
 1. **Vendored math/CS libraries.** Under consideration: vendoring
