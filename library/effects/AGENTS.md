@@ -16,6 +16,9 @@ Active designs touching this lane:
 (emitter inventory E1–E6),
 [INGESTION-HARNESS](../../.staging/operational-structure/INGESTION-HARNESS.md)
 (the harness map and program-ingestion path).
+Serving plane (how `cas serve` and `cas daemon` are run, secured, and
+observed): [docs/lab-core/SERVING.md](../../docs/lab-core/SERVING.md);
+the wire authority remains [PROFILE-CAS-HTTP-0.md](PROFILE-CAS-HTTP-0.md).
 
 ## Lane rules
 
