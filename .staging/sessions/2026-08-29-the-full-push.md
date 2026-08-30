@@ -121,3 +121,22 @@ with SPECS rows per the maintenance law.
   items) includes: CANON-1 permutation theorem FALSE without Nodup
   keys; annotation-bag size unmeasured (measurement slice first);
   Prop spelling scout-only.
+- DAEMON CORRECTNESS LENS DONE (pre-blackout): MERGE-WITH-FIXES,
+  "land it" — S1 case-sensitive host/origin allowlists (breaks the
+  documented proxy deployment), S2 /projections serves 1/7 artifacts
+  from the published package, S3 Prometheus duplicate +Inf bucket
+  (upstream; fix via explicit boundaries), S4 port-bind failure
+  escapes the register and mis-diagnoses, S5 idleTimeout inert on
+  the Bun pin, S6 session map documented-not-bounded (+33.7MiB/4000
+  sessions), S7 URL-pathname percent-encode nit, S8 --otlp silent
+  failures. All merge-agent fixes verified sound; SIGKILL/SIGTERM/
+  clamp/inflight probes all exact.
+- BLACKOUT killed: CLI fix pass (m3-cli-wt: both merges COMMITTED,
+  fix work dirty on 5 files), cas_word fix pass (untouched),
+  auth audit (nothing), streaming research (partial file exists),
+  front-end lane (ALL THREE FILES WRITTEN pre-kill).
+- MISROUTE note: the planner never received the 31(b)/(d) update
+  (delivered to the daemon reviewer, who refused it) — the plan's
+  hard review must check for the algebra-expressiveness section and
+  plain-language-first sequencing, and require them if absent.
+- Usage reset; all lanes re-dispatched.
