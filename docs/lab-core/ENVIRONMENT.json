@@ -242,7 +242,7 @@
       "sources": []
     },
     {
-      "commands": ["mise run gen", "git diff --exit-code", "mise run check:fips202", "mise run check:entity-store", "mise run check:extract", "mise run check:generate", "mise run check:machine", "mise run check:cas", "mise run check:effects:ts", "mise run check:effects:research", "mise run check:ledger"],
+      "commands": ["mise run gen", "git diff --exit-code", "mise run check:fips202", "mise run check:entity-store", "mise run check:extract", "mise run check:generate", "mise run check:machine", "mise run check:cas", "mise run check:effects:ts", "mise run check:effects:research", "mise run check:ledger", "mise run check:workbench"],
       "dir": null,
       "inChain": true,
       "name": "check",
@@ -252,7 +252,7 @@
       "sources": []
     },
     {
-      "commands": ["lake --wfail build", "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'", "mise run check:cas:surface", "mise run check:cas:obligations", "mise run check:cas:laws"],
+      "commands": ["lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws", "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'", "mise run check:cas:surface", "mise run check:cas:obligations", "mise run check:cas:laws"],
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "check:cas",
@@ -419,6 +419,16 @@
       "outputs": [],
       "residence": "portable",
       "residenceReason": "all inputs tracked",
+      "sources": []
+    },
+    {
+      "commands": ["bun install --frozen-lockfile", "bun run lint", "bun run typecheck", "bun run test", "bun run build"],
+      "dir": "{{config_root}}/experiments/workbench",
+      "inChain": true,
+      "name": "check:workbench",
+      "outputs": [],
+      "residence": "host-local",
+      "residenceReason": "experiments/workbench is not yet committed",
       "sources": []
     },
     {
