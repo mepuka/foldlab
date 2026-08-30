@@ -453,3 +453,211 @@ build.
 Neither hole requires a theorem to change. Both are prose against
 kernel-checked fact, which is the class the packet itself named
 `claim-scope` and the class its own break row fell in.
+
+---
+
+# RE-RUN 2026-08-30 — against `e1ceb205`
+
+## STATUS — **STANDS-AMENDED. Both holes CLOSED.**
+
+```
+AMENDED  e1ceb205  module fixes for both holes, eight results adopted
+PACKET   ac3a0ece  packet amendments for the breaker's two holes
+RECORD   AttackAmended.lean beside this file
+```
+
+`Attack.lean` is **unedited** and stays the record against `d714ef14`.
+It also still elaborates clean against `e1ceb205` (exit 0, zero errors,
+every name resolving to `PDD7Attack.*`) — expected, and worth saying
+because PDD-1's breaker mispredicted the same thing: those theorems are
+about the law set as it stood, and EXTENDING a law set cannot falsify a
+theorem about the old one. The close conditions are the ones §9 named,
+and they are discharged below.
+
+## Gates on the amended module — re-run by this hand
+
+```
+lake --wfail build Cas CasBackend CasExamples CasWp
+  Build completed successfully (95 jobs).          [exit 0]
+  ℹ [94/95] Built Cas.Backend.SumAlgebra (1.9s)
+
+mise run check:cas                                 [exit 0]
+  surface/cas-surface.json      955041 bytes — 2026 declarations
+  surface/cas-obligations.json   17363 bytes — 68 obligations
+  surface/cas-laws.json           9825 bytes — 9 of 37 bound
+  REGISTRY.md                    14529 bytes
+  ../../docs/lab-core/ENVIRONMENT.json 37002 bytes
+  every byte gate ok; UNMOVED to the byte from the first pass, so the
+  371-line module change is still outside Walk.libraryImports.
+
+CENSUS (independent env walk, all constants of the module)
+  PUBLIC COUNT  = 69       (was 52; +17 for the eight adopted results
+                            and their supporting definitions)
+  PRIVATE COUNT =  3       (unchanged: handler_eq_of_handle + 2
+                            generated match-splitters)
+  AXIOM UNION over all 72 = [Quot.sound, propext]
+  Cas.Lang.Prog.op_bind :: []            still axiom-free
+  no sorryAx, no Classical.choice
+```
+
+**Sorry-control, re-run at the NEW primary theorem.** `syntactic_hyp_iff`'s
+proof replaced by `sorry`:
+
+```
+warning: Cas/Backend/SumAlgebra.lean:377:8: declaration uses `sorry`
+info:  'Cas.Lang.inl_unique_one_target' depends on axioms: [sorryAx]
+info:  'Cas.Lang.Prog.inl_unique'       depends on axioms: [propext, sorryAx, Quot.sound]
+error: build failed                                        [exit 1]
+```
+
+Reverted, rebuilt: 95 jobs, exit 0. The poison reaching **both**
+`inl_unique_one_target` and `Prog.inl_unique` is itself the evidence for
+HOLE-1's closure — see below.
+
+## HOLE-1 — **CLOSED**, and structurally
+
+Three independent checks, none of them a reading of prose.
+
+1. **The proof term.** `AttackAmended.lean` §A prints it:
+
+```lean
+theorem Cas.Lang.Prog.inl_unique … :=
+fun {S T} ι hι {A} p =>
+  inl_unique_one_target (fun {A} => ι)
+    (fun {x} q => hι (Prog (S ⊕ₛ T)) (inlHandler S T) (inrHandler S T) q) p
+
+theorem Cas.Lang.inl_unique_one_target … :=
+fun {S T} ι hι {A} p => (syntactic_hyp_iff (fun {A} => ι) p).mp (hι p)
+```
+
+The ∀-quantified form is now literally an application of the narrowed
+one, which is literally the `.mp` of the iff. Not a docstring reorder.
+
+2. **The axiom trace.** The planted `sorry` in `syntactic_hyp_iff`
+propagates to `Prog.inl_unique`. A cosmetic fix that kept the old `rwa`
+block would not have.
+
+3. **The prose.** Every withdrawn claim is gone from both surfaces. The
+module head carries a "What makes the categoricity work — corrected"
+section (`SumAlgebra.lean:57-83`) and the packet's NOTE ADQ-INL
+(`contract.md:437-476`) says the wide quantifier is generality and not
+mechanism, that the counting target never enters the categoricity, and
+that the `RefM`/word-gate comparison is **OPEN in both directions** —
+naming both that the packet declined it and that this breaker failed to
+close it (attack record §8, failed attempt 6). Nothing now claims what
+nothing proves.
+
+`inl_unique_factors_through_one_target` re-derives the factoring in this
+record so it is not held on the castle's word alone.
+
+## HOLE-2 — **CLOSED**, and build-enforced
+
+L31's reach line is present in **both** required places: the packet row
+(`contract.md:329-347`, NOTE L31) and the docstring
+(`SumAlgebra.lean:522-530`). Both say the same three things — L31
+constrains `handleLlm` only on `Prog.inl`'s image, `badHandleLlm`
+satisfies it at every universe, and a client wanting an oracle guarantee
+must cite **L30**.
+
+The stronger half: `badHandleLlm` is now `Cas.Lang.Adversary.badHandleLlm`
+with `badHandleLlm_liftCas` and `badHandleLlm_not_interpret` beside it,
+both re-elaborated in §A. Relaxing the boundary back now means deleting
+a theorem, which is a red build rather than a prose edit — exactly the
+close condition §9 asked for.
+
+## Adopted results — re-elaborated, and the credits
+
+All eight discharged in `AttackAmended.lean` §B: each of this record's
+ORIGINAL statements is inhabited by the castle's adopted declaration, so
+nothing was weakened on the way in. `dup_bind`, `dup_injective`,
+`doubleInl_bind'` and `doubleInl_injective'` are checked as well as
+`doubleInl_factors`, since the derived pair was the point.
+
+**Credits verified, by path and commit, at every site.** The module head
+carries the debt block (`SumAlgebra.lean:109-118`) naming
+`library/cas/contracts/attacks/PDD-7/ @ b509cb20` and listing all eight;
+each adopted declaration repeats it in its own docstring
+(`contracts/attacks/PDD-7/Attack.lean` §2 / §3 / §5 @ `b509cb20`); the
+packet carries the attack section (`contract.md:877-942`) with the
+adoption table and the two RESULT blocks that ran in the packet's
+favour. Correct and sufficient.
+
+**ADQ-L30** (`contract.md:411-425`) is as this record supplied it, with
+the packet's own line that it "omitted this row and should not have".
+**L32** (`SumAlgebra.lean:498-515`) carries the cross-cite: the estate's
+`Interp.lean:19,181-183` assertion is prose with no declaration behind
+it, nothing in the slice depended on it, and `handleLlm_bind` supplies
+what it was claiming — so PDD-7 discharges PDD-8's boundary rather than
+depending on it. Both as supplied.
+
+## NOTE-7 — the fresh probe: the correction reached ONE of three rows
+
+**Does not block the landing. It is consistency, not correctness — no
+claim is false, no theorem unsound, no adversary admitted.**
+
+HOLE-1 was never a fact about `Prog.inl`. It was a fact about a PROOF
+SHAPE: a categoricity whose hypothesis is ∀-quantified while its proof
+consumes one instance, at which the hypothesis is equivalent to the
+conclusion. The fix pass corrected the row this breaker pointed at and
+left the identical shape standing in the two it did not.
+
+- **`Prog.inr_unique`** keeps the original one-shot `rwa`; there is no
+  `syntactic_hyp_iff_inr` and no `inr_unique_one_target`. Supplied here
+  (`AttackAmended.lean` §C1), with `inr_unique_is_corollary` showing the
+  restructure goes through on the right by the same two lines.
+- **`llmOracleHandler_unique` — the ADQ-L30 row just adopted** — has the
+  same shape. Its hypothesis ranges over every `A : Type` and every
+  `p : Prog AgentSig A`; its proof consumes, per operation, exactly
+  `A := String`, `p := .vis (.inr (.infer q)) .pure`. `l30_hyp_iff`
+  proves that instance EQUIVALENT to the conclusion pointwise —
+  `Prog.bind_pure_right` playing the role `interpret_id` plays on the
+  left — and `llmOracleHandler_unique_one_program` is the strictly
+  stronger row, with the shipped one as its corollary.
+
+  **Partly this breaker's own doing**: the record supplied
+  `llmOracleHandler_unique` in the ∀-form and did not narrow it. Named
+  so the ledger is not tidier than the history.
+
+`ADQ-SUM` is exempt and provably so: `sum_unique_iff` already established
+its premises are pointwise-minimal. There is no fourth row.
+
+**Close condition.** Adopt `syntactic_hyp_iff_inr`,
+`inr_unique_one_target`, `l30_hyp_iff` and
+`llmOracleHandler_unique_one_program` from `AttackAmended.lean` §C, with
+`Prog.inr_unique` and `llmOracleHandler_unique` restated as their
+corollaries. Four declarations, all written and kernel-checked here, so
+folding them in is a copy. If the operator prefers to land PDD-7 now and
+carry NOTE-7 as a follow-up, nothing is at risk — the shipped forms are
+true and the ADQ block is adequate as it stands.
+
+## On the declined adoption — `inl_unique_via_initiality`
+
+**Concur with declining.** Its only content was that the second route
+bottoms out at the same instance, and `syntactic_hyp_iff` now says that
+in the module outright — so a third spelling of one theorem would cost
+maintenance to record a finding the castle already carries; it stays
+here as record.
+
+## Re-run failed attempts
+
+1. Break either closure — FAILED, both are mechanical (proof term, axiom
+   propagation, castle-resident adversary).
+2. Find a statement weakened in adoption — FAILED, all eight §B examples
+   elaborate.
+3. Find the `inr` asymmetry hiding an unsoundness — FAILED;
+   `inr_unique_is_corollary` shows the restructure goes through.
+4. Find a fourth categoricity row with the shape — FAILED, there is no
+   fourth.
+5. Close `ObsEq H (liftCas p) (doubleInl p)` — still not attempted to
+   completion, and now correctly marked OPEN on both sides rather than
+   gestured at.
+
+## Verdict
+
+```
+HOLE-1   CLOSED
+HOLE-2   CLOSED
+NOTE-7   NEW, non-blocking (consistency); four fixes supplied
+BREAK    none, either pass
+STATUS   STANDS-AMENDED — PDD-7 lands on the operator's ruling
+```
