@@ -239,9 +239,20 @@ const schemaDetail = (error: Schema.SchemaError): string =>
     .join("; ")
 
 /**
- * Read and decode the store's config, absent when the file is not
+ * Read and decode the store's config, absent ONLY when the file is not
  * there. A present-but-invalid config is a typed refusal, never a
  * silent default.
+ *
+ * ABSENT AND UNREADABLE ARE NOT THE SAME ANSWER, and the difference is
+ * a security boundary rather than a nicety. Absent means the store
+ * predates the config and the defaults apply; those defaults include
+ * `anonymousReads: true`. So a reader that answered "absent" to an
+ * unreadable file would serve a store whose config says
+ * `anonymousReads: false` WIDE OPEN, on both hosts, on the strength of
+ * a permission bit or a path that turned out to be a directory — a
+ * gate silently inverted by a failure to read it. Only the platform's
+ * `NotFound` is absence here; every other failure to open is a typed
+ * refusal that names the file and the fix.
  *
  * The checks run in the order a reader would ask them — is it JSON, is
  * it an object, does it name a backend this build has — so the two
@@ -258,14 +269,24 @@ export const readConfig = (
 > =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
-    const raw = yield* fs.readFileString(location.configPath).pipe(
-      Effect.asSome,
-      Effect.orElseSucceed(() => Option.none<string>()),
-    )
-    if (Option.isNone(raw)) return Option.none()
-
     const refuse = (clause: string, fix: string) =>
       new ConfigUnreadable({ configPath: location.configPath, clause, fix })
+
+    const raw = yield* fs.readFileString(location.configPath).pipe(
+      Effect.asSome,
+      // NotFound is the only absence. Anything else — a permission
+      // bit, a directory where a file belongs, a bad descriptor — is
+      // a file whose contents are UNKNOWN, and unknown may not become
+      // "use the open defaults".
+      Effect.catchTag("PlatformError", (error) =>
+        error.reason._tag === "NotFound"
+          ? Effect.succeed(Option.none<string>())
+          : Effect.fail(refuse(
+            `the file is there, but this process cannot read it (${error.reason.message})`,
+            "check its permissions and that the path is a file, not a directory — the config decides whether reads are gated, so an unreadable one is refused rather than defaulted past",
+          ))),
+    )
+    if (Option.isNone(raw)) return Option.none()
 
     // The described JSON codec, not the global parser: this module has
     // no license to spell JSON itself. Two decodes, because the two
@@ -337,15 +358,21 @@ const isStoreRoot = (
         Effect.orElseSucceed(() => false),
       )
     if (yield* exists("objects")) return true
-    // Discovery must not stop at an undecodable config: walking past
-    // it is what lets the real store above it still be found. The
-    // refusal a malformed config deserves is raised when a verb opens
-    // the store it names, where `readConfig` fails typed.
-    const config = yield* readConfig(located(directory, "discovered", path)).pipe(
+    // A config this reader cannot use must not decide that there is no
+    // store here — it decides only that the LAYOUT is unknown, and the
+    // database file is its own evidence of the layout. Answering
+    // "not a store" instead sent the operator to `cas init` for what
+    // was a permission bit or a directory in the file's place, while
+    // the store sat right there; the accurate refusal is raised a
+    // moment later, when a verb opens the store and `readConfig` fails
+    // typed. A directory with neither `objects/` nor `cas.db` is still
+    // not a store, so discovery still walks past one.
+    const layout = yield* readConfig(located(directory, "discovered", path)).pipe(
       Effect.provideService(FileSystem.FileSystem, fs),
-      Effect.orElseSucceed(() => Option.none<StoreConfig>()),
+      Effect.map((config) => backendOf(config)),
+      Effect.orElseSucceed((): StoreBackend => "sqlite"),
     )
-    if (backendOf(config) !== "sqlite") return false
+    if (layout !== "sqlite") return false
     return yield* exists(casDatabaseName)
   })
 

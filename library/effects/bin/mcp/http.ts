@@ -14,9 +14,12 @@
  *   `/roots/{hex}`, `/control/…`), served by the existing transport-free
  *   core (`src/server/Core.ts` under `src/server/HttpApp.ts`) through a
  *   wildcard route. This is that core's first bind ever. The wire law
- *   stays total: an unknown path or wrong method is the PROFILE's
- *   refusal (400/405 from the status table), not a router 404, because
- *   the wildcard hands every unclaimed exchange to `decide`.
+ *   answers EVERY UNCLAIMED EXCHANGE — an unknown path or wrong method
+ *   is the PROFILE's refusal (400/405 from the status table), not a
+ *   router 404, because the wildcard hands each of them to `decide`.
+ *   Not every exchange on the port: three co-tenant prefixes are
+ *   claimed before the wildcard sees them, and the profile's own §14
+ *   enumerates them as outside its media-type and status law.
  * - **MCP over HTTP** — `McpServer.layerHttp` at `/mcp`: the
  *   single-endpoint Streamable HTTP topology at the pin (no legacy
  *   two-endpoint SSE, no event resumption, no session expiry — the
@@ -27,7 +30,9 @@
  *
  * Two more routes share the port and are host surface, not protocol:
  * `/metrics` (Prometheus exposition, decision 20's first production
- * sensor) and nothing else. Everything unclaimed falls to the profile.
+ * sensor) and `/projections` (below). They are the profile's declared
+ * CO-TENANTS (PROFILE-CAS-HTTP-0 §14); everything unclaimed falls to
+ * the profile.
  *
  * ## The `ServePolicy`, honored for real this time
  *
@@ -59,7 +64,7 @@
  *   `src/server/Protocol.ts` can check a bearer credential, but a
  *   credentialed HTTP story is a named NON-GOAL of `cas daemon` v0:
  *   serving it would put a secret on a wire this host has no TLS for —
- *   TLS is the adopted front proxy's job (see docs/lab-core/SERVING.md)
+ *   TLS is the adopted front proxy's job (see library/effects/SERVING.md)
  *   — so a store that gates reads is not served until the credentialed
  *   story lands as its own ruled slice.
  *
@@ -95,7 +100,7 @@
  * order even when two lines share a millisecond. The MCP handlers'
  * own per-tool lines (tool, address, outcome) arrive between them,
  * exactly as they do on stdio. The field vocabulary is documented in
- * docs/lab-core/SERVING.md; it is the first sensor of decision 20's
+ * library/effects/SERVING.md; it is the first sensor of decision 20's
  * logging hoover, so the fields are STABLE — a rename is a versioning
  * event for whatever learns to read them.
  *
@@ -114,10 +119,29 @@
  *   request arrives at 127.0.0.1 carrying the attacker's own Host.
  * - A request carrying an `Origin` outside `--allow-origin` is refused
  *   403 on every plane. No origins are allowed by default; non-browser
- *   clients send no Origin and are unaffected.
+ *   clients send no Origin and are unaffected. The ONE Origin that
+ *   passes without an entry is this daemon's own — a page it served
+ *   itself, recognized by a Host that is loopback or the bound
+ *   address.
+ * - The two gates are INDEPENDENT. `--allow-host` widens which Host
+ *   names are answered and nothing else; it never grants origin
+ *   trust. It used to, transitively: the same-origin allowance
+ *   compared the Origin against whatever Host had just been allowed,
+ *   so under `--allow-host` an unlisted browser origin passed every
+ *   plane and WROTE bytes into the store while the banner said every
+ *   browser Origin was refused. Origin is enforced from
+ *   `--allow-origin` plus this daemon's own addresses, full stop.
+ * - Both allowlists compare CASE-FOLDED, on insert and on compare.
+ *   Host names and origins are ASCII case-insensitive on the wire, so
+ *   a literal comparison 403s the documented proxy deployment over a
+ *   capitalization the operator is entitled to write.
  * - An allowed origin gets real CORS: the preflight is answered and
  *   the response carries `access-control-allow-origin`, which is what
  *   lets the browser front end read this host's projections.
+ * - A refusal answers with a BODY that names the defect and the fix,
+ *   in the media type of the plane that answered — except on
+ *   cas-http/0, where the profile's framing rules the body out and
+ *   the status is the whole sentence (see `refusedResponse`).
  *
  * ## Projections — tier 0 of the front end
  *
@@ -127,6 +151,13 @@
  * ledger. The daemon SERVES these files and never authors them — they
  * are the Lean emitters' output, read from disk per request so a
  * regenerate is visible without a restart.
+ *
+ * This plane is RULED, not assumed: decision 32(a) released tier-0
+ * serving to the daemon ("`/projections` RELEASED to the daemon —
+ * tier-0 serving of the emitted, byte-gated artifacts is the
+ * daemon's, read-only"), replacing FRONTEND.md's earlier static-host
+ * story. Read-only is the whole of the mandate: there is no write
+ * verb on this plane and no authorship in this file.
  *
  * ## Shutdown
  *
@@ -140,6 +171,7 @@
  */
 import { BunHttpServer } from "@effect/platform-bun"
 import {
+  Cause,
   Clock,
   Duration,
   Effect,
@@ -155,6 +187,7 @@ import {
 import { McpServer } from "effect/unstable/ai"
 import {
   FetchHttpClient,
+  HttpClient,
   HttpRouter,
   HttpServer,
   HttpServerRequest,
@@ -208,10 +241,43 @@ const planeOf = (path: string): string =>
 
 /* ── the daemon's own sensors ────────────────────────────────────── */
 
+/** Bucket boundaries for request latency, in milliseconds, and FINITE
+ * on purpose.
+ *
+ * `Metric.timer`'s default boundaries END in `Infinity`
+ * (`Metric.ts:2786-2788` over `boundariesFromIterable`, which appends
+ * it), and the Prometheus exposition renders every boundary as a
+ * bucket with `le=boundary.toString()` and THEN appends its own
+ * `le="+Inf"` row (`PrometheusMetrics.ts:419-427`). The default
+ * therefore publishes a duplicate overflow bucket labelled
+ * `le="Infinity"`, which is not a number Prometheus parses. Finite
+ * boundaries end it: an observation past the top lands in the
+ * histogram's own overflow slot, which the exporter reports as
+ * `+Inf`, exactly where a scraper looks for it.
+ *
+ * The set spans what a request to this daemon actually costs — a
+ * loopback capability read at the bottom, a stalled one at the top. */
+export const requestDurationBoundaries: ReadonlyArray<number> = [
+  1,
+  2,
+  5,
+  10,
+  25,
+  50,
+  100,
+  250,
+  500,
+  1000,
+  2500,
+  5000,
+  10000,
+]
+
 /** Request duration, attributed by plane — the daemon's first number
  * beyond BS-1's four. */
 export const requestDuration = Metric.timer("cas.daemon.request", {
   description: "HTTP request duration, by plane",
+  boundaries: requestDurationBoundaries,
 })
 
 /** The wire plane's in-flight gauge, beside the MCP plane's
@@ -263,6 +329,93 @@ export class CredentialedPolicyUndaemonable
     ].join("\n")
   }
 }
+
+/**
+ * A bind that did not happen, said in one line.
+ *
+ * `BunHttpServer.layer` DIES rather than fails when `Bun.serve`
+ * throws, and a defect routes around every `Effect.mapError` between
+ * here and the CLI — so the landed behavior was a stack trace
+ * carrying the platform's own wrong sentence. This is the typed
+ * refusal that replaces it: one logfmt-compatible line, the condition
+ * named, the fix named.
+ */
+export class DaemonBindRefused extends Schema.TaggedError<DaemonBindRefused>()(
+  "daemon/BindRefused",
+  {
+    host: Schema.String,
+    port: Schema.Int,
+    condition: Schema.String,
+    fix: Schema.String,
+    /** What the platform said, kept for a debugger and deliberately
+     * NOT quoted in the message — at this pin it misdiagnoses (see
+     * `bindDiagnosis`). */
+    platformSaid: Schema.String,
+  },
+) {
+  override get message(): string {
+    return `the daemon did not bind ${this.host}:${this.port} — ${this.condition}; ${this.fix}`
+  }
+}
+
+/**
+ * What a failed bind actually was, derived from what this host KNOWS.
+ *
+ * The platform is not a witness here. Measured at the pinned Bun: a
+ * port already in use, a `--host` this machine does not hold, and a
+ * privileged port all throw the SAME `code: "EADDRINUSE"`, and two of
+ * the three name the wrong port in the message (`Bun.serve({ port: 0,
+ * hostname: "203.0.113.77" })` says "Is port 0 in use?"). Reading the
+ * diagnosis off that error would be repeating a guess. So the
+ * condition is derived from the address that was ASKED for, and where
+ * two causes remain indistinguishable both are named with the way to
+ * tell them apart.
+ */
+const bindDiagnosis = (
+  host: string,
+  port: number,
+): { readonly condition: string; readonly fix: string } =>
+  port !== 0 && port < 1024
+    ? {
+      condition:
+        `port ${port} is privileged (below 1024) and this process does not have the right to bind it`,
+      fix:
+        "use a port above 1024 — 80 and 443 belong to the front proxy, which is what terminates TLS for this daemon",
+    }
+    : loopbackHosts.includes(hostName(host)) || host === "0.0.0.0" || host === "::"
+    ? {
+      condition: `something else already holds ${host}:${port}`,
+      fix:
+        `stop whatever holds it, pass --port <other>, or pass --port 0 to let the OS choose a free one`,
+    }
+    : {
+      condition:
+        `${host}:${port} could not be taken — either --host names an address this machine does not hold, or something else already holds that port`,
+      fix:
+        "check --host against this machine's own addresses first, then the port; --port 0 lets the OS choose one",
+    }
+
+/** A build failure's text, flattened to one logfmt-safe line. */
+const causeLine = (cause: Cause.Cause<never>): string =>
+  Cause.prettyErrors(cause)
+    .map((pretty) => pretty.message)
+    .join("; ")
+    .replaceAll(/\s+/gu, " ")
+    .slice(0, 200)
+
+/**
+ * A layer whose BUILD failure becomes a typed refusal rather than a
+ * defect. `Layer.catchCause`'s fallback must produce the same
+ * services, and a server that did not bind has none to give — so the
+ * fallback is `Layer.unwrap` over a failing effect, which keeps the
+ * output services in the type while replacing the error channel.
+ */
+const refuseBuild = <A, R, E>(
+  self: Layer.Layer<A, never, R>,
+  refusal: (cause: Cause.Cause<never>) => E,
+): Layer.Layer<A, E, R> =>
+  Layer.catchCause(self, (cause: Cause.Cause<never>) =>
+    Layer.unwrap<A, never, R, E, never>(Effect.fail(refusal(cause))))
 
 /** What one `cas daemon` invocation asks for, beyond the store's own
  * policy: the bind address, a one-invocation port override, the OTLP
@@ -415,15 +568,27 @@ const layerCasPlane = (limits: DaemonLimits) =>
 
 /* ── the front door: guard, time, log ────────────────────────────── */
 
-/** A Host header's name, without its port: `127.0.0.1:8080` →
- * `127.0.0.1`, `[::1]:8080` → `[::1]`. */
+/** A Host header's name, without its port and CASE-FOLDED:
+ * `127.0.0.1:8080` → `127.0.0.1`, `[::1]:8080` → `[::1]`,
+ * `Front.Example` → `front.example`. Folding happens here, which is
+ * the one place both sides of every host comparison pass through —
+ * the allowlist is built from it and every request is checked through
+ * it, so insert and compare cannot disagree. */
 const hostName = (header: string): string => {
-  if (header.startsWith("[")) {
-    const closing = header.indexOf("]")
-    return closing >= 0 ? header.slice(0, closing + 1) : header
+  const folded = header.trim().toLowerCase()
+  if (folded.startsWith("[")) {
+    const closing = folded.indexOf("]")
+    return closing >= 0 ? folded.slice(0, closing + 1) : folded
   }
-  return header.split(":")[0] ?? header
+  return folded.split(":")[0] ?? folded
 }
+
+/** An Origin as the allowlist keys it: case-folded whole. An origin's
+ * scheme and host are both ASCII case-insensitive and an origin
+ * carries no path, so folding the entire string is exact rather than
+ * approximate. Same discipline as `hostName` — one function, both
+ * sides. */
+const originKey = (origin: string): string => origin.trim().toLowerCase()
 
 /** The Host names always accepted: the rebinding check must never
  * refuse the addresses this host actually answers on. */
@@ -442,18 +607,114 @@ type DoorDecision =
   | { readonly _tag: "RefusedHost"; readonly host: string }
   | { readonly _tag: "RefusedOrigin"; readonly origin: string }
 
-/** An Origin's `host[:port]` half, without parsing exceptions:
- * `http://app.local:5173` → `app.local:5173`. An origin that does not
- * look like `scheme://…` (e.g. the literal `null`) answers itself,
- * which can then only match nothing. */
+/** An Origin's `host[:port]` half, case-folded, without parsing
+ * exceptions: `http://App.Local:5173` → `app.local:5173`. An origin
+ * that does not look like `scheme://…` (e.g. the literal `null`)
+ * answers itself, which can then only match nothing. */
 const originHost = (origin: string): string => {
-  const separator = origin.indexOf("://")
-  return separator >= 0 ? origin.slice(separator + 3) : origin
+  const folded = originKey(origin)
+  const separator = folded.indexOf("://")
+  return separator >= 0 ? folded.slice(separator + 3) : folded
 }
+
+/* ── refusals that say what to do about themselves ───────────────── */
+
+/** What a refused or empty exchange is told: the defect named, the
+ * fix named — the estate's grade-A bar held on the wire, not only in
+ * the log. */
+interface Refusal {
+  readonly status: number
+  readonly refused: string
+  readonly why: string
+  readonly fix: string
+}
+
+/**
+ * One refusal, rendered in the media type of the plane that answers
+ * it — a plane's content type is its law, and a body in the wrong one
+ * is worse than no body.
+ *
+ * cas-http/0 is the deliberate exception and stays OCTET-BARE: the
+ * profile's §1 makes every body on that plane
+ * `application/octet-stream` under a closed binary framing, compared
+ * exactly, so a JSON explanation there would be a profile violation
+ * dressed as helpfulness. On that plane the STATUS is the whole
+ * sentence — §1's status→event table is what a client decodes — and
+ * the reason still reaches a person through the request log line.
+ *
+ * A refused browser gets no `access-control-allow-origin` (that IS
+ * the refusal), so these bodies are read by curl, by launchers, and
+ * by the operator reading a log — which is exactly who can act on the
+ * fix.
+ */
+const refusedResponse = (
+  plane: string,
+  refusal: Refusal,
+): HttpServerResponse.HttpServerResponse =>
+  plane === "cas-http/0"
+    ? HttpServerResponse.empty({ status: refusal.status })
+    : plane === "metrics"
+    ? HttpServerResponse.text(
+      [
+        `# refused: ${refusal.refused}`,
+        `# why: ${refusal.why}`,
+        `# fix: ${refusal.fix}`,
+        "",
+      ].join("\n"),
+      { status: refusal.status, contentType: "text/plain; charset=utf-8" },
+    )
+    : HttpServerResponse.jsonUnsafe({
+      refused: refusal.refused,
+      why: refusal.why,
+      fix: refusal.fix,
+    }, { status: refusal.status })
+
+/** A header value quoted back to its sender: control characters
+ * dropped and the length capped. The value is the caller's own, so
+ * echoing it gains an attacker nothing — but a response body is not
+ * the place to carry an unbounded stranger's string, and the metrics
+ * plane's rendering is line-oriented. */
+const shown = (value: string): string =>
+  Array.from(value.slice(0, 120), (character) => {
+    const code = character.codePointAt(0) ?? 0
+    return code < 0x20 || code === 0x7F ? " " : character
+  }).join("")
+
+/** The rebinding refusal, said to whoever asked. */
+const hostRefusal = (host: string): Refusal => ({
+  status: 403,
+  refused: `the Host header names ${shown(host)}, which this daemon does not answer as`,
+  why:
+    "a DNS-rebinding request arrives at the loopback address wearing the attacker's own Host, so this daemon answers only to the names it was told it has: loopback, the address it bound, and every --allow-host entry",
+  fix:
+    "pass --allow-host <name> if the name is really this daemon's (a front proxy that preserves the public Host needs it), or have the proxy rewrite Host to the bound address",
+})
+
+/** The origin refusal, said to whoever asked. */
+const originRefusal = (origin: string): Refusal => ({
+  status: 403,
+  refused: `the browser origin ${shown(origin)} is not allowed on this port`,
+  why:
+    "no origin is allowed by default — a page the operator never named may not script this daemon. Only --allow-origin entries and this daemon's own origin pass, and --allow-host does not widen that",
+  fix:
+    "pass --allow-origin <origin> to admit this page; non-browser clients send no Origin header and need nothing",
+})
+
+/** An artifact the emitters have not written. Not an error page: a
+ * statement about the tree this daemon reads. */
+const projectionMissing = (name: string): Refusal => ({
+  status: 404,
+  refused: `${name} has not been emitted`,
+  why:
+    "the daemon serves these artifacts and never authors them, so a missing one is a fact about the checkout it reads rather than a fault in the request",
+  fix:
+    "run the emitters (`mise run gen`); the file is served on the next request, with no restart",
+})
 
 const decideDoor = (
   request: HttpServerRequest.HttpServerRequest,
   allowedHosts: ReadonlySet<string>,
+  ownHosts: ReadonlySet<string>,
   allowedOrigins: ReadonlySet<string>,
 ): DoorDecision => {
   // DNS rebinding arrives AT the loopback address carrying the
@@ -467,15 +728,24 @@ const decideDoor = (
   }
   const origin = request.headers["origin"]
   // A SAME-ORIGIN request also carries an Origin on modern browsers'
-  // POSTs: an origin whose host half equals the (already-validated)
-  // Host header is the daemon's own pages talking to it, and passes
+  // POSTs: a page this daemon SERVED, talking back to it, passes
   // without an allowlist entry. The pattern is opencode's request
   // guard (`corpus/anomalyco_opencode/packages/server/src/cors.ts:22-26`),
   // which its own highest-risk surface (the pty WebSocket) relies on.
+  //
+  // The allowance is keyed to `ownHosts` — loopback and the bound
+  // address — and NEVER to the --allow-host set. Keying it to the
+  // whole Host allowlist made --allow-host grant origin trust
+  // transitively: under an allowed public Host an unlisted browser
+  // origin passed every plane and wrote bytes into the store, while
+  // the banner said every browser Origin was refused. The two gates
+  // are independent now, which is the only shape in which the banner
+  // can be true.
   const sameOrigin = origin !== undefined
     && host !== undefined
-    && originHost(origin) === host
-  if (origin !== undefined && !sameOrigin && !allowedOrigins.has(origin)) {
+    && ownHosts.has(hostName(host))
+    && originHost(origin) === originKey(host)
+  if (origin !== undefined && !sameOrigin && !allowedOrigins.has(originKey(origin))) {
     return { _tag: "RefusedOrigin", origin }
   }
   if (
@@ -499,7 +769,10 @@ const preflightResponse = (
       "access-control-allow-headers": request.headers["access-control-request-headers"]
         ?? "content-type, accept, cas-profile, mcp-session-id, mcp-protocol-version",
       "access-control-max-age": "600",
-      vary: "origin",
+      // The answer varies with all three request headers it reads —
+      // allow-headers is echoed from the request — so a cache keyed on
+      // origin alone could serve one page another page's header set.
+      vary: "origin, access-control-request-method, access-control-request-headers",
     }),
   )
 
@@ -529,26 +802,28 @@ const layerFrontDoor = (options: {
 }): Layer.Layer<never, never, HttpRouter.HttpRouter> =>
   Layer.effectDiscard(Effect.gen(function* () {
     const router = yield* HttpRouter.HttpRouter
-    const hosts = new Set([
-      ...loopbackHosts,
-      hostName(options.bindHost),
-      ...options.allowedHosts.map(hostName),
-    ])
-    const origins = new Set(options.allowedOrigins)
+    // The names this daemon IS — loopback plus the address it bound.
+    // Origin trust is derived from THESE and from --allow-origin;
+    // --allow-host widens only which Host names are answered.
+    const ownHosts = new Set([...loopbackHosts, hostName(options.bindHost)])
+    const hosts = new Set([...ownHosts, ...options.allowedHosts.map(hostName)])
+    const origins = new Set(options.allowedOrigins.map(originKey))
     let sequence = 0
     yield* router.addGlobalMiddleware((handler) =>
       Effect.flatMap(HttpServerRequest.HttpServerRequest, (request) => {
         const path = request.url.split("?")[0] ?? request.url
         const plane = planeOf(path)
-        const decision = decideDoor(request, hosts, origins)
+        const decision = decideDoor(request, hosts, ownHosts, origins)
         // Captured as its own const so the narrowing survives into the
         // closure — a fallback `?? ""` here would be an empty
         // allow-origin header waiting to be emitted.
         const passOrigin = decision._tag === "Pass" ? decision.origin : undefined
         const answer = decision._tag === "Preflight"
           ? Effect.succeed(preflightResponse(request, decision.origin))
-          : decision._tag === "RefusedHost" || decision._tag === "RefusedOrigin"
-          ? Effect.succeed(HttpServerResponse.empty({ status: 403 }))
+          : decision._tag === "RefusedHost"
+          ? Effect.succeed(refusedResponse(plane, hostRefusal(decision.host)))
+          : decision._tag === "RefusedOrigin"
+          ? Effect.succeed(refusedResponse(plane, originRefusal(decision.origin)))
           : passOrigin === undefined
           ? handler
           : Effect.map(handler, (response) =>
@@ -598,6 +873,20 @@ const layerFrontDoor = (options: {
  * never authors these; each is read from disk per request, so a
  * regenerated artifact is served without a restart. Absent artifacts
  * answer 404 — an un-emitted projection is a fact, not an error page.
+ *
+ * The plane exists by RULING: decision 32(a) released tier-0 serving
+ * to the daemon, read-only. Before it, FRONTEND.md's tier-0 story was
+ * a static host; the ruling moved it here, and FRONTEND.md says so.
+ *
+ * WHERE the files come from is a repo-checkout fact, honestly stated:
+ * each source URL resolves relative to this file, and only
+ * `cas-tools.json` also resolves inside an INSTALLED package (the
+ * `../../../cas/` segment lands back in `@foldlab/cas`, which is what
+ * `scripts/copy-mcp-manifest.ts` materializes). The other six resolve
+ * outside any installed package — `environment.json` cannot resolve
+ * inside one at any depth — so from a published tarball this plane
+ * serves one of seven and answers 404 for the rest. SERVING.md scopes
+ * the claim to repo-checkout serving and carries the OWED row.
  */
 export const projectionSources: ReadonlyArray<{
   readonly name: string
@@ -635,7 +924,8 @@ const layerProjections: Layer.Layer<
             contentType: "application/json",
             headers: { "cache-control": "no-cache" },
           })),
-        Effect.orElseSucceed(() => HttpServerResponse.empty({ status: 404 })),
+        Effect.orElseSucceed(() =>
+          refusedResponse("projections", projectionMissing(entry.name))),
       ),
     )
   }
@@ -679,6 +969,13 @@ const layerRss: Layer.Layer<never> = Layer.effectDiscard(
 /** How often the replica directory is examined. Freshness at 5 s
  * granularity is plenty for a gauge whose alert threshold is minutes. */
 export const replicaSampleInterval: Duration.Duration = Duration.seconds(5)
+
+/** A replica target as it may be LOGGED: any `user:password@`
+ * userinfo removed. litestream targets are usually plain paths or
+ * bucket URLs, but the URL forms admit credentials, and a log line is
+ * a sink that outlives the process and travels to the hoover. */
+const loggableTarget = (target: string): string =>
+  target.replace(/\/\/[^/@\s]*@/u, "//<redacted>@")
 
 /** A litestream target this host can stat: a plain path or a
  * `file://` URL. Anything with another scheme (s3, abs, sftp) is real
@@ -771,7 +1068,7 @@ export const layerReplicaLag = (
             Metric.update(replicaAge, -1).pipe(
               Effect.andThen(Effect.logInfo("replica lag unmeasured").pipe(
                 Effect.annotateLogs({
-                  target: raw,
+                  target: loggableTarget(raw),
                   reason:
                     "the target is not a local path — scrape litestream's own metrics endpoint for remote replica lag",
                 }),
@@ -783,7 +1080,7 @@ export const layerReplicaLag = (
             Metric.update(replicaAge, -1).pipe(
               Effect.andThen(Effect.logInfo("replica lag measured").pipe(
                 Effect.annotateLogs({
-                  target: directory,
+                  target: loggableTarget(directory),
                   sampleMs: Duration.toMillis(replicaSampleInterval),
                 }),
               )),
@@ -819,9 +1116,14 @@ const layerBanner = (
             .join(","),
           policy:
             `maxNodeBytes=${limits.maxNodeBytes} maxInFlight=${limits.maxInFlight}/plane maxBatchKeys=${limits.maxBatchKeys}`,
+          // The enforced truth, not the intended one: this daemon's
+          // own origin always passes (a page it served, talking back),
+          // and --allow-host never widens the set. Saying "every
+          // browser Origin refused" was the banner half of the
+          // transitive-trust defect.
           origins: (options.allowedOrigins ?? []).length === 0
-            ? "none (every browser Origin refused)"
-            : (options.allowedOrigins ?? []).join(","),
+            ? "none configured (only this daemon's own origin passes; every other browser Origin is refused)"
+            : `${(options.allowedOrigins ?? []).join(",")} (plus this daemon's own origin)`,
           extraHosts: (options.allowedHosts ?? []).length === 0
             ? "none"
             : (options.allowedHosts ?? []).join(","),
@@ -833,10 +1135,77 @@ const layerBanner = (
       )),
   )
 
+/** How often a continuing export failure is repeated. One minute is
+ * the exporter's own disable window, so a long outage is one line a
+ * minute rather than a flood — and the first failure is always said. */
+export const otlpWarnInterval: Duration.Duration = Duration.minutes(1)
+
+/**
+ * The export client, watched.
+ *
+ * The upstream exporter answers a dead collector by disabling itself
+ * for 60 s and logging that at DEBUG
+ * (`OtlpExporter.ts:220-224` at the pin); this host's stderr logger is
+ * Info-and-above, so the line never lands and an operator who passed
+ * `--otlp` watches a healthy daemon export nothing, in silence. That
+ * is the whole defect: not that the export fails, but that failing is
+ * indistinguishable from working.
+ *
+ * So the client the exporter is handed is wrapped here. A transport
+ * failure or a non-2xx answer (the exporter applies its own
+ * `filterStatusOk` ABOVE this wrapper, so a 500 arrives here as a
+ * successful response with a status) says so once at WARNING, then at
+ * most once per `otlpWarnInterval`. `/metrics` is untouched by any of
+ * it: scraping is pull, and it keeps working while the push is down.
+ */
+const layerWatchedExportClient = (
+  baseUrl: string,
+): Layer.Layer<HttpClient.HttpClient, never, HttpClient.HttpClient> =>
+  Layer.effect(
+    HttpClient.HttpClient,
+    Effect.gen(function* () {
+      const client = yield* HttpClient.HttpClient
+      let warnedAt = Option.none<number>()
+      const warn = (detail: string): Effect.Effect<void> =>
+        Clock.currentTimeMillis.pipe(
+          Effect.flatMap((now) =>
+            Option.isSome(warnedAt)
+              && now - warnedAt.value < Duration.toMillis(otlpWarnInterval)
+              ? Effect.void
+              : Effect.sync(() => {
+                warnedAt = Option.some(now)
+              }).pipe(
+                Effect.andThen(
+                  Effect.logWarning("otlp export failing").pipe(
+                    Effect.annotateLogs({
+                      baseUrl,
+                      detail,
+                      effect:
+                        "telemetry is not reaching the collector; /metrics still scrapes",
+                      repeatMs: Duration.toMillis(otlpWarnInterval),
+                    }),
+                  ),
+                ),
+              )
+          ),
+        )
+      return HttpClient.transformResponse(client, (response) =>
+        response.pipe(
+          Effect.tapError((error) => warn(`transport: ${error.reason}`)),
+          Effect.tap((answered) =>
+            answered.status >= 400
+              ? warn(`collector answered ${answered.status}`)
+              : Effect.void
+          ),
+        ))
+    }),
+  )
+
 /** The OTLP export, when a wire is named: logs, metrics, and the spans
  * the estate's `Effect.fn` sites already carry, as OTLP/JSON over the
  * platform's HTTP client. Off by default — an export target is an
- * invocation's choice, never a config surprise. */
+ * invocation's choice, never a config surprise. A failing export is
+ * audible (see `layerWatchedExportClient`). */
 const layerOtlp = (
   otlp: Option.Option<string>,
 ): Layer.Layer<never> =>
@@ -849,7 +1218,11 @@ const layerOtlp = (
           serviceName: `${serverIdentity.name}-daemon`,
           serviceVersion: serverIdentity.version,
         },
-      }).pipe(Layer.provide(FetchHttpClient.layer)),
+      }).pipe(
+        Layer.provide(
+          layerWatchedExportClient(baseUrl).pipe(Layer.provide(FetchHttpClient.layer)),
+        ),
+      ),
   })
 
 /**
@@ -870,17 +1243,24 @@ export const layerDaemon = (options: DaemonOptions) =>
     const limits = yield* applyDaemonPolicy(options)
     const allowedOrigins = options.allowedOrigins ?? []
     // The adapter's own origin check is a static list, so the front
-    // door's dynamic same-origin allowance is taught to it explicitly:
+    // door's dynamic own-origin allowance is taught to it explicitly:
     // the daemon's own origin, in its loopback spellings, joins the
     // adapter list when the port is fixed. (On an ephemeral port —
     // tests — the origin is unknowable before the bind; the front door
     // still admits same-origin, and only the /mcp route is stricter.)
-    const adapterOrigins = limits.port === 0 ? allowedOrigins : [
-      ...allowedOrigins,
-      `http://${hostName(options.host)}:${limits.port}`,
-      `http://localhost:${limits.port}`,
-      `http://127.0.0.1:${limits.port}`,
-    ]
+    // Case-folded on the way in, because the adapter compares its own
+    // list literally and a browser sends a lowercase Origin: an
+    // operator's `--allow-origin http://Front.Example` would pass the
+    // front door and then be refused by /mcp alone.
+    const folded = allowedOrigins.map((origin) => originKey(origin))
+    const adapterOrigins = limits.port === 0
+      ? folded
+      : [
+        ...folded,
+        `http://${hostName(options.host)}:${limits.port}`,
+        `http://localhost:${limits.port}`,
+        `http://127.0.0.1:${limits.port}`,
+      ]
     const application = Layer.mergeAll(
       layerMcpPlane({
         maxNodeBytes: limits.maxNodeBytes,
@@ -903,25 +1283,41 @@ export const layerDaemon = (options: DaemonOptions) =>
       disableListenLog: true,
     }).pipe(
       Layer.merge(layerBanner(limits, options)),
-      Layer.provide(BunHttpServer.layer({
-        port: limits.port,
-        hostname: options.host,
-        // The transport's own cap, pinned to the same number as
-        // stdio's frame cap so the clamp arithmetic is one discipline.
-        // Bun answers an oversized body with an HTTP refusal — on this
-        // transport nothing is silently lost even past the cap. This
-        // is also the TOTAL-body bound the stdio transport lacks: a
-        // `cas_run` whose whole document exceeds the frame is refused
-        // here, where stdio would lose it.
-        maxRequestBodySize: transportFrameBytes,
-        // Slow-loris posture: a connection that stops making progress
-        // is closed by the platform. Bun's own default is 10 s; stated
-        // here so the number is a decision, not an accident.
-        idleTimeout: 30,
-        // SIGTERM/SIGINT drain: stop accepting, let in-flight requests
-        // finish, force-close at the deadline.
-        gracefulShutdownTimeout: Duration.seconds(10),
-      })),
+      Layer.provide(refuseBuild(
+        BunHttpServer.layer({
+          port: limits.port,
+          hostname: options.host,
+          // The transport's own cap, pinned to the same number as
+          // stdio's frame cap so the clamp arithmetic is one discipline.
+          // Bun answers an oversized body with an HTTP refusal — on this
+          // transport nothing is silently lost even past the cap. This
+          // is also the TOTAL-body bound the stdio transport lacks: a
+          // `cas_run` whose whole document exceeds the frame is refused
+          // here, where stdio would lose it.
+          maxRequestBodySize: transportFrameBytes,
+          // Slow-loris posture, and the measured truth: this value does
+          // NOT take at the pinned Bun. Connections are closed after
+          // 12.0 s whatever is passed here (measured; Bun's own
+          // documented default is 10 s, which it does not use either).
+          // The number stands as the intent for a Bun that honors it;
+          // the bound in force today is the platform's, and SERVING.md
+          // says so rather than repeating a 30 that does not reproduce.
+          idleTimeout: 30,
+          // SIGTERM/SIGINT drain: stop accepting, let in-flight requests
+          // finish, force-close at the deadline.
+          gracefulShutdownTimeout: Duration.seconds(10),
+        }),
+        (cause) => {
+          const diagnosis = bindDiagnosis(options.host, limits.port)
+          return new DaemonBindRefused({
+            host: options.host,
+            port: limits.port,
+            condition: diagnosis.condition,
+            fix: diagnosis.fix,
+            platformSaid: causeLine(cause),
+          })
+        },
+      )),
       Layer.merge(layerHeartbeat),
       Layer.merge(layerRss),
       Layer.merge(layerReplicaLag(options.replicaTarget)),

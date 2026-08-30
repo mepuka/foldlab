@@ -16,7 +16,7 @@
  *    admitted, 200 already-admitted, 409 digest mismatch, 413 over
  *    budget, publish/read on the roots space — through the first bind
  *    the transport-free core has ever had.
- * 3. MCP OVER HTTP. The same five tools, the same typed refusals, over
+ * 3. MCP OVER HTTP. The same six tools, the same typed refusals, over
  *    the Streamable HTTP session flow (session id + protocol-version
  *    headers), including the oversize refusal `mcp/NodeTooLarge`.
  * 4. CROSS-PLANE WAL (crash-matrix "writer contention", multiplexed).
@@ -54,6 +54,8 @@ import {
   defaultServePolicy,
   initStore,
   layerCasAt,
+  locateStore,
+  readConfig,
   StoreConfig,
   type ServePolicy,
 } from "../bin/cli/store.ts"
@@ -116,6 +118,8 @@ const bootDaemon = (options: {
   readonly policy?: ServePolicy
   readonly replicaTarget?: string
   readonly allowedOrigins?: ReadonlyArray<string>
+  readonly allowedHosts?: ReadonlyArray<string>
+  readonly otlp?: string
 }): Effect.Effect<DaemonHandle, never, Scope.Scope> =>
   Effect.gen(function* () {
     const logs: Array<string> = []
@@ -133,11 +137,14 @@ const bootDaemon = (options: {
             policy: options.policy ?? defaultServePolicy,
             host: "127.0.0.1",
             port: Option.some(0),
-            otlp: Option.none(),
+            otlp: options.otlp === undefined
+              ? Option.none()
+              : Option.some(options.otlp),
             replicaTarget: options.replicaTarget === undefined
               ? Option.none()
               : Option.some(options.replicaTarget),
             allowedOrigins: options.allowedOrigins ?? [],
+            allowedHosts: options.allowedHosts ?? [],
           }).pipe(
             Layer.provideMerge(layerCasAt(options.store, "sqlite")),
             Layer.provideMerge(layerCapture),
@@ -426,7 +433,7 @@ describe("daemon — cas-http/0 serves the admission law (the core's first bind)
 /* ── 3. MCP over HTTP ────────────────────────────────────────────── */
 
 describe("daemon — MCP over HTTP is the same host", () => {
-  it.live("serves the five tools and the typed refusals through the session flow", () =>
+  it.live("serves the emitted tool table and the typed refusals through the session flow", () =>
     withSqliteStore((store) =>
       Effect.gen(function* () {
         const tight: ServePolicy = { ...defaultServePolicy, maxNodeBytes: 1024 }
@@ -848,6 +855,190 @@ describe("daemon — the front door (Origin and Host, the MCP transport-security
     ), 30_000)
 })
 
+  it.live("the two allowlists compare case-folded, in both directions", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        // Host names are ASCII case-insensitive on the wire. An
+        // allowlist that compared them literally would 403 the
+        // documented proxy deployment over a capitalization the
+        // operator is entitled to write — in EITHER direction, since
+        // either side may be the one carrying capitals.
+        const allowlistCased = yield* bootDaemon({
+          store,
+          allowedHosts: ["Front.Example"],
+        })
+        for (const spelling of ["Front.Example", "front.example", "FRONT.EXAMPLE"]) {
+          const answered = yield* Effect.promise(() =>
+            fetch(`${allowlistCased.baseUrl}/metrics`, { headers: { host: spelling } })
+          )
+          expect(answered.status, `Host: ${spelling} against --allow-host Front.Example`)
+            .toBe(200)
+        }
+
+        const allowlistFolded = yield* bootDaemon({
+          store,
+          allowedHosts: ["front.example"],
+          allowedOrigins: ["http://App.Local:5173"],
+        })
+        const requestCased = yield* Effect.promise(() =>
+          fetch(`${allowlistFolded.baseUrl}/metrics`, {
+            headers: { host: "Front.Example" },
+          })
+        )
+        expect(requestCased.status).toBe(200)
+
+        // The origin allowlist folds the same way, and an allowed
+        // origin still earns its CORS header in the spelling it sent.
+        const originCased = yield* Effect.promise(() =>
+          fetch(`${allowlistFolded.baseUrl}/projections`, {
+            headers: { origin: "http://app.local:5173" },
+          })
+        )
+        expect(originCased.status).toBe(200)
+        expect(originCased.headers.get("access-control-allow-origin"))
+          .toBe("http://app.local:5173")
+
+        // A name that is not on either list is still refused: folding
+        // widens spelling, never membership.
+        const stranger = yield* Effect.promise(() =>
+          fetch(`${allowlistFolded.baseUrl}/metrics`, {
+            headers: { host: "Other.Example" },
+          })
+        )
+        expect(stranger.status).toBe(403)
+      })
+    ), 30_000)
+
+  it.live("an allowed Host does not admit a disallowed Origin — including on writes", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        // The transitive-trust defect: the same-origin allowance used
+        // to compare the Origin against whatever Host had just been
+        // allowed, so `--allow-host front.example` silently granted
+        // `http://front.example` origin trust — and that origin WROTE
+        // bytes into the store while the banner said every browser
+        // Origin was refused. Host and Origin are independent gates.
+        const handle = yield* bootDaemon({
+          store,
+          allowedHosts: ["front.example"],
+          allowedOrigins: [],
+        })
+        const proxied = { host: "front.example", origin: "http://front.example" }
+
+        for (const path of ["/metrics", "/projections", "/mcp"]) {
+          const answered = yield* Effect.promise(() =>
+            fetch(`${handle.baseUrl}${path}`, { headers: proxied })
+          )
+          expect(answered.status, `${path} under an allowed Host and an unlisted Origin`)
+            .toBe(403)
+        }
+
+        // The write plane, where the audit found bytes landing.
+        const payload = encoder.encode("origin-must-not-write")
+        const { address, bytes } = yield* nodeOf(payload)
+        const refused = yield* Effect.promise(() =>
+          fetch(`${handle.baseUrl}/cas/${address}`, {
+            method: "PUT",
+            headers: { ...octetHeaders, ...proxied },
+            body: bytes.slice(),
+          })
+        )
+        expect(refused.status).toBe(403)
+
+        // ...and nothing landed. A first admission answers 201 and a
+        // repeat answers 200, so a 201 here is the store saying it had
+        // never seen these bytes.
+        const admitted = yield* wirePut(handle.baseUrl, payload)
+        expect(admitted.status).toBe(201)
+
+        // The banner states the ENFORCED posture, not the intended one.
+        const banner = handle.logsNow().find((line) =>
+          line.includes("message=\"daemon serving\"")
+        )
+        expect(banner).toContain("none configured")
+        expect(banner).not.toContain("every browser Origin refused")
+      })
+    ), 30_000)
+
+  it.live("a refusal names the defect and the fix, in each plane's own media type", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        const handle = yield* bootDaemon({ store })
+        const foreign = { origin: "https://evil.example" }
+
+        // The metrics plane answers in Prometheus' comment syntax, so
+        // a scraper's own eyes can read the refusal.
+        const metrics = yield* Effect.promise(async () => {
+          const response = await fetch(`${handle.baseUrl}/metrics`, { headers: foreign })
+          return {
+            status: response.status,
+            type: response.headers.get("content-type"),
+            body: await response.text(),
+          }
+        })
+        expect(metrics.status).toBe(403)
+        expect(metrics.type).toContain("text/plain")
+        expect(metrics.body).toContain("# refused:")
+        expect(metrics.body).toContain("--allow-origin")
+
+        // The JSON planes answer in JSON, with the fix as a field.
+        for (const path of ["/projections", "/mcp"]) {
+          const answered = yield* Effect.promise(async () => {
+            const response = await fetch(`${handle.baseUrl}${path}`, { headers: foreign })
+            return {
+              status: response.status,
+              type: response.headers.get("content-type"),
+              body: await response.json() as { readonly fix?: string },
+            }
+          })
+          expect(answered.status).toBe(403)
+          expect(answered.type).toContain("application/json")
+          expect(answered.body.fix).toContain("--allow-origin")
+        }
+
+        // The Host refusal names the OTHER flag, because it is a
+        // different defect with a different repair.
+        const rebound = yield* Effect.promise(async () => {
+          const response = await fetch(`${handle.baseUrl}/projections`, {
+            headers: { host: "attacker.example" },
+          })
+          return await response.json() as { readonly fix?: string }
+        })
+        expect(rebound.fix).toContain("--allow-host")
+
+        // cas-http/0 stays OCTET-BARE: the profile's framing rules a
+        // JSON body out, so the status is the whole sentence there.
+        const wire = yield* Effect.promise(async () => {
+          const response = await fetch(`${handle.baseUrl}/control/capabilities`, {
+            headers: { ...profileHeaders, ...foreign },
+          })
+          return { status: response.status, body: await response.text() }
+        })
+        expect(wire.status).toBe(403)
+        expect(wire.body).toBe("")
+      })
+    ), 30_000)
+
+  it.live("the request timer publishes finite buckets — no le=\"Infinity\" row", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        const handle = yield* bootDaemon({ store })
+        yield* Effect.promise(() =>
+          fetch(`${handle.baseUrl}/control/capabilities`, { headers: profileHeaders })
+        )
+        const exposition = yield* Effect.promise(async () => {
+          const response = await fetch(`${handle.baseUrl}/metrics`)
+          return await response.text()
+        })
+        expect(exposition).toContain("cas_daemon_request_bucket")
+        // The default timer boundaries end in Infinity, which the
+        // exporter renders as a bucket AND then follows with its own
+        // +Inf row. Finite boundaries leave exactly one overflow row.
+        expect(exposition).not.toContain('le="Infinity"')
+        expect(exposition).toContain('le="+Inf"')
+      })
+    ), 30_000)
+
 /* ── 5c. projections ─────────────────────────────────────────────── */
 
 describe("daemon — projections (tier 0 of the front end)", () => {
@@ -962,6 +1153,215 @@ describe("daemon — a credentialed policy refuses the boot", () => {
       })
       expect(decoded.serve?.anonymousReads).toBe(false)
     }))
+})
+
+/* ── 6b. an unreadable config is not an absent one ───────────────── */
+
+/** One CLI invocation run to completion: its exit code and what it
+ * said. Used where the assertion IS the refusal — a boot that must not
+ * happen cannot be probed over HTTP. */
+const runCas = (
+  argv: ReadonlyArray<string>,
+): Effect.Effect<{ readonly exitCode: number; readonly stderr: string }> =>
+  Effect.promise(async () => {
+    const child = Bun.spawn(["bun", casBin, ...argv], {
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "pipe",
+    })
+    // A host that WRONGLY booted would never exit; the kill turns that
+    // into a failed assertion instead of a hung suite.
+    const guard = setTimeout(() => child.kill(9), 20_000)
+    const [exitCode, stderr] = await Promise.all([
+      child.exited,
+      new Response(child.stderr).text(),
+    ])
+    clearTimeout(guard)
+    return { exitCode, stderr }
+  })
+
+describe("both hosts — a config that will not read refuses the boot", () => {
+  it.live("an unreadable config.json is a refusal, never the open defaults", () =>
+    Effect.scoped(Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      const root = yield* fs.makeTempDirectoryScoped({ prefix: "foldlab-badconfig-" })
+
+      // The defaults a missing config falls back to include
+      // `anonymousReads: true`. So a reader that answered "absent" to
+      // a file it could not OPEN would serve a store whose config says
+      // `anonymousReads: false` wide open, on both hosts, on the
+      // strength of a permission bit — the gate inverted by the
+      // failure to read it. Both backends, because they reach the
+      // config by different paths.
+      for (const backend of ["sqlite", "file"] as const) {
+        const store = `${root}/${backend}`
+        yield* fs.makeDirectory(store, { recursive: true })
+        yield* initStore(store, true, backend).pipe(Effect.orDie)
+
+        // A directory where the file belongs is unreadable on every
+        // platform this package runs on, chmod or no chmod.
+        yield* fs.remove(`${store}/config.json`)
+        yield* fs.makeDirectory(`${store}/config.json`)
+
+        for (const verb of ["daemon", "serve"] as const) {
+          const argv = verb === "daemon"
+            ? ["daemon", "--store", store, "--port", "0"]
+            : ["serve", "--store", store]
+          const ran = yield* runCas(argv)
+          expect(ran.exitCode, `cas ${verb} on a ${backend} store with an unreadable config`)
+            .not.toBe(0)
+          // Grade A: the defect named, the fix named — and the store
+          // still FOUND, because an unreadable config decides only that
+          // the layout is unknown, never that there is no store here.
+          expect(ran.stderr).toContain("the store's config will not read")
+          expect(ran.stderr).toContain("check its permissions")
+          expect(ran.stderr).not.toContain("no store at")
+        }
+      }
+    })).pipe(Effect.provide(Layer.merge(layerDiskFs, Path.layer))), 60_000)
+
+  it.effect("the reader itself keeps absent and unreadable apart", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem
+      const root = yield* fs.makeTempDirectoryScoped({ prefix: "foldlab-configread-" })
+      const store = `${root}/store`
+      yield* initStore(store, true, "file").pipe(Effect.orDie)
+      const location = yield* locateStore(Option.some(store)).pipe(Effect.orDie)
+
+      // Present and decodable.
+      expect(Option.isSome(yield* readConfig(location))).toBe(true)
+
+      // Absent: the one case that may default.
+      yield* fs.remove(location.configPath)
+      expect(Option.isNone(yield* readConfig(location))).toBe(true)
+
+      // Present and unreadable: a typed refusal, not an absence.
+      yield* fs.makeDirectory(location.configPath)
+      const exit = yield* Effect.exit(readConfig(location))
+      expect(exit._tag).toBe("Failure")
+      expect(JSON.stringify(exit)).toContain("cli/ConfigUnreadable")
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(Layer.merge(layerDiskFs, Path.layer)),
+    ))
+})
+
+/* ── 6c. a bind that cannot happen ───────────────────────────────── */
+
+describe("daemon — a bind that cannot happen is a refusal, not a stack dump", () => {
+  it.live("names the condition and the fix in one line, through the typed channel", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        // Somebody else's port. `BunHttpServer.layer` DIES when
+        // `Bun.serve` throws, and a defect routes around every
+        // `Effect.mapError` between the layer and the CLI — which is
+        // how a failed bind became a stack trace carrying the
+        // platform's own wrong sentence ("Is port 0 in use?" for a
+        // --host this machine does not hold).
+        const squatter = yield* Effect.acquireRelease(
+          Effect.sync(() =>
+            Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response("held") })
+          ),
+          (server) => Effect.sync(() => void server.stop(true)),
+        )
+        const taken = squatter.port ?? 0
+        expect(taken).toBeGreaterThan(0)
+        const exit = yield* Effect.exit(Effect.scoped(Layer.build(
+          layerDaemon({
+            policy: defaultServePolicy,
+            host: "127.0.0.1",
+            port: Option.some(taken),
+            otlp: Option.none(),
+            replicaTarget: Option.none(),
+          }).pipe(
+            Layer.provideMerge(layerCasAt(store, "sqlite")),
+            Layer.provideMerge(Layer.merge(layerDiskFs, Path.layer)),
+          ),
+        )))
+        expect(exit._tag).toBe("Failure")
+        const rendered = JSON.stringify(exit)
+        expect(rendered).toContain("daemon/BindRefused")
+        expect(rendered).toContain("already holds")
+        expect(rendered).toContain("--port 0")
+      })
+    ), 30_000)
+
+  it.live("a privileged port is diagnosed as privileged, not as busy", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        // The pinned Bun answers all three bind failures with the SAME
+        // code and a message that names the wrong port on two of the
+        // three, so the diagnosis is derived from the address that was
+        // ASKED for. Port 80 under a non-root process is the case that
+        // derivation gets right and the platform gets wrong.
+        const exit = yield* Effect.exit(Effect.scoped(Layer.build(
+          layerDaemon({
+            policy: { ...defaultServePolicy, port: 80 },
+            host: "127.0.0.1",
+            port: Option.none(),
+            otlp: Option.none(),
+            replicaTarget: Option.none(),
+          }).pipe(
+            Layer.provideMerge(layerCasAt(store, "sqlite")),
+            Layer.provideMerge(Layer.merge(layerDiskFs, Path.layer)),
+          ),
+        )))
+        expect(exit._tag).toBe("Failure")
+        const rendered = JSON.stringify(exit)
+        expect(rendered).toContain("daemon/BindRefused")
+        expect(rendered).toContain("privileged")
+      })
+    ), 30_000)
+})
+
+/* ── 6d. a failing export is audible ─────────────────────────────── */
+
+describe("daemon — an OTLP export that is not landing says so", () => {
+  it.live("warns on the first failure instead of exporting into silence", () =>
+    withSqliteStore((store) =>
+      Effect.gen(function* () {
+        // A collector that is not there. The upstream exporter answers
+        // this by disabling itself for 60 s and logging that at DEBUG,
+        // which an Info-and-above stderr logger drops — so `--otlp`
+        // against a dead collector used to look exactly like `--otlp`
+        // against a live one.
+        const dead = yield* Effect.sync(() => {
+          const probe = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response("") })
+          const port = probe.port ?? 0
+          probe.stop(true)
+          return port
+        })
+        expect(dead).toBeGreaterThan(0)
+
+        const handle = yield* bootDaemon({
+          store,
+          otlp: `http://127.0.0.1:${dead}`,
+        })
+        // The three exporters export on their own intervals (1 s, 5 s,
+        // 10 s at the pin) and each retries transiently before giving
+        // up, so the first failure is SEVERAL seconds out and its
+        // exact timing is not this probe's business. Polled, not
+        // slept-on.
+        const saidIt = (): ReadonlyArray<string> =>
+          handle.logsNow().filter((line) => line.includes("message=\"otlp export failing\""))
+        yield* Effect.promise(async () => {
+          const deadline = Date.now() + 25_000
+          while (saidIt().length === 0 && Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, 200))
+          }
+        })
+
+        const warnings = saidIt()
+        expect(warnings.length).toBeGreaterThanOrEqual(1)
+        expect(warnings[0]).toContain(`http://127.0.0.1:${dead}`)
+        // Rate-limited: an outage is one line a minute, not a flood.
+        expect(warnings.length).toBeLessThanOrEqual(2)
+
+        // And the pull surface is untouched by the push being down.
+        const metrics = yield* Effect.promise(() => fetch(`${handle.baseUrl}/metrics`))
+        expect(metrics.status).toBe(200)
+      })
+    ), 40_000)
 })
 
 /* ── 7. replica lag ──────────────────────────────────────────────── */

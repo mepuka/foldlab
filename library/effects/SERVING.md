@@ -1,8 +1,11 @@
 # SERVING — how the store is served, and what each venue trusts
 
-Status: operational law for the serving plane, 2026-08-29 (decision 26
-seat 1). Companion to
-[library/effects/PROFILE-CAS-HTTP-0.md](../../library/effects/PROFILE-CAS-HTTP-0.md)
+Status: RATIFIED law for the serving plane — Category 1 in
+[docs/SPECS.md](../../docs/SPECS.md), 2026-08-29. Landed as operational
+law under decision 26 seat 1; PROMOTED to Category 1 and moved here
+from `docs/lab-core/` by decision 32(b), so it sits beside the wire
+profile and the word law it works with. Companion to
+[PROFILE-CAS-HTTP-0.md](PROFILE-CAS-HTTP-0.md)
 (the wire profile, normative) and
 [.staging/operational-structure/BACKEND-ROBUSTNESS.md](../../.staging/operational-structure/BACKEND-ROBUSTNESS.md)
 (the probed audit this plane was built against). Nothing here is
@@ -12,7 +15,7 @@ profile, and this document says how to RUN them.
 Drift law: the factual vocabularies below — routes, policy fields,
 offered protocol revisions, metric ids, projection names, log fields
 — are DERIVED from values the code exports, and
-`library/effects/test/ServingDoc.test.ts` re-derives them against
+`test/ServingDoc.test.ts` re-derives them against
 this file on every test run: a fact here that drifts from the estate
 is a red gate, not a stale sentence. The judgment prose is
 hand-written; the facts are checked.
@@ -38,15 +41,35 @@ them. The daemon exists for the callers stdio cannot reach.
 | Route | Plane | What it is |
 |---|---|---|
 | `/cas/{hex}`, `/roots/{hex}`, `/control/…` | cas-http/0 | the profile's data, roots, and control spaces — the BYTE plane, for bulk reads, uploads, and sync (§6 `/control/missing`, §7 publish). First bind of the transport-free core (`src/server/Core.ts`) |
-| `/mcp` | MCP over HTTP | the same five tools the stdio host serves, same handlers, same manifest gate. Streamable HTTP, POST-only |
+| `/mcp` | MCP over HTTP | the same 6 tools the stdio host serves — `cas_put`, `cas_load`, `cas_run`, `cas_run_ref`, `cas_publish_root`, `cas_list_roots` — same handlers, same manifest gate. Streamable HTTP, POST-only |
 | `/metrics` | host | Prometheus exposition (decision 20's first production sensor) |
-| `/projections`, `/projections/{name}` | host | the emitted, byte-gated JSON artifacts, served read-only — tier 0 of the front end: `cas-tools.json`, `cas-surface.json`, `cas-obligations.json`, `schema-index.json`, `schema-addresses.json`, `schema-verdicts.json`, `environment.json` |
-| everything else | cas-http/0 | the wildcard hands every unclaimed exchange to the profile's own wire law, so refusals are the STATUS TABLE's (400/405), never a router 404 |
+| `/projections`, `/projections/{name}` | host | the emitted, byte-gated JSON artifacts, served read-only from a REPO CHECKOUT — tier 0 of the front end (decision 32(a)): `cas-tools.json`, `cas-surface.json`, `cas-obligations.json`, `schema-index.json`, `schema-addresses.json`, `schema-verdicts.json`, `environment.json`. From an installed package only `cas-tools.json` resolves; see below |
+| everything else | cas-http/0 | the wildcard hands EVERY UNCLAIMED EXCHANGE to the profile's own wire law, so refusals are the STATUS TABLE's (400/405), never a router 404. Unclaimed, not every — the three rows above are the profile's declared co-tenants (PROFILE-CAS-HTTP-0 §14), outside its media-type and status law |
 
 The two planes stay distinct on purpose: cas-http/0 is the byte plane
 (content-addressed octets, capability document, presence, publish);
 MCP is the tool plane (documents in, documents out). One does not
 grow the other's verbs.
+
+**Co-tenancy, ruled.** Sharing one authority is not free wording: the
+profile's §14 (additive at `/0`, decision 32(c)) says the profile owns
+`/cas`, `/control`, and `/roots` and reserves them, enumerates `/mcp`,
+`/metrics`, and `/projections` as co-tenants outside its media-type
+and status law, and states the totality exactly — the status table
+answers every UNCLAIMED exchange, not every exchange on the port.
+
+**What `/projections` serves, and from where.** The seven artifacts
+above are the Lean emitters' output, read from disk per request (a
+regenerate needs no restart) and never authored here; an absent file
+answers 404, because an un-emitted projection is a fact. Their source
+paths resolve relative to `bin/mcp/http.ts`, so the claim above is
+scoped to a REPO CHECKOUT. From an installed `@foldlab/cas` only
+`cas-tools.json` resolves — the same `../../../cas/` trick
+`scripts/copy-mcp-manifest.ts` materializes for the boot gate — and
+`environment.json` cannot resolve inside a package at any depth,
+since its path leaves the package tree. Serving all seven from a
+published tarball is an OWED packaging decision (below), not a claim
+this document makes.
 
 ## Running it
 
@@ -106,23 +129,52 @@ not just `/mcp` — holds the spec's line:
 - **Origin allowlist, empty by default.** Any request carrying an
   `Origin` outside `--allow-origin` answers 403 on every plane
   (the pin's MCP adapter enforces the same on its own route — defence
-  in depth). Same-origin requests (the daemon's own pages) pass
-  without an entry; non-browser clients send no Origin and are
-  untouched. Allowed origins get real CORS: answered preflight,
-  `access-control-allow-origin`, session headers exposed.
+  in depth). The ONE origin that passes without an entry is the
+  daemon's own — a page it served itself, recognized by a `Host` that
+  is loopback or the address it bound. Non-browser clients send no
+  Origin and are untouched. Allowed origins get real CORS: answered
+  preflight, `access-control-allow-origin`, session headers exposed.
+- **The two allowlists are INDEPENDENT gates.** `--allow-host` widens
+  which `Host` names are answered and nothing else; it grants no
+  origin trust. It used to, transitively — the own-origin allowance
+  compared the `Origin` against whatever `Host` had just been allowed,
+  so under `--allow-host` an unlisted browser origin passed every
+  plane and WROTE bytes into the store while the banner claimed every
+  browser Origin was refused. Origin is enforced from
+  `--allow-origin` plus the daemon's own addresses, and the banner
+  states that enforced posture rather than an intended one.
 - **Host allowlist.** A request whose `Host` names neither loopback,
   the bound host, nor an `--allow-host` entry answers 403 — DNS
   rebinding arrives at 127.0.0.1 wearing the attacker's Host.
+- **Both allowlists compare case-folded.** Host names and origins are
+  ASCII case-insensitive on the wire, so `--allow-host Front.Example`
+  and a `Host: front.example` are the same name here, in either
+  spelling and in either direction. Without the fold the documented
+  proxy deployment 403s on a capitalization the operator is entitled
+  to write.
 - **No tokens in URLs**, per spec: the profile carries credentials
   only in `Authorization` (§9), and the daemon serves no credentialed
   flow at all yet.
-- **Slow-loris / idle connections:** the platform closes connections
-  idle past 30 s (stated in the composition, not defaulted).
+- **Slow-loris / idle connections:** the composition asks for a 30 s
+  idle timeout, and the pinned Bun does NOT honor it — measured 12.0 s
+  regardless of the value passed. So the effective slow-loris bound is
+  the platform's, not this host's, and the request is a statement of
+  intent for a Bun that honors it. The number in the composition is
+  commented with exactly this, because a claim that does not reproduce
+  may not stand.
 - **Oversized bodies:** `maxRequestBodySize` = 16 MiB (the same
   number as stdio's frame cap, one clamp discipline) — Bun REFUSES
   over-cap bodies with an HTTP status. On this transport nothing is
   silently lost even past the cap; this is also the TOTAL-body bound
   stdio lacks (below).
+- **A refusal says what to do about itself.** Every 403 carries a
+  body naming the defect and the fix, rendered in the media type of
+  the plane that answered — JSON on `/mcp` and `/projections`,
+  Prometheus comment lines on `/metrics`. cas-http/0 is the deliberate
+  exception and stays octet-bare: the profile's §1 framing rules a
+  JSON body out, so there the status is the whole sentence and the
+  request log line carries the reason. An un-emitted projection
+  answers the same way, with `mise run gen` as its fix.
 
 ## TLS and the front proxy (adopted, not built)
 
@@ -155,22 +207,39 @@ single-endpoint Streamable HTTP topology; the adapter implements no
 legacy HTTP+SSE, no GET SSE stream, no `Last-Event-ID` resumption, no
 session expiry (its own documented scope).
 
-**Revision 2026-07-28 is NOT offered** (verified against the spec's
-changelog, 2026-08-29): it is the stateless rewrite — protocol
-sessions and `Mcp-Session-Id` removed (SEP-2567); the
-`initialize` handshake replaced by per-request `_meta` and a
-mandatory `server/discover` RPC (SEP-2575); SSE resumability removed
-(a broken stream means re-issue the request); Roots/Sampling/Logging
-deprecated (SEP-2577); required `Mcp-Method`/`Mcp-Name` headers on
-HTTP POSTs. Offering it means a new adapter at a new pin — an
-upstream event, tracked in OWED. The stateless direction is GOOD for
-this daemon (the session-map growth noted under telemetry disappears
-with sessions themselves).
+**Revision 2026-07-28 is NOT offered.** It is the stateless rewrite —
+protocol sessions and `Mcp-Session-Id` removed (SEP-2567); the
+`initialize`/`notifications/initialized` handshake replaced by
+per-request `_meta`, with `server/discover` an RPC servers MUST
+implement (SEP-2575); SSE resumability and redelivery removed, so a
+broken stream means re-issue the request (SEP-2575);
+Roots/Sampling/Logging deprecated (SEP-2577); `Mcp-Method` and
+`Mcp-Name` required on Streamable HTTP POSTs (SEP-2243). Each of
+those five is quoted from the spec's own Key Changes page for that
+revision, pinned by commit and blob digest in
+[.reference/provenance/receipts/mcp-spec-2026-07-28-changelog.json](../../.reference/provenance/receipts/mcp-spec-2026-07-28-changelog.json)
+— the receipt is the license for this paragraph, and it supports the
+changelog's attributions only, never any conformance claim about the
+pinned adapter. Offering the revision means a new adapter at a new
+pin — an upstream event, tracked in OWED. The stateless direction is
+GOOD for this daemon (the session-map growth noted under telemetry
+disappears with sessions themselves).
 
 ## Telemetry
 
 Scraped at `/metrics`; exported as OTLP/JSON (logs+metrics+traces)
 with `--otlp <baseUrl>`; and carried in-band by the heartbeat.
+
+**A failing export says so.** The upstream exporter answers a dead
+collector by disabling itself for 60 s and logging that at DEBUG,
+which this host's Info-and-above stderr logger drops — so an operator
+who passed `--otlp` could watch a healthy daemon export nothing, in
+silence. The daemon watches its own export client and emits
+`message="otlp export failing"` at WARNING on the first failure, then
+at most once a minute for as long as the outage lasts (the exporter's
+own disable window, so a long outage is one line a minute, never a
+flood). `/metrics` is unaffected: scraping is pull, and it keeps
+working while the push is down.
 
 | Metric | Kind | Where | Meaning |
 |---|---|---|---|
@@ -188,6 +257,20 @@ carrying the full metric snapshot; `lateMs` is the measured stall,
 and a MISSING beat is a stall in progress — the only sensor that
 works when the event loop is blocked, because it is the absence of
 output. Same discipline, both hosts.
+
+**The MCP session map is documented, not bounded.** At this pin the
+HTTP adapter's session map is only ever added to — nothing deletes,
+because the pin has no session expiry — so a daemon serving many
+short-lived browser MCP clients grows monotonically. The host cannot
+bound it from inside without reaching into another lane's layer, so it
+is MEASURED instead: `cas.daemon.rss_bytes` is the sensor, and its
+slope under steady traffic is the growth. The mitigation is
+operational and stated rather than invented: watch the gauge and
+RESTART on a cadence the slope justifies (the store is crash-safe and
+puts are idempotent, so a restart costs re-issued in-flight calls and
+nothing else). The real fix is upstream — session expiry, or the
+2026-07-28 adapter that removes sessions altogether — and it is in
+OWED.
 
 **Replica lag, exactly:** where `config.json` names a `backup.target`
 that is a local path (or `file://` URL), a sampler stats the replica
@@ -214,14 +297,19 @@ versioning event:
   outcome's own fields (`address`, `tag`, `payloadBytes`, …).
 - `message="daemon serving"` / `message=serving` (boot banner):
   effective policy, bound address, offered protocols, origins/hosts
-  posture, heartbeat period.
+  posture, heartbeat period. The origins field states the ENFORCED
+  posture: what `--allow-origin` named, plus this daemon's own origin,
+  which always passes.
+- `message="otlp export failing"` (daemon, only with `--otlp`):
+  `baseUrl`, `detail` (transport reason or collector status),
+  `repeatMs`. First failure, then at most once a minute.
 
 ## Crash, restart, shutdown — the honest semantics
 
 The store is crash-safe by construction (audit verdict 2: 2097/2097
 verified through the full read law after SIGKILL with a dirty WAL).
 The crash matrix rows now covered by STANDING TESTS
-(`library/effects/test/DaemonHttp.test.ts`,
+(`test/DaemonHttp.test.ts`,
 `test/McpBackpressure.test.ts`, `test/RpcFrameCapPin.test.ts`):
 SIGKILL mid-put under load with reopen-and-verify and
 restart-and-serve; cross-plane WAL under multiplexed load (HTTP ×2
@@ -292,5 +380,12 @@ Never file-copy or commit a live WAL database.
 - **Upstream session expiry** (or the 2026-07-28 adapter that
   obsoletes it) — until one lands, `cas.daemon.rss_bytes` is the
   watch and restart cadence the mitigation.
+- **`/projections` from a published package** — six of the seven
+  artifacts live outside the package tree, and `environment.json`
+  cannot be reached from inside it at any depth, so a tarball serves
+  one of seven. Closing this is a packaging decision (which emitted
+  ledgers the distributable carries, and at which paths) owned by the
+  package seat, not a serving one; until it is ruled the claim above
+  stays scoped to a repo checkout.
 - **Run-size policy field** (total-frame bound as policy) — fenced to
   the handler/manifest lanes.

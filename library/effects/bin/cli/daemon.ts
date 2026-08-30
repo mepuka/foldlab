@@ -13,7 +13,7 @@
  *   and trusts its network position; TLS termination and everything
  *   that belongs behind it (bearer credentials, rate limits,
  *   connection caps) is the adopted front proxy's job — see
- *   docs/lab-core/SERVING.md for the Caddy composition. A store whose
+ *   library/effects/SERVING.md for the Caddy composition. A store whose
  *   policy sets `anonymousReads: false` is REFUSED at boot, not served
  *   open.
  * - MCP protocol revision 2026-07-28 is not offered (the pin carries
@@ -126,7 +126,7 @@ export const daemon = Command.make("daemon", {
   host: Flag.string("host").pipe(
     Flag.withDefault("127.0.0.1"),
     Flag.withDescription(
-      "the address to bind — loopback by default; widen it only behind the TLS proxy (see docs/lab-core/SERVING.md)",
+      "the address to bind — loopback by default; widen it only behind the TLS proxy (see library/effects/SERVING.md)",
     ),
   ),
   port: Flag.integer("port").pipe(

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "mcp-spec-2026-07-28-changelog",
+  "observedAt": "2026-08-29T00:00:00Z",
+  "scope": "The single upstream document behind SERVING.md's protocol-ceiling paragraph: the Model Context Protocol specification's own Key Changes page for revision 2026-07-28. Resolved to corroborate WHY that revision is not offered by either host and what offering it would cost. No dependency admission and no source-lock promotion is implied: this receipt pins the bytes a documentation claim cites, nothing more.",
+  "resolver": {
+    "tooling": "curl (fetch), git hash-object (blob identity), shasum -a 256 (content digest)",
+    "host": "macOS coordinator"
+  },
+  "repositoryPins": [
+    {
+      "id": "modelcontextprotocol-specification",
+      "repository": "https://github.com/modelcontextprotocol/modelcontextprotocol",
+      "commit": "ca4ab3027f7c844cd3039c956438d72e8253f7f5",
+      "commitDate": "2026-08-29T04:24:44Z",
+      "rootTree": "33fa47e0df65a17ad357cb52dae86be5d9c180b3",
+      "artifacts": [
+        {
+          "path": "docs/specification/2026-07-28/changelog.mdx",
+          "role": "revision-2026-07-28-key-changes",
+          "gitBlob": "424b2653ee392eaaede97ec07d35771ad6216c35",
+          "sha256": "b327e576f4c96b34e92f338f8ffefc35e13d0e953ab76bdb3aab342d104c8e53",
+          "bytes": 11719,
+          "corroboration": "The blob identity GitHub's tree listing names for this path was re-derived locally from the fetched bytes with git hash-object and matched, so the bytes read are the bytes the pinned commit holds."
+        }
+      ]
+    }
+  ],
+  "claimsCorroborated": [
+    {
+      "claim": "Protocol-level sessions and the Mcp-Session-Id header are removed from the Streamable HTTP transport.",
+      "attribution": "SEP-2567",
+      "where": "Major changes, item 1"
+    },
+    {
+      "claim": "The initialize / notifications/initialized handshake is removed; every request carries its protocol version and client capabilities in _meta.",
+      "attribution": "SEP-2575",
+      "where": "Major changes, item 2"
+    },
+    {
+      "claim": "server/discover is added and servers MUST implement it.",
+      "attribution": "SEP-2575",
+      "where": "Major changes, item 3"
+    },
+    {
+      "claim": "SSE stream resumability and message redelivery (Last-Event-ID, SSE event ids) are removed; a broken stream means the client MUST re-issue the request.",
+      "attribution": "SEP-2575",
+      "where": "Major changes, item 9"
+    },
+    {
+      "claim": "Roots, Sampling, and Logging are deprecated.",
+      "attribution": "SEP-2577",
+      "where": "Backwards compatibility / deprecations, item 1"
+    },
+    {
+      "claim": "Standard MCP request headers Mcp-Method and Mcp-Name are required on Streamable HTTP POST requests.",
+      "attribution": "SEP-2243",
+      "where": "Minor changes, item 4",
+      "correction": "SERVING.md carried this item without an attribution, adjacent to the SEP-2577 clause; the changelog attributes it to SEP-2243, and the document now says so."
+    }
+  ],
+  "supports": "SERVING.md's 'protocol ceiling' section: the statement of what revision 2026-07-28 changes, and therefore the statement that offering it means a new adapter at a new effect pin.",
+  "doesNotSupport": "Any claim about the pinned effect adapter's conformance to any revision, about this estate's hosts implementing 2026-07-28, or about the content of the linked SEP pull requests themselves (only the changelog's own attributions are pinned here)."
+}

@@ -47,8 +47,9 @@
 # KNOWN RED, DAY ONE, stated rather than masked: `bun run typecheck`
 # in library/effects exits 1 on one warning-severity diagnostic the
 # patched tsgo treats as failing — effect(multipleEffectProvide) at
-# bin/cli/commands.ts:401, a CLI-lane file (the two test-file siblings
-# of that warning are fixed on this branch). The fix is routed to the
+# bin/cli/commands.ts:766, the `serve` verb's chained provides, in a
+# CLI-lane file. (That warning's two test-file siblings, and the four
+# the daemon would have added, are fixed.) The fix is routed to the
 # CLI seat (session chip task_8e80f1a7); effects-ts and check go green
 # when that lands. The diagnostic is deliberately NOT silenced.
 #
@@ -91,7 +92,7 @@ jobs:
   # The fast lane: the effects package's own gate (frozen install,
   # lint, typecheck, tests, build, consumer smoke). A subset of
   # check:ci, re-run here for minutes-scale feedback; the full job
-  # below remains the authority. RED until the commands.ts:401 fix
+  # below remains the authority. RED until the commands.ts:766 fix
   # lands (see the KNOWN RED note above).
   effects-ts:
     runs-on: ubuntu-latest
