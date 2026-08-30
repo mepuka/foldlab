@@ -284,6 +284,21 @@ theorem interpret_pinned {S : Sig} {M : Type → Type v} {A : Type} [Monad M]
     Handler.ext fun op => hop h op
   rw [key, hh]
 
+/-- **`interpret_pinned` is not vacuous.** The operator whose uniqueness
+it asserts satisfies its own hypotheses: `interpret` is a monad morphism
+at every handler (L13) and agrees with the handler on single operations
+(`interpret_op`, `Representation.lean:115`). So the pinning theorem has
+an inhabitant to pin, and "no wrong-but-passing interpreter exists" is a
+statement about a nonempty class.
+
+Stated because a reader checking adequacy should not have to instantiate
+the theorem themselves to find out whether anything satisfies it. -/
+theorem interpret_satisfies_the_property {S : Sig} {M : Type → Type v}
+    [Monad M] [LawfulMonad M] (h : Handler S M) :
+    IsMonadMorphism S (fun {_A} (p : Prog S _A) => interpret h p)
+      ∧ ∀ op : S.Op, interpret h (Prog.op op) = h.handle op :=
+  ⟨interpret_isMonadMorphism h, interpret_op h⟩
+
 /-! ### The falsifier L18 survives -/
 
 private abbrev St := StateT Nat Id
