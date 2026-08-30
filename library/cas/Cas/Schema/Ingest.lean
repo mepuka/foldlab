@@ -1,5 +1,6 @@
 import Cas.Schema.SelfCodec
 import Cas.Schema.PayloadInj
+import Cas.Schema.Guarded
 import Cas.Values.Canonicalize
 
 /-!
@@ -90,11 +91,29 @@ inductive IngestRefusal where
   | illFormed
   /-- A schema-node envelope, but not revision 1. -/
   | wrongRevision
-  /-- A revision-1 document carrying a non-empty `references` table.
-  Refused rather than admitted: the table is unreachable from the Lean
-  side today (no `Suspend`, no `Reference` constructor), so a code
-  answered from one could not be re-emitted by the projection. -/
+  /-- A revision-1 document carrying a non-empty `references` table,
+  refused by the BARE-CODE arm.
+
+  NARROWED by increment C6 (operator ruling 2026-08-30). It used to mean
+  "the admitted subset does not reach the table" — true when the carrier
+  had no `Reference` and no `Suspend`. The carrier has both now, and
+  `ingestDocument` reads the table; what this name refuses is asking
+  `ingest`, which answers ONE CODE, for a document that carries a table.
+  The two are different questions and the door names them differently
+  rather than answering the narrower one silently. -/
   | nonEmptyReferences
+  /-- A revision-1 document whose references table has an UNGUARDED
+  CYCLE: a cycle of the reference relation with no `susp` anywhere on
+  it. Resolving one never terminates — the resolver unfolds `A` to get
+  `A` — so the table is refused rather than carried.
+
+  This is the refusal `references_guarded_decidable` decides
+  (`Cas/Schema/Guarded.lean`), and it is the estate's alone to make:
+  Effect's own codec reads an unguarded cycle back without complaint,
+  which the spelling probe pins. A cycle that DOES pass through a `susp`
+  is admitted — that is ordinary recursion, and it is what Effect emits
+  for a recursive schema. -/
+  | unguardedCycle
   /-- A `Declaration` whose `representation.id` is no row of the
   declaration registry (`Cas.Schema.DeclarationId`). The allowlist is
   the only safe admission rule for Effect's open extension point
@@ -269,9 +288,14 @@ end
 
 /-- The refusal namer: a pure diagnostic on the failure path, walking
 the envelope's shell and — for the declaration allowlist — the
-representation it wraps. It never decides admission; that is
-`Ast.ofEnvelope`'s job alone, so there is exactly one decoder behind
-the door and the refusal name cannot disagree with it. -/
+representation AND the references table it wraps. It never decides
+admission; that is the decoder's job alone, so there is exactly one
+decoder behind the door and the refusal name cannot disagree with it.
+
+This is the BARE-CODE arm's namer and it is unchanged by C6: that arm
+answers one code, so a table is still a refusal for it and still
+`nonEmptyReferences`. The DOCUMENT door has its own namer below, which
+does not carry that branch — it reads the table. -/
 private def refusalOf : Json.Value → IngestRefusal
   | .obj [("revision", .nat r), ("value", d)] =>
     if r = schemaRevision then
@@ -284,8 +308,134 @@ private def refusalOf : Json.Value → IngestRefusal
     else .wrongRevision
   | _ => .notASchema
 
-/-- THE door: normalize the spelling, strictly decode the revision-1
-envelope, gate on the canonical-fields discipline. -/
+/-- The DOCUMENT door's namer. Same walk, minus the table branch — a
+document that carries a table is this door's business, not a shape
+failure — and the allowlist search now covers the table's codes too. -/
+private def documentRefusalOf : Json.Value → IngestRefusal
+  | .obj [("revision", .nat r), ("value", d)] =>
+    if r = schemaRevision then
+      match d with
+      | .obj [("references", .obj refs), ("representation", rep)] =>
+        if unknownDeclarationIn rep || unknownDeclarationFields refs then
+          .unknownDeclaration
+        else .notASchema
+      | _ => .notASchema
+    else .wrongRevision
+  | _ => .notASchema
+
+/-! ## The document door — revision 1, table and all
+
+`ingestDocument` is the door the TypeScript gate mirrors: it reads the
+whole document, gates every code on the canonical-fields discipline, and
+gates the TABLE on guardedness. `ingest` below is the BARE-CODE arm of
+it, kept at its own name and its own type so that every law already
+proved about it stands unchanged. -/
+
+/-- Every table entry's code is well-formed. -/
+def WFReferences : List (String × Ast) → Prop
+  | [] => True
+  | (_, a) :: rest => a.WF ∧ WFReferences rest
+
+/-- Well-formedness of a document: the codes' own discipline, the
+table's canonical-key discipline, and GUARDEDNESS.
+
+The strict name order is asked for exactly the reason `.struct` asks it
+of fields — it is what makes the canonical spelling unique — and
+nonemptiness of a name for the reason `.reference` asks it of a pointer:
+`$ref` is `Schema.NonEmptyString`, so a name no pointer can spell is
+dead weight the table should not carry. -/
+def Document.WF (d : Document) : Prop :=
+  List.Pairwise (fun a b : String × Ast => a.1 < b.1) d.references
+    ∧ (∀ e ∈ d.references, e.1 ≠ "")
+    ∧ WFReferences d.references
+    ∧ d.representation.WF
+    ∧ d.Guarded
+
+/-- Boolean twin of `WFReferences`. -/
+def wfReferences : List (String × Ast) → Bool
+  | [] => true
+  | (_, a) :: rest => a.wf && wfReferences rest
+
+/-- Boolean twin of the strict-name-order clause. -/
+def pairwiseRefNames : List (String × Ast) → Bool
+  | [] => true
+  | e :: rest => rest.all (fun f => decide (e.1 < f.1)) && pairwiseRefNames rest
+
+theorem wfReferences_iff : ∀ rs, wfReferences rs = true ↔ WFReferences rs
+  | [] => by simp [wfReferences, WFReferences]
+  | (_, a) :: rest => by
+    simp [wfReferences, WFReferences, Ast.wf_iff a, wfReferences_iff rest]
+
+theorem pairwiseRefNames_iff : ∀ rs, pairwiseRefNames rs = true ↔
+    List.Pairwise (fun a b : String × Ast => a.1 < b.1) rs
+  | [] => by simp [pairwiseRefNames]
+  | e :: rest => by
+    simp [pairwiseRefNames, List.pairwise_cons, List.all_eq_true,
+      pairwiseRefNames_iff rest]
+
+/-- Boolean twin of `Document.WF` — the runtime gate of the document
+door. The guardedness conjunct is `Document.guarded`, and
+`references_guarded_decidable` is what says it decides the real
+property rather than approximating it. -/
+def Document.wf (d : Document) : Bool :=
+  pairwiseRefNames d.references
+    && d.references.all (fun e => e.1 != "")
+    && wfReferences d.references
+    && d.representation.wf
+    && d.guarded
+
+/-- The gate decides exactly the discipline. -/
+theorem Document.wf_iff (d : Document) : d.wf = true ↔ d.WF := by
+  simp only [Document.wf, Document.WF, Bool.and_eq_true, List.all_eq_true,
+    pairwiseRefNames_iff, wfReferences_iff, Ast.wf_iff,
+    references_guarded_decidable, and_assoc]
+  constructor
+  · rintro ⟨hp, hne, hwr, hrep, hg⟩
+    exact ⟨hp, fun e he => by simpa using hne e he, hwr, hrep, hg⟩
+  · rintro ⟨hp, hne, hwr, hrep, hg⟩
+    exact ⟨hp, fun e he => by simpa using hne e he, hwr, hrep, hg⟩
+
+/-- Which refusal a decoded-but-rejected document earns. Guardedness is
+named separately from the canonical-fields discipline because the two
+are different defects and the door's A-grade prose has to say which. -/
+private def documentRefusal (d : Document) : IngestRefusal :=
+  if d.guarded then .illFormed else .unguardedCycle
+
+/-- THE DOCUMENT DOOR: normalize the spelling, strictly decode the
+revision-1 envelope with its table, gate every code and the table's
+guardedness. -/
+def ingestDocument (v : Json.Value) : Except IngestRefusal Document :=
+  match Document.ofEnvelope (canonValue v) with
+  | some d => if d.wf then .ok d else .error (documentRefusal d)
+  | none => .error (documentRefusalOf (canonValue v))
+
+/-- Soundness of the document door. -/
+theorem ingestDocument_wf {v : Json.Value} {d : Document}
+    (h : ingestDocument v = .ok d) : d.WF := by
+  unfold ingestDocument at h
+  split at h
+  · split at h
+    · cases h
+      next hw => exact (Document.wf_iff _).mp hw
+    · cases h
+  · cases h
+
+/-- The door answers only GUARDED tables — the half of soundness the
+C6 theorem carries, stated on its own so the claim is citable without
+unfolding `Document.WF`. -/
+theorem ingestDocument_guarded {v : Json.Value} {d : Document}
+    (h : ingestDocument v = .ok d) : d.Guarded :=
+  (ingestDocument_wf h).2.2.2.2
+
+/-- THE door, BARE-CODE arm: unchanged by C6, in definition and in
+every law below.
+
+It answers ONE CODE, so it keeps refusing a document that carries a
+table, by the same name as before. `ingestDocument` above is the arm
+that reads one. The two agree wherever both apply — `ingestDocument_nil`
+below is that agreement — and they are kept as two definitions rather
+than one because routing this arm through the document door would move
+statements that are frozen. -/
 def ingest (v : Json.Value) : Except IngestRefusal Ast :=
   match Ast.ofEnvelope (canonValue v) with
   | some a => if a.wf then .ok a else .error .illFormed
@@ -312,6 +462,27 @@ theorem ingest_envelope {a : Ast} (ha : a.WF) :
   unfold ingest
   rw [canonValue_of_canonical _ (envelope_canonical a), ofEnvelope_envelope a]
   simp [(Ast.wf_iff _).mpr (Ast.repNorm_wf a ha)]
+
+/-- THE TWO DOORS AGREE where both apply: a bare code's own envelope
+goes through the document door to the same code, carried in a document
+with an empty table.
+
+This is what makes the pair honest rather than a fork. The document
+door's extra clauses are all vacuous on an empty table — there are no
+names to order, none to be nonempty, no entry to be well formed, and no
+edge to cycle — so the only surviving condition is the code's own, which
+is the bare arm's condition exactly. -/
+theorem ingestDocument_nil {a : Ast} (ha : a.WF) :
+    ingestDocument a.envelope = .ok (Document.mk [] a.repNorm) := by
+  unfold ingestDocument
+  rw [canonValue_of_canonical _ (envelope_canonical a),
+    show a.envelope = (Document.mk [] a).envelope from rfl,
+    Document.ofEnvelope_envelope (Document.mk [] a)]
+  simp only [Document.repNorm, List.map_nil]
+  rw [if_pos]
+  simp only [Document.wf, pairwiseRefNames, wfReferences, Document.guarded,
+    Document.names, List.map_nil, List.all_nil, Bool.and_true,
+    (Ast.wf_iff _).mpr (Ast.repNorm_wf a ha)]
 
 /-- Exactness on the nose, for the codes the revision-1 projection
 distinguishes: the door is the identity on the canonical image, so the
@@ -626,6 +797,109 @@ private def suspendedList : Ast :=
               ("checks", .arr [theIntCheck]),
               ("thunk", (Ast.str).toRepresentationJson)])])]) with
         | .error .notASchema => true
+        | _ => false)
+
+/-! ## Guardedness at the door — worked, at elaboration
+
+The C6 witnesses. These are the falsifier the ticket names: an
+unguarded cycle the door must refuse, and — its necessary partner,
+without which "refuse everything" would pass — a guarded cycle the door
+must ADMIT. -/
+
+/-- The linked list, exactly as Effect emits it for a recursive schema:
+the root is a reference into the table, and the recursive knot is a
+`susp` whose thunk reaches the entry again. Taken from the spelling
+probe's own output. -/
+def guardedList : Document :=
+  { references := [("Node",
+      .struct [("next", false, .susp (.union [.reference "Node", .null] .anyOf)),
+        ("value", false, .str)])],
+    representation := .reference "Node" }
+
+/-- An ALIAS cycle: `A` is `B` and `B` is `A`, with no guard anywhere.
+Resolving it never reaches a node. Effect's own codec reads it back
+without complaint — the probe pins that — so this door is the only one
+that refuses it. -/
+def aliasCycle : Document :=
+  { references := [("A", .reference "B"), ("B", .reference "A")],
+    representation := .reference "A" }
+
+/-- A STRUCTURAL cycle with no guard: `A = {next: A}` spelled with a
+bare reference where Effect would have written a `susp`. Effect's
+generator never emits this shape; the representation can spell it, so
+the door has to answer it. -/
+def bareStructCycle : Document :=
+  { references := [("A", .struct [("next", false, .reference "A")])],
+    representation := .reference "A" }
+
+-- THE GUARD IS WHAT DOES IT. The linked list's table has a cycle —
+-- `Node` reaches `Node` — and it passes through the `susp`, so the
+-- non-suspend relation has no edge at all and the door admits it.
+#guard guardedList.guarded
+#guard (match guardedList.references with
+        | [(_, a)] => a.bareRefs == []
+        | _ => false)
+
+-- Both unguarded cycles are refused, and refused BY NAME: the door
+-- says which discipline failed, not merely that something did.
+#guard !aliasCycle.guarded
+#guard !bareStructCycle.guarded
+
+/-- The alias table really does have a cycle, and the proof EXHIBITS
+it rather than deciding it: `A` steps to `B`, `B` edges back to `A`.
+Stated so the witness is a derivation the reader can check, not an
+appeal to the same procedure the theorem is about. -/
+theorem aliasCycle_cyclic : aliasCycle.Cyclic := by
+  refine ⟨"A", .step (m := "B") ?_ (.edge ?_)⟩
+  · show "B" ∈ aliasCycle.out "A"
+    decide
+  · show "A" ∈ aliasCycle.out "B"
+    decide
+
+/-- The structural cycle likewise — one self-edge, straight through a
+struct field with no guard on it. -/
+theorem bareStructCycle_cyclic : bareStructCycle.Cyclic := by
+  refine ⟨"A", .edge ?_⟩
+  show "A" ∈ bareStructCycle.out "A"
+  decide
+
+/-- THE FALSIFIER, discharged. Both unguarded tables are refused, and by
+the C6 theorem that refusal is not an artefact of the procedure: they
+are genuinely cyclic, so no correct door may admit them. -/
+theorem unguarded_alias_cycle_refused : ¬ aliasCycle.Guarded :=
+  fun h => h aliasCycle_cyclic
+
+theorem unguarded_struct_cycle_refused : ¬ bareStructCycle.Guarded :=
+  fun h => h bareStructCycle_cyclic
+
+/-- THE PARTNER FALSIFIER, without which "refuse everything" would pass:
+a GUARDED cycle — ordinary recursion, and exactly what Effect emits for
+a recursive schema — is admitted. The proof runs through
+`references_guarded_decidable`, which is what makes the check's answer
+mean the absence of a cycle. -/
+theorem guarded_list_admitted : guardedList.Guarded :=
+  (references_guarded_decidable guardedList).mp (by decide)
+
+-- The door answers accordingly, by name. `#guard` and not `rfl`: the
+-- door runs `canonValue`, whose key ordering is `String.lt`, and that
+-- does not reduce in the kernel — the same reason every other refusal
+-- call in this file is a `#guard`.
+#guard (match ingestDocument aliasCycle.envelope with
+        | .error .unguardedCycle => true
+        | _ => false)
+
+#guard (match ingestDocument bareStructCycle.envelope with
+        | .error .unguardedCycle => true
+        | _ => false)
+
+#guard (match ingestDocument guardedList.envelope with
+        | .ok d => d.payload == guardedList.payload
+        | .error _ => false)
+
+-- The bare-code arm refuses the lot by its own name: they carry tables,
+-- and that arm answers one code.
+#guard (match ingest guardedList.envelope with
+        | .error .nonEmptyReferences => true
         | _ => false)
 
 /-! ## The bytes-in door

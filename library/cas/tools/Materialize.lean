@@ -88,12 +88,13 @@ private def readJson (path : System.FilePath) : IO Json.Value := do
   | none => throw (IO.userError s!"{path} is not canonical JSON")
 
 /-- The refusal names, verbatim from the door's taxonomy — the same
-five words `lake exe verdicts` writes into the conformance corpus. -/
+words `lake exe verdicts` writes into the conformance corpus. -/
 private def refusalName : IngestRefusal → String
   | .notASchema => "notASchema"
   | .illFormed => "illFormed"
   | .wrongRevision => "wrongRevision"
   | .nonEmptyReferences => "nonEmptyReferences"
+  | .unguardedCycle => "unguardedCycle"
   | .unknownDeclaration => "unknownDeclaration"
 
 /-- One registered fixture, as this tool needs it: the registry name,

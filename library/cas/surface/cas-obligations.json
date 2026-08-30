@@ -1,9 +1,9 @@
 {
   "counters": {
-    "discharged": 21,
+    "discharged": 22,
     "emptyDenotations": 6,
     "formless": 0,
-    "owed": 11,
+    "owed": 12,
     "parked": 5,
     "pinPending": 1
   },
@@ -104,6 +104,20 @@
       "excerpt": "…ECTS-BACKEND R10's named F3 obligation, discharged): the fueled small-step `run` and the big-step reference in…",
       "keyword": "discharged",
       "module": "Cas.Lang.Handler",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Schema.references_guarded_decidable",
+      "excerpt": "…atus lie the law index exists to catch. OWED: the registry row, after which this docstring gains its cla…",
+      "keyword": "OWED",
+      "module": "Cas.Schema.Guarded",
+      "state": "owed"
+    },
+    {
+      "declaration": "Cas.Schema.unguarded_alias_cycle_refused",
+      "excerpt": "THE FALSIFIER, discharged. Both unguarded tables are refused, and by the C6 theorem t…",
+      "keyword": "discharged",
+      "module": "Cas.Schema.Ingest",
       "state": "discharged"
     },
     {

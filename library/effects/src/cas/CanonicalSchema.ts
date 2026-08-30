@@ -370,12 +370,15 @@ const gateKeys = (
 }
 
 /** The checks policy: empty on every node but `Number`, which carries
- * exactly the one admitted spelling and nothing else. */
+ * exactly the one admitted spelling and nothing else — and `Reference`,
+ * which carries no `checks` key at all, so there is no array for a
+ * policy to be about. */
 const gateChecks = (
   node: Schema.JsonObject,
   row: Admission.NodeRow,
   path: string,
 ): void => {
+  if (row.checks === "none") return
   const checks = gateArray(node.checks, `${path}.checks`)
   if (row.checks === "empty") {
     if (checks.length !== 0) refuseBy("checksNotEmpty", path)
@@ -583,20 +586,94 @@ const admitNode = (value: Schema.Json | undefined, path: string): void => {
         seen.add(name)
         gateTypedValue(member[1], "enumMemberValue", at)
       }
+      return
+    }
+    // The C6 arms. A reference is a NAME — nonempty, and nothing else is
+    // asked of it here: whether it RESOLVES is not this gate's question
+    // (Lean's `Ast.reference` records why), and whether the table it
+    // names is guarded is the document gate's, below.
+    case "reference": {
+      if (typeof node.$ref !== "string" || node.$ref === "") {
+        refuseBy("referenceName", path)
+      }
+      return
+    }
+    case "suspend": {
+      admitNode(node.thunk, `${path}~`)
+      return
     }
   }
 }
 
-/** The document gate: an empty reference table and one admitted root.
- * A non-empty table is recursion, which the carrier has no constructor
- * for (survey B3, open ruling 2), so it is refused by its own name
- * rather than admitted and then failing to re-emit. */
+/** The table names a code mentions at positions NO `Suspend` guards —
+ * `Ast.bareRefs`, interpreted. The walk stops dead at a `Suspend`, which
+ * is the whole content of the word "guarded". */
+const bareRefs = (value: Schema.Json | undefined): ReadonlyArray<string> => {
+  const out: Array<string> = []
+  const walk = (v: Schema.Json | undefined): void => {
+    if (Array.isArray(v)) {
+      for (const item of v) walk(item)
+      return
+    }
+    if (!Predicate.isObject(v)) return
+    const node = v as Schema.JsonObject
+    // THE GUARD. Everything under a Suspend is hidden from this walk.
+    if (node._tag === "Suspend") return
+    if (node._tag === "Reference") {
+      if (typeof node.$ref === "string") out.push(node.$ref)
+      return
+    }
+    for (const child of Object.values(node)) walk(child as Schema.Json)
+  }
+  walk(value)
+  return out
+}
+
+/** The fuel-bounded search of `Document.settles`, interpreted: does
+ * every bare path out of `name` run out within `fuel` steps? */
+const settles = (
+  references: Schema.JsonObject,
+  fuel: number,
+  name: string,
+): boolean => {
+  const successors = Object.hasOwn(references, name)
+    ? bareRefs(references[name])
+    : []
+  if (fuel === 0) return successors.length === 0
+  return successors.every((next) => settles(references, fuel - 1, next))
+}
+
+/** The document gate: the references table and one admitted root.
+ *
+ * The table is READ now (increment C6, ruled 2026-08-30) rather than
+ * refused: every entry is an admitted code, no name is empty, and the
+ * table is GUARDED — every cycle of the reference relation passes
+ * through a `Suspend`. The guardedness search is `Document.guarded`
+ * interpreted, fuel and all, and Lean's
+ * `references_guarded_decidable` is what says that search decides the
+ * absence of a cycle rather than approximating it.
+ *
+ * Not asked, deliberately, and each with its reason recorded in Lean: a
+ * DANGLING name is admitted (it has no outgoing edge, so it lies on no
+ * cycle), a DEAD entry is admitted, and key ORDER is normalised rather
+ * than refused, because the table is a JSON object and the canonical
+ * form sorts it. */
 const admitDocument = (value: Schema.Json): void => {
   const document = gateObject(value, "document")
   gateKeys(document, Admission.DocumentKeys, "documentShape", "document")
   const references = gateObject(document.references, "document.references")
-  const allocated = Object.keys(references)
-  if (allocated.length > 0) refuseBy("nonEmptyReferences", "document", allocated)
+  const names = Object.keys(references)
+  for (const name of names) {
+    if (name === "") refuseBy("referenceKeyEmpty", "document.references")
+    admitNode(references[name], `document.references.${name}`)
+  }
+  // Fuel is the table's own size, exactly as in Lean: a failing path
+  // then visits one more name than the table has entries, which is what
+  // forces a repeat and makes the search complete.
+  const unguarded = names.filter((name) => !settles(references, names.length, name))
+  if (unguarded.length > 0) {
+    refuseBy("unguardedCycle", "document.references", unguarded)
+  }
   admitNode(document.representation, "representation")
 }
 
