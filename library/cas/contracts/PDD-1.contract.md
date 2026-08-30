@@ -374,11 +374,9 @@ WITNESS    canonBad xs :=
            which is exactly the failure mode §8.0 warns about.
 CLASS      adequacy — is Q strong enough that no wrong implementation
            passes? It was not.
-FIXED-BY   PENDING at the time this row was written — the amending
-           theorem commit that follows it on this branch. LAW PRESERVE,
-           four forms over the shipped function; discrimination
-           re-verified against the witness, `canonBad` provably fails
-           PRESERVE-keys.
+FIXED-BY   f72ef300 — LAW PRESERVE, four forms over the shipped
+           function; discrimination re-verified against the witness,
+           `canonBad` provably fails PRESERVE-keys.
 ```
 
 ```
@@ -399,10 +397,8 @@ WITNESS    raw_terms_differ — two key-Nodup, mutually permuted AUTHORED
 CLASS      claim-scope — the stated boundary of the claim did not equal
            its actual coverage; the subject of the theorem was not the
            object of the claim.
-FIXED-BY   PENDING at the time this row was written — the amending
-           theorem commit that follows it on this branch. GUARD-UNIQUE
-           and ADDR-AUTHORED, stated over the stored term with the
-           guard in the hypotheses. The mechanism
+FIXED-BY   f72ef300 — GUARD-UNIQUE and ADDR-AUTHORED, stated over the
+           stored term with the guard in the hypotheses. The mechanism
            (rejection, not canonicalization) is now written in the
            claim-scope section and witnessed in the file by an admitted
            order and its refused permutation.
