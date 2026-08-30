@@ -157,7 +157,22 @@ FRAME      reads: `tr`, and the starting word `w`.
            moves by exactly `flatten`'s bindings.
            FILE frame, the load-bearing half: this slice adds ONE new
            module, `library/cas/Cas/Backend/TreeProgCorrect.lean`, and
-           edits NO existing file. In particular it does not touch the
+           edits NO existing file.
+
+           PLACEMENT, and why it is under `Cas/Backend/`. AMENDMENT
+           entered after the module landed, on PDD-8's builder's
+           verified warning: the `Cas` library's glob is its ROOT
+           MODULE alone, so a new module under `Cas/Lang/` is NOT
+           kernel-checked by `lake --wfail build` — a planted `sorry`
+           stays green there. `CasBackend` globs `Cas.Backend.+`, so a
+           backend module is built with no lakefile edit. This module
+           is homed there for that reason and the green is verified
+           rather than assumed: `Cas.Backend.TreeProgCorrect` appears
+           by name in the build job list ("Built
+           Cas.Backend.TreeProgCorrect"), and the planted-defect
+           controls below fire from inside it.
+
+           In particular it does not touch the
            fenced `Cas/Backend/EmitProg.lean`,
            `Cas/Backend/ProgProse.lean`, `Cas/Lang/TreeProg.lean` or
            `Cas/Lang/Defun.lean`; it does not touch `Cas/Lang/Wp.lean`;
@@ -258,7 +273,9 @@ FALSIFIER  exhibit an injective `H`, a term `tr` and an admissible
            named falsifier ("a table whose run answers differently than
            the term's meaning").
 BATTERY    library/cas/Cas/Backend/TreeProgCorrect.lean —
-           `treeProg_Triple`, `treeProg_run`, `treeProg_run_empty`.
+           `treeProg_run`, `treeProg_run_empty`, `treeProg_Triple`,
+           and `treeProg_two_state` (the two-state form, through
+           PDD-2's `Triple_two_state_rel`).
 ```
 
 ```
@@ -299,7 +316,11 @@ FALSIFIER  This is §3.5's own falsifier, and its recorded witness is
            exactly the mutation §3.5 names.
 BATTERY    library/cas/Cas/Backend/TreeProgCorrect.lean — the `Executed`
            section: `#guard`s over the witness terms and `Executed.check`
-           driven by `#eval`.
+           driven by `#eval`. The mutation is refuted POSITIVELY as well
+           as negatively — `#guard !runVerdict toyAddr blobSharedChunk
+           (blobSharedChunk.flatten toyAddr)` exhibits that the run's
+           word is NOT `flatten`, so the appending semantics is killed
+           by a computation and not by an argument.
 ```
 
 ## Adequacy — the law set, attacked before it is proved
@@ -392,13 +413,71 @@ contains neither — every clause of both walkers emits `.put` with `.ans`
 operands only. That is visible in `seg` by inspection and is why LAW M's
 `resolveRefs` obligations never hit the refusal arm.
 
+## Controls — the guards can go red
+
+A gate that cannot fail proves nothing. Two defects were planted in the
+landed module, built, and reverted; both are recorded because the
+packet's whole claim is that these laws are attached to something.
+
+- **The dedup position.** `eraseIdx 2` moved to `eraseIdx 1` in the
+  shared-chunk guard. Red: *"Expression `runVerdict toyAddr
+  blobSharedChunk (List.eraseIdx (Tree.flatten toyAddr
+  blobSharedChunk) 1)` did not evaluate to `true`"*. The guard pins
+  WHICH occurrence deduplicates, not merely how many bindings survive.
+- **A drifted walker clause.** `seg`'s `.leaf` reference tag changed
+  from `Ty.chunk.wireTag` to `Ty.tree.wireTag` — the shape of the drift
+  the pin device exists to catch. Red in three places at once: both
+  pins (`lowerTree_seg`, `lowerTable_seg`) and LAW M
+  (`embedFrom_seg`). The restatement cannot quietly part from either
+  fenced walker.
+
 ## Gates
 
+Run from `library/cas` unless noted; all verbatim.
+
 ```
-lake --wfail build                 (from library/cas) — green, no sorry
-lake exe emitprograms --check      (from library/cas) — byte-identical
-mise run check:cas                 — the whole byte-identity battery
-git status                         — clean beyond the two new files
+lake --wfail build
+  → Build completed successfully (96 jobs).
+  → Built Cas.Backend.TreeProgCorrect
+  → PDD-9: runP executed on the registered programs at the production
+    digest — every answer is its term's address, and shared-chunk
+    deduplicates to four bindings from flatten's five
+
+mise run --force check:cas                            → EXIT=0
+  → ok vectors/shared-chunk.json (1922 bytes) — 5 bindings
+  → ok ../effects/test/generated/VectorPrograms.ts (19433 bytes)
+       — 7 programs
+  → ok ../effects/test/generated/VectorProgramAddresses.json
+       (2816 bytes) — 7 program addresses
+  → ok ../effects/test/generated/VectorProgramLifts.json (11193 bytes)
+       — 7 lift documents (round-tripped)
+  (every emitter's --check byte-identical; no fixture moved)
+
+mise run --force check:cas:surface                    → EXIT=0
+  → ok surface/cas-surface.json (955041 bytes) — 2026 declarations
+mise run --force check:cas:obligations                → EXIT=0
+  → 10 of 10 controls fire
+  → ok surface/cas-obligations.json (17363 bytes) — 68 obligations
+mise run --force check:cas:laws                       → EXIT=0
+  → 13 of 13 controls fire
+  → ok surface/cas-laws.json (9825 bytes) — 9 of 37 rulings bound
+
+git status                    → clean beyond this packet and the module
+```
+
+The three ledger gates staying byte-identical is the FRAME's file claim
+discharged, not a coincidence: a new `Cas.Backend.*` leaf is invisible
+to `Walk.libraryImports` until it is named there, and naming it is a
+promotion, hence a ruling.
+
+Axiom footprint, printed against the compiled module — no `sorryAx`, no
+`Classical.choice`, no new axiom:
+
+```
+treeProg_eq_seg, table_eq_seg, table_eq_treeProg, treeProg_length,
+embed_treeProg, treeProg_run, treeProg_run_empty, treeProg_Triple,
+treeProg_two_state
+  → depends on axioms: [propext, Quot.sound]
 ```
 
 ## Breaks
