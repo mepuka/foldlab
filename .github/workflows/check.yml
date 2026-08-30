@@ -1,3 +1,45 @@
+# CI TRUTH. This workflow runs the estate's real discipline on a fresh
+# clone: `mise run check:ci` — which is `gen:ci` (every emitter FORCED),
+# `git diff --exit-code`, then the whole check chain with every task
+# forced. It never runs `mise run check`: the local chain may skip a
+# fresh task, and a fresh clone's mtimes make that skip systematically
+# wrong (see the measured refutation above [tasks."check:ci"] in
+# mise.toml — path-ordered checkout mtimes leave most tasks "fresh" on
+# arrival).
+#
+# SKIP-LIST AUTHORITY: docs/lab-core/ENVIRONMENT.json's residence
+# column. Every task in the chain is declared `portable`; every
+# `host-local` task (check:extract-twin, check:extract-oxc,
+# gen:oxc-surface — inputs gitignored with no bootstrap, or fetched
+# unpinned from the network) is already OUTSIDE the chain, listed in
+# that ledger's `excludedGates`. So `check:ci` attempts no host-local
+# gate and skips no portable one, and the join is emitted and
+# byte-gated (gen:env-ledger), not maintained by hand here. If a task's
+# residence changes, the ledger changes, and this comment's claim is
+# re-checkable against it.
+#
+# JOB STRUCTURE, and the tradeoff stated honestly: the full chain
+# builds six Lake projects and force-regenerates every emitter — tens
+# of minutes even warm-cached, hours across three OSes. So:
+#   - effects-ts   every PR and push: the TypeScript package gate alone
+#                  (mise run check:effects:ts) — minutes, no Lean.
+#   - check        every PR and push to main: the FULL check:ci, on
+#                  ubuntu. The gate is not thinned — every PR runs the
+#                  complete portable chain once.
+#   - check (matrix) pushes to main and manual dispatch additionally
+#                  run macOS and Windows, because the estate's primary
+#                  dev host is a PowerShell PC and the Mac is the
+#                  coordinator: cross-OS truth is asserted where it
+#                  matters (what lands on main), not on every PR
+#                  round-trip.
+#
+# TOOLCHAIN PINS: bun and node come from mise.toml's [tools] (exact
+# versions, installed by mise-action). mise itself is pinned below.
+# Lean pins per Lake project through each lean-toolchain file; elan is
+# installed by lean-action (an admitted tool — docs/lab-core/TOOLS.md,
+# "lean-action v1"), and every `lake` invocation resolves the committed
+# per-project pin.
+
 name: check
 
 on:
@@ -6,24 +48,88 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  MISE_VERSION: 2026.8.12
+
 jobs:
+  # The fast lane: the effects package's own gate (frozen install,
+  # lint, typecheck, tests, build, consumer smoke). A subset of
+  # check:ci, re-run here for minutes-scale feedback; the full job
+  # below remains the authority.
+  effects-ts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+        with:
+          version: ${{ env.MISE_VERSION }}
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: mise run --force check:effects:ts
+
   check:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+
+      # elan + the fips202 toolchain/cache. auto-config false: the
+      # action installs and caches; the chain itself is mise's.
       - uses: leanprover/lean-action@v1
         with:
           auto-config: false
+          use-github-cache: true
           lake-package-directory: formal/fips202
-      # lean-action installs elan but exports a POSIX-style PATH entry that Windows
-      # task shells cannot resolve; re-export it in Windows form for later steps.
+      # lean-action installs elan but exports a POSIX-style PATH entry
+      # that Windows task shells cannot resolve; re-export it in
+      # Windows form for later steps.
       - name: Put elan on PATH for Windows shells
         if: runner.os == 'Windows'
         shell: pwsh
         run: Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.elan\bin"
+
       - uses: jdx/mise-action@v2
-      - run: mise run check
+        with:
+          version: ${{ env.MISE_VERSION }}
+
+      # Toolchains keyed on the committed pins; build trees keyed on
+      # pins + lakefiles with a sha-suffixed key so each run saves its
+      # incremental progress and the next restores the closest one.
+      # Both caches are gitignored trees, so `git diff --exit-code`
+      # inside check:ci is untouched by restoring them.
+      - name: Cache elan toolchains
+        uses: actions/cache@v4
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ hashFiles('**/lean-toolchain') }}
+          restore-keys: elan-${{ runner.os }}-
+      - name: Cache Lake build trees
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/.lake
+          key: lake-${{ runner.os }}-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
+          restore-keys: |
+            lake-${{ runner.os }}-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
+            lake-${{ runner.os }}-
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: mise run check:ci
