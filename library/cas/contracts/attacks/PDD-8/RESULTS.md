@@ -18,7 +18,33 @@ ATTACK     contracts/attacks/PDD-8/Attack.lean
            `lake env lean contracts/attacks/PDD-8/Attack.lean`
 ```
 
-# VERDICT — **STANDS-with-holes** (7 HOLEs, 6 NOTEs; no BREAK)
+## STATUS — **STANDS-AMENDED. Six holes CLOSED; HOLE-2 open BY DESIGN.**
+
+Re-run against the amended castle `d74e6ee0` and packet `de720d7b` on
+2026-08-30. Six of the seven holes close with mechanical evidence;
+HOLE-2 is recorded in the packet's break ledger as `FIXED-BY NOT FIXED
+… RULING OWED`, with the `:263` discharge claim WITHDRAWN and
+`EFFECTS-BACKEND.md` untouched — verified, not taken on report. The
+re-run record is `AttackAmended.lean` beside this file; the closure
+verdicts are the **Re-run** section at the end.
+
+One correction against THIS file, kept rather than quietly fixed:
+HOLE-3's sentence said three declarations "spend one equation". That is
+right for L17 and `through_id_left` and WRONG for `through_assoc`, which
+spends the left unit AND associativity. `through_assoc_holds_over_collapse`
+proved `[LawfulMonad M]` was not NECESSARY; it never identified what
+suffices. The fix pass states it at two equations, and the re-run proves
+those two are MINIMAL — neither droppable — which the fix pass did not
+show either.
+
+`Attack.lean` is UNEDITED and stays the record against
+`6ce34fff`/`8a241313`. It re-elaborates clean against `d74e6ee0`; that
+is expected and is not itself evidence of closure — an amended law set
+that EXTENDS the original cannot falsify a theorem about the original.
+
+---
+
+# VERDICT (first pass) — **STANDS-with-holes** (7 HOLEs, 6 NOTEs; no BREAK)
 
 Every theorem in the castle reproduces. No law is false, nothing is
 irreproducible, no axiom is smuggled, the commit order is packet-first,
@@ -695,3 +721,290 @@ HOLE-6  close: state `interpret_pinned` at [LawfulMonad M], or extend
 HOLE-7  close: declare the boundary enumeration to be the review's
         three, and add `runP` and `wp`/`wlp` as rows.
 ```
+
+---
+
+# Re-run — against `d74e6ee0` (2026-08-30)
+
+```
+SUBJECT    d74e6ee0  PDD-8: the fix pass — six holes closed
+PACKET     de720d7b  PDD-8: packet amendments — seven ledger rows
+RECORD     contracts/attacks/PDD-8/AttackAmended.lean
+           `lake env lean contracts/attacks/PDD-8/AttackAmended.lean`
+FIRST PASS 6e6fa80a  (Attack.lean, unedited, still the record against
+                     6ce34fff/8a241313)
+```
+
+## VERDICT — **STANDS-AMENDED**
+
+Six holes closed. HOLE-2 open by design and correctly recorded. No new
+BREAK, no new HOLE. One NOTE on the aliases, one on the census
+arithmetic.
+
+## Gates and census, re-measured
+
+`lake --wfail build`: `✔ [94/95] Built Cas.Backend.Universal (8.6s)` /
+`Build completed successfully (95 jobs).`
+
+`mise run --force check:cas`: green end to end, `13 of 13 controls fire`,
+`ok surface/cas-laws.json (9825 bytes)`. The module still moves no byte,
+and `AttackAmended.lean` sits outside every target and every `sources`
+glob, as `Attack.lean` does.
+
+Axiom census, mechanical, over every constant whose defining module is
+`Cas.Backend.Universal`:
+
+```
+                              packet de720d7b     breaker re-run
+public constants                       78                 80
+  of which theorems                    52                 52   ✓
+axiom-free theorems                    22                 22   ✓
+axiom sets  []                         44                 46
+            [Quot.sound]               10                 10   ✓
+            [propext]                   6                  6   ✓
+            [propext, Quot.sound]      18                 18   ✓
+union                    {propext, Quot.sound}  {propext, Quot.sound} ✓
+```
+
+No `sorryAx`, no `Classical.choice`, no `Lean.ofReduceBool`, no
+declaration of kind `axiom`. **Every load-bearing figure reproduces.**
+The two-constant gap is a counting convention and nothing else: my walk
+counts `IsMonadMorphism.mk._flat_ctor` and `IsMorphE.mk._flat_ctor`, two
+compiler artifacts of the two new structures, both axiom-free, both in
+the `[]` bucket — which is exactly where the difference sits (46 v 44).
+Filtering leading-underscore components gives 78. **NOTE-7 (minor):** the
+packet's "78 public constants … recursors and projections included" is
+not reproducible as stated without naming the filter; the number is
+convention-dependent, and the packet should say which convention, since
+it is a figure a later pass will be checked against.
+
+## Closure verdicts, hole by hole
+
+### HOLE-1 — **CLOSED**
+
+`prog_is_free` carries the hom-set bijection under the correct word, and
+`prog_is_initial_in_S_models` lands the initiality that was missing. Both
+checked for statement FIDELITY rather than taken on the rename, because a
+"generalization" that quietly drops a conclusion closes nothing
+(`AttackAmended.lean` §1):
+
+```lean
+theorem breaker_4b_recovered [Monad M] [LawfulMonad M] (h : Handler S M) :
+    ∃ φ : (A : Type) → Prog S A → M A, … :=
+  prog_is_initial_in_S_models leftUnit_of_lawful bindAssoc_of_lawful
+    rightUnit_of_lawful h
+
+theorem prog_is_free_recovered [Monad M] [LawfulMonad M] (φ) (hφ) :
+    ∃ h : Handler S M, … := prog_is_free rightUnit_of_lawful φ hφ
+```
+
+Both elaborate: the breaker's §4b statement is recovered verbatim at its
+original hypotheses, and the freeness conclusion is unchanged. The
+counter-witness that forced the hole is still true against the amended
+castle (`still_not_initial_among_monads`, §5) — as it must be; a fix that
+falsified it would have broken something. The castle's §6b docstring now
+says so itself.
+
+### HOLE-2 — **OPEN, BY DESIGN. Correctly recorded.**
+
+Verified as asked, not accepted on report:
+
+- the packet's break ledger row reads
+  `FIXED-BY   NOT FIXED, and not this lane's to fix. … The claim to
+  discharge :263 is WITHDRAWN in claim-scope; EFFECTS-BACKEND.md is
+  untouched. RULING OWED.`
+- claim-scope carries the three readings (faithfulness / freeness /
+  initiality) with the declaration each binds to, and states that binding
+  the word is an OPERATOR RULING;
+- `git diff --name-only 8a241313 d74e6ee0` is exactly
+  `Cas/Backend/Universal.lean` and `contracts/PDD-8.contract.md` —
+  `EFFECTS-BACKEND.md` was not edited, so the word at `:263` still binds
+  to `eq_of_forall_interpret` and the ruling is genuinely owed rather
+  than pre-empted;
+- the castle no longer claims to discharge it: no occurrence of
+  "`Prog S` is initial" survives, and every "initial" in the file is
+  either the S-models statement or the explicit denial of the monads
+  reading.
+
+Not silently dropped. This is the right disposition.
+
+### HOLE-3 — **CLOSED, and pushed one step past where the fix pass stopped**
+
+`LeftUnit`/`RightUnit`/`BindAssoc` are named, the bridges from
+`LawfulMonad` are stated, and each theorem carries what it spends.
+
+**The bridge spot-check, done adversarially.** The bridges would be
+worthless if the three equations TOGETHER were equivalent to
+`LawfulMonad` — the amendment would then be a re-spelling. The castle
+exhibits `RUnit` (right unit only) and `Ct` (left unit + associativity)
+separately; neither shows the BUNDLE is proper. It is
+(`AttackAmended.lean` §2):
+
+```lean
+theorem ct_rightUnit : RightUnit Ct := fun _x => Prod.ext rfl (Nat.add_zero _)
+theorem three_equations_do_not_imply_lawful :
+    LeftUnit Ct ∧ RightUnit Ct ∧ BindAssoc Ct ∧ ¬ Nonempty (LawfulMonad Ct)
+```
+
+`Ct` satisfies all three equations and has no `LawfulMonad` instance, so
+every restated theorem reaches at least one target the old statement
+could not be applied to at all. The weakening is strictly proper as a
+bundle, not merely per-equation.
+
+**The `through_assoc` correction — accepted; the first pass was wrong.**
+HOLE-3's sentence generalized "one equation" across three declarations.
+`through_assoc` runs through `interpret_bind` and spends the left unit
+AND associativity. `through_assoc_holds_over_collapse` proved only that
+`[LawfulMonad M]` is not NECESSARY — in `Collapse` every interpretation
+is `true`, so the conclusion holds for a reason outside any equation. It
+never identified what suffices. `through_assoc_over_ct` is the right
+witness and the castle has it.
+
+**And the two equations are MINIMAL — which the fix pass did not show.**
+A hypothesis set is minimal when no proper subset suffices, so two
+counter-targets are owed. Both constructed (`AttackAmended.lean` §3):
+
+```lean
+-- Shift: pure costs ONE. Associativity holds; the left unit never does.
+theorem shift_bindAssoc      : BindAssoc Shift
+theorem shift_not_leftUnit   : ¬ LeftUnit Shift
+theorem through_assoc_fails_over_shift :
+    (tPass.through tPass).through hShift ≠ tPass.through (tPass.through hShift)
+    -- one operation, one service: 2 against 3
+
+-- Skew: both units hold; two non-zero costs combine non-associatively.
+theorem skew_leftUnit        : LeftUnit Skew
+theorem skew_rightUnit       : RightUnit Skew
+theorem skew_not_bindAssoc   : ¬ BindAssoc Skew
+theorem through_assoc_fails_over_skew :
+    (tTwice.through tTwice).through hSkew ≠ tTwice.through (tTwice.through hSkew)
+    -- four operations: 15 against 9
+
+theorem through_assoc_two_equations_are_minimal :   -- the pair, packaged
+```
+
+`{BindAssoc}` alone is insufficient and `{LeftUnit, RightUnit}` is
+insufficient: neither `lu` nor `ba` can be dropped, so the castle's
+two-equation statement is exactly right. Without these the two-equation
+form would be the same surplus HOLE-3 objected to, one equation smaller.
+
+The one-equation statements need no minimality witness: drop the only
+hypothesis and `uniqueness_needs_lawful` — the castle's own falsifier —
+is the counter-target.
+
+### HOLE-4 — **CLOSED**
+
+`single_type_agreement_is_not_enough`'s docstring is restated as "a
+BADLY CHOSEN answer type" and says outright that the first draft's
+headline was false; `one_type_can_be_enough` is landed beside it as the
+counter-witness that forced the amendment, at `RightUnit` rather than
+`[LawfulMonad M]`. The general-`S` motive (answer types vary with the
+operation) is now stated separately from the vacuity witness, which is
+the distinction the hole was about.
+
+### HOLE-5 — **CLOSED, both halves**
+
+`run_has_no_composition_law` is landed as THE boundary theorem, adopted
+with its proof and its `run3_load_once_eq_twice` lemma. The old theorem
+is renamed `run_composite_outruns_its_parts` — "the old name promised the
+law and delivered the witness" — and kept as the witness it always was.
+The false reason is gone: §8 no longer says the operational semantics are
+"not maps `Prog S A → M A` at all", and `RunM`, `runAsMap`, `stepAsMap`
+and the `Monad RunM` instance are in the castle, so the shape refutation
+is now the castle's own.
+
+### HOLE-6 — **CLOSED**
+
+`interpret_inhabits_the_pin` is restated at the three equations, so it
+covers the pin's actual `[Monad M]` quantifier far more widely than the
+`[LawfulMonad M]` companion did. Cashed rather than asserted
+(`AttackAmended.lean` §2):
+
+```lean
+theorem pin_inhabited_at_ct :
+    (∀ h : Handler OneSig Ct, IsMonadMorphism OneSig …)
+      ∧ ∀ h op, interpret h (Prog.op op) = h.handle op :=
+  interpret_inhabits_the_pin ct_leftUnit ct_bindAssoc ct_rightUnit
+```
+
+`Ct` has no `LawfulMonad` instance, so the first draft's companion could
+not be instantiated there at all; the amended one can.
+
+**F-PIN-EMPTY is LIVE in the castle**, not merely in the attack record:
+`interpret_pinned_is_vacuous_over_collapse` is `Universal.lean:640`, and
+`interpret_pinned`'s own docstring carries the scope ("a statement about
+a class that is EMPTY at some targets"). Both hypothesis falsifiers
+(`pinned_needs_op_agreement`, `pinned_needs_the_morphism_law`) are in the
+castle too.
+
+### HOLE-7 — **CLOSED**
+
+§8 opens with "**The enumeration is the REVIEW's three, not the estate's
+all**" and adds `runP` and `wp`/`wlp` as rows, with the shapes
+type-checking against the shipped declarations (`runPShape`,
+`runP_never_running`, `wpShape`, `wlpShape`). It also declines to claim
+the new list is complete — "it is the semantics this lane could find" —
+which is the correct disposition for an enumeration nobody has proved
+exhaustive.
+
+## Fresh probe — alias fidelity
+
+The fix pass kept `existsUnique_handler` and
+`interpret_satisfies_the_property` as aliases "so … any reader who
+followed the old prose still resolve". Probed, because an alias that
+changed its conclusion would be the worst kind of silent regression
+(`AttackAmended.lean` §4):
+
+```lean
+theorem existsUnique_handler_old_call [Monad M] [LawfulMonad M] (φ) (hφ) :
+    ∃ h : Handler S M, … := existsUnique_handler rightUnit_of_lawful φ hφ
+theorem interpret_satisfies_the_property_old_call [Monad M] [LawfulMonad M] : … :=
+    interpret_satisfies_the_property leftUnit_of_lawful bindAssoc_of_lawful
+      rightUnit_of_lawful
+theorem aliases_are_the_theorems_they_alias … :
+    existsUnique_handler runit φ hφ = prog_is_free runit φ hφ := rfl
+```
+
+Both old signatures are recoverable and each alias is definitionally the
+theorem it aliases. **NOTE-8 (minor):** the aliases preserve the NAME and
+the CONCLUSION, not the CALL — `[LawfulMonad M]` became an explicit
+equation argument, so an old application does not re-typecheck without a
+bridge. Harmless here: a sweep of `library/`, `docs/` and `.staging/` for
+`existsUnique_handler`, `interpret_satisfies_the_property`, `prog_is_free`
+and `prog_is_initial` finds references ONLY in
+`contracts/PDD-8.contract.md`, all consistent with the amended names, and
+nothing imports the module. The packet's "still resolve" should read
+"still resolves by name".
+
+**Stale-prose sweep:** no occurrence of the freeness theorem described as
+initiality survives anywhere in the castle or the packet. The one
+remaining "INITIAL" bound to a different theorem is
+`EFFECTS-BACKEND.md:263`, untouched on purpose — HOLE-2, ruling owed.
+
+## Re-run failed attempts
+
+1. **Break the two adopted theorems by statement drift** — check whether
+   `prog_is_free` / `prog_is_initial_in_S_models` lost anything in the
+   restatement to equations. FAILED: both original statements recover by
+   instantiation.
+2. **Break the `*_of_lawful` bridges as circular or vacuous.** FAILED:
+   they are one-directional, and `Ct` proves the three-equation bundle is
+   strictly weaker than `LawfulMonad`.
+3. **Break the aliases.** FAILED: definitionally the theorems they alias;
+   old signatures recoverable. Produced NOTE-8 only.
+4. **Break `through_assoc`'s two-equation statement as still-surplus** —
+   look for a one-equation proof. FAILED, decisively: the two equations
+   are minimal, and the attempt turned into the minimality proof above.
+5. **Break the census.** FAILED on every load-bearing figure; produced
+   NOTE-7, a counting convention.
+6. **Break HOLE-2's disposition** — check whether the withdrawal was
+   cosmetic and `EFFECTS-BACKEND.md` quietly amended anyway. FAILED: the
+   file is untouched and the ledger row says `RULING OWED`.
+
+## Disposition
+
+Six holes closed with mechanical evidence, each against the breaker's own
+supplied statement rather than a paraphrase of it. HOLE-2 is open, and it
+is open in the right way: the overclaim withdrawn, the cited document
+left alone, the ruling named and owed. **PDD-8 lands, with the INITIAL
+word binding flagged as an operator ruling.**
