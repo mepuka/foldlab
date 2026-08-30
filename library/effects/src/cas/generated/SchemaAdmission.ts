@@ -22,7 +22,7 @@
 /** THE refusal taxonomy, verbatim from Lean `Cas.Schema.IngestRefusal`:
  * the two doors name the same refusals or they are not two doors onto
  * one language. */
-export type Refusal = "notASchema" | "illFormed" | "wrongRevision" | "nonEmptyReferences" | "unknownDeclaration"
+export type Refusal = "notASchema" | "illFormed" | "wrongRevision" | "nonEmptyReferences" | "unguardedCycle" | "unknownDeclaration"
 
 /** One discipline clause: the name the interpreter looks it up by, the
  * refusal it carries, and the prose it reads. `{path}`, `{it}` and
@@ -34,15 +34,17 @@ export interface Clause {
 }
 
 /** Which arm of the interpreter reads a node. */
-export type Form = "keyword" | "number" | "literal" | "arrays" | "objects" | "declaration" | "union" | "enum"
+export type Form = "keyword" | "number" | "literal" | "arrays" | "objects" | "declaration" | "union" | "enum" | "reference" | "suspend"
 
 /** One admitted representation node: its tag, the arm that reads it,
- * the keys the canonical spelling writes, and its checks policy. */
+ * the keys the canonical spelling writes, and its checks policy.
+ * `none` is the Reference row: that node carries no `checks` key at
+ * all, so there is no array for a policy to be about. */
 export interface NodeRow {
   readonly tag: string
   readonly form: Form
   readonly keys: ReadonlyArray<string>
-  readonly checks: "empty" | "isInt"
+  readonly checks: "empty" | "isInt" | "none"
 }
 
 /** One admitted `{type, value}` spelling: the type tag the projection
@@ -67,7 +69,7 @@ export interface DeclarationRow {
 }
 
 /** Every refusal the door can name, in Lean's declaration order. */
-export const Refusals: ReadonlyArray<Refusal> = ["notASchema", "illFormed", "wrongRevision", "nonEmptyReferences", "unknownDeclaration"]
+export const Refusals: ReadonlyArray<Refusal> = ["notASchema", "illFormed", "wrongRevision", "nonEmptyReferences", "unguardedCycle", "unknownDeclaration"]
 
 /** The discipline clauses, by name. */
 export const Clauses: ReadonlyArray<Clause> = [
@@ -212,9 +214,29 @@ export const Clauses: ReadonlyArray<Clause> = [
     detail: "{path} does not spell a representation document: the admitted subset writes {keys}",
   },
   {
+    clause: "referenceName",
+    refusal: "illFormed",
+    detail: "{path} names an empty reference: a reference names a references-table entry, and the empty name names none (Effect refuses it too — $ref is a non-empty string)",
+  },
+  {
+    clause: "referenceKeyEmpty",
+    refusal: "illFormed",
+    detail: "the references table carries an entry under the empty name, which no reference can point at",
+  },
+  {
+    clause: "duplicateReferenceKey",
+    refusal: "illFormed",
+    detail: "the references table names {it} twice, so the two readers of this payload get two different documents — Lean's parser keeps both entries and takes the first, JSON.parse keeps the last. Give each entry one name; a canonical spelling has its keys in strict ascending order and cannot repeat one",
+  },
+  {
+    clause: "unguardedCycle",
+    refusal: "unguardedCycle",
+    detail: "the references table has a cycle with no Suspend on it ({it}): resolving it never finishes, because unfolding the name gives the name back. Put the recursive position under a Suspend, which is what Effect writes for a recursive schema",
+  },
+  {
     clause: "nonEmptyReferences",
     refusal: "nonEmptyReferences",
-    detail: "the document allocates a reference table ({it}), which the admitted subset does not reach",
+    detail: "the document allocates a reference table ({it}), and this reader answers a single code — read it as a document instead",
   },
   {
     clause: "wrongRevision",
@@ -296,6 +318,18 @@ export const Nodes: ReadonlyArray<NodeRow> = [
     tag: "Enum",
     form: "enum",
     keys: ["_tag", "checks", "enums"],
+    checks: "empty",
+  },
+  {
+    tag: "Reference",
+    form: "reference",
+    keys: ["$ref", "_tag"],
+    checks: "none",
+  },
+  {
+    tag: "Suspend",
+    form: "suspend",
+    keys: ["_tag", "checks", "thunk"],
     checks: "empty",
   },
 ]

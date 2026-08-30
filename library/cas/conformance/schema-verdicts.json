@@ -1342,10 +1342,78 @@
     },
     {
       "denotes": false,
-      "name": "refuse-non-empty-references",
-      "note": "a revision-1 document allocating a reference table — recursion, which the admitted subset does not reach (survey B3, ruling 2)",
+      "name": "admit-references-table",
+      "note": "a revision-1 document allocating a reference table of non-recursive named entries — the shape Effect emits whenever one named schema is used twice",
       "payload": "{\"revision\":1,\"value\":{\"references\":{\"Node\":{\"_tag\":\"String\",\"checks\":[]}},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
-      "refusal": "nonEmptyReferences",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "admit-guarded-recursion",
+      "note": "the linked list exactly as Effect emits it: the root references the table and the recursive knot sits under a Suspend, so the cycle passes through a guard and resolution terminates",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"Node\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"next\"},\"type\":{\"_tag\":\"Suspend\",\"checks\":[],\"thunk\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"anyOf\",\"types\":[{\"$ref\":\"Node\",\"_tag\":\"Reference\"},{\"_tag\":\"Null\",\"checks\":[]}]}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}},\"representation\":{\"$ref\":\"Node\",\"_tag\":\"Reference\"}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unguarded-alias-cycle",
+      "note": "A is B and B is A, with no Suspend anywhere: resolving it never reaches a node. Effect's own codec reads this back without complaint, so the refusal is this door's alone",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"$ref\":\"B\",\"_tag\":\"Reference\"},\"B\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "refusal": "unguardedCycle",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unguarded-struct-cycle",
+      "note": "A = {next: A} spelled with a bare reference where Effect would have written a Suspend — a shape Effect never emits and the representation can still spell",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"next\"},\"type\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}]}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "refusal": "unguardedCycle",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "admit-reference-chain",
+      "note": "one acyclic edge: A names B and B is a code. The first admitted row whose bare-edge relation is not empty — a door that never follows an edge refuses it, and the whole corpus used to let one pass",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"$ref\":\"B\",\"_tag\":\"Reference\"},\"B\":{\"_tag\":\"String\",\"checks\":[]}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "admit-reference-chain-two",
+      "note": "two edges, so the guardedness search recurses more than once before it settles the root",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"$ref\":\"B\",\"_tag\":\"Reference\"},\"B\":{\"$ref\":\"C\",\"_tag\":\"Reference\"},\"C\":{\"_tag\":\"String\",\"checks\":[]}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "values": [],
+      "verdict": "admit"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-unguarded-and-illformed",
+      "note": "a table entry that is BOTH on a bare cycle and out of field order — two defects, one name. The door names the cycle, and the TypeScript gate mirrors that order rather than naming whichever defect its own walk reached first",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"b\"},\"type\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"a\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}},\"representation\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}}}",
+      "refusal": "unguardedCycle",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-duplicate-reference-key",
+      "note": "a references table naming A twice, the reference FIRST: Lean's parser keeps both pairs and takes the first, so the table cycles, and JSON.parse keeps the last, so it does not. Refused for the spelling before either reader decides anything",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"$ref\":\"A\",\"_tag\":\"Reference\"},\"A\":{\"_tag\":\"String\",\"checks\":[]}},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
+      "refusal": "illFormed",
+      "values": [],
+      "verdict": "refuse"
+    },
+    {
+      "denotes": false,
+      "name": "refuse-duplicate-reference-key-last",
+      "note": "the same duplicate with the pairs swapped, which reverses which reader sees the cycle — the other direction of the split, and the same refusal",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{\"A\":{\"_tag\":\"String\",\"checks\":[]},\"A\":{\"$ref\":\"A\",\"_tag\":\"Reference\"}},\"representation\":{\"_tag\":\"String\",\"checks\":[]}}}",
+      "refusal": "illFormed",
       "values": [],
       "verdict": "refuse"
     },
@@ -1469,10 +1537,10 @@
   ],
   "counts": {
     "acceptValues": 41,
-    "admittedCodes": 39,
-    "codes": 68,
+    "admittedCodes": 43,
+    "codes": 76,
     "refuseValues": 62,
-    "refusedCodes": 29,
+    "refusedCodes": 33,
     "values": 103
   },
   "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],

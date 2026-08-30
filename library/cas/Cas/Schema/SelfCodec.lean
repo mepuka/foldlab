@@ -134,6 +134,15 @@ def Ast.toJson : Ast → Json.Value
       ("_tag", .str "Tuple"),
       ("elements", .arr (elementToJson e :: elementsToJson es)),
       ("rest", .arr (restToJson r))]
+  -- The C6 codes at the RETIRED revision. No revision-0 schema node in
+  -- the store carries one — revision 0 was retired before this
+  -- increment, so these spellings address nothing and mint nothing.
+  -- They exist so the retired projection stays TOTAL and its round trip
+  -- (`ingestLegacy_toJson`) stays unconditional over the grown carrier;
+  -- the alternative was a landed theorem acquiring a hypothesis, which
+  -- is the worse trade.
+  | .reference n => .obj [("_tag", .str "Reference"), ("name", .str n)]
+  | .susp a => .obj [("_tag", .str "Suspend"), ("thunk", a.toJson)]
 
 /-- One record entry per struct field: `name ↦ {optional, schema}`. -/
 def fieldsToJson : List (String × Bool × Ast) → List (String × Json.Value)
@@ -256,6 +265,16 @@ def Ast.toRepresentationJson : Ast → Json.Value
       ("elements", .arr (elementToRepresentationJson e ::
         elementsToRepresentationJson es)),
       ("rest", .arr (restToRepresentationJson r))]
+  -- `$ref` sorts BEFORE `_tag` — `$` is 0x24 and `_` is 0x5F — so this
+  -- is the only admitted node whose tag is not the first key. The order
+  -- is the canonical one, not a choice; `reference_canonical` proves it.
+  | .reference n => .obj [
+      ("$ref", .str n),
+      ("_tag", .str "Reference")]
+  | .susp a => .obj [
+      ("_tag", .str "Suspend"),
+      ("checks", .arr []),
+      ("thunk", a.toRepresentationJson)]
 
 /-- Effect property-signature representations, preserving canonical field order. -/
 def fieldsToRepresentationJson : List (String × Bool × Ast) → List Json.Value
@@ -443,6 +462,14 @@ theorem toJson_canonical : ∀ (a : Ast), a.WF → a.toJson.Canonical
         (by decide : List.Pairwise (· < ·) ["_tag", "elements", "rest"]),
       trivial, ⟨elementToJson_canonical e he, elementsToJson_canonical es hes⟩,
       restToJson_canonical r hr, trivial⟩
+  | .reference _, _ => by
+    refine ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "name"]),
+      trivial, trivial, trivial⟩
+  | .susp a, ha => by
+    refine ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "thunk"]),
+      trivial, toJson_canonical a ha, trivial⟩
 
 theorem membersToJson_canonical :
     ∀ (ms : List Ast), WFMembers ms → CanonicalItems (membersToJson ms)
@@ -557,6 +584,8 @@ def Ast.ofJson : Json.Value → Option Ast
     (ofJsonElement e).bind fun x =>
     (ofJsonElements es).bind fun xs =>
     (ofJsonRest rs).map fun r => .tuple x xs r
+  | .obj [("_tag", .str "Reference"), ("name", .str n)] => some (.reference n)
+  | .obj [("_tag", .str "Suspend"), ("thunk", v)] => (Ast.ofJson v).map .susp
   | _ => none
 
 def ofJsonFields :
@@ -630,6 +659,9 @@ theorem ofJson_toJson : ∀ (a : Ast), Ast.ofJson a.toJson = some a
     simp only [Ast.toJson, Ast.ofJson, ofJsonElement_elementToJson e,
       ofJsonElements_elementsToJson es, ofJsonRest_restToJson r,
       Option.bind_some, Option.map_some]
+  | .reference _ => rfl
+  | .susp a => by
+    simp only [Ast.toJson, Ast.ofJson, ofJson_toJson a, Option.map_some]
 
 theorem ofJsonElement_elementToJson :
     ∀ (e : Bool × Ast), ofJsonElement (elementToJson e) = some e
@@ -859,6 +891,15 @@ theorem toRepresentationJson_canonical :
       ⟨elementToRepresentationJson_canonical e,
         elementsToRepresentationJson_canonical es⟩,
       restToRepresentationJson_canonical r, trivial⟩
+  -- `$ref < _tag`, and this is the one admitted node whose `_tag` is not
+  -- the first key. `decide` settles it on the characters: `$` is 0x24.
+  | .reference _ =>
+    ⟨List.pairwise_map.mp (by decide : List.Pairwise (· < ·) ["$ref", "_tag"]),
+      trivial, trivial, trivial⟩
+  | .susp a =>
+    ⟨List.pairwise_map.mp
+        (by decide : List.Pairwise (· < ·) ["_tag", "checks", "thunk"]),
+      trivial, trivial, toRepresentationJson_canonical a, trivial⟩
 
 /-- A union's member representations are canonically spelled. The
 union's own key set (`_tag < checks < mode < types`) is alphabetical
@@ -956,6 +997,11 @@ def Ast.repNorm : Ast → Ast
   | .decl id p ps => .decl id p (repNormParams ps)
   | .union ms m => .union (repNormMembers ms) m
   | .tuple e es r => .tuple (repNormElement e) (repNormElements es) (repNormRest r)
+  -- C6 adds NO collapse of its own. A reference is a NAME and carries no
+  -- sub-code at all, so it is its own normal form; a suspend rewrites its
+  -- thunk and nothing else. The literal-null identification stays the
+  -- only two-to-one map the revision-1 projection makes.
+  | .susp a => .susp a.repNorm
   | a => a
 
 def repNormFields :
@@ -1010,7 +1056,9 @@ mutual
 
 /-- The normal form is a normal form. -/
 theorem Ast.repNorm_idem : ∀ (a : Ast), a.repNorm.repNorm = a.repNorm
-  | .null | .bool | .int | .str | .ref _ | .enum _ => rfl
+  | .null | .bool | .int | .str | .ref _ | .enum _ | .reference _ => rfl
+  | .susp a => by
+    simp only [Ast.repNorm, Ast.repNorm_idem a]
   | .lit .null => rfl
   | .lit (.bool _) | .lit (.int _) | .lit (.str _) => rfl
   | .arr a => by
@@ -1131,7 +1179,10 @@ mutual
 exactly what the encoder already performs. -/
 theorem toRepresentationJson_repNorm :
     ∀ (a : Ast), a.repNorm.toRepresentationJson = a.toRepresentationJson
-  | .null | .bool | .int | .str | .ref _ | .enum _ => rfl
+  | .null | .bool | .int | .str | .ref _ | .enum _ | .reference _ => rfl
+  | .susp a => by
+    simp only [Ast.repNorm, Ast.toRepresentationJson,
+      toRepresentationJson_repNorm a]
   | .lit .null => rfl
   | .lit (.bool _) | .lit (.int _) | .lit (.str _) => rfl
   | .arr a => by
@@ -1236,7 +1287,9 @@ mutual
 /-- Well-formedness survives normalization: the collapse rewrites leaves
 only, so no struct's field names move. -/
 theorem Ast.repNorm_wf : ∀ (a : Ast), a.WF → a.repNorm.WF
-  | .null, h | .bool, h | .int, h | .str, h | .ref _, h | .enum _, h => h
+  | .null, h | .bool, h | .int, h | .str, h | .ref _, h | .enum _, h
+  | .reference _, h => h
+  | .susp a, h => Ast.repNorm_wf a h
   | .lit .null, _ => trivial
   | .lit (.bool _), h | .lit (.int _), h | .lit (.str _), h => h
   | .arr a, h => Ast.repNorm_wf a h
@@ -1382,6 +1435,12 @@ def Ast.ofRepresentationJson : Json.Value → Option Ast
     (ofRepresentationElement e).bind fun x =>
     (ofRepresentationElements es).bind fun xs =>
     (ofRepresentationRest rs).map fun r => .tuple x xs r
+  -- The two C6 arms. `Reference` carries NO `checks` key — it is the one
+  -- admitted node that does not, which is Effect's own shape and not an
+  -- omission here.
+  | .obj [("$ref", .str n), ("_tag", .str "Reference")] => some (.reference n)
+  | .obj [("_tag", .str "Suspend"), ("checks", .arr []), ("thunk", t)] =>
+    (Ast.ofRepresentationJson t).map .susp
   | _ => none
 
 /-- The property-signature list decoder, preserving order verbatim. -/
@@ -1441,11 +1500,18 @@ def ofRepresentationRest : List Json.Value → Option (Option Ast)
 
 end
 
-/-- The document decoder: a single-root document with an EMPTY
-references table. A non-empty table is refused — revision 1's
-`references` is unreachable from the Lean side today (no `Suspend`, no
-`Reference` constructor), so admitting one would answer a code the
-projection cannot re-emit. -/
+/-- The document decoder, BARE-CODE arm: a single-root document with an
+EMPTY references table. A non-empty table is refused because this arm
+answers ONE CODE, and a code is not where a table lives — admitting one
+would answer a code the projection cannot re-emit.
+
+NARROWED by increment C6, alongside the identical sentence on
+`IngestRefusal.nonEmptyReferences`; the twin was left behind and the
+break pass caught it (2026-08-30, note N2). It used to read "revision
+1's `references` is unreachable from the Lean side today (no `Suspend`,
+no `Reference` constructor)", which stopped being true in the commit
+that added both constructors. `Document.ofRepresentationDocument`
+(`Cas/Schema/Guarded.lean`) is the arm that reads a table. -/
 def Ast.ofRepresentationDocument : Json.Value → Option Ast
   | .obj [("references", .obj []), ("representation", r)] =>
     Ast.ofRepresentationJson r
@@ -1469,7 +1535,10 @@ it answers the code on the nose (`ofRepresentationJson_toRepresentationJson'`). 
 theorem ofRepresentationJson_toRepresentationJson :
     ∀ (a : Ast),
       Ast.ofRepresentationJson a.toRepresentationJson = some a.repNorm
-  | .null | .bool | .int | .str => rfl
+  | .null | .bool | .int | .str | .reference _ => rfl
+  | .susp a => by
+    simp only [Ast.toRepresentationJson, Ast.ofRepresentationJson,
+      ofRepresentationJson_toRepresentationJson a, Option.map_some, Ast.repNorm]
   | .lit .null => rfl
   | .lit (.bool _) | .lit (.str _) => rfl
   | .lit (.int i) => by
@@ -1692,10 +1761,12 @@ private theorem litOfRepresentationJson_ne_null {j : Json.Value} {l : LitVal}
   rw [litOfRepresentationJson.eq_def] at h
   split at h <;> simp_all
 
-/-- The decoder's arms, read off its OUTPUT: six implications, one per
+/-- The decoder's arms, read off its OUTPUT: seven implications, one per
 constructor that the induction below has to look inside. Proved by a
-single `split` over the twelve arms — the five implications that do not
-match an arm's output constructor are vacuous and close by clash. -/
+single `split` over the fourteen arms — the implications that do not
+match an arm's output constructor are vacuous and close by clash.
+`.reference` needs no clause: it carries no sub-code for the induction
+to descend into. -/
 private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
     (h : Ast.ofRepresentationJson v = some a) :
     (∀ l, a = .lit l → l ≠ .null)
@@ -1707,7 +1778,8 @@ private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
     ∧ (∀ e es r, a = .tuple e es r →
         (∃ x, ofRepresentationElement x = some e)
           ∧ (∃ xs, ofRepresentationElements xs = some es)
-          ∧ (∃ rs, ofRepresentationRest rs = some r)) := by
+          ∧ (∃ rs, ofRepresentationRest rs = some r))
+    ∧ (∀ b, a = .susp b → ∃ t, Ast.ofRepresentationJson t = some b) := by
   rw [Ast.ofRepresentationJson.eq_def] at h
   split at h
   -- Null, Boolean, String
@@ -1721,7 +1793,7 @@ private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
   case h_5 =>
     simp only [Option.map_eq_some_iff] at h
     obtain ⟨lv, hlv, rfl⟩ := h
-    refine ⟨?_, by simp, by simp, by simp, by simp, by simp⟩
+    refine ⟨?_, by simp, by simp, by simp, by simp, by simp, by simp⟩
     intro l hl
     injection hl with hl
     exact hl ▸ litOfRepresentationJson_ne_null hlv
@@ -1730,21 +1802,21 @@ private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
     simp only [Option.map_eq_some_iff] at h
     obtain ⟨x, hx, rfl⟩ := h
     exact ⟨by simp, fun b hb => ⟨item, by rw [hx]; injection hb with hb; rw [hb]⟩,
-      by simp, by simp, by simp, by simp⟩
+      by simp, by simp, by simp, by simp, by simp⟩
   -- Objects
   case h_7 ps =>
     simp only [Option.map_eq_some_iff] at h
     obtain ⟨x, hx, rfl⟩ := h
     exact ⟨by simp, by simp,
       fun fs hfs => ⟨ps, by rw [hx]; injection hfs with hfs; rw [hfs]⟩,
-      by simp, by simp, by simp⟩
+      by simp, by simp, by simp, by simp⟩
   -- Declaration
   case h_8 tps =>
     simp only [Option.bind_eq_some_iff] at h
     obtain ⟨params, hparams, hd⟩ := h
     rcases declOfRepresentation_image hd with ⟨t, rfl⟩ | ⟨g, pay, rfl⟩
-    · exact ⟨by simp, by simp, by simp, by simp, by simp, by simp⟩
-    · refine ⟨by simp, by simp, by simp, ?_, by simp, by simp⟩
+    · exact ⟨by simp, by simp, by simp, by simp, by simp, by simp, by simp⟩
+    · refine ⟨by simp, by simp, by simp, ?_, by simp, by simp, by simp⟩
       intro g' p' params' hp'
       injection hp' with _ _ hp'
       exact ⟨tps, by rw [hparams, hp']⟩
@@ -1754,7 +1826,7 @@ private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
     · simp at h
     · simp only [Option.map_eq_some_iff] at h
       obtain ⟨x, hx, rfl⟩ := h
-      refine ⟨by simp, by simp, by simp, by simp, ?_, by simp⟩
+      refine ⟨by simp, by simp, by simp, by simp, ?_, by simp, by simp⟩
       intro ms m hm
       injection hm with hm _
       exact ⟨ts, by rw [hx, hm]⟩
@@ -1762,17 +1834,28 @@ private theorem ofRepresentationJson_inv {v : Json.Value} {a : Ast}
   case h_10 =>
     simp only [Option.map_eq_some_iff] at h
     obtain ⟨x, _, rfl⟩ := h
-    exact ⟨by simp, by simp, by simp, by simp, by simp, by simp⟩
+    exact ⟨by simp, by simp, by simp, by simp, by simp, by simp, by simp⟩
   -- Arrays, tuple
   case h_11 e es rs =>
     simp only [Option.bind_eq_some_iff, Option.map_eq_some_iff] at h
     obtain ⟨x, hx, xs, hxs, r, hr, rfl⟩ := h
-    refine ⟨by simp, by simp, by simp, by simp, by simp, ?_⟩
+    refine ⟨by simp, by simp, by simp, by simp, by simp, ?_, by simp⟩
     intro e' es' r' he'
     injection he' with h1 h2 h3
     exact ⟨⟨e, by rw [hx, h1]⟩, ⟨es, by rw [hxs, h2]⟩, ⟨rs, by rw [hr, h3]⟩⟩
+  -- Reference: a NAME, no sub-code, so every clause is vacuous
+  case h_12 =>
+    simp only [Option.some.injEq] at h; subst h; simp
+  -- Suspend
+  case h_13 t =>
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨x, hx, rfl⟩ := h
+    refine ⟨by simp, by simp, by simp, by simp, by simp, by simp, ?_⟩
+    intro b hb
+    injection hb with hb
+    exact ⟨t, by rw [hx, hb]⟩
   -- The catch-all: nothing decoded
-  case h_12 => simp at h
+  case h_14 => simp at h
 
 /-! #### Inversion for the list families
 
@@ -1883,6 +1966,10 @@ theorem ofRepresentationJson_repNorm :
   | .str, _, _ => rfl
   | .ref _, _, _ => rfl
   | .enum _, _, _ => rfl
+  | .reference _, _, _ => rfl
+  | .susp b, _, h => by
+    obtain ⟨t, ht⟩ := (ofRepresentationJson_inv h).2.2.2.2.2.2 b rfl
+    simp only [Ast.repNorm, ofRepresentationJson_repNorm b t ht]
   | .lit .null, _, h => absurd rfl ((ofRepresentationJson_inv h).1 .null rfl)
   | .lit (.bool _), _, _ => rfl
   | .lit (.int _), _, _ => rfl
@@ -1901,7 +1988,7 @@ theorem ofRepresentationJson_repNorm :
     simp only [Ast.repNorm, ofRepresentationMembers_repNorm ms ts hts]
   | .tuple e es r, _, h => by
     obtain ⟨⟨x, hx⟩, ⟨xs, hxs⟩, ⟨rs, hrs⟩⟩ :=
-      (ofRepresentationJson_inv h).2.2.2.2.2 e es r rfl
+      (ofRepresentationJson_inv h).2.2.2.2.2.1 e es r rfl
     simp only [Ast.repNorm, ofRepresentationElement_repNorm e x hx,
       ofRepresentationElements_repNorm es xs hxs,
       ofRepresentationRest_repNorm r rs hrs]

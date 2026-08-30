@@ -212,6 +212,15 @@ theorem deNumNorm_numNorm_representation :
       deNumNorm_numNorm_element e he, deNumNorm_numNorm_elements es hes,
       deNumNorm_numNorm_rest r hr]
     rfl
+  -- A reference's only payload is a STRING, which the number collapse
+  -- never touches, so the recovery is the identity on the nose.
+  | .reference _, _ => rfl
+  | .susp a, ha => by
+    show (Json.Value.obj _) = _
+    simp only [Json.Value.numNorm, numNormFields, numNormItems, deNumNorm,
+      deNumNormFields, deNumNormItems, reint,
+      deNumNorm_numNorm_representation a ha]
+    rfl
 
 theorem deNumNorm_numNorm_element :
     ∀ (e : Bool × Ast), WFElement e →

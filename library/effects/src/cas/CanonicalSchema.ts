@@ -62,6 +62,7 @@ const strictOptions = {
 } satisfies SchemaAST.ParseOptions
 
 const utf8Encoder = new TextEncoder()
+const utf8Decoder = new TextDecoder()
 
 const deepFreeze = <A>(value: A): A => {
   if (!Predicate.isObject(value) || Object.isFrozen(value)) return value
@@ -370,12 +371,15 @@ const gateKeys = (
 }
 
 /** The checks policy: empty on every node but `Number`, which carries
- * exactly the one admitted spelling and nothing else. */
+ * exactly the one admitted spelling and nothing else — and `Reference`,
+ * which carries no `checks` key at all, so there is no array for a
+ * policy to be about. */
 const gateChecks = (
   node: Schema.JsonObject,
   row: Admission.NodeRow,
   path: string,
 ): void => {
+  if (row.checks === "none") return
   const checks = gateArray(node.checks, `${path}.checks`)
   if (row.checks === "empty") {
     if (checks.length !== 0) refuseBy("checksNotEmpty", path)
@@ -583,21 +587,290 @@ const admitNode = (value: Schema.Json | undefined, path: string): void => {
         seen.add(name)
         gateTypedValue(member[1], "enumMemberValue", at)
       }
+      return
+    }
+    // The C6 arms. A reference is a NAME — nonempty, and nothing else is
+    // asked of it here: whether it RESOLVES is not this gate's question
+    // (Lean's `Ast.reference` records why), and whether the table it
+    // names is guarded is the document gate's, below.
+    case "reference": {
+      if (typeof node.$ref !== "string" || node.$ref === "") {
+        refuseBy("referenceName", path)
+      }
+      return
+    }
+    case "suspend": {
+      admitNode(node.thunk, `${path}~`)
+      return
     }
   }
 }
 
-/** The document gate: an empty reference table and one admitted root.
- * A non-empty table is recursion, which the carrier has no constructor
- * for (survey B3, open ruling 2), so it is refused by its own name
- * rather than admitted and then failing to re-emit. */
+/** The table names a code mentions at positions NO `Suspend` guards —
+ * `Ast.bareRefs`, interpreted. The walk stops dead at a `Suspend`, which
+ * is the whole content of the word "guarded". */
+const bareRefs = (value: Schema.Json | undefined): ReadonlyArray<string> => {
+  const out: Array<string> = []
+  const walk = (v: Schema.Json | undefined): void => {
+    if (Array.isArray(v)) {
+      for (const item of v) walk(item)
+      return
+    }
+    if (!Predicate.isObject(v)) return
+    const node = v as Schema.JsonObject
+    // THE GUARD. Everything under a Suspend is hidden from this walk.
+    if (node._tag === "Suspend") return
+    if (node._tag === "Reference") {
+      if (typeof node.$ref === "string") out.push(node.$ref)
+      return
+    }
+    for (const child of Object.values(node)) walk(child as Schema.Json)
+  }
+  walk(value)
+  return out
+}
+
+/** The memoized search of `Document.settleAll`, interpreted: does every
+ * bare path out of `name` run out within `fuel` steps?
+ *
+ * `settled` is the names already known to settle. Without it the search
+ * re-walks every path and the door is `Θ(2ⁿ)` in the table size — a
+ * table whose entries each name the next one twice took 18 271 ms at 23
+ * ACYCLIC entries, and doubles per entry. That is the shape the break
+ * pass measured (PDD-3 finding F3), and this is the ingestion door for
+ * foreign content, so the input is attacker-chosen.
+ *
+ * A name enters `settled` only after its whole subtree settled, so
+ * membership means "no bare path out of this name goes on forever" — a
+ * property of the table and not of the fuel that happened to be left.
+ * That is what makes a hit at one fuel sound at another, and it is why
+ * a name on a cycle never enters the set: the walk never gets back out
+ * to add it. Lean's `references_guarded_decidable_memo` is the same
+ * statement over the same schedule. */
+const settles = (
+  references: Schema.JsonObject,
+  fuel: number,
+  name: string,
+  settled: Set<string>,
+): boolean => {
+  if (settled.has(name)) return true
+  const successors = Object.hasOwn(references, name)
+    ? bareRefs(references[name])
+    : []
+  if (fuel === 0) {
+    if (successors.length !== 0) return false
+    settled.add(name)
+    return true
+  }
+  for (const next of successors) {
+    if (!settles(references, fuel - 1, next, settled)) return false
+  }
+  settled.add(name)
+  return true
+}
+
+/** The document gate: the references table and one admitted root.
+ *
+ * The table is READ now (increment C6, ruled 2026-08-30) rather than
+ * refused: every entry is an admitted code, no name is empty, and the
+ * table is GUARDED — every cycle of the reference relation passes
+ * through a `Suspend`. The guardedness search is `Document.guarded`
+ * interpreted, fuel and all, and Lean's
+ * `references_guarded_decidable` is what says that search decides the
+ * absence of a cycle rather than approximating it.
+ *
+ * Not asked, deliberately, and each with its reason recorded in Lean: a
+ * DANGLING name is admitted (it has no outgoing edge, so it lies on no
+ * cycle), a DEAD entry is admitted, and key ORDER is normalised rather
+ * than refused, because the table is a JSON object and the canonical
+ * form sorts it. */
 const admitDocument = (value: Schema.Json): void => {
   const document = gateObject(value, "document")
   gateKeys(document, Admission.DocumentKeys, "documentShape", "document")
   const references = gateObject(document.references, "document.references")
-  const allocated = Object.keys(references)
-  if (allocated.length > 0) refuseBy("nonEmptyReferences", "document", allocated)
-  admitNode(document.representation, "representation")
+  const names = Object.keys(references)
+  // THE ORDER IS LEAN'S, not this walk's (R10, and PDD-3 break-pass
+  // finding F5: a table entry that was both cyclic and ill formed
+  // earned `unguardedCycle` there and `illFormed` here).
+  // `Cas.Schema.ingestDocument` decodes the whole document first, so a
+  // spelling that is no code at all is refused before anything is
+  // decided about the table; then it tests guardedness AHEAD of every
+  // other discipline. One walk still does both, so the disciplines'
+  // refusal is HELD and replayed after the guardedness filter.
+  //
+  // The stage a refusal belongs to is read off its NAME, which is the
+  // admission table's column: `notASchema` and `unknownDeclaration` are
+  // the decoder's answers and win immediately; `illFormed` is a
+  // discipline's and waits.
+  let held: SchemaRefusal | undefined
+  const hold = (run: () => void): void => {
+    try {
+      run()
+    } catch (issue) {
+      if (!(issue instanceof SchemaRefusal) || issue.refusal !== "illFormed") {
+        throw issue
+      }
+      held ??= issue
+    }
+  }
+  for (const name of names) {
+    hold(() => {
+      if (name === "") refuseBy("referenceKeyEmpty", "document.references")
+      admitNode(references[name], `document.references.${name}`)
+    })
+  }
+  hold(() => admitNode(document.representation, "representation"))
+  // Fuel is the table's own size, exactly as in Lean: a failing path
+  // then visits one more name than the table has entries, which is what
+  // forces a repeat and makes the search complete. The memo is shared
+  // across the whole table, so each name is settled once however many
+  // other names reach it.
+  const settled = new Set<string>()
+  const unguarded = names.filter((name) =>
+    !settles(references, names.length, name, settled)
+  )
+  if (unguarded.length > 0) {
+    refuseBy("unguardedCycle", "document.references", unguarded)
+  }
+  if (held !== undefined) throw held
+}
+
+/** A references-table key spelled TWICE, read from the payload BYTES.
+ *
+ * This has to happen before any parser runs, because `JSON.parse` keeps
+ * the LAST pair of a duplicate key and Lean's `Cas.Json.parse` keeps
+ * both and takes the FIRST — so one byte string is two different
+ * documents depending on who read it, and the break pass exhibited both
+ * directions (PDD-3 finding F1). Neither reading is more right, so the
+ * door refuses the spelling instead of picking a winner. It costs
+ * nothing real: a canonical spelling has its keys in strict ascending
+ * order and cannot repeat one.
+ *
+ * SCOPED TO THE REFERENCES TABLE, deliberately. A duplicate key
+ * elsewhere — a repeated `_tag` on a node — splits the same way, but it
+ * predates the references table and the two doors have not been
+ * reconciled on it; naming it here would claim an agreement nobody
+ * ruled. It is recorded as owed in the PDD-3 packet.
+ *
+ * The scan needs no validation of its own: the payload is parsed either
+ * side of it, so all it tracks is where it is. A string literal
+ * followed by `:` inside an object is a key, and the key path that
+ * reached each container says which object it belongs to. */
+/** One JSON string literal's VALUE, from its source text — written out
+ * rather than parsed, because the ratified JSON codec is
+ * `src/cas/Value.ts` and this scan reads a payload the parser has not
+ * seen yet. Two spellings of one key (`"A"` and `"A"`) are the
+ * same name to Lean's reader, so the scan has to unescape before it
+ * compares. */
+const stringLiteral = (source: string): string => {
+  let out = ""
+  let index = 1
+  while (index < source.length - 1) {
+    const char = source[index] ?? ""
+    if (char !== "\\") {
+      out += char
+      index += 1
+      continue
+    }
+    const escape = source[index + 1] ?? ""
+    if (escape === "u") {
+      const point = Number.parseInt(source.slice(index + 2, index + 6), 16)
+      // A lone surrogate is a code POINT here, not a character: a pair
+      // arrives as two escapes and concatenates back into one.
+      out += Number.isNaN(point)
+        ? source.slice(index, index + 6)
+        : String.fromCodePoint(point)
+      index += 6
+      continue
+    }
+    const named: Record<string, string> = {
+      b: "\b",
+      f: "\f",
+      n: "\n",
+      r: "\r",
+      t: "\t",
+    }
+    out += named[escape] ?? escape
+    index += 2
+  }
+  return out
+}
+
+const duplicateReferenceKey = (text: string): string | undefined => {
+  /** A container the scan is inside: the key path that reached it, and
+   * — for objects — the keys seen in it so far. An array frame has no
+   * key set. */
+  interface Frame {
+    readonly path: ReadonlyArray<string>
+    readonly keys: Set<string> | undefined
+  }
+  const frames: Array<Frame> = []
+  /** The last string literal read. */
+  let pending: string | undefined
+  /** The key the next container sits under. */
+  let key: string | undefined
+  let index = 0
+  while (index < text.length) {
+    const char = text[index]
+    if (char === "\"") {
+      let end = index + 1
+      while (end < text.length && text[end] !== "\"") {
+        end += text[end] === "\\" ? 2 : 1
+      }
+      pending = stringLiteral(text.slice(index, end + 1))
+      index = end + 1
+      continue
+    }
+    if (char === "{" || char === "[") {
+      const parent = frames.at(-1)
+      frames.push({
+        path: parent === undefined ? [] : [...parent.path, key ?? ""],
+        keys: char === "{" ? new Set<string>() : undefined,
+      })
+      pending = undefined
+      key = undefined
+      index += 1
+      continue
+    }
+    if (char === "}" || char === "]") {
+      frames.pop()
+      pending = undefined
+      key = undefined
+      index += 1
+      continue
+    }
+    if (char === ":") {
+      const frame = frames.at(-1)
+      if (frame?.keys !== undefined && pending !== undefined) {
+        const inTable = frame.path.length === 2
+          && frame.path[0] === "value"
+          && frame.path[1] === "references"
+        if (inTable && frame.keys.has(pending)) return pending
+        frame.keys.add(pending)
+        key = pending
+      }
+      pending = undefined
+      index += 1
+      continue
+    }
+    if (char === ",") {
+      pending = undefined
+      key = undefined
+    }
+    index += 1
+  }
+  return undefined
+}
+
+/** The BYTES gate: refuse a references table that names one entry
+ * twice, before any parser has thrown one of the pairs away. Every
+ * other door on this plane takes a value that has already been parsed,
+ * so this is the one check that has to see the payload itself. */
+export const admitPayloadSpelling = (payload: Uint8Array): void => {
+  const repeated = duplicateReferenceKey(utf8Decoder.decode(payload))
+  if (repeated !== undefined) {
+    refuseBy("duplicateReferenceKey", "document.references", repeated)
+  }
 }
 
 const nativeDocument = (schema: Schema.Top): SchemaRepresentation.Document =>
@@ -863,6 +1136,13 @@ export const get: (
       if (node.refs.length > 0) {
         return yield* projectionFailure(id, "a schema node carries no references")
       }
+      // The BYTES gate, ahead of the parser, so the load path and
+      // `Materialize.fromPayload` refuse the same spellings by the same
+      // names rather than being two doors.
+      yield* Effect.try({
+        try: () => admitPayloadSpelling(node.payload),
+        catch: (issue) => projectionFailure(id, issue),
+      })
       const envelope = yield* decodedVersionedEnvelope(node.payload, id)
       return yield* Effect.try({
         try: () => fromEnvelope(envelope),

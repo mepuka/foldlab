@@ -46,6 +46,47 @@ file, and every family of it is tied to `ingest`'s actual answer by a
 `#guard` below. A clause whose refusal name stops matching what the
 door does fails to elaborate.
 
+## The second divergence this table does not close (increment C6)
+
+An EMPTY reference name is refused by both doors under different names.
+Lean's decoder reads `{"$ref":"","_tag":"Reference"}` as a shape and the
+gate turns it away `illFormed`; Effect's own persistent decoder refuses
+the spelling outright, because `$ref` is `Schema.NonEmptyString`, so the
+TypeScript door answers `notASchema` before this table is consulted.
+
+Why it is recorded rather than closed: refusing the empty name in Lean's
+DECODER would falsify `ofRepresentationJson_toRepresentationJson`, which
+holds unconditionally over every code, and making the name nonempty BY
+CONSTRUCTION would change `Ast.reference`'s ruled signature. Both are
+rulings, not translations. The conformance corpus therefore carries no
+row for this spelling — an omission stated there, in `tools/Verdicts.lean`,
+rather than left to be discovered.
+
+Nothing else about C6 diverges: the guardedness walk, the two node
+shapes, the empty table key and the duplicate table key are all
+interpreted from the columns below and agree case for case.
+
+## The refusal ORDER is this table's too (break pass, finding F5)
+
+A document can have two defects, and then the doors have to agree on
+which one it is named for. Lean's order, in `Cas.Schema.ingestDocument`:
+
+1. the SPELLING — a references table naming one entry twice is refused
+   `illFormed` before anything is decoded;
+2. the DECODER — a spelling that is no code at all is `notASchema`, or
+   `unknownDeclaration` where the allowlist is what turned it away;
+3. GUARDEDNESS — `unguardedCycle`, ahead of every other discipline;
+4. everything else `Ast.wf` and `Document.WF` ask — `illFormed`.
+
+The TypeScript gate used to run its per-entry admission before its
+guardedness filter, so a table entry that was both cyclic and ill
+formed earned `unguardedCycle` from Lean and `illFormed` from
+TypeScript. It mirrors the order above now. The interpreter can tell
+stage 2 from stage 4 by the refusal NAME the table gives a clause —
+`notASchema` and `unknownDeclaration` are the decoder's, `illFormed` is
+the discipline's — so the ordering is read off this table rather than
+hand-kept beside it.
+
 ## The one divergence this table does NOT close
 
 Lean's decoder is EXACT on keys: a node carrying a key the projection
@@ -99,12 +140,13 @@ def refusalName : IngestRefusal → String
   | .illFormed => "illFormed"
   | .wrongRevision => "wrongRevision"
   | .nonEmptyReferences => "nonEmptyReferences"
+  | .unguardedCycle => "unguardedCycle"
   | .unknownDeclaration => "unknownDeclaration"
 
 /-- Every refusal, in declaration order. -/
 def refusals : List IngestRefusal :=
   [.notASchema, .illFormed, .wrongRevision, .nonEmptyReferences,
-    .unknownDeclaration]
+    .unguardedCycle, .unknownDeclaration]
 
 /-- The vocabulary is complete: a new refusal cannot be minted without
 appearing here, and therefore in the generated TypeScript union. -/
@@ -152,7 +194,12 @@ def nodes : List NodeRow := [
   { form := "objects", witness := .struct [("a", false, .str)], checks := "empty" },
   { form := "declaration", witness := .ref 0, checks := "empty" },
   { form := "union", witness := .union [.str] .anyOf, checks := "empty" },
-  { form := "enum", witness := .enum [("A", .str "a")], checks := "empty" }
+  { form := "enum", witness := .enum [("A", .str "a")], checks := "empty" },
+  -- The C6 rows. `Reference` is the ONE admitted node with no `checks`
+  -- key at all — Effect's own shape — which is why its checks policy
+  -- reads `none` rather than `empty`: there is no array to be empty.
+  { form := "reference", witness := .reference "Node", checks := "none" },
+  { form := "suspend", witness := .susp .str, checks := "empty" }
 ]
 
 -- One row per tag, and every witness really is an admitted code.
@@ -345,8 +392,16 @@ def clauses : List Clause := [
     detail := "{path} declares the member name {it} twice — member names are the enum's identity and never repeat (values may alias; names may not)" },
   { clause := "documentShape", refusal := .notASchema,
     detail := "{path} does not spell a representation document: the admitted subset writes {keys}" },
+  { clause := "referenceName", refusal := .illFormed,
+    detail := "{path} names an empty reference: a reference names a references-table entry, and the empty name names none (Effect refuses it too — $ref is a non-empty string)" },
+  { clause := "referenceKeyEmpty", refusal := .illFormed,
+    detail := "the references table carries an entry under the empty name, which no reference can point at" },
+  { clause := "duplicateReferenceKey", refusal := .illFormed,
+    detail := "the references table names {it} twice, so the two readers of this payload get two different documents — Lean's parser keeps both entries and takes the first, JSON.parse keeps the last. Give each entry one name; a canonical spelling has its keys in strict ascending order and cannot repeat one" },
+  { clause := "unguardedCycle", refusal := .unguardedCycle,
+    detail := "the references table has a cycle with no Suspend on it ({it}): resolving it never finishes, because unfolding the name gives the name back. Put the recursive position under a Suspend, which is what Effect writes for a recursive schema" },
   { clause := "nonEmptyReferences", refusal := .nonEmptyReferences,
-    detail := "the document allocates a reference table ({it}), which the admitted subset does not reach" },
+    detail := "the document allocates a reference table ({it}), and this reader answers a single code — read it as a document instead" },
   { clause := "wrongRevision", refusal := .wrongRevision,
     detail := "unsupported canonical schema revision {it}" },
   { clause := "notASchema", refusal := .notASchema,
@@ -368,9 +423,23 @@ private def envelopeOf (rep : Cas.Json.Value) : Cas.Json.Value :=
   .obj [("revision", .nat schemaRevision),
     ("value", .obj [("references", .obj []), ("representation", rep)])]
 
-/-- What the door answers for one representation. -/
+/-- What the door answers for one representation.
+
+This runs the DOCUMENT door, because the document door is what the
+emitted table describes and what the TypeScript interpreter mirrors. On
+an empty table the two doors give the same answers — `ingestDocument_nil`
+is that agreement as a theorem — so every clause tied here before C6 is
+tied to the same answer it always was. -/
 private def refusalFor (rep : Cas.Json.Value) : String :=
-  match ingest (envelopeOf rep) with
+  match ingestDocument (envelopeOf rep) with
+  | .ok _ => "admitted"
+  | .error r => refusalName r
+
+/-- What the door answers for a whole document, table included. -/
+private def documentRefusalFor (refs : List (String × Cas.Json.Value))
+    (rep : Cas.Json.Value) : String :=
+  match ingestDocument (.obj [("revision", .nat schemaRevision),
+      ("value", .obj [("references", .obj refs), ("representation", rep)])]) with
   | .ok _ => "admitted"
   | .error r => refusalName r
 
@@ -468,6 +537,66 @@ private def strRep : Cas.Json.Value := (Ast.str).toRepresentationJson
    | .ok _ => "admitted"
    | .error r => refusalName r)
 
+/-! ### The C6 clauses, tied the same way
+
+The table's own disciplines, each run through the document door. -/
+
+private def refNode (n : String) : Cas.Json.Value :=
+  (Ast.reference n).toRepresentationJson
+
+#guard clauseRefusal "referenceName" == refusalFor (refNode "")
+
+#guard clauseRefusal "referenceKeyEmpty" ==
+  documentRefusalFor [("", strRep)] (refNode "")
+
+-- THE DUPLICATE TABLE KEY, both directions, one name. Which pair a
+-- parser keeps is its own habit, so the door refuses the spelling
+-- before it decodes anything (PDD-3 break-pass finding F1, assumed
+-- ruling). The TypeScript side reads this from the BYTES, because
+-- `JSON.parse` has thrown one of the pairs away by the time any gate
+-- could look.
+#guard clauseRefusal "duplicateReferenceKey" ==
+  documentRefusalFor [("A", refNode "A"), ("A", strRep)] strRep
+
+#guard clauseRefusal "duplicateReferenceKey" ==
+  documentRefusalFor [("A", strRep), ("A", refNode "A")] strRep
+
+-- The partner: two entries under two different names is an ordinary
+-- table, so the clause is not satisfied by refusing every table.
+#guard "admitted" ==
+  documentRefusalFor [("A", refNode "B"), ("B", strRep)] strRep
+
+-- THE TABLE'S KEY ORDER IS NOT A REFUSAL, and there is deliberately no
+-- clause for it. The table is a JSON OBJECT, so `canonValue` sorts its
+-- keys on the way in exactly as it sorts any object's — an out-of-order
+-- table is NORMALIZED, not turned away. (Contrast a struct's fields,
+-- which ride in an ARRAY that nothing sorts, which is why
+-- `propertyOrder` IS a clause.) The strict-order conjunct of
+-- `Document.WF` earns its place on the ENCODE side instead: it is what
+-- `Document.representationDocument_canonical` needs.
+#guard "admitted" ==
+  documentRefusalFor [("B", strRep), ("A", refNode "B")] (refNode "A")
+
+-- THE UNGUARDED CYCLE, both shapes: the alias chain and the bare
+-- structural loop. Neither has a `Suspend` anywhere on it.
+#guard clauseRefusal "unguardedCycle" ==
+  documentRefusalFor [("A", refNode "B"), ("B", refNode "A")] (refNode "A")
+
+#guard clauseRefusal "unguardedCycle" ==
+  documentRefusalFor
+    [("A", (Ast.struct [("next", false, .reference "A")]).toRepresentationJson)]
+    (refNode "A")
+
+-- AND THE PARTNER CALL, which is what stops the clause above from
+-- being satisfied by a door that refuses every table: the recursion
+-- Effect actually emits — a cycle THROUGH a `Suspend` — is admitted.
+#guard "admitted" ==
+  documentRefusalFor
+    [("Node", (Ast.struct
+        [("next", false, .susp (.union [.reference "Node", .null] .anyOf)),
+          ("value", false, .str)]).toRepresentationJson)]
+    (refNode "Node")
+
 /-! ## The emission
 
 The table as one TypeScript module: the types the interpreter reads it
@@ -528,12 +657,14 @@ private def typeBlock : String :=
   "/** Which arm of the interpreter reads a node. */\n" ++
   "export type Form = " ++ union (nodes.map NodeRow.form).eraseDups ++ "\n\n" ++
   "/** One admitted representation node: its tag, the arm that reads it,\n" ++
-  " * the keys the canonical spelling writes, and its checks policy. */\n" ++
+  " * the keys the canonical spelling writes, and its checks policy.\n" ++
+  " * `none` is the Reference row: that node carries no `checks` key at\n" ++
+  " * all, so there is no array for a policy to be about. */\n" ++
   "export interface NodeRow {\n" ++
   "  readonly tag: string\n" ++
   "  readonly form: Form\n" ++
   "  readonly keys: ReadonlyArray<string>\n" ++
-  "  readonly checks: \"empty\" | \"isInt\"\n" ++
+  "  readonly checks: " ++ union (nodes.map NodeRow.checks).eraseDups ++ "\n" ++
   "}\n\n" ++
   "/** One admitted `{type, value}` spelling: the type tag the projection\n" ++
   " * writes, and the predicate the reader applies to the value. */\n" ++

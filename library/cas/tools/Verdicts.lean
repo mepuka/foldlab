@@ -593,8 +593,11 @@ def corpus : List Case := [
           ("representation", .obj [
             ("id", .str "effect/schema/Duration"), ("payload", .null)]),
           ("typeParameters", .arr [])])]])])) },
-  { name := "refuse-non-empty-references",
-    note := "a revision-1 document allocating a reference table — recursion, which the admitted subset does not reach (survey B3, ruling 2)",
+  -- INCREMENT C6. The references table is read now, so the row that
+  -- used to record its blanket refusal records its admission instead,
+  -- and the refusals below are the ones that replaced it.
+  { name := "admit-references-table",
+    note := "a revision-1 document allocating a reference table of non-recursive named entries — the shape Effect emits whenever one named schema is used twice",
     source := .raw (.obj [
       ("revision", .nat schemaRevision),
       ("value", .obj [
@@ -602,6 +605,44 @@ def corpus : List Case := [
           ("_tag", .str "String"), ("checks", .arr [])])]),
         ("representation", .obj [
           ("_tag", .str "String"), ("checks", .arr [])])])]) },
+  { name := "admit-guarded-recursion",
+    note := "the linked list exactly as Effect emits it: the root references the table and the recursive knot sits under a Suspend, so the cycle passes through a guard and resolution terminates",
+    source := .raw guardedList.envelope },
+  { name := "refuse-unguarded-alias-cycle",
+    note := "A is B and B is A, with no Suspend anywhere: resolving it never reaches a node. Effect's own codec reads this back without complaint, so the refusal is this door's alone",
+    source := .raw aliasCycle.envelope },
+  { name := "refuse-unguarded-struct-cycle",
+    note := "A = {next: A} spelled with a bare reference where Effect would have written a Suspend — a shape Effect never emits and the representation can still spell",
+    source := .raw bareStructCycle.envelope },
+  -- THE BREAK PASS's rows (2026-08-30). Every admitted C6 row above has
+  -- an EMPTY bare-edge relation, so a door with fuel ZERO — one that
+  -- never follows an edge at all — agreed with the shipped door on the
+  -- whole corpus. These two are the missing witnesses.
+  { name := "admit-reference-chain",
+    note := "one acyclic edge: A names B and B is a code. The first admitted row whose bare-edge relation is not empty — a door that never follows an edge refuses it, and the whole corpus used to let one pass",
+    source := .raw refChain.envelope },
+  { name := "admit-reference-chain-two",
+    note := "two edges, so the guardedness search recurses more than once before it settles the root",
+    source := .raw refChainTwo.envelope },
+  { name := "refuse-unguarded-and-illformed",
+    note := "a table entry that is BOTH on a bare cycle and out of field order — two defects, one name. The door names the cycle, and the TypeScript gate mirrors that order rather than naming whichever defect its own walk reached first",
+    source := .raw unsortedAndCyclic.envelope },
+  { name := "refuse-duplicate-reference-key",
+    note := "a references table naming A twice, the reference FIRST: Lean's parser keeps both pairs and takes the first, so the table cycles, and JSON.parse keeps the last, so it does not. Refused for the spelling before either reader decides anything",
+    source := .raw dupKeyRefFirst },
+  { name := "refuse-duplicate-reference-key-last",
+    note := "the same duplicate with the pairs swapped, which reverses which reader sees the cycle — the other direction of the split, and the same refusal",
+    source := .raw dupKeyRefLast },
+  -- NO ROW for the empty reference name, deliberately. Both doors
+  -- refuse it; they NAME the refusal differently, and this corpus
+  -- asserts agreement on names. Lean's decoder reads the shape and its
+  -- gate answers `illFormed`; Effect's own decoder refuses the spelling
+  -- outright (`$ref` is `Schema.NonEmptyString`), so the TypeScript door
+  -- answers `notASchema` before the admission table is consulted. The
+  -- divergence is recorded in `Cas/Backend/Admission.lean` beside the
+  -- annotation-bag one, and it is NOT closed here: closing it in Lean's
+  -- decoder would falsify `ofRepresentationJson_toRepresentationJson`,
+  -- which holds unconditionally over every code.
   { name := "refuse-wrong-revision",
     note := "a schema-node envelope at a revision no door speaks",
     source := .raw (.obj [
@@ -723,11 +764,20 @@ def refusalName : IngestRefusal → String
   | .illFormed => "illFormed"
   | .wrongRevision => "wrongRevision"
   | .nonEmptyReferences => "nonEmptyReferences"
+  | .unguardedCycle => "unguardedCycle"
   | .unknownDeclaration => "unknownDeclaration"
 
-/-- THE code verdict: the door's own answer on the case's envelope. -/
+/-- THE code verdict: the door's own answer on the case's envelope.
+
+The DOCUMENT door, because the TypeScript side this corpus is compared
+against is `CanonicalSchema.admitDocument`, which reads the references
+table. On a document with no table the two doors give the same answer —
+`ingestDocument_nil` — so every case that predates increment C6 is
+judged by exactly the answer it always was. The root code is carried
+out for the value plane; the table's own codes have no value triples,
+which is the corpus restriction the emitter enforces below. -/
 def codeVerdict (c : Case) : Except IngestRefusal Ast :=
-  ingest c.source.envelope
+  (ingestDocument c.source.envelope).map (·.representation)
 
 /-- THE value verdict: does the generic decoder answer a value of the
 code? `some` is `accept`, `none` is `refuse`. -/

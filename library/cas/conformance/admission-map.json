@@ -1,8 +1,8 @@
 {
   "carrier": "Cas.Schema.Ast",
   "counts": {
-    "admitted": 10,
-    "deferred": 10,
+    "admitted": 12,
+    "deferred": 8,
     "rejected": 2,
     "rows": 22
   },
@@ -14,7 +14,6 @@
   "mapVersion": 0,
   "reasonCodes": {
     "CONSUMER-GATED": "cheap to admit, no store meaning yet; admission waits for a real consumer",
-    "GROW-C6": "increment C6 — recursion through the references table, DAG assembly per stipulation S4",
     "INT-WIDTH": "no bounded integer carrier fixes the width, and the Integer-semantics ruling — SafeInt bounds versus the bare isInt filter — settles the number rows first",
     "NO-RECONSTRUCTABLE-IDENTITY": "Effect's persistent codec rejects or cannot restore it, so no faithful carriage exists",
     "PATTERN-HAZARD": "regex-adjacent semantics; Effect's own importer refuses patterns for the same reason"
@@ -111,22 +110,22 @@
       "witnessPayload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"effect/schema/Option\",\"payload\":null},\"typeParameters\":[{\"_tag\":\"String\",\"checks\":[]}]}}}"
     },
     {
-      "carrier": null,
-      "code": "GROW-C6",
-      "reason": "recursion lives in the references table, not in the carrier: the thunk is carriable only when it is a Reference, and direct structural recursion is refused. Landing this row admits nothing — C6 is what would",
+      "carrier": "Ast.susp",
+      "code": null,
+      "reason": "increment C6: the thunk is carried INLINE as a nested code, which is Effect's own shape, and the always-empty checks field needs no term. This is the GUARD the guardedness law is about — bareRefs stops here, so a cycle through a susp is admitted and one without is refused",
       "unions": ["ast", "representation"],
       "variant": "Suspend",
-      "verdict": "DEFERRED",
-      "witnessPayload": null
+      "verdict": "ADMITTED",
+      "witnessPayload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Suspend\",\"checks\":[],\"thunk\":{\"_tag\":\"String\",\"checks\":[]}}}}"
     },
     {
-      "carrier": null,
-      "code": "GROW-C6",
-      "reason": "the revision-1 document's references table, which the door refuses non-empty today because no code could re-emit it. A Representation-layer variant only: it is no member of the AST union the inventory enumerates",
+      "carrier": "Ast.reference",
+      "code": null,
+      "reason": "increment C6: the references table is read now, and a reference is the name into it — the one admitted node with no checks key. The name is nonempty as Effect requires; the address discipline and resolvability are the door's and the materializer's, not WF's. A Representation-layer variant only: it is no member of the AST union the inventory enumerates",
       "unions": ["representation"],
       "variant": "Reference",
-      "verdict": "DEFERRED",
-      "witnessPayload": null
+      "verdict": "ADMITTED",
+      "witnessPayload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"$ref\":\"Node\",\"_tag\":\"Reference\"}}}"
     },
     {
       "carrier": null,

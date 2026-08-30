@@ -74,9 +74,6 @@ inductive AdmissionReason where
   /-- Cheap to admit, no store meaning yet; admission waits for a real
   consumer (grammar-grill ruling 5). -/
   | consumerGated
-  /-- The recursion increment: references table, DAG assembly per
-  stipulation S4. -/
-  | growC6
   /-- No bounded integer carrier fixes the width, and the
   Integer-semantics ruling — SafeInt bounds versus a bare `isInt`
   filter — has to settle the number rows first. -/
@@ -93,14 +90,13 @@ inductive AdmissionReason where
 is actually carried by a row: a vocabulary with a dead word is a
 vocabulary that has stopped describing the table. -/
 def AdmissionReason.all : List AdmissionReason :=
-  [.consumerGated, .growC6, .intWidth, .patternHazard,
+  [.consumerGated, .intWidth, .patternHazard,
    .noReconstructableIdentity]
 
 /-- The code's wire spelling — the word the emitted artifact and the
 proposal both print. -/
 def AdmissionReason.wire : AdmissionReason → String
   | .consumerGated => "CONSUMER-GATED"
-  | .growC6 => "GROW-C6"
   | .intWidth => "INT-WIDTH"
   | .patternHazard => "PATTERN-HAZARD"
   | .noReconstructableIdentity => "NO-RECONSTRUCTABLE-IDENTITY"
@@ -110,8 +106,6 @@ reader never has to find this file to read the table. -/
 def AdmissionReason.means : AdmissionReason → String
   | .consumerGated =>
     "cheap to admit, no store meaning yet; admission waits for a real consumer"
-  | .growC6 =>
-    "increment C6 — recursion through the references table, DAG assembly per stipulation S4"
   | .intWidth =>
     "no bounded integer carrier fixes the width, and the Integer-semantics ruling — SafeInt bounds versus the bare isInt filter — settles the number rows first"
   | .patternHazard =>
@@ -215,12 +209,12 @@ def admissionMapV0 : AdmissionMap where
     { variant := "Declaration", inAst := true, verdict := .admitted,
       carrier := some "Ast.ref, Ast.decl", witness := some (.decl .option .null [.str]),
       reason := "increment C-decl: the id is registry-gated and an id outside the registry is refused unknownDeclaration by name; payload shape and type-parameter count are read off the row" },
-    { variant := "Suspend", inAst := true, verdict := .deferred .growC6,
-      carrier := none, witness := none,
-      reason := "recursion lives in the references table, not in the carrier: the thunk is carriable only when it is a Reference, and direct structural recursion is refused. Landing this row admits nothing — C6 is what would" },
-    { variant := "Reference", inAst := false, verdict := .deferred .growC6,
-      carrier := none, witness := none,
-      reason := "the revision-1 document's references table, which the door refuses non-empty today because no code could re-emit it. A Representation-layer variant only: it is no member of the AST union the inventory enumerates" },
+    { variant := "Suspend", inAst := true, verdict := .admitted,
+      carrier := some "Ast.susp", witness := some (.susp .str),
+      reason := "increment C6: the thunk is carried INLINE as a nested code, which is Effect's own shape, and the always-empty checks field needs no term. This is the GUARD the guardedness law is about — bareRefs stops here, so a cycle through a susp is admitted and one without is refused" },
+    { variant := "Reference", inAst := false, verdict := .admitted,
+      carrier := some "Ast.reference", witness := some (.reference "Node"),
+      reason := "increment C6: the references table is read now, and a reference is the name into it — the one admitted node with no checks key. The name is nonempty as Effect requires; the address discipline and resolvability are the door's and the materializer's, not WF's. A Representation-layer variant only: it is no member of the AST union the inventory enumerates" },
     { variant := "Undefined", inAst := true, verdict := .deferred .consumerGated,
       carrier := none, witness := none,
       reason := "a fieldless keyword, cheap to admit, with no store meaning yet" },
@@ -308,7 +302,7 @@ private def carrierWitnesses : List Ast :=
   [.null, .bool, .int, .str, .lit (.str "x"), .lit .null, .arr .str,
    .struct [("a", false, .str)], .ref 0, .decl .option .null [.str],
    .union [.str, .bool] .anyOf, .enum [("A", .str "a")],
-   .tuple (false, .str) [] none]
+   .tuple (false, .str) [] none, .reference "Node", .susp .str]
 
 /-- The keyword-shaped probe: a revision-1 schema node whose
 representation is nothing but a `_tag` and an empty `checks` list.
@@ -334,8 +328,8 @@ private def distinctNames : List String → Bool
 #guard (admissionMapV0.rows.filter (!·.inAst)).map (·.variant) == ["Reference"]
 
 -- THE VERDICTS partition the table.
-#guard admissionMapV0.count "ADMITTED" == 10
-#guard admissionMapV0.count "DEFERRED" == 10
+#guard admissionMapV0.count "ADMITTED" == 12
+#guard admissionMapV0.count "DEFERRED" == 8
 #guard admissionMapV0.count "REJECTED" == 2
 
 -- NO DEAD VOCABULARY: every declared reason code is carried by some
