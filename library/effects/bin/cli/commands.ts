@@ -57,6 +57,14 @@ import {
   type ObligationLedger,
 } from "./ledgers.ts"
 import {
+  AnnotationNode,
+  annotationsAbout,
+  NameKey,
+  nameablePlanes,
+  subjectFor,
+  type FoundAnnotation,
+} from "./naming.ts"
+import {
   layerServe,
   layerStderrLogs,
   policyOrDefault,
@@ -175,6 +183,44 @@ export class NotAKindTag extends Schema.TaggedError<NotAKindTag>()(
     return [
       `not a kind tag: ${this.given} — a kind tag is one byte, 0 to 255`,
       "  the named kinds are in library/cas/REGISTRY.md; the default is 1, an opaque value payload",
+    ].join("\n")
+  }
+}
+
+/** The path exists but does not read as one file — a directory, most
+ * likely. `put`'s contract is a file's bytes, and the audit's A7 row
+ * answered this with the platform's own `BadResource`, which names
+ * neither the mistake nor the fix. */
+export class NotAFile extends Schema.TaggedError<NotAFile>()(
+  "cli/NotAFile",
+  { file: Schema.String },
+) {
+  override get message(): string {
+    return [
+      `not a file: ${this.file}`,
+      "  put reads one file's bytes — a directory has no bytes to read",
+      "  name a file inside it instead",
+    ].join("\n")
+  }
+}
+
+/** The addressed content sits on a plane the annotation subject union
+ * does not span, so nothing can be said ABOUT it yet. The refusal
+ * prints the five planes from the same table the arm switch reads, so
+ * the sentence and the union move together. */
+export class NotNameable extends Schema.TaggedError<NotNameable>()(
+  "cli/NotNameable",
+  { address: Schema.String, tag: Schema.Int },
+) {
+  override get message(): string {
+    const planes = nameablePlanes
+      .map(([plane, tag]) => `${plane} (${tagHex(tag)})`)
+      .join(", ")
+    return [
+      `nothing can be said about kind ${tagLabel(this.tag)} yet — the annotation plane does not span it`,
+      `  a name is an annotation, and an annotation's subject must be one of: ${planes}`,
+      `  the address ${this.address} holds kind ${tagLabel(this.tag)}`,
+      "  widening the subject union is a Lean ruling (Cas.Schema.AnnotationSubject), not a flag",
     ].join("\n")
   }
 }
