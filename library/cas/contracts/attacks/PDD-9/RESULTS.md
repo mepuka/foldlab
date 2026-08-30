@@ -1,5 +1,23 @@
 # PDD-9 — the breaker's verdict
 
+## STATUS — **STANDS-AMENDED. HOLE-1 CLOSED; both refusals CONCURRED.**
+
+Re-run against the fix pass `c984a7b5` on 2026-08-30. HOLE-1 is closed
+with mechanical evidence, NOTE-2, NOTE-3 and NOTE-5 are answered, and
+the builder's two reasoned refusals are ruled on — both concurred, one
+with a correction to its stated ground. One new claim-side row,
+**NOTE-6**, worth a line and not a commit of its own. **PDD-9 lands.**
+
+The re-run record is `AttackRerun.lean` beside this file, in PDD-1's
+shape; `Attack.lean` is UNEDITED and stays the record against
+`b5ad3c1d` / `db2c8344`. It still elaborates clean against the fixed
+castle, which is the regression check that the fix took nothing away.
+
+The re-run section is at the bottom of this file.
+
+---
+
+
 Adversarial record against the PDD-9 contract packet
 (`library/cas/contracts/PDD-9.contract.md`, amended at `db2c8344`) and
 the castle it specifies (`library/cas/Cas/Backend/TreeProgCorrect.lean`,
@@ -318,9 +336,291 @@ And the placement claim, checked rather than taken:
 | Date | Against | Outcome |
 |---|---|---|
 | 2026-08-30 | `b5ad3c1d` / `db2c8344` | **STANDS** — HOLE-1 open (LAW X coverage); NOTE-2, NOTE-3, NOTE-4, NOTE-5 raised; no BREAK. `Attack.lean` elaborates clean, every `#guard` green, `badShared_dies_at_LAW_M` kernel-checked at `[propext, Quot.sound]` |
+| 2026-08-30 | `05dc3b65` / `c984a7b5` (the fix pass) | **STANDS-AMENDED** — HOLE-1 CLOSED (ten of ten clauses, counted; both new rows red-tested); NOTE-2, NOTE-3, NOTE-5 answered; both reasoned refusals CONCURRED, the `Triple` one by computation; NOTE-6 raised (census scope, one line). No BREAK, no new HOLE. Record: `AttackRerun.lean`. **PDD-9 lands** |
 
 HOLE-1 closes when `Executed.check` names `journalTwo` and the schema
 term (and the printed line then means "the registered programs"), or
 when the packet's LAW X block is narrowed to the five it runs. Either
 is a one-commit fix; the run values are already computed and green in
 `Attack.lean` §3.
+
+---
+
+# Re-run 2 — against the fix pass `c984a7b5`
+
+```
+DATE       2026-08-30
+PACKET     e2b364e8  the ledger opens — HOLE-1, NOTE-2, NOTE-3
+CASTLE     05dc3b65  close HOLE-1 — all seven registered programs run
+PACKET     c984a7b5  fill FIXED-BY, re-run the transcripts
+ATTACK     contracts/attacks/PDD-9/AttackRerun.lean
+VERDICT    STANDS-AMENDED — HOLE-1 CLOSED, NOTE-2/3/5 answered,
+           both refusals CONCURRED, one new NOTE-6
+```
+
+Three commits, one file each, disjoint — the FILE frame still holds and
+no fenced byte moved.
+
+## HOLE-1 — **CLOSED**, by count rather than by reading
+
+The remedy is the strong one: both missing runs added rather than the
+claim narrowed. Verified mechanically, not read off the diff.
+
+**1. The clause count.** `(wire tag, reference count)` separates all ten
+clauses of `Tree` — `value`/`chunk`/`schema`/`git`/`genesis` carry no
+references and differ by tag, `leaf`/`manifest`/`file` carry one,
+`parent`/`entry` carry two — so the clause set a term reaches is a
+computation over its `flatten`. `AttackRerun.lean` §3:
+
+```
+coveredBefore.length  = 7    -- the five terms b5ad3c1d ran
+coveredNow.length     = 10   -- all seven registered terms
+coveredNow \ coveredBefore = [(12,0), (12,2), (83,0)]
+                             -- genesis, entry, schema — exactly HOLE-1's three
+coveredInKernel.length = 8   -- the #guard half, up from 6
+coveredNow \ coveredInKernel = [(71,0), (83,0)]   -- git and schema, #eval-only
+```
+
+Ten of ten at the production digest, eight of ten in the kernel. `.git`
+and `.schema` staying `#eval`-only is right and not a residue: their
+payloads are a signed git commit and a 2.5 KB canonical schema, and this
+lane's rule is that such work does not run in kernel `decide`.
+
+**2. The build line means what it says.**
+
+```
+info: Cas/Backend/TreeProgCorrect.lean:955:0: PDD-9: runP executed on all
+seven registered programs at the production digest — every answer is its
+term's address, and shared-chunk deduplicates to four bindings from
+flatten's five
+```
+
+**3. Both new rows are red-testable, and one was red-tested by this
+hand** — the dispatch asked for one, both were done:
+
+| # | Mutation | Result |
+|---|---|---|
+| C7 | `journalTwo`'s kernel guard: expected word perturbed (`.eraseIdx 4`) | RED at `TreeProgCorrect.lean:891` — *"Expression `runVerdict toyAddr journalTwo (List.eraseIdx (expectedWord toyAddr journalTwo) 4)` did not evaluate to `true`"*. The line number matches the packet's Controls entry |
+| C8 | the schema row inside `check`: expectation perturbed (`.eraseIdx 0`) | RED, throwing *"PDD-9: schema-vector-document's run does not answer its term"* — the message the packet quotes, character for character |
+
+**4. The registered term, not a lookalike.** `Executed.schemaTerm`
+rebuilds the registry's schema row with `Payload.ofBytes`, which CLAMPS
+at the byte bound. `check` asserts the bound before trusting it, which
+is the right shape; independently verified here that the clamp does not
+bite — `List.take` returns a prefix, so equal lengths is equality, and
+`(schemaTerm.node toyAddr).payload.length = (utf8 vectorDocumentCode.payload).length`
+(`AttackRerun.lean` §4).
+
+## The oracle — adopted **VERBATIM**, and credited
+
+Not "a function that agrees on a corpus". A definitional identity:
+
+```lean
+theorem oracle_adopted_verbatim (H : Bytes → Addr32) {t : Ty} (tr : Tree t) :
+    Executed.expectedWord H tr = expected H tr := rfl
+  → does not depend on any axioms
+```
+
+`Executed.expectedWord H tr = (tr.flatten H).eraseDups` is the oracle of
+`Attack.lean` §2 spelled in the castle's own vocabulary. Credit is on the
+declaration's docstring, naming the file, the section, the branch and
+commit `e2703228`. Faithful, and attributed.
+
+**The `eraseIdx` witness is pinned to it**, in the castle and not only in
+prose: `#guard expectedWord toyAddr blobSharedChunk == (blobSharedChunk.flatten toyAddr).eraseIdx 2`.
+Keeping both was the right call, and the packet's reason is verified
+rather than accepted — the index is the SHARPER statement on that
+witness because it names WHICH occurrence drops. Checked here that its
+neighbours are not the word: both `eraseIdx 1` and `eraseIdx 3` fail
+`runVerdict` (`AttackRerun.lean` §2). The oracle alone would have pinned
+the length and the multiset; the index pins the position.
+
+## Refusal 1 — LAW X not narrowed, closed strong instead: **CONCUR**
+
+My HOLE-1 named two remedies and said either was a one-commit fix. The
+builder took the better one. Narrowing would have made the sentence true
+by shrinking it and left `.genesis`, `.entry` and `.schema` unexecuted —
+the three clauses with the two-child offset arithmetic and the longest
+reference chains, which is precisely where an executed consequence is
+worth having. Closing strong makes the printed line true AND makes the
+coverage extensible: with the expectation now a function of the term, a
+further registered term is covered by naming it rather than by measuring
+an erasure. Concurred without reservation.
+
+## Refusal 2 — `treeProg_Triple` not strengthened: **CONCUR**, with a correction to the ground
+
+The builder's argument is that GROWTH and STORE are two-state facts
+about `w₀` and `w'`, that `Triple`'s postcondition sees only `w'`, and
+that writing them in is not a strengthening but a rederivation of
+`treeProg_two_state`.
+
+For the axes AS THE PACKET STATES THEM that is exact — `w' = w₀ ++ v`
+and `Word.toStore w' = Word.toStore (w₀ ++ tr.flatten H)` both mention
+`w₀`, and fixing `w₀` inside a `Triple` IS `Triple_two_state_rel`, which
+IS `treeProg_two_state`. Conceded.
+
+**But the ground as stated is one step too wide, and the correction
+matters because a future reader will use it.** It is not the case that
+nothing frame-flavoured is one-state expressible. This is:
+
+```
+residency  —  ∀ b ∈ tr.flatten H, Word.find w' b.address = some b.node
+```
+
+"every node of the term is resident at the end". It needs no `w₀`, it
+would sit in `Q` without complaint, it is true of the run, and it kills
+the "writes nothing" candidate the packet's own adequacy section names.
+So the refusal cannot rest on inexpressibility.
+
+It rests on something better, and the ruling is a computation rather
+than an opinion (`AttackRerun.lean` §5):
+
+```
+resident toyAddr blobSharedChunk (expected toyAddr blobSharedChunk)              = true
+resident toyAddr blobSharedChunk (outsiderBinding :: expected …)                 = true
+```
+
+**Residency does not exclude `paddedShared`** — the very witness that
+opened NOTE-2. The strongest one-state frame conjunct available would
+therefore not close the gap it was raised about; it would add a fourth
+statement of a fact `treeProg_run` already carries, and `paddedShared`
+would still pass. What excludes `paddedShared` is LAW F, exactly as the
+packet says.
+
+Refusal CONCURRED. The recommended ground is "the one-state residual
+does not exclude the witness", not "no frame fact is one-state
+expressible". This is a note on the reason, not on the decision, and it
+does not need a commit.
+
+## NOTE-2 — **CLOSED as claim-scope**
+
+LAW R's block now attributes each axis to the theorem that carries it,
+and `treeProg_Triple`'s own docstring says outright which axes it does
+not carry and names `paddedShared`. That is the remedy this record asked
+for, and it is in the module as well as the packet, so the fact cannot
+be met only in prose a reader of the source never sees.
+
+## NOTE-3 — **CLOSED**
+
+Adequacy candidate 2 now carries the operative reason — `embed`'s
+continuations are functions of the answers, so the equality quantifies
+over every address the interpreter could return — and cites
+`badShared_dies_at_LAW_M` with its axiom print and its provenance. The
+packet's claim moved UPWARD, which is the honest direction for this row.
+
+## NOTE-5 — **ADOPTED**
+
+Now the packet's own warrant, in Controls: the `lowerTable` drift was
+invisible to every gate at HEAD, `ProgProse.lean:298`'s put-shape
+`#guard` included, so §3.31's error state was live rather than
+hypothetical. Correctly attributed and correctly used.
+
+## NOTE-4 — accepted as recorded
+
+The packet answers it in prose rather than with a row, on the ground
+that it is not a break, and notes that THIS pass's amendments are not
+additive and each carries a ledger row. Correct on both counts, and the
+distinction is the right one.
+
+## NEW — NOTE-6: the census names two of the three new `Executed` declarations
+
+The packet's re-run footprint block widened the census beyond the nine
+theorems, under the header "no `sorryAx`, no `Classical.choice`, no new
+axiom", and prints:
+
+```
+Executed.runVerdict     → depends on axioms: [propext]
+Executed.expectedWord   → does not depend on any axioms
+```
+
+The fix introduced a third `Executed` declaration, and it is the one the
+block does not print:
+
+```
+Cas.Backend.Executed.schemaTerm  → [propext, Classical.choice, Quot.sound]
+Cas.Backend.Executed.check       → [propext, Classical.choice, Quot.sound]
+```
+
+**Traced.** Not `Payload.ofBytes`, which prints `[propext, Quot.sound]`.
+The source is `Cas.Vectors.Registry.vectorDocumentCode`, i.e.
+`Cas.Schema.Described.code` in the fenced schema plane. All five terms
+`check` ran before the fix print `[propext, Quot.sound]`
+(`helloValue`, `blobTwoLeaves`, `fileReadme`, `gitPinCommit`,
+`blobSharedChunk`), so the axiom is **new to `check` with this pass**,
+and it is inherited, never minted.
+
+**No soundness consequence, and none claimed.** `check` is an `IO Unit`
+run by `#eval` through the compiler, so no kernel trust rides on it; no
+kernel `#guard` mentions `schemaTerm`; and every one of the nine public
+theorems still prints `[propext, Quot.sound]` — reproduced below. The
+degree claim ("no `sorry`, no `native_decide`, and no new axiom" for
+LAW S/W/F/M/R) is untouched and true.
+
+It is a **census-scope** row: a footprint block that names two of three
+sibling declarations, under a header asserting the absence of the axiom
+the third one carries. One line closes it — print the row with its
+provenance, or bound the header's scope to the theorems. Not a blocker,
+and explicitly not a reason to hold the merge.
+
+## Gates re-run at `c984a7b5`, verbatim
+
+```
+$ lake --wfail build                                     EXIT=0
+ℹ [95/96] Built Cas.Backend.TreeProgCorrect (1.9s)
+info: Cas/Backend/TreeProgCorrect.lean:955:0: PDD-9: runP executed on all
+seven registered programs at the production digest — every answer is its
+term's address, and shared-chunk deduplicates to four bindings from
+flatten's five
+Build completed successfully (96 jobs).
+
+$ mise run --force check:cas                             EXIT=0
+50 `ok` lines, every emitter byte-identical. Unmoved from the first pass:
+ok vectors/journal-two-entries.json (4195 bytes) — 11 bindings
+ok vectors/schema-vector-document.json (5480 bytes) — 1 bindings
+ok vectors/shared-chunk.json (1922 bytes) — 5 bindings
+ok ../effects/test/generated/VectorPrograms.ts (19433 bytes) — 7 programs
+ok ../effects/test/generated/VectorProgramAddresses.json (2816 bytes) — 7 program addresses
+ok ../effects/test/generated/VectorProgramLifts.json (11193 bytes) — 7 lift documents (round-tripped)
+ok surface/cas-surface.json (955041 bytes) — 2026 declarations
+ok surface/cas-obligations.json (17363 bytes) — 68 obligations
+ok surface/cas-laws.json (9825 bytes) — 9 of 37 rulings bound, 28 unbound
+```
+
+The three ledger figures are identical to the first pass, so the fix
+added eighty-five lines of module and moved no ledger byte — the FRAME's
+promotion claim, discharged a second time.
+
+## Axiom census re-run — all nine public theorems
+
+```
+'Cas.Backend.treeProg_eq_seg'      depends on axioms: [propext, Quot.sound]
+'Cas.Backend.table_eq_seg'         depends on axioms: [propext, Quot.sound]
+'Cas.Backend.table_eq_treeProg'    depends on axioms: [propext, Quot.sound]
+'Cas.Backend.treeProg_length'      depends on axioms: [propext, Quot.sound]
+'Cas.Backend.embed_treeProg'       depends on axioms: [propext, Quot.sound]
+'Cas.Backend.treeProg_run'         depends on axioms: [propext, Quot.sound]
+'Cas.Backend.treeProg_run_empty'   depends on axioms: [propext, Quot.sound]
+'Cas.Backend.treeProg_Triple'      depends on axioms: [propext, Quot.sound]
+'Cas.Backend.treeProg_two_state'   depends on axioms: [propext, Quot.sound]
+'Cas.Backend.Executed.runVerdict'  depends on axioms: [propext]
+'Cas.Backend.Executed.expectedWord' does not depend on any axioms
+'Cas.Backend.Executed.schemaTerm'  depends on axioms: [propext, Classical.choice, Quot.sound]   ← NOTE-6
+```
+
+No `sorryAx`, no `ofReduceBool`, and no theorem's footprint moved.
+
+## Re-run 2 attempts, pass/fail
+
+| # | Attempt | Result |
+|---|---|---|
+| G1 | Did the fix take anything away? Re-elaborate the UNEDITED `Attack.lean` against `05dc3b65` | Clean. Every `#guard` green, both `#eval` batteries green, `badShared_dies_at_LAW_M` still kernel-checked at `[propext, Quot.sound]`. The first pass is a live regression object |
+| G2 | Is the "all ten clauses" claim true, or is it a reading of the source? | True, and counted — `coveredNow.length == 10`, with the delta over the old five being exactly `[(12,0),(12,2),(83,0)]` |
+| G3 | Is `Executed.schemaTerm` the registered term or a clamped lookalike? | The registered term. `check` asserts the bound; the length identity is verified here independently |
+| G4 | Is the adopted oracle the same function or merely an agreeing one? | The same — `rfl`, axiom-free |
+| G5 | Is the kept `eraseIdx 2` redundant now that the oracle exists? | No. It pins the POSITION, which the oracle does not: `eraseIdx 1` and `eraseIdx 3` both fail `runVerdict` |
+| G6 | Are the two new rows decoration, or can they go red? | Both red — C7 at the line the packet names, C8 with the message the packet quotes |
+| G7 | Can the `treeProg_Triple` refusal be defeated by a one-state frame conjunct? | **No.** `residency` is one-state and true of the run, but it is also true of `paddedShared`, so it does not close the gap it would be added for. The refusal survives its own best counterargument |
+| G8 | Did any theorem's axiom footprint move under the fix? | No — all nine unchanged. A definition's did, which is NOTE-6 |
+| G9 | Did the ledger gates move? | No — `955041` / `17363` / `9825`, identical to the first pass |
+
+No BREAK. HOLE-1 closed. **PDD-9 lands.**
