@@ -406,28 +406,74 @@ theorem Document.wf_iff (d : Document) : d.wf = true ↔ d.WF := by
 
 /-- Which refusal a decoded-but-rejected document earns. Guardedness is
 named separately from the canonical-fields discipline because the two
-are different defects and the door's A-grade prose has to say which. -/
-private def documentRefusal (d : Document) : IngestRefusal :=
-  if d.guarded then .illFormed else .unguardedCycle
+are different defects and the door's A-grade prose has to say which.
 
-/-- THE DOCUMENT DOOR: normalize the spelling, strictly decode the
-revision-1 envelope with its table, gate every code and the table's
-guardedness. -/
+The ORDER is this door's, and the TypeScript gate mirrors it rather
+than choosing its own (R10): a document with two defects is named for
+the cycle. -/
+private def documentRefusal (d : Document) : IngestRefusal :=
+  if d.guardedMemo then .illFormed else .unguardedCycle
+
+/-- A key list with a repeat in it. -/
+def hasRepeatedKey : List String → Bool
+  | [] => false
+  | k :: ks => ks.contains k || hasRepeatedKey ks
+
+/-- Does the envelope's references table carry one name TWICE?
+
+Asked BEFORE the document is decoded, and answered from the spelling
+rather than from either reader's habits. A duplicate key is where the
+two hosts stop reading the same document out of one byte string:
+`Cas.Json.parse` keeps both pairs and `Document.lookup` takes the
+FIRST; `JSON.parse` keeps the LAST. So
+`{"A":{"$ref":"A",…},"A":{"_tag":"String",…}}` is a cycle to Lean and
+an ordinary table to TypeScript, and swapping the two pairs swaps which
+door sees it — the break pass exhibited both directions (PDD-3 finding
+F1, `contracts/attacks/PDD-3/Attack.lean` §7).
+
+Neither reading is more right, so the door refuses the spelling instead
+of picking a winner. It costs nothing real: a canonical spelling has
+its keys in strict ascending order, so it has no duplicate to lose.
+
+ASSUMED RULING, flagged for operator override in the packet. Scoped to
+the references table on purpose — a duplicate key elsewhere (a repeated
+`_tag` on a node) splits the same way, predates this increment, and the
+two doors have not been reconciled on it. -/
+def duplicateReferenceKey : Json.Value → Bool
+  | .obj [("revision", _),
+      ("value", .obj [("references", .obj refs), ("representation", _)])] =>
+    hasRepeatedKey (refs.map (·.1))
+  | _ => false
+
+/-- The door, on an ALREADY canonical value — so the normalizer runs
+once and the refusal order is readable in one place: the spelling
+first, then the decoder, then the disciplines. -/
+private def ingestDocumentCanonical (c : Json.Value) :
+    Except IngestRefusal Document :=
+  if duplicateReferenceKey c then .error .illFormed
+  else
+    match Document.ofEnvelope c with
+    | some d => if d.wf then .ok d else .error (documentRefusal d)
+    | none => .error (documentRefusalOf c)
+
+/-- THE DOCUMENT DOOR: normalize the spelling, refuse a table that
+names one entry twice, strictly decode the revision-1 envelope with its
+table, gate every code and the table's guardedness. -/
 def ingestDocument (v : Json.Value) : Except IngestRefusal Document :=
-  match Document.ofEnvelope (canonValue v) with
-  | some d => if d.wf then .ok d else .error (documentRefusal d)
-  | none => .error (documentRefusalOf (canonValue v))
+  ingestDocumentCanonical (canonValue v)
 
 /-- Soundness of the document door. -/
 theorem ingestDocument_wf {v : Json.Value} {d : Document}
     (h : ingestDocument v = .ok d) : d.WF := by
-  unfold ingestDocument at h
+  unfold ingestDocument ingestDocumentCanonical at h
   split at h
-  · split at h
-    · cases h
-      next hw => exact (Document.wf_iff _).mp hw
-    · cases h
   · cases h
+  · split at h
+    · split at h
+      · cases h
+        next hw => exact (Document.wf_iff _).mp hw
+      · cases h
+    · cases h
 
 /-- The door answers only GUARDED tables — the half of soundness the
 C6 theorem carries, stated on its own so the claim is citable without
@@ -483,9 +529,11 @@ edge to cycle — so the only surviving condition is the code's own, which
 is the bare arm's condition exactly. -/
 theorem ingestDocument_nil {a : Ast} (ha : a.WF) :
     ingestDocument a.envelope = .ok (Document.mk [] a.repNorm) := by
-  unfold ingestDocument
+  unfold ingestDocument ingestDocumentCanonical
   rw [canonValue_of_canonical _ (envelope_canonical a),
     show a.envelope = (Document.mk [] a).envelope from rfl,
+    if_neg (by simp [duplicateReferenceKey, Document.envelope,
+      Document.representationDocument, referencesToJson, hasRepeatedKey]),
     Document.ofEnvelope_envelope (Document.mk [] a)]
   simp only [Document.repNorm, List.map_nil]
   rw [if_pos]
@@ -918,6 +966,122 @@ theorem guarded_list_admitted : guardedList.Guarded :=
 #guard (match ingest guardedList.envelope with
         | .error .nonEmptyReferences => true
         | _ => false)
+
+/-! ### A table with EDGES on it, admitted
+
+The break pass's F4. Both admitted C6 witnesses above have an EMPTY
+bare-edge relation — `guardedList`'s only reference sits under the
+`susp`, and a table of plain strings has no references at all — so a
+door with fuel ZERO, one that never follows an edge, agreed with this
+one on all 71 corpus rows. These two are the missing witnesses: acyclic
+tables the door admits after actually walking them. -/
+
+/-- One acyclic edge: `A` names `B`, and `B` is a code. -/
+def refChain : Document :=
+  { references := [("A", .reference "B"), ("B", .str)],
+    representation := .reference "A" }
+
+/-- Two edges, so the search recurses more than once. -/
+def refChainTwo : Document :=
+  { references := [("A", .reference "B"), ("B", .reference "C"), ("C", .str)],
+    representation := .reference "A" }
+
+-- The relations are NON-EMPTY, which is the whole point of the pair.
+#guard refChain.out "A" == ["B"]
+#guard refChainTwo.out "A" == ["B"]
+#guard refChainTwo.out "B" == ["C"]
+
+#guard refChain.guardedMemo
+#guard refChainTwo.guardedMemo
+
+theorem refChain_guarded : refChain.Guarded :=
+  (references_guarded_decidable refChain).mp (by decide)
+
+theorem refChainTwo_guarded : refChainTwo.Guarded :=
+  (references_guarded_decidable refChainTwo).mp (by decide)
+
+#guard (match ingestDocument refChain.envelope with
+        | .ok d => d.payload == refChain.payload
+        | .error _ => false)
+
+#guard (match ingestDocument refChainTwo.envelope with
+        | .ok d => d.payload == refChainTwo.payload
+        | .error _ => false)
+
+/-! ### Two defects at once — the door names the CYCLE
+
+The break pass's F5. `documentRefusal` tests guardedness first, so a
+document that is both cyclic and ill formed is named for the cycle. The
+TypeScript gate used to run its per-entry admission before its
+guardedness filter and named the other defect; it mirrors this order
+now, because the reference handler's order IS the order (R10). -/
+
+/-- A table entry that is BOTH on a bare cycle and out of field order
+(`b` before `a`). Its control is the same entry with the cycle removed,
+which both doors name `illFormed`. -/
+def unsortedAndCyclic : Document :=
+  { references := [("A", .struct [("b", false, .reference "A"),
+                                  ("a", false, .str)])],
+    representation := .reference "A" }
+
+def unsortedOnly : Document :=
+  { references := [("A", .struct [("b", false, .str), ("a", false, .str)])],
+    representation := .reference "A" }
+
+#guard (match ingestDocument unsortedAndCyclic.envelope with
+        | .error .unguardedCycle => true
+        | _ => false)
+
+#guard (match ingestDocument unsortedOnly.envelope with
+        | .error .illFormed => true
+        | _ => false)
+
+/-! ### The duplicate table key — refused for its SPELLING
+
+The break pass's BREAK (F1), under the assumed ruling recorded in the
+packet. One byte string, two documents: with the reference FIRST the
+table cycles for a reader that keeps the first pair and not for one
+that keeps the last, and swapping the pairs swaps which reader sees it.
+The door refuses the spelling rather than picking a winner, and it does
+so BEFORE the decoder runs, so the answer does not depend on what else
+is wrong with the document. -/
+
+/-- The duplicate, reference first. -/
+def dupKeyRefFirst : Json.Value :=
+  .obj [("revision", .nat schemaRevision),
+    ("value", .obj [
+      ("references", .obj [("A", (Ast.reference "A").toRepresentationJson),
+        ("A", Ast.str.toRepresentationJson)]),
+      ("representation", Ast.str.toRepresentationJson)])]
+
+/-- The duplicate, reference last — the other direction of the split. -/
+def dupKeyRefLast : Json.Value :=
+  .obj [("revision", .nat schemaRevision),
+    ("value", .obj [
+      ("references", .obj [("A", Ast.str.toRepresentationJson),
+        ("A", (Ast.reference "A").toRepresentationJson)]),
+      ("representation", Ast.str.toRepresentationJson)])]
+
+-- ONE NAME, BOTH DIRECTIONS. Before this gate the first earned
+-- `unguardedCycle` and the second `illFormed`, which is a door
+-- answering for the parser it happens to be written in.
+#guard (match ingestDocument dupKeyRefFirst with
+        | .error .illFormed => true
+        | _ => false)
+
+#guard (match ingestDocument dupKeyRefLast with
+        | .error .illFormed => true
+        | _ => false)
+
+-- THE PARTNER, without which refusing every table would pass: the same
+-- two entries under two different names is an ordinary table.
+#guard (match ingestDocument (.obj [("revision", .nat schemaRevision),
+          ("value", .obj [
+            ("references", .obj [("A", (Ast.reference "B").toRepresentationJson),
+              ("B", Ast.str.toRepresentationJson)]),
+            ("representation", Ast.str.toRepresentationJson)])]) with
+        | .ok _ => true
+        | .error _ => false)
 
 /-! ## The bytes-in door
 

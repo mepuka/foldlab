@@ -63,8 +63,29 @@ row for this spelling — an omission stated there, in `tools/Verdicts.lean`,
 rather than left to be discovered.
 
 Nothing else about C6 diverges: the guardedness walk, the two node
-shapes and the empty table key are all interpreted from the columns
-below and agree case for case.
+shapes, the empty table key and the duplicate table key are all
+interpreted from the columns below and agree case for case.
+
+## The refusal ORDER is this table's too (break pass, finding F5)
+
+A document can have two defects, and then the doors have to agree on
+which one it is named for. Lean's order, in `Cas.Schema.ingestDocument`:
+
+1. the SPELLING — a references table naming one entry twice is refused
+   `illFormed` before anything is decoded;
+2. the DECODER — a spelling that is no code at all is `notASchema`, or
+   `unknownDeclaration` where the allowlist is what turned it away;
+3. GUARDEDNESS — `unguardedCycle`, ahead of every other discipline;
+4. everything else `Ast.wf` and `Document.WF` ask — `illFormed`.
+
+The TypeScript gate used to run its per-entry admission before its
+guardedness filter, so a table entry that was both cyclic and ill
+formed earned `unguardedCycle` from Lean and `illFormed` from
+TypeScript. It mirrors the order above now. The interpreter can tell
+stage 2 from stage 4 by the refusal NAME the table gives a clause —
+`notASchema` and `unknownDeclaration` are the decoder's, `illFormed` is
+the discipline's — so the ordering is read off this table rather than
+hand-kept beside it.
 
 ## The one divergence this table does NOT close
 
@@ -375,6 +396,8 @@ def clauses : List Clause := [
     detail := "{path} names an empty reference: a reference names a references-table entry, and the empty name names none (Effect refuses it too — $ref is a non-empty string)" },
   { clause := "referenceKeyEmpty", refusal := .illFormed,
     detail := "the references table carries an entry under the empty name, which no reference can point at" },
+  { clause := "duplicateReferenceKey", refusal := .illFormed,
+    detail := "the references table names {it} twice, so the two readers of this payload get two different documents — Lean's parser keeps both entries and takes the first, JSON.parse keeps the last. Give each entry one name; a canonical spelling has its keys in strict ascending order and cannot repeat one" },
   { clause := "unguardedCycle", refusal := .unguardedCycle,
     detail := "the references table has a cycle with no Suspend on it ({it}): resolving it never finishes, because unfolding the name gives the name back. Put the recursive position under a Suspend, which is what Effect writes for a recursive schema" },
   { clause := "nonEmptyReferences", refusal := .nonEmptyReferences,
@@ -525,6 +548,23 @@ private def refNode (n : String) : Cas.Json.Value :=
 
 #guard clauseRefusal "referenceKeyEmpty" ==
   documentRefusalFor [("", strRep)] (refNode "")
+
+-- THE DUPLICATE TABLE KEY, both directions, one name. Which pair a
+-- parser keeps is its own habit, so the door refuses the spelling
+-- before it decodes anything (PDD-3 break-pass finding F1, assumed
+-- ruling). The TypeScript side reads this from the BYTES, because
+-- `JSON.parse` has thrown one of the pairs away by the time any gate
+-- could look.
+#guard clauseRefusal "duplicateReferenceKey" ==
+  documentRefusalFor [("A", refNode "A"), ("A", strRep)] strRep
+
+#guard clauseRefusal "duplicateReferenceKey" ==
+  documentRefusalFor [("A", strRep), ("A", refNode "A")] strRep
+
+-- The partner: two entries under two different names is an ordinary
+-- table, so the clause is not satisfied by refusing every table.
+#guard "admitted" ==
+  documentRefusalFor [("A", refNode "B"), ("B", strRep)] strRep
 
 -- THE TABLE'S KEY ORDER IS NOT A REFUSAL, and there is deliberately no
 -- clause for it. The table is a JSON OBJECT, so `canonValue` sorts its

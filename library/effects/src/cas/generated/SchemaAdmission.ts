@@ -224,6 +224,11 @@ export const Clauses: ReadonlyArray<Clause> = [
     detail: "the references table carries an entry under the empty name, which no reference can point at",
   },
   {
+    clause: "duplicateReferenceKey",
+    refusal: "illFormed",
+    detail: "the references table names {it} twice, so the two readers of this payload get two different documents — Lean's parser keeps both entries and takes the first, JSON.parse keeps the last. Give each entry one name; a canonical spelling has its keys in strict ascending order and cannot repeat one",
+  },
+  {
     clause: "unguardedCycle",
     refusal: "unguardedCycle",
     detail: "the references table has a cycle with no Suspend on it ({it}): resolving it never finishes, because unfolding the name gives the name back. Put the recursive position under a Suspend, which is what Effect writes for a recursive schema",

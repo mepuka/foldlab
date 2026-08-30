@@ -3,7 +3,7 @@
     "discharged": 22,
     "emptyDenotations": 6,
     "formless": 0,
-    "owed": 12,
+    "owed": 13,
     "parked": 5,
     "pinPending": 1
   },
@@ -348,6 +348,12 @@
       "keyword": "parked",
       "module": "Cas.Schema.El",
       "state": "parked"
+    },
+    {
+      "excerpt": "…so it is a ruling and not a line. It is owed, not claimed. The witnesses are `contracts/attacks/PDD-3/At…",
+      "keyword": "owed",
+      "module": "Cas.Schema.Guarded",
+      "state": "owed"
     },
     {
       "excerpt": "…`WF` is load-bearing The value plane's obligation can only conclude equality up to `Value.numNorm`, the numbe…",

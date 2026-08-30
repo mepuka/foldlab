@@ -614,6 +614,25 @@ def corpus : List Case := [
   { name := "refuse-unguarded-struct-cycle",
     note := "A = {next: A} spelled with a bare reference where Effect would have written a Suspend — a shape Effect never emits and the representation can still spell",
     source := .raw bareStructCycle.envelope },
+  -- THE BREAK PASS's rows (2026-08-30). Every admitted C6 row above has
+  -- an EMPTY bare-edge relation, so a door with fuel ZERO — one that
+  -- never follows an edge at all — agreed with the shipped door on the
+  -- whole corpus. These two are the missing witnesses.
+  { name := "admit-reference-chain",
+    note := "one acyclic edge: A names B and B is a code. The first admitted row whose bare-edge relation is not empty — a door that never follows an edge refuses it, and the whole corpus used to let one pass",
+    source := .raw refChain.envelope },
+  { name := "admit-reference-chain-two",
+    note := "two edges, so the guardedness search recurses more than once before it settles the root",
+    source := .raw refChainTwo.envelope },
+  { name := "refuse-unguarded-and-illformed",
+    note := "a table entry that is BOTH on a bare cycle and out of field order — two defects, one name. The door names the cycle, and the TypeScript gate mirrors that order rather than naming whichever defect its own walk reached first",
+    source := .raw unsortedAndCyclic.envelope },
+  { name := "refuse-duplicate-reference-key",
+    note := "a references table naming A twice, the reference FIRST: Lean's parser keeps both pairs and takes the first, so the table cycles, and JSON.parse keeps the last, so it does not. Refused for the spelling before either reader decides anything",
+    source := .raw dupKeyRefFirst },
+  { name := "refuse-duplicate-reference-key-last",
+    note := "the same duplicate with the pairs swapped, which reverses which reader sees the cycle — the other direction of the split, and the same refusal",
+    source := .raw dupKeyRefLast },
   -- NO ROW for the empty reference name, deliberately. Both doors
   -- refuse it; they NAME the refusal differently, and this corpus
   -- asserts agreement on names. Lean's decoder reads the shape and its
