@@ -507,9 +507,19 @@ operands only. That is visible in `seg` by inspection and is why LAW M's
 
 ## Controls — the guards can go red
 
-A gate that cannot fail proves nothing. Two defects were planted in the
-landed module, built, and reverted; both are recorded because the
+A gate that cannot fail proves nothing. Four defects were planted in
+the landed module, built, and reverted; all are recorded because the
 packet's whole claim is that these laws are attached to something.
+
+The two added on the HOLE-1 fix, so the new coverage is not decoration:
+
+- **`journalTwo`'s kernel guard.** Its expected word perturbed by one
+  binding. Red at `TreeProgCorrect.lean:891`.
+- **The schema term's production row.** Same perturbation inside
+  `check`. Red, and the thrown message is the one the row carries:
+  *"PDD-9: schema-vector-document's run does not answer its term"*.
+
+And the two from the first pass:
 
 - **The dedup position.** `eraseIdx 2` moved to `eraseIdx 1` in the
   shared-chunk guard. Red: *"Expression `runVerdict toyAddr
@@ -554,16 +564,22 @@ section did not:
 
 Run from `library/cas` unless noted; all verbatim.
 
+Re-run after the HOLE-1 fix (`05dc3b65`); every figure below is from
+that tree.
+
 ```
 lake --wfail build
   → Build completed successfully (96 jobs).
   → Built Cas.Backend.TreeProgCorrect
-  → PDD-9: runP executed on the registered programs at the production
-    digest — every answer is its term's address, and shared-chunk
-    deduplicates to four bindings from flatten's five
+  → PDD-9: runP executed on all seven registered programs at the
+    production digest — every answer is its term's address, and
+    shared-chunk deduplicates to four bindings from flatten's five
 
 mise run --force check:cas                            → EXIT=0
+  (50 `ok` lines; every emitter's --check byte-identical)
   → ok vectors/shared-chunk.json (1922 bytes) — 5 bindings
+  → ok vectors/journal-two-entries.json (4195 bytes) — 11 bindings
+  → ok vectors/schema-vector-document.json (5480 bytes) — 1 bindings
   → ok ../effects/test/generated/VectorPrograms.ts (19433 bytes)
        — 7 programs
   → ok ../effects/test/generated/VectorProgramAddresses.json
@@ -597,7 +613,13 @@ treeProg_eq_seg, table_eq_seg, table_eq_treeProg, treeProg_length,
 embed_treeProg, treeProg_run, treeProg_run_empty, treeProg_Triple,
 treeProg_two_state
   → depends on axioms: [propext, Quot.sound]
+Executed.runVerdict     → depends on axioms: [propext]
+Executed.expectedWord   → does not depend on any axioms
 ```
+
+Reproduced by the independent breaker at `e2703228` and unchanged by
+the HOLE-1 fix. The footprint is one axiom shorter than PDD-1's, which
+carries `Classical.choice`.
 
 ## Breaks
 
@@ -634,11 +656,16 @@ CLASS      claim-scope — the stated boundary of the claim did not equal
            its actual coverage. Adjacent: `conformance`, since the
            uncovered clauses are the ones with the two-child offset
            arithmetic and the longest reference chains.
-FIXED-BY   pending — the coverage commit that follows on this branch;
-           the SHA is filled in below when it lands. Closed the STRONG
-           way (both runs added, all seven programs and all ten clauses
-           executed, the printed line corrected) rather than by
-           narrowing LAW X to the five it ran.
+FIXED-BY   05dc3b65 — closed the STRONG way rather than by narrowing
+           LAW X to the five it ran. `journalTwo` runs kernel-decided
+           at the toy digest and in `check` at production;
+           `schemaVectorDocument` runs in `check` at both. All seven
+           registered programs and all ten grammar clauses now have an
+           executed consequence, and the printed line says "all seven
+           registered programs". Both new rows were red-tested (each
+           expectation perturbed by one binding, each red, both
+           reverted). The expectation is now the breaker's oracle, so
+           a further registered term is covered by naming it.
 ```
 
 ```
@@ -656,13 +683,17 @@ WITNESS    `paddedShared` (`Attack.lean` §8): `treeProg
            and no frame. `treeProg_run` and `treeProg_two_state` do
            carry all three, and LAW F excludes the witness besides.
 CLASS      claim-scope.
-FIXED-BY   SPEC-BUG. The theorems are correct and unchanged; the packet
-           overclaimed of one of them. LAW R's block now attributes each
-           axis to the theorem that carries it, and states why the
-           Triple is NOT strengthened: GROWTH and STORE are two-state
-           facts and `Triple`'s postcondition sees only the final word,
-           so writing them in is not a strengthening but a rederivation
-           of `treeProg_two_state`.
+FIXED-BY   SPEC-BUG (packet `e2b364e8`); the module's own docstring
+           corrected at `05dc3b65`. The theorems are correct and
+           unchanged; the packet overclaimed of one of them. LAW R's
+           block now attributes each axis to the theorem that carries
+           it, and states why the Triple is NOT strengthened: GROWTH
+           and STORE are two-state facts and `Triple`'s postcondition
+           sees only the final word, so writing them in is not a
+           strengthening but a rederivation of `treeProg_two_state`.
+           `treeProg_Triple`'s docstring now names `paddedShared` and
+           says which axes it does not carry, so the fact cannot be
+           met only in the packet.
 ```
 
 ```
@@ -680,14 +711,16 @@ WITNESS    `badShared` (`Attack.lean` §6): the second leaf's operand
            address function is blind. The stated reason does not apply
            and the class was not closed by it.
 CLASS      adequacy — the reason offered for a law, not the law.
-FIXED-BY   SPEC-BUG, upward. LAW M kills `badShared` regardless, by a
-           STRONGER reason than the one written: `embed` builds a
-           `Prog` whose continuations are FUNCTIONS of the answers, so
-           `embed p = tr.prog` quantifies over every address the
-           interpreter could return and no coincidence at one digest
-           discharges it. The breaker proved it —
-           `badShared_dies_at_LAW_M`, kernel-checked at
+FIXED-BY   SPEC-BUG, upward (packet `e2b364e8`). LAW M kills
+           `badShared` regardless, by a STRONGER reason than the one
+           written: `embed` builds a `Prog` whose continuations are
+           FUNCTIONS of the answers, so `embed p = tr.prog` quantifies
+           over every address the interpreter could return and no
+           coincidence at one digest discharges it. The breaker proved
+           it — `badShared_dies_at_LAW_M`, kernel-checked at
            `[propext, Quot.sound]`. The packet now carries that reason.
+           No theorem moved: this row records that the law was
+           understated, not that it was wrong.
 ```
 
 One further observation is recorded rather than rowed, because it is
