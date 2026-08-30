@@ -33,9 +33,10 @@ an edge fails the default), §8.0 (the spec form that composes), §9.1–9.5
 | 2 — carrier | landed, two arms, round trip per constructor |
 | 3 — document plane + guardedness | landed, `references_guarded_decidable` proved |
 
-`lake build` green; `mise run check:cas` green after regeneration
-through the emitters. No `sorry`, no `native_decide`; the theorems use
-the three standard Lean axioms and nothing else.
+`lake --wfail build` green; `mise run --force check:cas` fully green
+after regeneration through the emitters; the effects suite 47 files /
+336 tests green. No `sorry`, no `native_decide`; the theorems use the
+three standard Lean axioms and nothing else.
 
 An independent breaker attacked the work on branch
 `attack/opus-cc-mac/pdd-3` (`e8a31ba3`) and returned
@@ -46,6 +47,19 @@ holds, and the DOOR's prose about itself did not. The attack record is
 `Attack.lean` (the witnesses, as derivations). Seven findings — one
 BREAK, four holes, two notes — are carried in
 [§Breaks](#breaks) with what each cost and what closed it.
+
+The fix pass landed in four commits: `766d695f` (this packet),
+`f8a2da76` (F2, N2 — prose), `599ef9eb` (F3 — the memoized walk),
+`c6a70338` (F1, F4, F5 — the duplicate key, the missing witnesses, the
+refusal order). The conformance corpus grew 71 → 76 cases.
+
+Re-running the attack module against the fixed branch reddens EXACTLY
+ONE guard: §7's `dupHarmlessLast`, which expected `unguardedCycle` and
+now gets `illFormed`. That is F1's receipt. §2's three theorems still
+elaborate, which is F2's honest receipt — the prose narrowed and the
+semantics did not, because the semantics are an open ruling. §4's
+`unsortedAndCyclic` did not change either, which is F5 closed the other
+way round: TypeScript moved to Lean, not Lean to TypeScript.
 
 Slices 4 and 5 are not in this ticket and are not started. What they
 inherit is in [§Inherited by the follow-on](#inherited-by-the-follow-on-out-of-scope-here).
@@ -268,13 +282,14 @@ without one of them guessing.
 
 What that costs in mechanism, on each side:
 
-- Lean names the duplicate before it names the cycle. `documentRefusal`
-  used to test guardedness first, so the same duplicate earned
-  `unguardedCycle` in one direction and `illFormed` in the other. It now
-  tests the table's strict-name-order clause first and answers
-  `illFormed` both ways. No document changes from admitted to refused —
-  `pairwiseRefNames` already refused every duplicate — only the NAME
-  moves.
+- Lean asks it BEFORE the decoder, at the head of `ingestDocument`, of
+  the canonicalized value: `duplicateReferenceKey` answers `illFormed`
+  and nothing else runs. It used to fall through to `documentRefusal`,
+  which tests guardedness first, so the same duplicate earned
+  `unguardedCycle` in one direction and `illFormed` in the other. No
+  document changes from admitted to refused — `pairwiseRefNames` already
+  refused every duplicate — only the NAME moves, and it stops depending
+  on what else is wrong with the document.
 - TypeScript refuses it from the BYTES, because `JSON.parse` has already
   thrown one of the pairs away by the time any gate could look. The
   shipped byte door already turned these payloads away (the canonical
@@ -288,8 +303,9 @@ divergence in `Cas/Backend/Admission.lean` beside the empty-name and
 annotation-bag ones, and carry no corpus row. That is a smaller change
 and a larger lie — the table's "agree case for case" line would have to
 go, and a foreign payload would still get two answers. Overriding this
-is deleting one clause in `documentRefusal`, one gate call in
-`Materialize.fromPayload`, and three corpus rows.
+is deleting one `if` at the head of `ingestDocument`, two calls to
+`CanonicalSchema.admitPayloadSpelling`, the `duplicateReferenceKey`
+clause row, and two corpus rows.
 
 **Owed, not fixed, and deliberately so.** The duplicate-key hazard is
 older than this ticket. Its control is a duplicate `_tag` on a NODE with
@@ -331,11 +347,11 @@ twice makes it re-walk every path, and it is `Θ(2ⁿ)`. Measured:
 payload, 302 915 ms in Lean and 18 271 ms in TypeScript at 23 entries,
 doubling per entry. This is the ingestion door for foreign content, so
 the input is attacker-chosen and the door is synchronous on both hosts.
-The memoized walk decides the SAME predicate — `settlesMemo_iff` proves
-it agrees with the naive one name by name — so
-`references_guarded_decidable` is untouched and
-`references_guarded_decidable_memo` is the same statement over the
-procedure the door actually runs.
+The memoized walk decides the SAME predicate, so
+`references_guarded_decidable` is untouched over `Document.settles` and
+`references_guarded_decidable_memo` is the same statement over
+`Document.guardedMemo`, the procedure the door actually runs;
+`Document.guardedMemo_eq_guarded` is the whole of the difference.
 
 **L3 — the round trip extends per constructor.** For every new code `a`,
 `ofRepresentationJson (toRepresentationJson a) = some a` on the
@@ -428,16 +444,24 @@ BATTERY    DISCHARGED. Lean: `unguarded_alias_cycle_refused` and
            and not only by the theorem.
 
 LAW        L2a — the memoized walk decides what the naive one decides:
-           `d.settlesMemo n = d.settles |dom(R)| n` for every name, so
+           `Document.guardedMemo d = Document.guarded d`, hence
            `Document.guardedMemo d = true <-> d.Guarded`
            (`references_guarded_decidable_memo`).
 FALSIFIER  exhibit a document the two procedures answer differently.
-BATTERY    Lean: `settlesMemo_iff` and
-           `references_guarded_decidable_memo`, plus `#guard`s that the
-           fan table admits at a size the naive walk cannot reach. Host
-           side: test/SchemaGuardednessCost.test.ts asserts the fan
-           table at 40 entries returns inside a wall-clock budget — a
-           RUNTIME assertion on the host, nothing timed in the kernel.
+BATTERY    Lean: `references_guarded_decidable_memo` and
+           `Document.guardedMemo_eq_guarded`, carried by
+           `settleAll_grows`, `settleAll_settling` and
+           `settleAll_isSome`; plus `#guard`s in Guarded.lean that the
+           fan table admits at 30 entries — past where the naive walk
+           can go — and that the two procedures agree at 8, where it
+           can. Host side:
+           library/effects/test/SchemaGuardednessCost.test.ts asserts
+           the fan table at 40 entries returns inside a wall-clock
+           budget, and that the same shape with its tail wired back to
+           the head is still refused `unguardedCycle` — the partner
+           that would catch a memo recording a name on the way IN
+           rather than on the way out. A RUNTIME assertion on the host;
+           nothing is timed in the kernel.
 
 LAW        L3 — round trip per constructor.
 FALSIFIER  exhibit a well-formed code `a` in the new constructor's
@@ -702,14 +726,21 @@ WITNESS    one byte string, two documents:
            as "Projection payload is not canonical JSON", which the
            verdict gate reads as refused without a name.
 CLASS      conformance, claim-scope
-FIXED-BY   this fix pass, under the ASSUMED RULING recorded in §The
-           assumed ruling — refused at both doors, named illFormed,
-           before either door decides anything about the table.
-           Lean: documentRefusal tests the strict-name-order clause
-           first. TypeScript: a references-table duplicate gate reading
-           the BYTES, called from Materialize.fromPayload. Corpus rows
+FIXED-BY   c6a70338, under the ASSUMED RULING recorded in §The assumed
+           ruling — refused at both doors, named illFormed, before
+           either door decides anything about the table.
+           Lean: `duplicateReferenceKey` at the head of
+           `ingestDocument`, on the canonicalized value. TypeScript:
+           `admitPayloadSpelling`, a references-table duplicate scan
+           over the BYTES, called from `Materialize.fromPayload` and
+           from `CanonicalSchema.get`. The clause is
+           `duplicateReferenceKey`/`illFormed` in the admission table,
+           so the name is Lean's. Corpus rows
            refuse-duplicate-reference-key and
            refuse-duplicate-reference-key-last carry both directions.
+           RECEIPT: re-running the attack module against this branch
+           reddens exactly one guard — §7's `dupHarmlessLast`, which
+           expected `unguardedCycle` and now gets `illFormed`.
            OWED, out of scope by instruction: the node-level twin (a
            duplicate `_tag` on a node), which predates this ticket.
 ATTACK     Attack.lean §7 — dupHarmlessLast, dupTagNode.
@@ -730,13 +761,17 @@ WITNESS    three documents whose resolver unfolds A to get A forever,
 CLASS      adequacy, claim-scope. The same class as the Break above,
            one level up: the ruled theorem is the too-weak Q for the
            prose's claim.
-FIXED-BY   this fix pass, PROSE ONLY — no admission semantics moved,
-           because whether the estate decides productivity is an
-           operator ruling and it is open. Guarded.lean, the
-           unguardedCycle docstring and the packet's claim scope now
-           say what is decided: a constructible cycle is refused; a
-           susp-guarded self-reference is admitted, and forcing it may
-           diverge, because susp is a delay and not a constructor.
+FIXED-BY   f8a2da76, PROSE ONLY — no admission semantics moved, because
+           whether the estate decides productivity is an operator
+           ruling and it is open. Guarded.lean, the unguardedCycle
+           docstring and the packet's claim scope now say what is
+           decided: a constructible cycle is refused; a susp-guarded
+           self-reference is admitted, and forcing it may diverge,
+           because susp is a delay and not a constructor.
+           RECEIPT, and it is the honest one: §2's three theorems STILL
+           ELABORATE and its three admits guards still pass, because
+           nothing about admission moved. This row closes when the
+           ruling lands, not before.
 ATTACK     Attack.lean §2 — suspBareSelf_guarded, suspUnionKnot_guarded,
            suspIndirect_guarded, and headName, which names the
            distinction the relation does not draw.
@@ -753,14 +788,20 @@ WITNESS    there is no visited set on either side of the wire. The
            hosts.
 CLASS      termination (the variant named an algorithm that did not
            exist), claim-scope
-FIXED-BY   this fix pass — the memoized walk on both hosts.
-           settlesMemo threads the settled names and consults them
-           before descending; settlesMemo_iff proves it agrees with the
-           naive walk name by name, so references_guarded_decidable
-           stands VERBATIM and references_guarded_decidable_memo is the
-           same statement over the procedure the door runs.
-           test/SchemaGuardednessCost.test.ts is the host-side runtime
-           assertion at a size the naive walk cannot reach.
+FIXED-BY   599ef9eb — the memoized walk on both hosts.
+           `Document.settleAll` threads the settled names and consults
+           them before descending; `guardedMemo_eq_guarded` proves it
+           agrees with the naive walk, so
+           references_guarded_decidable stands VERBATIM and
+           references_guarded_decidable_memo is the same statement over
+           the procedure the door runs.
+           library/effects/test/SchemaGuardednessCost.test.ts is the
+           host-side runtime assertion at a size the naive walk cannot
+           reach.
+           RECEIPT: Guarded.lean's `#guard (fanOutTable 30).guardedMemo`
+           elaborates in milliseconds where the naive walk at 25 took
+           302 915 ms; the host assertion at 40 entries returns inside
+           a 1s budget.
 ATTACK     Attack.lean §5 — fanEntry, fanTable.
 
 BROKE      f486689f — the BATTERY, not the door
@@ -775,11 +816,17 @@ WITNESS    guardedWrong, a door with fuel ZERO —
            was the only thing standing between the shipped door and a
            door that never follows an edge.
 CLASS      adequacy
-FIXED-BY   this fix pass — corpus rows admit-reference-chain
+FIXED-BY   c6a70338 — corpus rows admit-reference-chain
            ({A: reference B, B: String}) and admit-reference-chain-two
-           (two edges). Both are admitted by the real door and refused
-           by the fuel-zero one, so the fan of §3's agreement guards
-           goes red, which is the receipt.
+           (two edges), plus `refChain`/`refChainTwo` and their
+           `Guarded` proofs in Ingest.lean. Both are admitted by the
+           real door and refused by the fuel-zero one, so the corpus
+           now separates them: 76 rows, and the fuel-zero door fails 2.
+           RECEIPT, stated because it is not what RESULTS.md predicted:
+           §3's own agreement `#guard`s still PASS, because they name
+           the four original rows rather than reading the corpus. The
+           battery closed; the attack module's hardcoded four did not
+           move. A follow-on breaker should read the corpus.
 ATTACK     Attack.lean §3 — guardedWrong,
            guardedWrong_is_not_the_decision, chain1, chain2.
 
@@ -794,10 +841,20 @@ WITNESS    a table entry both on a bare cycle and out of field order —
            guardedness filter. Same bytes, both doors refuse, different
            names, and no corpus row asked.
 CLASS      conformance
-FIXED-BY   this fix pass — the reference handler's order IS the order
-           (R10), so the TypeScript walk filters guardedness before it
-           admits the entries. Corpus row
-           refuse-unguarded-and-illformed carries it.
+FIXED-BY   c6a70338 — the reference handler's order IS the order (R10),
+           so `admitDocument` holds a discipline's refusal, runs the
+           guardedness filter, and replays the held one after. Which
+           stage a refusal belongs to is read off its NAME in the
+           admission table — notASchema and unknownDeclaration are the
+           decoder's and win at once, illFormed is a discipline's and
+           waits — so the door still refuses an undecodable entry
+           before it names a cycle, which is what Lean does. Corpus row
+           refuse-unguarded-and-illformed carries it, and the order is
+           written down in Cas/Backend/Admission.lean.
+           RECEIPT: §4's `unsortedAndCyclic` guard did NOT change
+           answer, and that is the correct outcome — RESULTS.md
+           predicted it would, on the assumption the repair might move
+           Lean. It did not: TypeScript moved to Lean.
 ATTACK     Attack.lean §4 — unsortedAndCyclic, unsortedOnly.
 
 BROKE      92a64ec4 — the packet's claim scope, line "A DEAD table
@@ -809,9 +866,9 @@ WITNESS    {A: reference "A"} under a String root. A is unreachable
            because Document.guarded runs d.names.all over every name
            rather than the reachable ones.
 CLASS      claim-scope
-FIXED-BY   this fix pass — the line now reads "not refused FOR BEING
-           DEAD", and the over-refusal relative to Effect is stated
-           where the dangling-reference line is.
+FIXED-BY   766d695f — the line now reads "not refused FOR BEING DEAD",
+           and the over-refusal relative to Effect is stated where the
+           dangling-reference line is.
 ATTACK     Attack.lean §4 — deadCycle.
 
 BROKE      326064e3 — stale prose, SelfCodec.lean:1502-1505
@@ -822,9 +879,9 @@ WITNESS    the docstring on Ast.ofRepresentationDocument still carried
            IngestRefusal.nonEmptyReferences was narrowed in the same
            commit, and the packet's own Block quotes the two as a pair.
 CLASS      claim-scope
-FIXED-BY   this fix pass — narrowed like its twin: the arm answers ONE
-           CODE, so it reads an empty table and refuses a non-empty one
-           for that reason, not for want of a constructor.
+FIXED-BY   f8a2da76 — narrowed like its twin: the arm answers ONE CODE,
+           so it reads an empty table and refuses a non-empty one for
+           that reason, not for want of a constructor.
 ATTACK     RESULTS.md N2.
 ```
 
@@ -839,6 +896,9 @@ BARE-CODE arm so every document arriving as bytes is refused
 `nonEmptyReferences` (N5 — there is no `ingestDocumentBytes`; the
 TypeScript side has the composition, and that gap is where the
 duplicate-key divergence lived). N6 — that `Document.WF`'s strict-order
-clause is unreachable at the door except through duplicates — is no
-longer a note: after this pass it is exactly the clause that refuses
-them.
+clause is unreachable at the door except through duplicates — stands,
+and is now unreachable outright: the spelling gate turns a duplicate
+away before the decoder runs, so nothing reaches the clause. It earns
+its place on the ENCODE side, where
+`Document.representationDocument_canonical` needs it, and that is where
+its docstring already says it lives.
