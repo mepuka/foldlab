@@ -366,3 +366,18 @@ records the 2026-08-29 session rulings that cut across specs.
     trail or not at all. The Mcp.lean fence stands. The operator's
     words, verbatim: "the types the algebra serves — but only
     through our honesty does she grace us with expression."
+27. **The new deep-engineering push** (2026-08-29 late): Fable fence
+    officially lifted for the topic lanes — (a) research: continued
+    development and refinement of the algebra semantics; (b) tooling
+    for falsification, theorem-proven development, and code
+    analysis; (c) planning for FULL ingestion of Effect code
+    fixtures; (d) analysis for CAS search and self-reasoning gates;
+    (e) UX/front-end open: algebra-driven front-end ORNAMENTATION
+    (deep dive at .staging/ornamentation/ — dir to be created),
+    data-dense but practical utility and aesthetics; (f) production
+    hardening: backend FILE-HANDLING audit against reference code;
+    (g) CODEGEN full push. **GATEKEEPER FIRST**: before the topic
+    gates open, one agent audits every open issue and attempts to
+    PROVE each is not a problem; where that cannot be done without
+    error, it must FIX and prove it fixed. Temporary Lean fixtures
+    and Lean scratch allowed for theorem scratch work.
