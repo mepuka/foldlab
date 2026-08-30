@@ -168,8 +168,8 @@ LAW  L6  DISJUNCTIVITY.  wp H p (Q ⊔ Q') = wp H p Q ⊔ wp H p Q'.
          law is a fact about `CasSig`, not about effects in general.
 FALS L6  exhibit p, Q, Q', w with wp H p (Q ⊔ Q') w and neither
          disjunct — i.e. a table with two outcomes at one word.
-BATT L6  `wp_join`. No counter-example exists at this rung and the
-         claim-scope line says where one does.
+BATT L6  `wp_or` (over `WPost.join`). No counter-example exists at
+         this rung and the claim-scope line says where one does.
 
 LAW  L7  EXCLUDED MIRACLE.  wp H p ⊥ = ⊥ (§2.N).
 FALS L7  exhibit p, w with wp H p (fun _ _ => False) w.
@@ -189,6 +189,11 @@ BATT L8  `wpAux_append`, `wp_append`; the counter-examples
          `falsifier_append_needs_history` (the restarted history
          dangles where the threaded one resolves) and
          `falsifier_empty_prefix` (see the break ledger).
+NOTE L8  BROKEN AS STATED ABOVE. The law is FALSE without a side
+         condition and lands with one: `env ≠ [] ∨ pre ≠ []` on
+         `wpAux_append`, `pre ≠ []` on `wp_append`. The statement is
+         left verbatim here and the break is recorded below, per the
+         ledger discipline — the law is not quietly rewritten.
 
 LAW  L9  THE WLP DISTINCTION.
          wp H p Q = wlp H p Q ⊓ wp H p ⊤   (§2.9's conservative
@@ -255,6 +260,53 @@ BATT L11 `wpB_iff_wp`; the demonstration is a registered-program-shaped
 
 ## Breaks
 
-The ledger of successful falsifications. Empty until one fires; a
-packet with an empty ledger and a green battery says the laws were
-never seriously attacked.
+The ledger of successful falsifications. A packet with an empty ledger
+and a green battery says the laws were never seriously attacked; this
+one is not empty.
+
+```
+BROKE      fa3b8f8a (the law as this packet stated it at 2029a787;
+           the defect is in the LAW, not in an implementation — the
+           falsifier fired against L8 before any body satisfied it)
+LAW        L8 SEQUENTIAL COMPOSITION / TABLE EXTENSION, verbatim:
+           "wp H (pre ++ post) Q
+              = wp H pre (fun _ w' => wp-at-the-determined-history
+                                        post Q w')"
+           — stated unconditionally, for every pre and post.
+WITNESS    pre = [], post = [.put 0 0 [] []], Q = ⊤, w = [],
+           H = the length-toy address function.
+           Left:  wp H ([] ++ post) ⊤ [] — the put is admitted, so
+                  this is TRUE.
+           Right: wp H [] (…) [] — `runPFrom` refuses an EMPTY table
+                  at an EMPTY history (`.failed "defun: empty
+                  program"`, Defun.lean:276), so `wp H []` is the
+                  constant ⊥ and this is FALSE.
+           Exhibited as `Cas.Lang.Falsifier.falsifier_empty_prefix`.
+CLASS      adequacy — the spec's own obligation. The law was written
+           from the shape of §2.6 rather than from the carrier: the
+           empty table is not a unit of composition, because the
+           carrier gives it a meaning ("answer the last answer") that
+           refuses when there is none. Nothing was wrong with any
+           implementation; the packet was.
+FIXED-BY   fa3b8f8a — L8 lands weakened, with the side condition
+           `env ≠ [] ∨ pre ≠ []` on `wpAux_append` and `pre ≠ []` on
+           `wp_append`. The witness stays in the tree as a named
+           theorem, and `runPFrom_append_refused` carries the same
+           hypothesis for the same reason.
+```
+
+What the break is worth beyond this ticket: `PProg` is a MONOID under
+`++` and its transformer is NOT a monoid homomorphism — the unit fails.
+Anything that composes tables (a scheduler, a fragment splicer, the
+lowering in `EmitProg`) inherits the same edge, and it is decidable on
+the table, before anything runs. The estate's own `runPFrom_append_done`
+(Defun.lean:1887) is stated only for a prefix that COMPLETES, which is
+why it never met this case.
+
+A second, smaller finding, recorded rather than filed: `Defun.lean`
+exports the two load clauses of the walker (`runPFrom_load_absent`,
+`runPFrom_load_present`) and no put clause, so a proof whose table is
+an append has to re-derive them. `Wp.lean` names the missing three
+(`runPFrom_put_dangling`, `runPFrom_put_error`, `runPFrom_put_ok`)
+rather than editing a fenced file. If they belong in `Defun.lean`, that
+is a promotion and a promotion is a ruling.
