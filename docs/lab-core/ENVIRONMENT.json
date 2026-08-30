@@ -147,7 +147,7 @@
       "supportInterpreter": true
     },
     {
-      "declaredOutputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json"],
+      "declaredOutputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json", "../effects/src/cas/generated/annotationPlane.ts"],
       "drivenBy": "gen:cas-schemas",
       "gatedBy": {
         "command": "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
@@ -536,7 +536,7 @@
       "dir": "{{config_root}}/library/cas",
       "inChain": true,
       "name": "gen:cas-schemas",
-      "outputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json"],
+      "outputs": ["schemas/vector-document.json", "schemas/vector-index.json", "schemas/pin-sample.json", "schemas/literal-pin.json", "schemas/annotation.json", "schemas/union-pin.json", "schemas/tagged-pin.json", "schemas/enum-pin.json", "schemas/tuple-pin.json", "schemas/exchange.json", "schemas/index.json", "schemas/addresses.json", "../effects/src/cas/generated/annotationPlane.ts"],
       "residence": "portable",
       "residenceReason": "all inputs tracked",
       "sources": ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]

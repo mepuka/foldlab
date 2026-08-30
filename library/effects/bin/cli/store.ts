@@ -316,7 +316,7 @@ export const readConfig = (
  * before `--backend` existed is a file store. */
 export const backendOf = (config: Option.Option<StoreConfig>): StoreBackend =>
   Option.match(config, {
-    onNone: () => "file" as const,
+    onNone: (): StoreBackend => "file",
     onSome: (present) => present.backend,
   })
 
@@ -599,17 +599,23 @@ export const layerStoreAt = (
   NoStoreFound | NotAStore | ConfigUnreadable,
   FileSystem.FileSystem | Path.Path
 > =>
-  Layer.unwrap(Effect.gen(function* () {
-    const location = yield* locateStore(explicit)
-    // The config is read once, here, and decides which backend is
-    // opened — so a verb never asks, and an undecodable config refuses
-    // the invocation instead of being defaulted past.
-    const config = yield* readConfig(location)
-    return Layer.merge(
-      layerCasAt(location.store, backendOf(config)),
-      Layer.succeed(StoreLocation, location),
-    )
-  }))
+  Layer.unwrap(
+    locateStore(explicit).pipe(
+      // The config is read once, here, and decides which backend is
+      // opened — so a verb never asks, and an undecodable config
+      // refuses the invocation instead of being defaulted past.
+      Effect.flatMap((location) =>
+        readConfig(location).pipe(
+          Effect.map((config) =>
+            Layer.merge(
+              layerCasAt(location.store, backendOf(config)),
+              Layer.succeed(StoreLocation, location),
+            )
+          ),
+        )
+      ),
+    ),
+  )
 
 /**
  * Create the database of a db-backed store, which is done by opening
@@ -689,19 +695,19 @@ export const initStore = (
 export const countObjects = (
   location: Located,
 ): Effect.Effect<number, never, FileSystem.FileSystem | Path.Path> =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const path = yield* Path.Path
-    const objectsDir = path.join(location.store, "objects")
-    const noEntries: ReadonlyArray<string> = []
-    const fanouts = yield* fs.readDirectory(objectsDir).pipe(
-      Effect.orElseSucceed(() => noEntries),
-    )
-    const objectName = /^[0-9a-f]{62}$/u
-    const counts = yield* Effect.forEach(fanouts, (fanout) =>
-      fs.readDirectory(path.join(objectsDir, fanout)).pipe(
-        Effect.map((entries) => entries.filter((entry) => objectName.test(entry)).length),
-        Effect.orElseSucceed(() => 0),
-      ))
-    return counts.reduce((sum, count) => sum + count, 0)
-  })
+  Effect.flatMap(FileSystem.FileSystem, (fs) =>
+    Effect.flatMap(Path.Path, (path) => {
+      const objectsDir = path.join(location.store, "objects")
+      const objectName = /^[0-9a-f]{62}$/u
+      return fs.readDirectory(objectsDir).pipe(
+        Effect.orElseSucceed((): ReadonlyArray<string> => []),
+        Effect.flatMap((fanouts) =>
+          Effect.forEach(fanouts, (fanout) =>
+            fs.readDirectory(path.join(objectsDir, fanout)).pipe(
+              Effect.map((entries) => entries.filter((entry) => objectName.test(entry)).length),
+              Effect.orElseSucceed(() => 0),
+            ))
+        ),
+        Effect.map((counts) => counts.reduce((sum, count) => sum + count, 0)),
+      )
+    }))

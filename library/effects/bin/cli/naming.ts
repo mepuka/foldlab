@@ -33,20 +33,20 @@
  * expects. A plane outside the union is not nameable, and this module
  * says so rather than inventing an arm the Lean twin does not have.
  */
-import { cast, Effect, Option } from "effect"
+import { Array as Arr, cast, Effect, Option } from "effect"
 import { Cas } from "../../src/index.ts"
-import { KindTagsByName } from "../../src/cas/generated/grammar/kindTags.ts"
+import {
+  AnnotationKindTag,
+  AnnotationNameKey,
+  AnnotationSubjectArms,
+} from "../../src/cas/generated/annotationPlane.ts"
 
-/** The kind tag annotation nodes ride: the Lean pin's own working tag
- * (`pinAnnotationKindTag`, 0x41). Working means the registry gives it
- * no row yet — the annotation plane deliberately has no reserved tag,
- * so the tag is the caller's, and this CLI is the caller. */
-export const AnnotationKindTag = 0x41
-
-/** The name seat's annotation key, exactly as the Lean worked example
- * pins it (`pinName`). Other keys are legal annotation content; this is
- * the one `cas name` writes and `cas show` puts first. */
-export const NameKey = "foldlab/name"
+/** The kind tag annotation nodes ride and the name seat's key — the
+ * EMITTED spellings (`annotationPlane.ts`, from
+ * `Cas/Schema/Annotation.lean`'s own pins, byte-gated), re-exported so
+ * every CLI module names them through this seat. */
+export { AnnotationKindTag }
+export const NameKey = AnnotationNameKey
 
 /** The annotation projection: revision 1 at the working tag, the same
  * projection the byte pins are checked against. */
@@ -57,42 +57,39 @@ export const AnnotationNode = Cas.value({
 })
 
 /**
- * The five nameable planes, in the subject union's own member order
- * (ascending tag is the canonical spelling; this list is by arm name
- * as the union declares them). Each row is the arm's everyday name and
- * the kind tag its reference expects — the table the refusal prints,
- * so the message and the union cannot drift apart silently.
+ * The nameable planes, exactly as the emitted arm table spells them —
+ * the subject union's own member order, arm name and expected kind
+ * tag. This is the table the refusal prints, so the message and the
+ * union cannot drift apart: a widened union widens the emitted table
+ * on regeneration, and the byte gate refuses until it has.
  */
-export const nameablePlanes: ReadonlyArray<readonly [string, number]> = [
-  ["exchange", Cas.Exchanges.KindTag],
-  ["git", KindTagsByName.git],
-  ["program", KindTagsByName.cont],
-  ["schema", KindTagsByName.schema],
-  ["system", Cas.Annotations.SystemKindTag],
-]
+export const nameablePlanes: ReadonlyArray<readonly [string, number]> =
+  AnnotationSubjectArms.map((row) => [row.arm, row.tag])
+
+/** The five arm constructors by arm name — the hand half of the seam,
+ * because a constructor is code and the emitted table is data. The
+ * suite walks the emitted table through `subjectFor` and fails when an
+ * emitted arm has no constructor here, so a widened union cannot ship
+ * a refusal that lies about the plane being unspellable. */
+const constructors: ReadonlyMap<string, (id: Cas.ContentId) => Cas.Annotations.Subject> =
+  new Map([
+    ["exchange", Cas.Annotations.onExchange],
+    ["git", Cas.Annotations.onGit],
+    ["program", Cas.Annotations.onProgram],
+    ["schema", Cas.Annotations.onSchema],
+    ["system", Cas.Annotations.onSystem],
+  ])
 
 /** The subject arm a stored node's kind tag selects, or none when the
- * union has no arm for that plane. The switch is over the same tags
- * `nameablePlanes` lists, so a widened union grows both together. */
+ * emitted table has no arm at that plane. */
 export const subjectFor = (
   tag: number,
   id: Cas.ContentId,
-): Option.Option<Cas.Annotations.Subject> => {
-  switch (tag) {
-    case Cas.Exchanges.KindTag:
-      return Option.some(Cas.Annotations.onExchange(id))
-    case KindTagsByName.git:
-      return Option.some(Cas.Annotations.onGit(id))
-    case KindTagsByName.cont:
-      return Option.some(Cas.Annotations.onProgram(id))
-    case KindTagsByName.schema:
-      return Option.some(Cas.Annotations.onSchema(id))
-    case Cas.Annotations.SystemKindTag:
-      return Option.some(Cas.Annotations.onSystem(id))
-    default:
-      return Option.none()
-  }
-}
+): Option.Option<Cas.Annotations.Subject> =>
+  Option.fromUndefinedOr(AnnotationSubjectArms.find((row) => row.tag === tag)).pipe(
+    Option.flatMap((row) => Option.fromUndefinedOr(constructors.get(row.arm))),
+    Option.map((make) => make(id)),
+  )
 
 /** One annotation found about a subject: the annotation node's own
  * address, and what it says. */
@@ -148,8 +145,6 @@ export const annotationsAbout = (
           Effect.orElseSucceed(() => Option.none<FoundAnnotation>()),
         ))
     ),
-    Effect.map((found) =>
-      found.filter(Option.isSome).map((some) => some.value).toSorted(byNameFirst)
-    ),
+    Effect.map((found) => Arr.getSomes(found).toSorted(byNameFirst)),
     Effect.orElseSucceed((): ReadonlyArray<FoundAnnotation> => []),
   )

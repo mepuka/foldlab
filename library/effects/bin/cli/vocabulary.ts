@@ -36,6 +36,7 @@ export const vocabularyWords: ReadonlyArray<readonly [string, string]> = [
   ["history", "the record of a run: what was admitted, in order"],
   ["in flight", "how many store-touching calls the host runs at once"],
   ["doctor", "the checkup: what this store is, and what the lab has proved"],
+  ["name", "a human word on stored content — an annotation, never identity"],
 ]
 
 /** The words as `--help` prints them, one per line under a heading. */

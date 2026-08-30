@@ -3,6 +3,7 @@ import Cas.Vectors.Schema
 import Cas.Schema.Annotation
 import Cas.Schema.Exchange
 import Cas.Schema.Notation
+import Cas.Backend.Ts
 import Gate
 
 /-!
@@ -213,15 +214,119 @@ def indexDocument : String :=
     ("schemas", .arr rows)
   ]) ++ "\n"
 
+/-! ## The annotation plane, projected to the CLI (the naming seat)
+
+`cas name` writes annotation nodes, and to do it the CLI must spell
+three facts this plane owns: the working tag annotation nodes ride
+(`pinAnnotationKindTag`), the name seat's key (`pinName.key`), and the
+subject union's arm-to-tag table. Hand copies of those spellings in
+TypeScript are drift channels — the CLI lane carried all three by hand
+until this projection. The arms are READ OFF
+`AnnotationSubject.schemaCode`, the deriving handler's own output, so a
+widened union grows the emitted table on the next regeneration and the
+byte gate says so until that regeneration has run. -/
+
+/-- The subject arms, read off the code itself: each member of the
+`oneOf` is a struct whose `_tag` literal names the arm and whose
+`address` field is a reference at the plane's tag. A member of any
+other shape is dropped by the match — and the totality guard below is
+what makes a drop a build failure rather than a silent narrowing. -/
+def subjectArms : List (String × UInt8) :=
+  match AnnotationSubject.schemaCode with
+  | .union members _ => members.filterMap fun member =>
+      match member with
+      | .struct [("_tag", _, .lit (.str arm)), ("address", _, .ref tag)] =>
+          some (arm, tag)
+      | _ => none
+  | _ => []
+
+-- Totality over the union: every member is an arm; none was dropped by
+-- the shape match above.
+#guard (match AnnotationSubject.schemaCode with
+  | .union members _ => members.length
+  | _ => 0) == subjectArms.length
+
+-- The table is the five planes, at the library's own tag spellings —
+-- read off the code and equal to the named constants, so the emitted
+-- projection, the union, and the tag definitions cannot drift apart.
+#guard subjectArms == [
+  ("exchange", exchangeKindTag), ("git", gitKindTag),
+  ("program", programKindTag), ("schema", schemaKindTag),
+  ("system", systemKindTag)]
+
+open Cas.Backend.Ts in
+private def armExpr (arm : String × UInt8) : Expr :=
+  .objectML [("arm", .str arm.1), ("tag", .int (Int.ofNat arm.2.toNat))]
+
+private def armTypeBlock : String :=
+  "/** One nameable plane: the subject union's arm name, and the wire\n" ++
+  " * kind tag a reference through that arm expects at its target. */\n" ++
+  "export interface AnnotationSubjectArm {\n" ++
+  "  readonly arm: string\n" ++
+  "  readonly tag: number\n" ++
+  "}"
+
+open Cas.Backend.Ts in
+private def annotationPlaneModule : Module where
+  header := [
+    "GENERATED — do not edit. THE ANNOTATION PLANE, as data: the",
+    "working tag annotation nodes ride, the name seat's key, and the",
+    "subject union's arm-to-tag table, emitted from",
+    "`library/cas/Cas/Schema/Annotation.lean` by `lake exe schemas`;",
+    "regeneration is byte-identity-gated (`--check`, wired into",
+    "`check:cas`). The arm table is read off",
+    "`AnnotationSubject.schemaCode` — the deriving handler's output —",
+    "so it widens when the union does and never before.",
+    "",
+    "`bin/cli/naming.ts` is this file's consumer: `cas name` writes",
+    "annotation nodes at `AnnotationKindTag` under `AnnotationNameKey`,",
+    "and refuses subjects on planes this table does not carry."
+  ]
+  imports := []
+  decls := [
+    .raw armTypeBlock,
+    .const {
+      name := "AnnotationKindTag",
+      doc := ["The working tag annotation nodes ride — the Lean pin's own",
+        "choice (`pinAnnotationKindTag`). Working means the kind registry",
+        "gives it no row: the annotation plane deliberately has no",
+        "reserved tag, and this is the caller's spelling, pinned."],
+      value := .int (Int.ofNat pinAnnotationKindTag.toNat) },
+    .const {
+      name := "AnnotationNameKey",
+      doc := ["The name seat's annotation key, exactly as the Lean worked",
+        "example pins it (`pinName`)."],
+      value := .str pinName.key },
+    .const {
+      name := "AnnotationSubjectArms",
+      type := some "ReadonlyArray<AnnotationSubjectArm>",
+      doc := ["The nameable planes, in the subject union's own member",
+        "order: arm name and expected kind tag, read off the union's",
+        "canonical code."],
+      value := .arr (subjectArms.map armExpr) }
+  ]
+
+/-- The emitted projection, rendered in the effects package's style. -/
+def annotationPlaneRendered : String :=
+  Cas.Backend.Ts.Render.module Cas.Backend.Ts.house0 annotationPlaneModule
+
+/-- Where the projection lands: the effects package's generated tree,
+beside the grammar registry it complements. -/
+def annotationPlaneTarget : System.FilePath :=
+  "../effects/src/cas/generated/annotationPlane.ts"
+
 /-- The registry rendered as the driver's fixtures: one payload file
 per pinned code — the file's bytes ARE the schema-node payload — then
-the tracking manifest and the store-address file. -/
+the tracking manifest, the store-address file, and the annotation-plane
+projection the CLI's naming seat consumes. -/
 def fixtures : IO (List Gate.Fixture) :=
   return registry.map (fun (name, ast) =>
       ({ path := pathOf name, content := ast.payload,
          label := "canonical payload" } : Gate.Fixture)) ++
     [⟨indexPath, indexDocument, s!"{registry.length} schemas"⟩,
-     ⟨addressesPath, addressesDocument, s!"{registry.length} addresses"⟩]
+     ⟨addressesPath, addressesDocument, s!"{registry.length} addresses"⟩,
+     ⟨annotationPlaneTarget, annotationPlaneRendered,
+       s!"{subjectArms.length} nameable planes, the annotation-plane projection"⟩]
 
 end SchemasMain
 

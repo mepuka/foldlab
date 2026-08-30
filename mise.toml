@@ -223,6 +223,7 @@ outputs = [
   "schemas/exchange.json",
   "schemas/index.json",
   "schemas/addresses.json",
+  "../effects/src/cas/generated/annotationPlane.ts",
 ]
 run = "lake exe schemas"
 

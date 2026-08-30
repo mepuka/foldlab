@@ -48,6 +48,7 @@ current verb set, read off.
 | history | the record of a run: what was admitted, in order | the store word — see collision 5 |
 | in flight | how many store-touching calls the host runs at once | `ServePolicy.maxInFlight`, the host's own bound — `cas status` prints it |
 | doctor | the checkup: what this store is, and what the lab it sits in has proved so far | `cas doctor` — the runtime reader of the emitted ledgers |
+| name | a human word on stored content — an annotation, never identity | `Annotation` at the pinned key `foldlab/name` (working tag 0x41) — `cas name` writes and publishes one, `cas show` reads it back |
 
 ## The protocol register
 
@@ -95,6 +96,7 @@ current verb set, read off.
    not appear in the CLI at all.
 5. "Word" is the model's name for a run's history, and it stays the
    name in `--json` and in every claim (word equality is the
-   conformance gate). Human output says "history": doctor's human line
-   reads "identical admission history", and its `--json` line says
-   word.
+   conformance gate). Human output says "history": `cas run`'s human
+   line reads `history N admitted`, and its `--json` says `word`.
+   No other verb renders one yet — `cas doctor` reads the emitted
+   ledgers and does not replay anything.
