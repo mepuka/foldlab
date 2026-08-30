@@ -1,0 +1,554 @@
+# PDD-7 — the contract packet: the sum algebra and the carrier's missing monad laws
+
+Ticket: `.staging/wave-2/PDD-7.md`. Process: `.claude/skills/implement/`
+(SKILL.md, CONTRACT.md, IMPLEMENTER.md, BREAKER.md, CATALOG.md); lane
+law `library/cas/AGENTS.md`. Owed-ledger item 2 of
+`.staging/algebraic-review/THE-ALGEBRA.md` (§2.1, §2.3, §3.2).
+
+Authored before `Cas/Backend/SumAlgebra.lean` exists and committed
+ahead of it, so the git history carries the order (CONTRACT.md §The
+pin).
+
+```
+CATEGORIES algebraic-laws, lemmas-proofs, contracts,
+           abstraction-modules
+```
+
+CATALOG rows opened for those tags, and what each contributed:
+
+- **§6.2 / §7.2 (`algebraic-laws`)** — unit, associativity and
+  homomorphism are the shapes here, and the falsifier for each is an
+  exhibited pair, not an argument. `Prog.inl` is claimed to be a monad
+  MORPHISM, so §7.2's `UnaryToNat/Add` square (`h(op(x,y)) ≠
+  op'(h x, h y)`) is the exact template for L25's falsifier.
+- **§5.7 Mirror, the canonical trap (`algebraic-laws`)** — "a shallow
+  involution can pass while the DEFINING equation fails; falsify the
+  defining equation, not only the composite." This row is the whole
+  reason this packet does not stop at L31. `handleLlm oracle (liftCas
+  p) = p` is a composite round-trip; it is satisfied by injections
+  that are wrong on the operation count, so the defining equations
+  (L23, L25) are stated and attacked separately.
+- **§8.0 / §8.3 the sorting trinity (`specification-design`, opened
+  through `algebraic-laws`)** — a law set that is individually true
+  and jointly too weak is the failure this process exists to catch.
+  PDD-1's ledger fired exactly here. The analogue below is
+  ADQ-SUM/ADQ-INL: the laws are stated, and then it is PROVED that
+  nothing else satisfies them.
+- **§9.2 / §9.4 / §9.5 (`abstraction-modules`)** — every public
+  contract stated over the abstraction function, and each operation
+  commuting with it. `Prog.inl` IS an abstraction function here (from
+  `Prog S` into `Prog (S ⊕ₛ T)`), and §9.5's square is L23/L25.
+  §9.4's "export the observation, not representation equality" is why
+  L26 (injectivity) is stated at all — it is what licenses reading
+  `p.inl = q.inl` as `p = q` at a client.
+- **§5.1 / §5.2 (`lemmas-proofs`)** — no bodyless lemma; every
+  statement below carries a kernel-checked body, and the wrong
+  instantiation is the named risk (a lemma about `Prog.inl` invoked
+  where `Prog.inr` sits).
+- **§1.4 / §2.7 (`contracts`)** — the adequacy gap and the
+  favorable-witness proof. Both adversaries below are §1.4's shape:
+  a `c'` satisfying the stated contract while breaking the intent.
+- **§B.7 / §B.8 (`proof-mechanics`, added by the breaker hand — the
+  ticket did not tag it and the uniqueness theorems need it)** —
+  universals proved for arbitrary, existentials discharged by
+  exhibiting the witness. ADQ-INL is a universal over every target
+  monad and every handler pair; the refutations are existentials with
+  their witnesses in the tree.
+
+## The degree claim
+
+**I have shown algebraically that this can be implemented at the Lean
+escalation tier**: every law below is a Lean statement over the
+shipped `Prog`/`Sig`/`Handler` declarations (`Cas/Lang/Prog.lean:41-50`,
+`Cas/Lang/Sig.lean:20-25`, `Cas/Lang/Handler.lean:63-66`,
+`Cas/Lang/Interp.lean:184-187`, `Cas/Lang/Ops.lean:55-63`), proved to
+the kernel with no `sorry`, no `native_decide`, and no new axiom; every
+falsifier is a formal counter-`example` or a `¬ (∀ …)` theorem whose
+witness the kernel evaluates.
+
+The degree is higher than "each law proved", and the packet claims the
+higher thing: for the two definitions the ticket says carry the whole
+protection — `Handler.sum` and `Prog.inl`/`Prog.inr` — the law set is
+proved CATEGORICAL. ADQ-SUM and ADQ-INL below say that any
+implementation satisfying the stated laws IS the shipped one,
+pointwise. That is the adequacy class discharged rather than argued,
+in the shape PDD-2's `anchor_pins_wp` established for `wp`.
+
+**The escalation gate is named, and it is a NEGATIVE gate.** This slice
+adds theorems only, in a module outside `Walk.libraryImports`. Nothing
+it proves reaches the host as new bytes, so `γ` is discharged by
+byte-identity of every generated surface under `mise run check:cas` —
+the claim is "the model gained theorems and the emitted TypeScript did
+not move", and a red `--check` refutes it. There is no host battery
+because there is no host change; per CONTRACT.md §Escalation this
+packet's floor is the Lean statement plus the byte gate, written down
+rather than implied.
+
+## The module's home, and why it is not `Cas/Lang/`
+
+Stated up front because a reader who goes looking for sum-algebra laws
+will look in `Cas/Lang/` and not find them.
+
+The theorem module lands at **`library/cas/Cas/Backend/SumAlgebra.lean`**
+and its declarations live in `namespace Cas.Lang`, where their subjects
+live. The path is forced by the ticket's fence ("no existing file
+edited") against Lake's target graph:
+
+- `[[lean_lib]] name = "Cas"` carries no `globs`, so it builds the root
+  module `Cas` and its import closure and nothing else. A new
+  `Cas/Lang/Sum.lean` that no module imports would be built by NO
+  target — `lake --wfail build` would be green while never elaborating
+  a line of it, and the ticket's gate would be vacuous.
+- Getting it built means either editing `Cas/Lang/Lang.lean` to import
+  it, or editing `lakefile.toml` to declare a library for it (PDD-2's
+  device for `Cas.Lang.Wp`). Both edit an existing file. `lakefile.toml`
+  is additionally the one file all three wave-2 castles would edit, so
+  the fence is protecting a real collision, not a formality.
+- `[[lean_lib]] name = "CasBackend"` carries `globs = ["Cas.Backend.+"]`
+  and is in `defaultTargets` and in `check:cas`'s explicit build list.
+  A new module under `Cas/Backend/` is therefore kernel-checked with
+  zero edits. `Walk.libraryImports` (`tools/Walk.lean:45-56`) names the
+  backend leaves INDIVIDUALLY, so a module not on that list is outside
+  the surface, obligation and law ledgers and cannot move their bytes.
+
+This is PDD-1's device, and PDD-9's ticket names it as the device to
+use. `Cas/Backend/Canon.lean` is a pure theorem module living there for
+exactly this reason. The cost is named rather than hidden: **the module
+path says `Backend` and the module is not backend code.** Promoting it
+to `Cas/Lang/` is a one-line lakefile change and a ruling, not a side
+effect, and it is listed as owed at the end of this packet.
+
+## The algebra
+
+Carriers, all shipped, none introduced:
+
+```
+Sig            ⟨Op : Type, Ans : Op → Type⟩          Sig.lean:13-15
+S ⊕ₛ T         ⟨S.Op ⊕ T.Op, Sum.elim S.Ans T.Ans⟩   Sig.lean:20-25
+Prog S A       .pure a | .vis (e : S.Op) (k : S.Ans e → Prog S A)
+                                                     Prog.lean:25-27
+Prog.bind      the monad                             Prog.lean:31-33
+Prog.op e      .vis e .pure                          Prog.lean:40
+Prog.inl/.inr  Prog S A → Prog (S ⊕ₛ T) A            Prog.lean:43-50
+Handler S M    ⟨handle : (op : S.Op) → M (S.Ans op)⟩ Handler.lean:42-43
+interpret h    Prog S A → M A                        Handler.lean:47-49
+Handler.sum    Handler S M → Handler T M
+                 → Handler (S ⊕ₛ T) M                Handler.lean:63-66
+idHandler      Handler S (Prog S)                    Representation.lean:63-64
+failWith/require                                     Ops.lean:55-60
+liftCas        Prog.inl at AgentSig                  Ops.lean:63
+handleLlm      the hand-rolled AgentSig split        Interp.lean:184-187
+```
+
+Two handlers are DEFINED by this slice, and neither is a new type —
+both are values of the shipped `Handler`:
+
+```
+inlHandler S T : Handler S (Prog (S ⊕ₛ T)) := ⟨fun op => .vis (.inl op) .pure⟩
+inrHandler S T : Handler T (Prog (S ⊕ₛ T)) := ⟨fun op => .vis (.inr op) .pure⟩
+llmOracleHandler o : Handler LlmSig (Prog CasSig) := ⟨fun (.infer q) => .pure (o q)⟩
+```
+
+`llmOracleHandler` is L30's right-hand side, spelled once so the law
+can be stated as an equation between two functions rather than as
+prose. `inlHandler`/`inrHandler` are the reviewer's own proposal
+(handlers-semantics.md C.2 row 3.3: "`Prog.inl` / `Prog.inr` are
+`interpret` of the injection handlers — makes 3.1/3.2 corollaries of
+2.2 and kills the hand-rolled recursions"); this packet takes it, and
+they are what makes ADQ-INL provable at all.
+
+## The headings
+
+```
+REQUIRES   Nothing. Every law is total on its carrier: no partial
+           operation, no side condition, no premise on any argument.
+           In particular NO PREMISE ON `H`. The address function does
+           not appear in a single statement in this slice — these are
+           laws of the signature/program/handler algebra, strictly
+           upstream of the store's admission judgment — so CAS-003's
+           "premises on `H` are named at their lattice level" generates
+           nothing here, and the packet says so rather than leaving a
+           reader to wonder which lattice level was assumed.
+
+           Run-relative note: no law below quantifies over starting
+           words, because none of them mentions a word. L31 is the one
+           statement a reader might expect to be run-relative — it is
+           not: it is an equation between PROGRAMS (stratum 2), which
+           is strictly stronger than the same claim at any word, and
+           the claim-scope section says so.
+
+ENSURES    There is no second state. Every declaration under contract
+           is a pure function of its arguments, so `old` is vacuous and
+           the two-state postcondition degenerates to the equations
+           below.
+
+DECREASES  Structural recursion on `Prog`, everywhere. Every induction
+           and every definition in this slice recurses on `k r` — a
+           constructor child of `.vis e k` — into the type's own
+           structural order (CATALOG §4.3: "recurse on structurally
+           included children and the decrease is free"). No fuel, no
+           existential variant, no new well-founded order is owed:
+           unlike PDD-2, nothing here runs anything.
+
+           The private adversaries (`doubleInl`, below) recurse the
+           same way and are total for the same reason. This matters:
+           an adversary that failed to terminate would refute nothing.
+
+FRAME      Reads: the shipped declarations named in "The algebra".
+           Writes: nothing — no state, no store, no word, no address.
+
+           The FILE frame is the load-bearing half. This slice adds
+           TWO new files:
+             library/cas/contracts/PDD-7.contract.md   (this packet)
+             library/cas/Cas/Backend/SumAlgebra.lean   (the theorems)
+           and edits NO existing file — not `Prog.lean`, not
+           `Sig.lean`, not `Handler.lean`, not `Interp.lean`, not
+           `Ops.lean`, not `lakefile.toml`, not `Cas/Lang/Lang.lean`.
+           The consequence is checked, not assumed: the new module is
+           outside `Walk.libraryImports`, so `surface`, `obligations`
+           and `laws` cannot see it, and every byte gate in
+           `check:cas` must stay identical.
+```
+
+## The laws, each with its falsifier
+
+Every falsifier is EXECUTABLE against the Lean model — a counter-
+`example`, a `¬ (∀ …)` theorem, or a `#guard`. Per CONTRACT.md the
+falsifier must be executable against the artifact under contract; the
+artifact here is the Lean model, and `check:cas` is the gate that
+carries the slice to the host as a negative claim.
+
+Battery, for every row below: `library/cas/Cas/Backend/SumAlgebra.lean`.
+
+### The carrier's stragglers (§2.1)
+
+```
+LAW  L5    (Prog.op e).bind k = Prog.vis e k
+           The smart constructor and the raw constructor agree. Every
+           program written under R14a P2 ("programs are authored as
+           smart constructors composed by bind") is a `.vis` tree only
+           because of this equation, and it is stated nowhere.
+FALS L5    exhibit S, e, k with (Prog.op e).bind k ≠ Prog.vis e k.
+BATT L5    `Prog.op_bind`.
+
+LAW  L7    (failWith r).bind f = failWith r
+           Failure absorbs its continuation. Every user of `require`
+           assumes it (THE-ALGEBRA §2.1 L7).
+FALS L7    exhibit r, f with (failWith r).bind f ≠ failWith r.
+BATT L7    `failWith_bind`.
+
+LAW  L8    require true  r = Prog.pure ()
+           require false r = failWith r
+FALS L8    exhibit r with either equation failing.
+BATT L8    `require_true`, `require_false`.
+```
+
+### The sum block (§2.3)
+
+```
+LAW  L21   (h.sum g).handle (Sum.inl op) = h.handle op
+LAW  L22   (h.sum g).handle (Sum.inr op) = g.handle op
+FALS L21/22 exhibit h, g, op where the composed handler answers with
+           the wrong summand's meaning. The witness that makes this
+           real is `swapSum` below: at S = T the arms can be exchanged
+           and, with no law stated, nothing notices
+           (handlers-semantics.md B.9's own witness).
+BATT L21/22 `Handler.sum_handle_inl`, `Handler.sum_handle_inr`;
+           adversary `swapSum` and `swapSum_not_sum`.
+
+LAW  L23   interpret (h.sum g) p.inl = interpret h p
+           — for EVERY target monad M and EVERY handler pair. The law
+           every `liftCas` and `liftRootedCas` consumer assumes.
+FALS L23   exhibit M, h, g, p with interpret (h.sum g) p.inl ≠
+           interpret h p.
+BATT L23   `interpret_inl`; the adversary `doubleInl` fires this
+           falsifier against ITSELF (`doubleInl_not_interpret_inl`),
+           which is what makes L23 the load-bearing row.
+
+LAW  L24   interpret (h.sum g) q.inr = interpret g q
+FALS L24   exhibit M, h, g, q with the two sides differing. The
+           witness is `badAgentSum` below — the adversary that
+           DISCARDS g (THE-ALGEBRA §3.2 ADVERSARY 1).
+BATT L24   `interpret_inr`; `badAgentSum`, `badAgentSum_not_interpret_inr`.
+
+LAW  L25   Prog.inl is a monad morphism:
+             (Prog.pure a).inl = Prog.pure a
+             (p.bind f).inl    = p.inl.bind (fun a => (f a).inl)
+           and the same two for Prog.inr.
+FALS L25   exhibit p, f with (p.bind f).inl ≠ p.inl.bind (·.inl ∘ f)
+           — CATALOG §7.2's homomorphism square, at this square.
+BATT L25   `Prog.inl_pure`, `Prog.inl_bind`, `Prog.inr_pure`,
+           `Prog.inr_bind`.
+
+LAW  L26   Prog.inl is injective; Prog.inr is injective.
+           p.inl = q.inl → p = q.
+FALS L26   exhibit p ≠ q with p.inl = q.inl.
+BATT L26   `Prog.inl_injective`, `Prog.inr_injective`.
+
+LAW  L30   Prog.handleLlm oracle
+             = interpret (idHandler.sum (llmOracleHandler oracle))
+           The right-hand side is a VALUE of the existing `Handler` —
+           no new type. The hand-rolled AgentSig split at
+           Interp.lean:184-187 IS an interpretation.
+FALS L30   exhibit oracle, p where the hand-rolled recursion and the
+           interpretation disagree.
+BATT L30   `handleLlm_eq_interpret` (pointwise) and
+           `handleLlm_eq_interpret_fun` (the function equation as
+           THE-ALGEBRA states it).
+
+LAW  L31   handleLlm oracle (liftCas p) = p
+           The law every `runAgent` client assumes: lifting a store
+           program into the agent language and handling inference away
+           returns the program itself, on the nose.
+FALS L31   exhibit oracle, p with handleLlm oracle (liftCas p) ≠ p.
+BATT L31   `handleLlm_liftCas`; and `handleLlm_liftCas_via_laws`, the
+           same fact re-derived from L30 + L23 + `interpret_id`, so
+           the packet's own laws are shown to compose rather than
+           merely coexist.
+```
+
+### The machinery, stated because it is load-bearing
+
+```
+LAW  INJ-H interpret (inlHandler S T) p = p.inl
+           interpret (inrHandler S T) q = q.inr
+           The hand-rolled injections ARE interpretations
+           (handlers-semantics.md C.2 row 3.3).
+FALS INJ-H exhibit p where the interpretation and the recursion differ.
+BATT INJ-H `interpret_inlHandler`, `interpret_inrHandler`.
+
+LAW  SUM-ID (inlHandler S T).sum (inrHandler S T) = idHandler
+           The injection handlers sum to the identity handler. This is
+           the bridge ADQ-INL crosses.
+FALS SUM-ID exhibit an operation on which the two disagree.
+BATT SUM-ID `sum_inlHandler_inrHandler`.
+```
+
+Extensionality for handlers (`h.handle = g.handle → h = g`) is
+THE-ALGEBRA's **L16 and it belongs to PDD-8**, which is running in
+parallel and owns that row. This packet needs it as machinery and does
+not claim it: the module carries a `private` helper under a different
+name (`handler_eq_of_handle`) with a docstring saying so, and no public
+declaration here is named `Handler.ext`. On merge, PDD-8's public L16
+and this private helper coexist without collision, and the row stays
+PDD-8's.
+
+### The adequacy laws — what excludes the wrong implementations
+
+This is the section the ticket asks for ("state what excludes it"), and
+it is stated as THEOREMS rather than as reasoning.
+
+```
+LAW  ADQ-SUM  L21 and L22 are CATEGORICAL for Handler.sum:
+                for every k : Handler (S ⊕ₛ T) M,
+                  (∀ op, k.handle (.inl op) = h.handle op) →
+                  (∀ op, k.handle (.inr op) = g.handle op) →
+                    k = h.sum g
+              So `badSum` and `swapSum` are not merely refuted by an
+              example — no wrong-but-passing `Handler.sum` EXISTS.
+FALS ADQ-SUM  exhibit k satisfying both hypotheses with k ≠ h.sum g.
+BATT ADQ-SUM  `Handler.sum_unique`.
+
+LAW  ADQ-INL  L23 is CATEGORICAL for Prog.inl:
+                for every ι : {A : Type} → Prog S A → Prog (S ⊕ₛ T) A,
+                  (∀ M [Monad M] [LawfulMonad M] (h : Handler S M)
+                     (g : Handler T M) {A} (p : Prog S A),
+                       interpret (h.sum g) (ι p) = interpret h p) →
+                  ∀ {A} (p : Prog S A), ι p = p.inl
+              and the mirror statement for `inr`. The proof is the
+              instantiation M := Prog (S ⊕ₛ T), h := inlHandler,
+              g := inrHandler, closed by SUM-ID, `interpret_id` and
+              INJ-H.
+FALS ADQ-INL  exhibit ι satisfying the hypothesis at every lawful
+              target and every handler pair, with ι p ≠ p.inl at some
+              p. `doubleInl` is the candidate the ticket names, and the
+              theorem says the exhibit does not exist.
+BATT ADQ-INL  `Prog.inl_unique`, `Prog.inr_unique`.
+
+LAW  ADQ-DBL  THE-ALGEBRA §3.2, verbatim, on the doubling injection:
+                "KILLED BY interpret_inl (L23) together with `inl` is a
+                 monad morphism (L25); nothing weaker separates them"
+              (prog-carrier.md H-3 states it identically as "S3
+              together with S5; nothing weaker separates them").
+              Two conjuncts, both under attack:
+                (a) L23 refutes `doubleInl`;
+                (b) L25 is NECESSARY — L23 alone does not separate them.
+FALS ADQ-DBL  (a) is falsified by exhibiting M, h, g, p at which
+              `doubleInl` satisfies L23. (b) is falsified by EITHER
+              exhibiting a proof that `doubleInl` satisfies L25 — in
+              which case L25 excludes nothing and cannot be doing the
+              work the record credits it with — OR by proving L23
+              categorical (ADQ-INL), in which case nothing weaker is
+              needed because L23 alone already suffices.
+BATT ADQ-DBL  `doubleInl`, `doubleInl_not_interpret_inl`,
+              `doubleInl_pure`, `doubleInl_bind`, and ADQ-INL.
+```
+
+ADQ-DBL is written as a law of the RECORD, not of the code, and it is
+written before the proof runs. If its second conjunct survives, the
+review document is confirmed. If it falls, the falsification is data
+and lands in the Breaks ledger below with its witness — that is the
+whole point of stating it here rather than quietly proving the version
+that turns out to be true.
+
+## The adversaries, kept in the tree
+
+Three, each a `private` definition in the battery module with its
+refutation beside it. They are record, not scratch (BREAKER.md, "attack
+artifacts are record"), and they stay so a later hand cannot relax a
+law back without a red build.
+
+```
+swapSum     : at S = T, the sum with its arms exchanged.
+              Satisfies every law that existed before this packet
+              (there were none). Refuted by L21.
+
+badAgentSum : Handler AgentSig M built from a CasSig handler alone,
+              answering every `infer` with `pure ""` and DISCARDING g.
+              THE-ALGEBRA §3.2 ADVERSARY 1. Satisfies the L21 and L23
+              analogues — proved, so the reader can see which law does
+              the work — and is refuted by L22/L24 and by ADQ-SUM.
+
+doubleInl   : performs every operation TWICE, keeps the first answer.
+              THE-ALGEBRA §3.2 ADVERSARY 2, the ticket's named
+              canonical wrong-but-passing candidate. The word gate is
+              blind to it BY CONSTRUCTION (a second put of the same
+              node is `duplicate` and leaves the word unchanged,
+              Handler.lean:85; a second load is `Word.find` again;
+              `fail` answers `Empty`), so the statement is the whole
+              of the protection. Refuted by L23, at a handler that
+              COUNTS operations — which is exactly the observation the
+              word cannot make.
+```
+
+The counting handler is the methodological point of this packet and is
+called out so it is not read as a toy: L23's quantification over EVERY
+target monad is not generality for its own sake. It is what puts an
+operation-counting observation inside the law's reach, and the
+operation count is precisely the thing THE-ALGEBRA §3.2 says the
+estate's only mechanical check cannot see. A law stated only at
+`RefM` would be blind in the same way the gate is.
+
+## Claim-scope — what these theorems do NOT say
+
+The anti-overclaim class, written before the proofs so it cannot be
+written to fit them.
+
+- **Not claimed: anything about host code.** No TypeScript is a proof
+  subject here; no generated byte moves and no word-equality vector is
+  added. No soundness word attaches to any host artifact (estate C5).
+- **Not claimed: `ObsEq H (liftCas p) (doubleInl p)`.** THE-ALGEBRA
+  §3.2 and prog-carrier H-3 assert that the doubling injection is
+  word-invisible for every store program, and this packet REPEATS that
+  assertion as motivation without proving it. It is a claim about
+  `referenceHandler` at `RefM`, not about the sum algebra, and proving
+  it needs `put`-idempotence and `load`-purity lemmas this slice does
+  not have. What is proved is the positive direction that matters:
+  `doubleInl` is refuted at a handler that observes the count. A reader
+  must not take this packet as evidence that the word gate IS blind —
+  only that the laws do not depend on its not being.
+- **Not claimed: L27 or L28.** `⊕ₛ` has no unit (`Sig.empty` does not
+  exist) and is not associative or commutative as an equation in Lean.
+  THE-ALGEBRA marks both "not stateable" pending ruling Q7 and this
+  packet does not reopen them. So `⊕ₛ` is NOT proved to be a monoidal
+  structure, and nothing here should be read as saying signatures form
+  a symmetric monoidal category.
+- **Not claimed: L29.** That our `⊕ₛ` + `inl`/`inr` is ITrees' `E +' F`
+  with `Subevent` stays ASSERTED ✗. `Subevent` is a resolution class
+  closed under nesting; ours is two hand-applied functions. Proving
+  L25/L26 does not close that gap, and this packet does not pretend it
+  does.
+- **Not claimed: L32.** "`handleLlm` respects `bind`" is a separate row
+  and is not proved here. L30 makes it a corollary of `interpret_bind`
+  for a reader who wants it, but the corollary is not stated, so the
+  row stays OWED.
+- **Not claimed: the consolidation.** handlers-semantics C.2 row 3.4
+  offers "or delete `handleLlm` and define it this way". L30 proves
+  the two agree; DELETING the hand-rolled recursion would edit
+  `Interp.lean` and move the surface ledger, which the fence forbids
+  and which is a ruling in any case. `Roots.stepRooted` and any
+  incoming `WordSig` split remain hand-rolled and unproved — this
+  packet gives them the law they can be claimed against, and claims
+  nothing about them.
+- **Not claimed: universe generality for L30.** `interpret` lands in
+  `M : Type → Type v`, so its `A` is `Type`. L30 is therefore stated at
+  `A : Type`. L25, L26 and L31 are proved by direct induction and hold
+  at `A : Type u`; the packet states each at the widest universe its
+  proof actually reaches, and does not silently narrow the others to
+  match.
+- **Not claimed: that this module is in the library's ledgers.**
+  `Cas.Backend.SumAlgebra` is built by the `CasBackend` glob and
+  kernel-checked by `lake build`, and it is outside
+  `Walk.libraryImports`, so it is invisible to the surface, obligation
+  and law ledgers — which is exactly why the "moves no bytes" gate
+  holds. Promoting it into that walk is a promotion, and a promotion
+  is a ruling. (Same device and same disclosure as PDD-2's `CasWp`.)
+- **Not claimed: that the exhibits file was used.** The ticket cites
+  `.staging/algebraic-review/handlers-semantics-exhibits.lean` §1, §2,
+  §6 as carrying proof sketches. **That file does not exist in the
+  tree at `main` (00ea1519), and no commit reachable from `main` ever
+  added it.** Every proof in this slice is developed from the carriers
+  and checked by the kernel; the review documents' law ROWS are cited
+  as prior art for the STATEMENTS (THE-ALGEBRA §2.1/§2.3,
+  handlers-semantics C.2 §3, prog-carrier S1–S10), which is all that is
+  actually on disk. Nothing was taken on trust, because there was
+  nothing to take.
+
+## Obligation classes in play
+
+`adequacy` — the class this packet is built around, and the only one
+with real work in it: ADQ-SUM and ADQ-INL discharge it by proving the
+law sets categorical, and ADQ-DBL puts the record's own account of it
+under attack. `abstraction` — §9.5's square, at `Prog.inl` as the
+abstraction function (L23, L25) and §9.4's exported observation (L26).
+`algebraic-laws` — unit, morphism, injectivity. `claim-scope` — the
+section above, and the L27/L28/L29/L32 boundary in particular.
+`conformance` — the negative byte gate. `termination` — structural, on
+the constructor children, including for the adversaries.
+
+`domain`, `contract`, `frame`, `invariant`, `loops` and
+`mutation-frames` generate nothing: there is no partial operation, no
+state, no two-state postcondition, no representation invariant and no
+iteration anywhere in this slice. Per CONTRACT.md, classes that do not
+apply generate no boilerplate, and the packet says which and why
+rather than leaving the omission to be read as an oversight.
+
+## Gates
+
+```
+lake --wfail build Cas CasBackend CasExamples CasWp   (from library/cas)
+mise run check:cas                                    (byte-identical)
+mise run check:cas:surface                            (byte-identical)
+mise run check:cas:obligations                        (byte-identical)
+mise run check:cas:laws                               (byte-identical)
+git status                                            (clean)
+```
+
+No `sorry`, no `native_decide`, no new axiom: an axiom census over
+every declaration in the module lands with the run.
+
+## Owed, not done here
+
+- **The module's home.** `Cas.Backend.SumAlgebra` should be
+  `Cas.Lang.Sum`. That is a `lakefile.toml` edit (or an import in
+  `Cas/Lang/Lang.lean`, which moves the surface ledger and is a
+  promotion). Named here so it is a decision someone takes, not a
+  thing that quietly stays wrong.
+- **The hand-rolled sum consumers.** `Roots.stepRooted`
+  (`Roots.lean:69-81`) and the incoming `WordSig`/`stepWorded` split
+  still bypass `Handler.sum`. They now have laws to be claimed
+  against; claiming them edits fenced files.
+- **`ObsEq H (liftCas p) (doubleInl p)`** — the word-blindness claim
+  itself, still unproved in either direction.
+
+## Breaks
+
+The ledger of successful falsifications, per CONTRACT.md §The break
+ledger. **Empty at this commit** — the packet is committed before any
+theorem exists, so no falsifier has been run and no law has been
+attacked. A row lands here the moment one fires, with the law verbatim,
+the concrete witness, its obligation class, and the fixing commit; the
+law is never quietly rewritten in place.
+
+ADQ-DBL is the row most likely to produce an entry, and it is stated
+above in the record's own words for exactly that reason.
