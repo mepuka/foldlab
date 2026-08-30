@@ -300,8 +300,10 @@ export const locateStore = (
  *
  * ## The split, seam by seam
  *
- * - `ByteReader` and `RootStore.list` — the readonly connection.
- * - `ByteWriter` and `RootStore.publish` — the writable one.
+ * - `ByteReader`, `RootStore.list`, and `WordLog.since` — the readonly
+ *   connection.
+ * - `ByteWriter`, `RootStore.publish`, and `WordLog.append` — the
+ *   writable one.
  *
  * `RootStore` is one service with one method on each side, so it is
  * assembled from two shapes here rather than provided twice. Nothing
@@ -315,11 +317,16 @@ export const locateStore = (
  * false`, so it cannot make the database and must not be asked to make
  * a table.
  *
- * Two tables in one file: `cas_objects`, the byte plane through the
- * key-value backend, and `cas_roots`, the naming plane through the
- * roots adapter. One file is also the unit Litestream replicates, so
- * the bytes and the names they name are backed up together or not at
- * all. The writable client opens the database in WAL mode by default,
+ * Three tables in one file: `cas_objects`, the byte plane through the
+ * key-value backend; `cas_roots`, the naming plane through the roots
+ * adapter; and `cas_word`, the receipts plane through the word log.
+ * One file is also the unit Litestream replicates, so the bytes, the
+ * names, and the history are backed up together or not at all — a
+ * restore restores THIS device's word, which is the honest reading of
+ * "the word does not sync": backup is the same device remembering,
+ * never two devices merging. A future device-sync deployment must
+ * exclude `cas_word` from replication or move it to a local session
+ * database; that is a composition change here, not a seam change. The writable client opens the database in WAL mode by default,
  * which is what Litestream requires; nothing here configures it, and
  * `test/KvsSqlite.test.ts` asserts it.
  */
@@ -338,7 +345,12 @@ const sqliteWriteSide = (filename: string) =>
       Effect.all([
         kvsOver(client).pipe(Effect.map((kvs) => Cas.makeKvsBackend(kvs).writer)),
         Cas.makeSqlRootStore().pipe(Effect.provideService(SqlClient.SqlClient, client)),
-      ]).pipe(Effect.map(([writer, roots]) => ({ writer, publish: roots.publish })))
+        Cas.makeSqlWordLog().pipe(Effect.provideService(SqlClient.SqlClient, client)),
+      ]).pipe(Effect.map(([writer, roots, word]) => ({
+        writer,
+        publish: roots.publish,
+        append: word.append,
+      })))
     ),
   )
 
@@ -351,12 +363,17 @@ const sqliteReadSide = (filename: string) =>
       Effect.all([
         kvsOver(client).pipe(Effect.map((kvs) => Cas.makeKvsBackend(kvs).reader)),
         Cas.makeSqlRootStore().pipe(Effect.provideService(SqlClient.SqlClient, client)),
-      ]).pipe(Effect.map(([reader, roots]) => ({ reader, list: roots.list })))
+        Cas.makeSqlWordLog().pipe(Effect.provideService(SqlClient.SqlClient, client)),
+      ]).pipe(Effect.map(([reader, roots, word]) => ({
+        reader,
+        list: roots.list,
+        since: word.since,
+      })))
     ),
   )
 
 const layerSqlitePlanes = (store: string): Layer.Layer<
-  Cas.ByteReader | Cas.ByteWriter | Cas.RootStore
+  Cas.ByteReader | Cas.ByteWriter | Cas.RootStore | Cas.WordLog
 > =>
   Layer.effectContext(
     // Sequenced, not parallel: the write side is what makes the
@@ -379,6 +396,10 @@ const layerSqlitePlanes = (store: string): Layer.Layer<
                 publish: (root) => Telemetry.timeSql(writes.publish(root)),
                 list: Telemetry.timeSql(reads.list),
               }),
+              Context.add(Cas.WordLog, {
+                append: (entry) => Telemetry.timeSql(writes.append(entry)),
+                since: (mark) => Telemetry.timeSql(reads.since(mark)),
+              }),
             )
           ),
         )
@@ -398,6 +419,7 @@ const layerSqliteCasAt = (store: string): Layer.Layer<
   | Cas.Store
   | Cas.Loader
   | Cas.RootStore
+  | Cas.WordLog
   | Cas.ByteReader
   | Cas.ByteWriter
   | Cas.AddressScheme
@@ -421,6 +443,7 @@ export const layerCasAt = (
   | Cas.Store
   | Cas.Loader
   | Cas.RootStore
+  | Cas.WordLog
   | Cas.ByteReader
   | Cas.ByteWriter
   | Cas.AddressScheme,
@@ -429,7 +452,17 @@ export const layerCasAt = (
 > =>
   backend === "sqlite"
     ? layerSqliteCasAt(store)
-    : Cas.layerFile(store).pipe(Layer.provideMerge(Cas.layerAddressSha256Live))
+    // The file composition is spelled from the same pieces `layerFile`
+    // composes, with the word log merged BESIDE the backend — it must
+    // stand under `layerStore`'s build, where the store law reads it
+    // as an optional service, or admissions would go unreceipted.
+    : Cas.layerStore.pipe(
+        Layer.provideMerge(Layer.merge(
+          Cas.layerFileBackend(store),
+          Cas.layerFileWordLog(store),
+        )),
+        Layer.provideMerge(Cas.layerAddressSha256Live),
+      )
 
 /** Where this invocation's store was found, as a dependency — so a
  * verb that prints paths asks the context for them instead of
@@ -456,6 +489,7 @@ export const layerStoreAt = (
   | Cas.Store
   | Cas.Loader
   | Cas.RootStore
+  | Cas.WordLog
   | Cas.ByteReader
   | Cas.AddressScheme
   | StoreLocation,

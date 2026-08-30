@@ -44,7 +44,9 @@ current verb set, read off.
 | roots | the addresses published as entry points | `RootSig` — `publish` (fail-closed) / `listRoots` |
 | refused | a put that broke a store law; every refusal carries its clause name | the admission judgment, clause-named errors |
 | verify | re-hash and re-decode everything reachable from a root | `Graph.verify` and the loader law |
-| history | the record of a run: what was admitted, in order | the store word — see collision 5 |
+| history | what was admitted, in order — a run's record, and now the store's own (`cas history` reads it) | the store word — see collision 5 |
+| receipt | the store's persisted note that one admission happened: address, kind, size, when | a word-log entry (`wordLogEntrySchema`, generated) |
+| mark | how far into the history a reader stands: a count of receipts, never a time | a zero-based word index — `WordE.since`'s argument, `--since <mark>` |
 
 ## The protocol register
 

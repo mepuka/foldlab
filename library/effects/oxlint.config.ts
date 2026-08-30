@@ -96,8 +96,11 @@ export default defineConfig({
       // The one lawful JSON site (RATIFIED 2026-08-28): canonicalJson's
       // throws are its defect boundary and are test-asserted; the single
       // `as Schema.Json` is the commented unparsed boundary; the typeof
-      // scan is the recognizer; TextEncoder is the byte plane.
-      files: ["src/cas/Value.ts"],
+      // scan is the recognizer; TextEncoder is the byte plane. The
+      // printer itself now lives in `src/internal/canonicalJson.ts`
+      // (moved to break the Value→Store cycle for seams below the
+      // store law); the exemption follows the code, not the old path.
+      files: ["src/cas/Value.ts", "src/internal/canonicalJson.ts"],
       rules: {
         "foldlab/no-json-codec": "off",
         "foldlab/no-throw": "off",
