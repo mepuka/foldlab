@@ -140,6 +140,14 @@ export default defineConfig({
       rules: { "effect/noGlobals": "off" },
     },
     {
+      // The bin launcher (see PACKAGING.md): a CommonJS platform
+      // boundary that must parse and run under plain Node with zero
+      // dependencies installed — require() IS its module system, and
+      // it runs before any Effect code can exist.
+      files: ["bin/cas.cjs"],
+      rules: { "effect/noDynamicImports": "off" },
+    },
+    {
       // Frozen tree: internal throws feeding Effect.try are the deliberate
       // defect boundary. Visible as warnings, never red; new code errors.
       files: ["src/**"],

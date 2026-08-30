@@ -5,14 +5,18 @@
  * the vectors and the wire speak, rendered sorted-key like the Lean
  * emitter. Nothing here invents a shape.
  *
- * Kind names are owed to the Lean-emitted registry (materialize,
- * byte-gated); until that surface exists, tags render as bare hex —
- * the ruled fallback — and the name table lives in `--help`'s
- * vocabulary, seeded from VOCABULARY.md.
+ * Kind names come from the Lean-emitted registry — `KindTagRows` in
+ * `src/cas/generated/grammar/kindTags.ts`, byte-identity-gated by
+ * `check:cas`. The hex stays beside the name because the tag is the
+ * wire fact and the name is the everyday one, and a reader of `show`
+ * needs both: "schema (0x53)". A tag the registry gives no row is
+ * printed as bare hex, which is now a statement about that tag rather
+ * than about this file.
  */
 import { Schema } from "effect"
 import { Cas } from "../../src/index.ts"
 import { canonicalJson } from "../../src/cas/Value.ts"
+import { KindTagRows } from "../../src/cas/generated/grammar/kindTags.ts"
 
 /** A loaded node as the described binding document: the Lean-computed
  * address and the node it binds — the vector wire shape. */
@@ -43,8 +47,47 @@ export const renderBindingJson = (
   ))
 
 /** A kind tag in the protocol spelling: bare hex, two digits. */
-export const tagLabel = (tag: number): string =>
+export const tagHex = (tag: number): string =>
   `0x${tag.toString(16).padStart(2, "0")}`
+
+/** The registry row a tag has, by tag — the generated table indexed
+ * once, so no rendering re-spells a number the emitter already owns. */
+const kindNames: ReadonlyMap<number, string> = new Map(
+  KindTagRows.map((row): readonly [number, string] => [row.tag, row.name]),
+)
+
+/** Whether the registry gives this tag a row. A tag with none is still
+ * admitted — the store admits every tag at the scheme version — but it
+ * is a working tag, and `put` says so. */
+export const isRegisteredTag = (tag: number): boolean => kindNames.has(tag)
+
+/** A kind in the everyday register: the registry's name with the wire
+ * byte beside it, `schema (0x53)`. A tag the registry gives no row has
+ * no name to print, so it renders as the byte alone. */
+export const tagLabel = (tag: number): string => {
+  const name = kindNames.get(tag)
+  return name === undefined ? tagHex(tag) : `${name} (${tagHex(tag)})`
+}
+
+/**
+ * A kind in the machine register: the registry name when there is one,
+ * the wire tag as a number, and whether the registry gives it a row —
+ * the same three facts `tagLabel` renders for a person, spelled so an
+ * agent does not have to parse `schema (0x53)` back apart.
+ */
+export const kindJson = (tag: number, version: number): Schema.Json => ({
+  name: kindNames.get(tag) ?? null,
+  registered: isRegisteredTag(tag),
+  tag,
+  version,
+})
+
+/** THE `--json` printer for every verb: the ratified canonical one, so
+ * the machine register is compact and its keys are ordered by codepoint
+ * at every depth — one shape, whoever is reading. The argument is
+ * `Schema.Json` and not `unknown`, so a verb that tried to print
+ * something with no JSON spelling would not compile. */
+export const renderJson = (value: Schema.Json): string => canonicalJson(value)
 
 /** A store refusal in the everyday register: every clause named, in
  * the words VOCABULARY.md pins — link, kind, address, store. The fold

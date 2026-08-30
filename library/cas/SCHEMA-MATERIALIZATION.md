@@ -480,16 +480,39 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     annotation bag (grow the Lean decoder) or strip it at the door
     (normalize step)? Recorded in `Cas/Backend/Admission.lean`'s
     header.
-22. **`cas_run`'s manifest scope**: `RunParams` serves the
+22. **`cas_run`'s manifest scope** — RULED AND DISCHARGED, 2026-08-29
+    (the brain-stem package). `RunParams` served the
     puts-with-answer-indices sub-fragment; the full `PProg` carries
-    literal-address operands and `load`. The projection and embedding
-    theorems are honest either way (`9c67511e`); whether the manifest
-    should GROW is the operator's. Manifest bytes untouched.
+    literal-address operands and `load`. The operator ruled the
+    manifest GROWS, because a program stored at an address cannot be
+    run unless the document can name an address. What landed:
+    `RunOperand` (a `cas_union` of `answer | literal`), `RunRef.source`
+    typed by it, `RunInstruction` a union of `load | put`, and
+    `RunRefParams` for the new `cas_run_ref` row. `manifestVersion`
+    bumped 0 → 1 and `implementedManifestVersion` followed in the same
+    change — the boot gate's first real use. The two theorems that
+    pinned the limit (`RunRef.ofPRef_lit`, `RunInstruction.ofPLine_load`,
+    both refutations) FLIPPED to positive statements and collapsed into
+    one totality theorem, `ofPProg_isSome`: every well-formed table has
+    a document. `Law.registry`'s SM-22 row was amended in the same
+    commit, which the law index forced rather than allowed. Manifest
+    bytes moved, deliberately, and the emitter's TypeScript fragment
+    widened to carry `Literal` and `Union` codes to render them.
 23. **Route `EmitProg` through `PProg`**: triage found three spellings
     of the program document, not two — the emitter lowers trees
     straight to TypeScript and never builds a `PProg`. Routing it
     through the table turns the surviving prose claim into a theorem
-    and collapses the third spelling. Its own slice.
+    and collapses the third spelling. Its own slice, STILL OWED — but
+    narrowed by the brain-stem package, and the narrowing is worth
+    recording. `tools/EmitPrograms.lean` now computes each program's
+    step and cont addresses from `treeProg tree` — the same `PProg`
+    the lift document is built from — and stamps the cont address into
+    the generated module's own docstring (R7's stamp clause, item O4 of
+    the paperwork audit, discharged). So the emitter now READS the
+    table even though it still does not LOWER from it. What remains is
+    exactly the lowering: `progStmts` walking a `PProg` instead of a
+    `Tree`, which is what makes "the emitter emits only puts whose
+    references name earlier answers" a theorem instead of prose.
 24. **Surface-ledger blind spot**: `surface/cas-surface.json` walks
     the `Cas` library only — `Cas.Backend.*` is invisible to
     retrieval-before-generation. One-line fix in `tools/Surface.lean`'s

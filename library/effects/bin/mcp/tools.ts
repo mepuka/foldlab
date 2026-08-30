@@ -1,5 +1,5 @@
 /**
- * The five tools, as the manifest declares them.
+ * The six tools, as the manifest declares them.
  *
  * Two spellings sit beside each other in this file on purpose:
  *
@@ -70,30 +70,73 @@ export const RootsDocument = Schema.Struct({
   roots: Schema.Array(Cas.ContentId),
 })
 
-/** One straight-line reference: an expected kind tag and the index of
- * the earlier instruction whose answer it names. `source` is an ANSWER
- * INDEX and never an address — the projection theorem
- * `RunRef.ofPRef_lit` is what says the document cannot spell a literal,
- * and the carrier keeps that true by having no field for one. */
+/** One operand of a code point: the index of an earlier instruction's
+ * answer, or a literal content address.
+ *
+ * Both arms, since queue item 22. The two projection theorems that used
+ * to say the document COULD NOT spell a literal or a load have flipped
+ * (`RunOperand.ofPIn_lit`, `RunInstruction.ofPLine_load`) and collapsed
+ * into one totality theorem — `ofPProg_isSome`, every well-formed table
+ * has a document — so the carrier grows to match. A literal operand is
+ * what lets a program name stored content, which is what lets a program
+ * be run by address at all.
+ *
+ * A derived union's mode is part of its identity, so this is
+ * `Schema.Union([...], { mode: "oneOf" })` and the members are in the
+ * canonical order the deriving handler spells. */
+export const RunOperand = Schema.Union([
+  Schema.Struct({
+    _tag: Schema.Literal("answer"),
+    index: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("literal"),
+    addressHex: Cas.ContentId,
+  }),
+], { mode: "oneOf" })
+
+/** One straight-line reference: an expected kind tag and the operand
+ * naming what it points at. */
 export const RunReference = Schema.Struct({
   expectedTag: Cas.Byte,
-  source: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  source: RunOperand,
 })
 
-/** One instruction. Always a put, never a load
- * (`RunInstruction.ofPLine_load`), and the payload arrives as hex —
- * the field is named `payloadHex` in the document itself. */
-export const RunInstruction = Schema.Struct({
-  version: Cas.Byte,
-  tag: Cas.Byte,
-  payloadHex: Schema.Uint8ArrayFromHex,
-  refs: Schema.Array(RunReference),
-})
+/** One instruction: a put whose references name operands, or a load of
+ * an operand. The payload arrives as hex — the field is named
+ * `payloadHex` in the document itself. */
+export const RunInstruction = Schema.Union([
+  Schema.Struct({
+    _tag: Schema.Literal("load"),
+    source: RunOperand,
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("put"),
+    version: Cas.Byte,
+    tag: Cas.Byte,
+    payloadHex: Schema.Uint8ArrayFromHex,
+    refs: Schema.Array(RunReference),
+  }),
+], { mode: "oneOf" })
 
-/** A self-contained straight-line program. */
+/** A straight-line program, submitted inline.
+ *
+ * It is no longer SELF-CONTAINED and the word was struck rather than
+ * softened. A document whose operands only name earlier answers depends
+ * on nothing but itself; one that can name a literal address, or load
+ * one, is asking about what this store already holds. So a run's
+ * meaning is relative to its starting word — which, on this host, is
+ * the store. Two hosts handed the same document over different stores
+ * can honestly answer different words, and that is the semantics, not
+ * a defect. */
 export const RunDocument = Schema.Struct({
   instructions: Schema.Array(RunInstruction),
 })
+
+/** The run-by-address params: the address of a `cont` node, and
+ * nothing else. A program is content; its address is its identity;
+ * everything else about it is reachable by loading. */
+export const RunRefDocument = Schema.Struct({ root: Cas.ContentId })
 
 /** The word: the run's history in admission order, one address per
  * instruction. */
@@ -157,6 +200,22 @@ export const casRun = Tool.make("cas_run", {
   failure: Refused,
   dependencies: [Cas.Store],
 })
+  .annotate(Tool.Readonly, false)
+  .annotate(Tool.Destructive, false)
+  .annotate(Tool.Idempotent, true)
+  .annotate(Tool.OpenWorld, false)
+
+export const casRunRef = Tool.make("cas_run_ref", {
+  description: McpToolDescriptions.cas_run_ref,
+  parameters: RunRefDocument,
+  success: WordDocument,
+  failure: Refused,
+  dependencies: [Cas.Store],
+})
+  // Running a stored program admits the nodes the program puts, which
+  // is exactly as idempotent as `cas_run` on the same table: the same
+  // program answers the same addresses, and a second run is a run of
+  // duplicate puts, which are inert.
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false)
   .annotate(Tool.Idempotent, true)
@@ -244,6 +303,7 @@ export const casToolkit = Toolkit.make(
   casPut,
   casLoad,
   casRun,
+  casRunRef,
   casPublishRoot,
   casListRoots,
 )
