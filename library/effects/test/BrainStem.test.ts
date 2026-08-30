@@ -88,11 +88,13 @@ const session = (requests: ReadonlyArray<unknown>) =>
         .map((line) => JSON.parse(line) as JsonRpcFrame)
     const server = yield* Effect.forkChild(
       Effect.never.pipe(
-        Effect.provide(layerServeStdio({
-          maxNodeBytes: defaultServePolicy.maxNodeBytes,
-          maxInFlight: defaultServePolicy.maxInFlight,
-        })),
-        Effect.provide(layerStdio),
+        Effect.provide(Layer.provideMerge(
+          layerServeStdio({
+            maxNodeBytes: defaultServePolicy.maxNodeBytes,
+            maxInFlight: defaultServePolicy.maxInFlight,
+          }),
+          layerStdio,
+        )),
       ),
     )
     const answered = (): boolean => {
