@@ -69,6 +69,7 @@ deleted.
 | [.staging/operational-structure/DOGFOOD.md](../.staging/operational-structure/DOGFOOD.md) | dogfooding | The wave plan (decision 24): five personalities, successive release, capability baseline, rules of engagement |
 | [.staging/operational-structure/STATE-OF-MECHANIZATION.md](../.staging/operational-structure/STATE-OF-MECHANIZATION.md) | status | The proof-ladder status report (L5 rock-solid → L0 paper) with the waiting list and critical-path order; two-hour audit cadence scheduled |
 | [.staging/operational-structure/CLI-AUDIT.md](../.staging/operational-structure/CLI-AUDIT.md) | CLI | Pre-dogfood audit (2026-08-29): verb matrix, freshness defects F1-F5, the E-transcript with grades — found the PHANTOM STORE (BROKEN-SILENT: an explicit --store typo silently creates a store, contradicting init-is-the-only-creator); fix lane dispatched; 5 ruling asks (cas doctor the highest-leverage) |
+| [.staging/operational-structure/PROPOSED-LOGIC.md](../.staging/operational-structure/PROPOSED-LOGIC.md) | proposed theorems | The friction-proposed logic ledger (operator directive): P1-P6 from the CLI lane, P1-P4 from the brain stem, house hazard notes — all PROPOSED, awaiting the grill |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 

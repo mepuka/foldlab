@@ -53,3 +53,35 @@ installed dist lags its src at rc.112 — confirm src-read APIs against
 dist/*.d.ts. oxlint.config.ts's per-file exceptions are governed —
 the right fix is usually to stop doing the thing, not to add a row
 (the file should say so at its head).
+
+## From the brain-stem lane (2026-08-29)
+
+**P1 — progAddr, named and proved injective.**
+`progAddr H p := H (encodeNode (tableNode H p))` with
+`progAddr_inj : Injective H → WF tables → progAddr H p = progAddr H q → p = q`
+(from encodeNode_injOn + readLine_exact). The host asserts "the
+address is the program's identity"; nothing proves it yet.
+
+**P2 — hsep discharged once for every real digest.**
+`lineAddr_sep_of_injective : Injective H → WF p → separation` — no
+Nodup premise needed (equal lines are trivially fine). Consumers stop
+threading hsep.
+
+**P3 — decodeProgAt: the recovery a host actually performs.** A
+store-shaped decoder (lookup + root; lineCount check standing in for
+getLast) with `decodeProgAt_encodeProg` agreeing with decodeProg —
+this also makes cont's lineCount field load-bearing in Lean (today
+the TS decoder is its only consumer: host policy wearing a law's
+look).
+
+**P4 — the starting word is part of a run's meaning** (witness):
+`∃ H p w, (runP H p []).1 ≠ (runP H p w).1` — the falsifier for the
+queue-22 semantic correction (cas_run is store-relative now); if
+unprovable, the correction reverts.
+
+**Friction facts recorded:** decodeProg cannot be implemented against
+a store (getLast has no store meaning — hence P3); cas_union arms
+want alphabetical order (inferred from precedent, stated nowhere);
+the emitter #guard names no row on failure; gate exes absent from
+defaultTargets cost every fresh tree a cycle (FIXED on main —
+check:cas's build line now names every exe).
