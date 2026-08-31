@@ -1,6 +1,6 @@
 {
   "census": "trust",
-  "convention": "stratum assignment is v0-COARSE and the strata are ORDERED — a file lands in the first one that claims it. `emitted` is a `generated` path segment or a GENERATED marker in the file's first 400 bytes. `model-gated` is CURATED DATA: a hand-written list in tools/TrustCensus.lean, one gate label per row, which migrates to the meta plane's input directory at the M4 reorg. `tested` is a DIRECT import from a file under library/effects/test — a module reached only through another module's re-export is not tested by this rule, and a binary a test SPAWNS rather than imports is not either. `bare` is the remainder. A row says what the census can see, not what the file is worth.",
+  "convention": "stratum assignment is v0-COARSE and the strata are ORDERED — a file lands in the first one that claims it. `emitted` is a `generated` path segment or a GENERATED marker in the file's first 400 bytes. `model-gated` is CURATED DATA: a hand-written list at library/cas/meta/in/model-gated.META.json, one gate label per row, carrying a row in meta/MANIFEST.META.json's `inputs` and read from there — a declared input that vanishes is a red build, not a silent default. `tested` is a DIRECT import from a file under library/effects/test — a module reached only through another module's re-export is not tested by this rule, and a binary a test SPAWNS rather than imports is not either. `bare` is the remainder. A row says what the census can see, not what the file is worth.",
   "counters": {
     "bare": 9,
     "emitted": 10,
@@ -210,7 +210,7 @@
       "stratum": "emitted"
     },
     {
-      "path": "src/cas/generated/meta/metaSchemaAst.ts",
+      "path": "src/cas/generated/meta/metaSchemaAst.META.ts",
       "stratum": "emitted"
     },
     {

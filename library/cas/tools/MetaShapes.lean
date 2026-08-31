@@ -37,23 +37,35 @@ the constructs that plane carries. Whether the two planes should ever
 meet is a ruling for the schema-json context and is deliberately not
 taken here.
 
-## The four shapes
+## The six shapes
 
-`names.json` (the grammar's derived-name inventory), `cas-debts.json`
-(the debt projection), `cas-axioms.json` (the axiom gate) and
-`cas-trust.json` (the trust census). Each is transcribed from what the
-emitter actually writes, not from what it ought to write.
+`names.json` (the grammar's derived-name inventory), `debts.META.json`
+(the debt projection), `axioms.META.json` (the axiom gate),
+`trust.META.json` (the trust census), `strata.META.json` (the strata
+gate) and `MANIFEST.META.json` (the meta plane's own registry,
+described here so the plane closes over itself). Each is transcribed
+from what the emitter actually writes, not from what it ought to
+write.
 
 ## What is emitted, and what is not
 
-A JSON Schema per artifact, and ONE TypeScript module carrying the AST
-type and the shape values. There is deliberately no generated
-Effect-Schema module: the interpreter `MetaSchema → Schema` is written
-ONCE, by hand, exhaustive over the union, and lives on the consumer
-side. Generating schema code per artifact would put the interpretation
-in the emitter and then repeat it, which is the arrangement the AST
-exists to avoid — the AST value stays the single source of truth and
-every consumer reads it through one interpreter.
+A JSON Schema per artifact, ONE TypeScript module carrying the AST type
+and the shape values, and the manifest itself. There is deliberately no
+generated Effect-Schema module: the interpreter `MetaSchema → Schema`
+is written ONCE, by hand, exhaustive over the union, and lives on the
+consumer side. Generating schema code per artifact would put the
+interpretation in the emitter and then repeat it, which is the
+arrangement the AST exists to avoid — the AST value stays the single
+source of truth and every consumer reads it through one interpreter.
+
+## The `.META.` infix (L1)
+
+Self-description carries `.META.` in its file name; language-plane
+emissions do not. `names.json` is the one described artifact on the far
+side of that line: its shape is declared here and its bytes are the
+grammar's API, so it has a `.META.schema.json` and NO manifest row. The
+rule is mechanical rather than remembered — a described artifact is a
+meta-plane output exactly when its home is under `library/cas/meta`.
 -/
 
 namespace Meta
@@ -71,10 +83,10 @@ because one of the described artifacts needs it:
   document carrying a field the record does not name is not of this
   shape;
 - `opt` — a field that may be absent. It appears where one array holds
-  rows of two provenances (`cas-debts.json` merges docstring rows and
+  rows of two provenances (`debts.META.json` merges docstring rows and
   ruling rows) and where one row has an optional column
-  (`names.json`'s free edges state no `expects`; only `cas-trust.json`'s
-  `model-gated` rows carry a `gate`).
+  (`names.json`'s free edges state no `expects`; only
+  `trust.META.json`'s `model-gated` rows carry a `gate`).
 
 There is no `null`: no emitter writes one. There is no map: every
 object either has a declared field list or does not exist. -/
@@ -163,15 +175,38 @@ prepending it here is what makes it schema'd by construction. -/
 def headed (fields : List (String × MetaSchema)) : MetaSchema :=
   .record (emittedField :: fields)
 
+/-! ## The two homes
+
+The meta plane's home and the generated meta plane's home, both spelled
+from the REPOSITORY ROOT, because that is the spelling the described
+artifacts' `home` fields and the manifest's rows use. The emitter runs
+from `library/cas`, so the paths it writes to are derived from these
+rather than spelled a second time. -/
+
+/-- The meta plane's home: the manifest, the declared inputs, and every
+emitted ledger. A described artifact is a meta-plane OUTPUT exactly when
+its home is under this directory — which is where the L1 rename law
+stops being remembered and starts being computed. -/
+def metaHome : String := "library/cas/meta"
+
+/-- The generated meta plane in the effects package — the TS-side
+consumer face (M4). The schema documents and the AST module land here,
+so this is the `schema` column's prefix in the manifest. -/
+def schemaHome : String := "library/effects/src/cas/generated/meta"
+
 /-- One artifact this plane describes: the stem its two generated files
-are named from, where the artifact itself lives, the TypeScript const
-its AST value is exported as, and the shape. -/
+are named from, where the artifact itself lives, which executable writes
+it, the TypeScript const its AST value is exported as, and the shape. -/
 structure Artifact where
   stem : String
-  /-- Where the described artifact is committed, for the schema's own
-  description — a reader of the schema should not have to guess which
-  file it is about. -/
+  /-- Where the described artifact is committed, repository-relative,
+  for the schema's own description and for the manifest's row — a reader
+  of either should not have to guess which file it is about. -/
   home : String
+  /-- The `lake exe` name that writes it, bare. The manifest's second
+  column: an artifact whose emitter nobody can name is one nobody can
+  regenerate. -/
+  emitter : String
   /-- What the artifact is, one sentence already wrapped: the lines are
   the TypeScript doc comment and, joined by a space, the JSON Schema's
   `description`. Wrapping is the declaration's, so neither printer has
@@ -179,6 +214,26 @@ structure Artifact where
   what : List String
   const : String
   shape : MetaSchema
+
+/-- The artifact's own file name, read off its home. The schema's
+`title` and the TypeScript doc comment name the FILE, and since the
+meta-home migration the stem is no longer that name (`cas-debts`
+describes `debts.META.json`), so the name is derived rather than
+respelled. -/
+def Artifact.fileName (a : Artifact) : String :=
+  (a.home.splitOn "/").getLastD a.home
+
+/-- Where this artifact's JSON Schema is committed, repository-relative
+— the manifest's `schema` column. -/
+def Artifact.schemaRef (a : Artifact) : String :=
+  schemaHome ++ "/" ++ a.stem ++ ".META.schema.json"
+
+/-- Is this described artifact an output of the meta plane? `names.json`
+is the one row for which the answer is no: its shape is declared here
+and its bytes are the grammar's own API (L1 rules the language plane
+exempt from `.META.`), so it has a schema and no manifest row. -/
+def Artifact.onMetaPlane (a : Artifact) : Bool :=
+  a.home.startsWith (metaHome ++ "/")
 
 /-- The derived-name inventory: every name the grammar gives a column,
 a block, a field or an edge. An edge under a FREE discipline states a
@@ -278,23 +333,119 @@ def trustShape : MetaSchema :=
       ("stratum", .enum ["emitted", "model-gated", "tested", "bare"]),
       ("gate", .opt .str)]))]
 
+/-- The strata gate's document. The declared ORDER, the per-library
+MEMBERSHIP the lakefile's globs decide, the computed per-module import
+edges, and the verdicts.
+
+`imports` is on a WALKED member only — the `CasMeta` stratum's modules
+are ranked and not imported, and a row that carried an empty list there
+would say "imports nothing" when it means "not asked". `stale` is on the
+`declared-misfile-accounting` check alone, for the same reason: it is
+that check's own evidence column.
+
+`verdict` is three words rather than two because the exception block
+would otherwise be invisible in the summary: `ok` is no violation,
+`known` is violations that every one of them carries a declared KNOWN
+MISFILES row for, and `refused` is one that nobody declared. -/
+def strataShape : MetaSchema :=
+  headed [
+    ("gate", .str),
+    ("package", .str),
+    ("convention", .str),
+    ("counters", .record [
+      ("strata", .nat), ("modules", .nat), ("walked", .nat),
+      ("edges", .nat), ("knownMisfiles", .nat), ("violations", .nat),
+      ("known", .nat), ("fatal", .nat), ("stale", .nat)]),
+    ("strata", .array (.record [
+      ("lib", .str), ("declared", .str), ("rank", .nat),
+      ("leaf", .bool), ("walked", .bool), ("role", .str),
+      ("srcDir", .str), ("globs", .array .str), ("roots", .array .str),
+      ("modules", .array .str)])),
+    ("knownMisfiles", .array (.record [
+      ("check", .str), ("module", .str), ("imports", .str),
+      ("why", .str)])),
+    ("checks", .array (.record [
+      ("check", .str), ("statement", .str),
+      ("verdict", .enum ["ok", "known", "refused"]),
+      ("violations", .array (.record [
+        ("check", .str), ("module", .str), ("lib", .str),
+        ("imports", .str), ("importsLib", .str),
+        ("status", .enum ["known", "fatal"]),
+        ("why", .opt .str)])),
+      ("stale", .opt (.array (.record [
+        ("check", .str), ("module", .str), ("imports", .str),
+        ("why", .str)])))])),
+    ("modules", .array (.record [
+      ("module", .str), ("lib", .str), ("source", .str),
+      ("imports", .opt (.array .str))]))]
+
+/-- The meta plane's own registry, as a shape. The manifest is a
+described artifact like every other one here, and it carries a row for
+ITSELF — which is the closure the plane needs: the document that says
+what the plane holds is a thing the plane declares.
+
+`schema` and `awaiting` are two halves of one column. An output whose
+shape this file declares carries the repository path of its JSON Schema;
+an output still waiting for a `MetaSchema` carries the reason instead.
+Exactly one of the two is present on every row, so the queue of
+undeclared shapes is read off the manifest rather than remembered — the
+discipline `EnvLedger`'s `undeclared` and `unjoined` arrays already use.
+
+`inputs.rows` is the other half of the registry, and it is no longer
+empty: M4's four input columns were declared before the first input
+arrived, so admitting `meta/in/model-gated.META.json` was a row and not
+a schema change — which is what declaring a shape ahead of its data
+buys. `inputs.convention` carries the admission law itself, which is
+what makes the law travel with the registry. -/
+def manifestShape : MetaSchema :=
+  headed [
+    ("manifest", .str),
+    ("home", .str),
+    ("counters", .record [
+      ("outputs", .nat), ("described", .nat), ("awaiting", .nat),
+      ("inputs", .nat)]),
+    ("inputs", .record [
+      ("convention", .str),
+      ("rows", .array (.record [
+        ("path", .str), ("role", .str), ("authority", .str),
+        ("reader", .str)]))]),
+    ("outputs", .array (.record [
+      ("path", .str), ("emitter", .str),
+      ("schema", .opt .str), ("awaiting", .opt .str)]))]
+
 def artifacts : List Artifact := [
   { stem := "names", home := "library/effects/src/cas/generated/grammar/names.json"
+  , emitter := "emitgrammar"
   , what := ["The grammar's derived-name inventory: every name the",
              "manifest gives a column, a block, a field or an edge."]
   , const := "namesShape", shape := namesShape },
-  { stem := "cas-debts", home := "library/cas/surface/cas-debts.json"
+  { stem := "cas-debts", home := metaHome ++ "/out/debts.META.json"
+  , emitter := "debts"
   , what := ["The debt projection: every docstring obligation still",
              "owed, parked or pin-pending, and every unbound ruling."]
   , const := "debtsShape", shape := debtsShape },
-  { stem := "cas-axioms", home := "library/cas/surface/cas-axioms.json"
+  { stem := "cas-axioms", home := metaHome ++ "/out/axioms.META.json"
+  , emitter := "axioms"
   , what := ["The axiom gate's report: every declaration that depends",
              "on an axiom, and the census over the clean set."]
   , const := "axiomsShape", shape := axiomsShape },
-  { stem := "cas-trust", home := "library/cas/surface/cas-trust.json"
+  { stem := "cas-trust", home := metaHome ++ "/out/trust.META.json"
+  , emitter := "trust"
   , what := ["The trust census: every TypeScript file the effects",
              "package ships, in the stratum that holds it."]
-  , const := "trustShape", shape := trustShape }]
+  , const := "trustShape", shape := trustShape },
+  { stem := "cas-strata", home := metaHome ++ "/out/strata.META.json"
+  , emitter := "strata"
+  , what := ["The strata gate: the declared order, each library's",
+             "membership as its lakefile globs decide it, the computed",
+             "import edges, and the verdicts over them."]
+  , const := "strataShape", shape := strataShape },
+  { stem := "manifest", home := metaHome ++ "/MANIFEST.META.json"
+  , emitter := "emitmeta"
+  , what := ["The meta plane's own registry: one row per emitted",
+             "artifact under `library/cas/meta`, and the declared",
+             "inputs an emitter is permitted to read."]
+  , const := "manifestShape", shape := manifestShape }]
 
 -- Every record addresses its fields unambiguously.
 #guard artifacts.all fun a => nodupFields a.shape
@@ -307,6 +458,47 @@ def artifacts : List Artifact := [
 -- Two artifacts sharing a stem would share both generated files.
 #guard decide ((artifacts.map (·.stem)).Nodup)
 #guard decide ((artifacts.map (·.const)).Nodup)
+#guard decide ((artifacts.map (·.home)).Nodup)
+
+-- The one described artifact that is NOT a meta-plane output is
+-- `names.json`, and it is exactly the one L1 rules language-plane.
+#guard (artifacts.filter (!·.onMetaPlane)).map (·.stem) == ["names"]
+
+/-! ## The plane's outputs that have no shape yet
+
+The four ledgers below predate `MetaSchema`. Their shapes are the next
+lane's work; until then each is a manifest row carrying the reason
+instead of a schema reference, because an output missing from the
+registry is invisible and an output present with a stated hole is a
+queue. -/
+
+/-- A meta-plane output whose shape is not yet a term of this universe.
+Three fields and no `shape`: this is deliberately NOT an `Artifact`,
+because an `Artifact` is a thing this file can print two documents of,
+and these are things it cannot. -/
+structure Awaiting where
+  home : String
+  emitter : String
+  /-- Why there is no shape yet, in the register the manifest reads
+  in — a sentence, not a ticket id. -/
+  why : String
+
+def awaiting : List Awaiting := [
+  { home := metaHome ++ "/out/surface.META.json", emitter := "surface"
+  , why := "the per-declaration signature ledger; no MetaSchema declared yet" },
+  { home := metaHome ++ "/out/obligations.META.json", emitter := "obligations"
+  , why := "the named-obligation ledger; no MetaSchema declared yet" },
+  { home := metaHome ++ "/out/laws.META.json", emitter := "laws"
+  , why := "the ruling/LAW-line join; no MetaSchema declared yet" },
+  { home := metaHome ++ "/out/environment.META.json", emitter := "envledger"
+  , why := "the configuration-plane ledger; no MetaSchema declared yet" }]
+
+-- Every awaiting row is on the plane, and none of them is already
+-- described: a shape landing without its row leaving here would put one
+-- path in the manifest twice.
+#guard awaiting.all fun w => w.home.startsWith (metaHome ++ "/")
+#guard awaiting.all fun w => !(artifacts.any fun a => a.home == w.home)
+#guard decide ((awaiting.map (·.home)).Nodup)
 
 /-! ## The JSON Schema printer
 
@@ -367,7 +559,7 @@ def schemaDocument (a : Artifact) : String :=
   Cas.Json.document (emitted.obj (
     [("$schema", Cas.Json.Value.str
         "https://json-schema.org/draft/2020-12/schema"),
-     ("title", .str (a.stem ++ ".json")),
+     ("title", .str a.fileName),
      ("description", .str (
         "GENERATED by `lake exe emitmeta` — do not edit. " ++
         String.intercalate " " a.what ++
@@ -455,7 +647,9 @@ def astModule : Module where
     "artifact, so these values stay the single source of truth.",
     "",
     "Each shape's JSON Schema (draft 2020-12) rides beside this file as",
-    "`<stem>.schema.json`, printed from the same term.",
+    "`<stem>.META.schema.json`, printed from the same term. The `.META.`",
+    "infix marks self-description (L1): the language plane's own",
+    "emissions do not carry it.",
     "",
     "This plane describes the estate's own generated DOCUMENTS. It is",
     "not the schema sort (`REGISTRY.md` row 0x53), whose payloads are",
@@ -472,32 +666,162 @@ def astModule : Module where
         .const {
           name := a.const,
           type := some "MetaSchema",
-          doc := ("The shape of `" ++ a.stem ++ ".json`.") :: a.what,
+          doc := ("The shape of `" ++ a.fileName ++ "`.") :: a.what,
           value := tsExpr a.shape }
 
 def astDocument : String := Render.module house0 astModule
 
+/-! ## The manifest — the meta plane's own registry
+
+M4's `MANIFEST.META.json`, printed from the two lists above. One row per
+output of `library/cas/meta`, and the input section that carries the
+admission law.
+
+The rows are sorted by path rather than left in declaration order: the
+manifest is a registry to look a path up in, and a document whose order
+is a Lean file's reading order would reshuffle whenever that file is
+reorganized. -/
+
+/-- THE INPUT-ADMISSION LAW, as the value that travels with the
+registry. `meta/in/README.META.md` is the same sentence in prose; this
+is the one a consumer reads. -/
+def admissionLaw : String :=
+  "An emitter may read only files with a row in this manifest's \
+`inputs`: inputs are declared or they are refused, and there is no \
+ambient read. This is what makes hydration provenance enumerable — \
+generated data is the Lean environment, plus store content, plus these \
+rows, and nothing else."
+
+/-- One DECLARED INPUT: a file an emitter is permitted to read, and the
+emitter permitted to read it. The row is what does the admitting — an
+emitter opening a path with no row here is what the law refuses — so
+the columns say everything a reader of a generated artifact needs to
+enumerate what decided its bytes: WHERE the file is, WHAT it carries,
+WHOSE word it is, and WHO reads it. -/
+structure Input where
+  path : String
+  role : String
+  /-- Where the rows come from. `hand-curated` is a real answer and the
+  common one on this plane: a list nothing derives is exactly the list
+  worth declaring. -/
+  authority : String
+  /-- The `lake exe` name that reads it, bare. An input is a DIRECTED
+  edge; the reader also checks this from its side, so a document
+  addressed elsewhere refuses rather than being read anyway. -/
+  reader : String
+
+def inputs : List Input := [
+  { path := metaHome ++ "/in/model-gated.META.json"
+  , role := "the trust census's `model-gated` stratum: which TypeScript \
+files the effects package ships are held to the Lean model, and by \
+which conformance artifact, one gate label per row"
+  , authority := "hand-curated — nothing derives these rows, which is \
+the point of writing them down"
+  , reader := "trust" }]
+
+-- One path, one row, on the input side as on the output side.
+#guard decide ((inputs.map (·.path)).Nodup)
+
+-- Every declared input lives on the plane. A file admitted from outside
+-- `library/cas/meta` would be an input the plane's own directory does
+-- not hold, and the admission law is about this directory.
+#guard inputs.all fun i => i.path.startsWith (metaHome ++ "/in/")
+
+/-- One output row: where it is committed, what writes it, and either
+the schema that describes it or the reason there is none yet. -/
+structure Row where
+  path : String
+  emitter : String
+  schema : Option String
+  why : Option String
+
+/-- Every output of the plane, described rows and awaiting rows joined,
+in path order. A described artifact off the plane (`names.json`) is not
+a row — see `Artifact.onMetaPlane`. -/
+def rows : List Row :=
+  let described := (artifacts.filter (·.onMetaPlane)).map fun a =>
+    { path := a.home, emitter := a.emitter,
+      schema := some a.schemaRef, why := none : Row }
+  let pending := awaiting.map fun w =>
+    { path := w.home, emitter := w.emitter,
+      schema := none, why := some w.why : Row }
+  (described ++ pending).mergeSort fun a b => a.path ≤ b.path
+
+-- One path, one row.
+#guard decide ((rows.map (·.path)).Nodup)
+
+-- Exactly one of `schema` and `awaiting` on every row: the column is a
+-- choice, and a row answering both or neither would make the queue
+-- unreadable.
+#guard rows.all fun r => r.schema.isSome != r.why.isSome
+
+def rowJson (r : Row) : Cas.Json.Value :=
+  .obj ([("path", Cas.Json.Value.str r.path),
+         ("emitter", .str r.emitter)] ++
+    (match r.schema with | some s => [("schema", Cas.Json.Value.str s)] | none => []) ++
+    (match r.why with | some w => [("awaiting", Cas.Json.Value.str w)] | none => []))
+
+/-- One input row, in path order like the outputs. -/
+def inputJson (i : Input) : Cas.Json.Value :=
+  .obj [("path", Cas.Json.Value.str i.path), ("role", .str i.role),
+        ("authority", .str i.authority), ("reader", .str i.reader)]
+
+def manifestDocument : String :=
+  let described := (rows.filter (·.schema.isSome)).length
+  let inputRows := inputs.mergeSort fun a b => a.path ≤ b.path
+  Cas.Json.document (emitted.obj [
+    ("manifest", .str "meta"),
+    ("home", .str metaHome),
+    ("counters", .obj [
+      ("outputs", .nat rows.length),
+      ("described", .nat described),
+      ("awaiting", .nat (rows.length - described)),
+      ("inputs", .nat inputRows.length)]),
+    -- The admitting half of the registry. A row here is the permission
+    -- an emitter reads a file by; the law it is permission under
+    -- travels in the `convention` field beside it.
+    ("inputs", .obj [
+      ("convention", .str admissionLaw),
+      ("rows", .arr (inputRows.map inputJson))]),
+    ("outputs", .arr (rows.map rowJson))])
+
 /-! ## The fixtures -/
 
-/-- Where the generated meta plane lives in the effects package. A
-positional argument re-points the whole directory, since the schemas
-and the AST module are one plane and move together. -/
+/-- Where the generated meta plane lives in the effects package, spelled
+from `library/cas` where the emitter runs — the same directory
+`schemaHome` names from the repository root, derived from it so the two
+spellings cannot drift. A positional argument re-points the whole
+directory, since the schemas and the AST module are one plane and move
+together. -/
 def defaultTarget : System.FilePath :=
-  "../effects/src/cas/generated/meta"
+  System.FilePath.mk (".." ++ schemaHome.drop "library".length)
+
+#guard defaultTarget.toString == "../effects/src/cas/generated/meta"
 
 def schemaPath (dir : System.FilePath) (a : Artifact) : System.FilePath :=
-  dir.join (a.stem ++ ".schema.json")
+  dir.join (a.stem ++ ".META.schema.json")
 
 def astPath (dir : System.FilePath) : System.FilePath :=
-  dir.join "metaSchemaAst.ts"
+  dir.join "metaSchemaAst.META.ts"
+
+/-- The manifest's own path, from `library/cas`. It is NOT under
+`defaultTarget` and the positional override does not move it: the
+override re-points where this run prints the CONSUMER FACE, while the
+manifest is the plane's own registry and lives in the plane. The
+`schema` column it writes therefore always names the committed home. -/
+def manifestPath : System.FilePath := "meta" / "MANIFEST.META.json"
 
 def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
   let dir := target.getD defaultTarget
   let schemas : List Gate.Fixture := artifacts.map fun a =>
-    ⟨schemaPath dir a, schemaDocument a, s!"the shape of {a.stem}.json"⟩
+    ⟨schemaPath dir a, schemaDocument a, s!"the shape of {a.fileName}"⟩
   let ast : Gate.Fixture :=
     ⟨astPath dir, astDocument, s!"the schema AST and {artifacts.length} shapes"⟩
-  return schemas ++ [ast]
+  let manifest : Gate.Fixture :=
+    ⟨manifestPath, manifestDocument,
+     s!"the meta plane's registry — {rows.length} outputs, \
+{inputs.length} input(s)"⟩
+  return schemas ++ [ast, manifest]
 
 end Meta
 

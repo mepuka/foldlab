@@ -930,7 +930,7 @@ purity; adjudicating individual combinators ad hoc.
 - **Kind:** model. **Code label:**
   `library/cas/Cas/Core/Canonicalize.lean` (`Canonicalizer`, the
   induced quotient, the ladder) and
-  `library/cas/Cas/Values/Canonicalize.lean` (`canonJson`, the
+  `library/cas/Cas/Core/Canonicalize/Json.lean` (`canonJson`, the
   key-sorting instance).
 - **Form:** an idempotent normalizer held as first-class data — one
   carrier admits many methods. A method induces a decidable

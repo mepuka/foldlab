@@ -5,7 +5,7 @@ operator order ("LLM is a semantic functor translating meaning to
 algebraic semantics… lets model that in lean"), beside
 [COLUMNS.md](COLUMNS.md) (the naming homomorphism this consumes) and
 [GEOMETRY.md](GEOMETRY.md). The Lean face lands the same session in
-`library/cas/Cas/Grammar/Judge.lean`. Literature references are
+`library/cas/Cas/Llm/Judge.lean`. Literature references are
 model-knowledge, `pin: PENDING`. No gate stamps.
 
 ## The operator's idea, worded for the record (with one arrow corrected)
@@ -43,7 +43,12 @@ sampling live at a later lattice level, never in v0.
 
 - **Level 0 — nothing assumed.** `J` arbitrary. Acceptance is a bare
   filter; no structure survives for free.
-- **Level 1 — `Compositional`** (Frege's principle stated OF the
+- **Level 1 — `Stable`** (defined, `Cas.Llm.JudgeRate`): invariance
+  under a declared semantically-inert relation — alias, paraphrase,
+  harmless respelling; the relation is a parameter. Everything above
+  presupposes it. (Ladder renumbered by decision 38, two independent
+  literature votes.)
+- **Level 2 — `Compositional`** (Frege's principle stated OF the
   judge): `J "" = true ∧ J (s ++ t) = J s && J t`. This makes `J` a
   monoid morphism `(String, ++, "") → (Bool, &&, true)` — literally a
   functor between the one-object categories, which is where the
@@ -58,11 +63,12 @@ sampling live at a later lattice level, never in v0.
   - `blame` — a rejected compound has a rejected part: the UI can
     BISECT a nonsensical label to the failing segment. Semantic
     debugging as binary search.
-- **Level 2+ (named, not defined)** — stability under
-  semantically-inert renaming; monotonicity under refinement;
-  agreement between two independent judges (the AGREEMENT family,
-  again). Each is a hypothesis a lane can measure before any theorem
-  leans on it.
+- **Level 3 — LIMIT-STABLE** (named, a registered debt): acceptance
+  survives the directed growth of accepted prefixes — the closure a
+  bounded-context judge fails on unbounded input.
+- **Level 4 — DISTRIBUTIONAL** (the pinned-universe rung, below).
+  Also named for later: monotonicity under refinement; agreement
+  between independent judges (the AGREEMENT family, again).
 
 ## Panels — the union of parallel cheap calls (operator refinement)
 
@@ -73,7 +79,7 @@ applies to the aggregate. The sharp fact (landed as theorems in
 `Judge.lean`): **the aggregator decides whether the functor
 survives.**
 
-- **Unanimity (`Panel.all`) preserves Level 1**: a panel of
+- **Unanimity (`Panel.all`) preserves Level 2**: a panel of
   compositional judges aggregates to a compositional judge — the
   subalgebra and blame-bisection theorems carry.
 - **Union (`Panel.any`) does not**: two individually-compositional
@@ -81,7 +87,7 @@ survives.**
   member accepts the compound — the union accepts the parts and
   rejects the whole. Union buys coverage and robustness to
   single-judge misses at compositionality's price. For a union panel,
-  Level 1 is re-MEASURED of the aggregate, never inherited.
+  Level 2 is re-MEASURED of the aggregate, never inherited.
 - Quorum/majority: same caveat as union (witness mixing), remark only.
 
 Design consequence: run unanimity where bisection and structure
@@ -113,12 +119,13 @@ Then:
 
 ## The measurement programme (this is the genuinely new lane)
 
-Level 1 is an EMPIRICAL property of a frozen judge on OUR name
-fragment — so measure it: sample name pairs `(s, t)` from the emitted
-inventory (`names.json`), ask the pinned judge for `J s`, `J t`,
-`J (s ++ "." ++ t)`, and count compositionality defects. The result is
-a defect RATE with receipts — G4-shaped sampled evidence that either
-licenses the Level-1 theorems for that judge on that fragment, or
+Level 2 (`Compositional`) is an EMPIRICAL property of a frozen judge
+on OUR name fragment — so measure it: sample name pairs `(s, t)` from
+the emitted inventory (`names.json`), ask the pinned judge for `J s`,
+`J t`, `J (s ++ "." ++ t)`, and count compositionality defects. The
+result is a defect RATE with receipts — G4-shaped sampled evidence
+that either licenses the Level-2 theorems for that judge on that
+fragment, or
 localizes exactly where human meaning refuses to compose (which is
 DESIGN SIGNAL: those are the names needing semantic aliases). This is
 a scout-lane study shape (the luna harness runs it as-is; runs.md

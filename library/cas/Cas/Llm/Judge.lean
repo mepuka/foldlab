@@ -52,7 +52,7 @@ on nothing in the store — the same move `Word.columnBy` makes with its
 classifier.
 -/
 
-namespace Cas.Grammar
+namespace Cas.Llm
 
 /-- One FROZEN judgment: a pinned model, prompt and parameters — a
 receipted call, and the same name always gets the same verdict. A real
@@ -190,4 +190,4 @@ theorem Panel.any_not_compositional :
     rw [String.toList_append]
     rfl
 
-end Cas.Grammar
+end Cas.Llm

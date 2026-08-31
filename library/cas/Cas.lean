@@ -8,14 +8,10 @@ import Cas.Core.Store
 import Cas.Core.Address
 import Cas.Core.Canonical
 import Cas.Core.Canonicalize
+import Cas.Core.Canonicalize.Json
+import Cas.Core.Refs
 import Cas.Core.Admission
-import Cas.Values.Digits
-import Cas.Values.Json
-import Cas.Values.JsonInj
-import Cas.Values.JsonParse
-import Cas.Values.Markdown
-import Cas.Values.Refs
-import Cas.Values.Canonicalize
+import Cas.Values
 import Cas.Codec.Hex
 import Cas.Schema.Schema
 import Cas.IR.Word
@@ -23,9 +19,7 @@ import Cas.IR.Join
 import Cas.IR.Column
 import Cas.IR.View
 import Cas.Grammar.Grammar
-import Cas.Grammar.Judge
-import Cas.Grammar.Rewriter
-import Cas.Grammar.JudgeRate
+import Cas.Llm
 import Cas.Lang.Lang
 import Cas.Lang.RefusalMap
 import Cas.Lift.Manifest
@@ -59,6 +53,18 @@ abstraction, lowest first, and imported above in that order.
   (`JsonInj`), the strict parser that proves it — accepting exactly
   the rendering's image, with adequacy and exactness (`JsonParse`) —
   and the typed-reference marker grammar with `Root α` (`Refs`).
+  The substrate half of this directory is its own Lake library,
+  `CasValues`, rooted at `Cas/Values.lean` and imported above in its
+  place: `Json`, `Digits`, `JsonInj`, `JsonParse` and `Markdown`
+  import nothing from `Cas`, so the bottom of the library is a fact of
+  the build and not a claim in prose — `lake build CasValues` builds
+  those five and nothing else in the package. `Canonicalize` and
+  `Refs` are deliberately NOT in it: both import `Cas.Core`, so they
+  belong to THIS stratum and are imported here by name. The directory
+  disagreeing with the stratum is carried as a debt row in each of the
+  two files rather than settled by a move, which waits for the
+  meta-home migration. The declared strata order and the rule that
+  holds it are at the head of `lakefile.toml`.
 - **`Schema/` — the schema plane, root of the type hierarchy.** The
   canonical schema as a universe: codes (`Ast` — the Lean twin of the
   TypeScript v0 constructor set, with `WF` the store's admission
@@ -91,6 +97,20 @@ abstraction, lowest first, and imported above in that order.
   data, every form carrying a `Tree` witness its layout is read off,
   emitted by the `emitgrammar` executable as the front ends' JSON and
   as `REGISTRY.md`.
+- **`Llm/` — the frozen completion call, its own Lake library.**
+  Rooted at `Cas/Llm.lean` and imported above in its place, `CasLlm`
+  is the library's SECOND floor stratum: like `CasValues` it imports
+  nothing from `Cas`, so `lake build CasLlm` builds those three
+  modules and the front page and nothing else in the package. The
+  front page's organizing split is the operator's: LLMs as FUNCTIONS
+  (`Rewriter` — rewrites PRODUCE, so a pipeline is a monoid,
+  schema-forced output is `Into`, a canonicalizer is `Idempotent`)
+  versus LLMs as DECISION POINTS (`Judge` — verdicts SELECT, over the
+  judge-hypothesis lattice, with the subalgebra closure, blame
+  localization and the panel aggregator pair; `JudgeRate` — the finite
+  defect count that keeps those hypotheses honest). Nothing here knows
+  the store exists: a judge OF store content consumes these
+  abstractions and belongs to THIS stratum instead.
 - **`Lang/` — layer 3, the program grammar.** Effect signatures as
   values composing by sum, `Prog` as the free monad of continuations,
   the store language and the LLM extension (`infer`), one-step

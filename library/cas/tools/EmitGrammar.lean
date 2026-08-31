@@ -1,6 +1,6 @@
 import Cas.Grammar.Manifest
 import Cas.Lang.Defun
-import Cas.Values.Refs
+import Cas.Core.Refs
 import Cas.Schema.Codec.References
 import Cas.Backend.Ts
 import Gate
@@ -234,7 +234,7 @@ private def markerModule : Module where
     "typed-reference law (CAS-005): the key a stored payload spells a",
     "reference with, and the key an encode-side value carries one as",
     "before the walk assigns indexes — emitted from",
-    "`library/cas/Cas/Values/Refs.lean` and",
+    "`library/cas/Cas/Core/Refs.lean` and",
     "`library/cas/Cas/Schema/Codec/References.lean` by",
     "`lake exe emitgrammar`; regeneration is byte-identity-gated",
     "(`--check`, wired into `check:cas`).",

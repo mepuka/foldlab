@@ -65,6 +65,7 @@ run = [
   "mise run gen:axioms",
   "mise run gen:meta",
   "mise run gen:trust",
+  "mise run gen:strata",
   "mise run gen:env-ledger",
   "mise run gen:ledger",
 ]
@@ -108,6 +109,7 @@ run = [
   "mise run --force gen:axioms",
   "mise run --force gen:meta",
   "mise run --force gen:trust",
+  "mise run --force gen:strata",
   "mise run --force gen:env-ledger",
   "mise run --force gen:ledger",
 ]
@@ -199,8 +201,9 @@ run = "lake --wfail build"
 #
 # `outputs` are transcribed from each tool's own fixture list — the
 # authority is `lake exe <tool> --check --json`, whose `fixture` field
-# is the path below. `docs/lab-core/ENVIRONMENT.json` carries the join
-# as data, so an emitter that forgets a declaration is a red gate.
+# is the path below. `library/cas/meta/out/environment.META.json` carries
+# the join as data, so an emitter that forgets a declaration is a red
+# gate.
 
 [tasks."gen:cas-vectors"]
 description = "Regenerate the CAS conformance vectors from the Lean registry"
@@ -384,14 +387,14 @@ run = "bun scripts/gen-materialized.ts"
 description = "Regenerate the Cas surface ledger (per-declaration signatures, doc coverage, axiom census) from the compiled environment"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
-outputs = ["surface/cas-surface.json"]
+outputs = ["meta/out/surface.META.json"]
 run = "lake exe surface"
 
 [tasks."gen:cas-obligations"]
 description = "Regenerate the Cas obligation ledger (the named obligations written in the docstrings, plus the health counters) from the compiled environment"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
-outputs = ["surface/cas-obligations.json"]
+outputs = ["meta/out/obligations.META.json"]
 run = "lake exe obligations"
 
 [tasks."gen:cas-laws"]
@@ -403,7 +406,7 @@ run = "lake exe laws"
 description = "Regenerate the debt projection (the docstring obligations still owed, parked or pin-pending, joined to the law index's unbound rulings) from the compiled environment"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
-outputs = ["surface/cas-debts.json"]
+outputs = ["meta/out/debts.META.json"]
 run = "lake exe debts"
 
 # The emitter REFUSES — nonzero exit, naming the declaration — when a
@@ -415,19 +418,22 @@ run = "lake exe debts"
 description = "Regenerate the axiom report (every declaration's axiom dependencies over the surface ledger's import closure) and refuse any dependency outside the clean set"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
-outputs = ["surface/cas-axioms.json"]
+outputs = ["meta/out/axioms.META.json"]
 run = "lake exe axioms"
 
 [tasks."gen:meta"]
-description = "Regenerate the meta plane: the closed schema AST the front end interprets, and one JSON Schema per generated ledger, both printed from the Lean shape declarations"
+description = "Regenerate the meta plane: the closed schema AST the front end interprets, one JSON Schema per described artifact, and the plane's own MANIFEST.META.json registry, all printed from the Lean shape declarations"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
 outputs = [
-  "../effects/src/cas/generated/meta/names.schema.json",
-  "../effects/src/cas/generated/meta/cas-debts.schema.json",
-  "../effects/src/cas/generated/meta/cas-axioms.schema.json",
-  "../effects/src/cas/generated/meta/cas-trust.schema.json",
-  "../effects/src/cas/generated/meta/metaSchemaAst.ts",
+  "../effects/src/cas/generated/meta/names.META.schema.json",
+  "../effects/src/cas/generated/meta/cas-debts.META.schema.json",
+  "../effects/src/cas/generated/meta/cas-axioms.META.schema.json",
+  "../effects/src/cas/generated/meta/cas-trust.META.schema.json",
+  "../effects/src/cas/generated/meta/cas-strata.META.schema.json",
+  "../effects/src/cas/generated/meta/manifest.META.schema.json",
+  "../effects/src/cas/generated/meta/metaSchemaAst.META.ts",
+  "meta/MANIFEST.META.json",
 ]
 run = "lake exe emitmeta"
 
@@ -442,12 +448,45 @@ dir = "{{config_root}}/library/cas"
 # tree the census counts.
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "meta/in/model-gated.META.json",
   "../effects/src/**/*.ts",
   "../effects/bin/**/*.ts",
   "../effects/test/**/*.ts",
 ]
-outputs = ["surface/cas-trust.json"]
+outputs = ["meta/out/trust.META.json"]
 run = "lake exe trust"
+
+[tasks."gen:strata"]
+description = "Regenerate the strata gate's document (the declared stratum order, each library's membership as its lakefile globs decide it, the computed per-module import edges, and the verdicts) and refuse an out-of-stratum import"
+dir = "{{config_root}}/library/cas"
+# Beyond the Lean tree: `lakefile.toml` is this gate's MEMBERSHIP
+# AUTHORITY, not just its build description — a glob moved there moves
+# which stratum a module is in — and it is already in the shared source
+# set below, so nothing extra is needed. The tool imports the compiled
+# library to read its per-module import edges, which is why the whole
+# Lean tree is declared as it is for every other cas emitter.
+#
+# The emitter REFUSES — nonzero exit, naming the module and the edge —
+# on an out-of-stratum import that no KNOWN MISFILES row declares, and
+# on a declared row nothing matches. That is why the strata gate is a
+# `gen:` task and not only a `check:` one: the refusal fires in `gen:ci`
+# before `git diff --exit-code` is ever reached, so a violating import
+# cannot be regenerated into the tree quietly. `gen:axioms` is the
+# precedent.
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["meta/out/strata.META.json"]
+# `lake build` first, and it is not belt-and-braces. `lake exe strata`
+# builds only the executable's own import closure — three modules — while
+# the gate imports EVERY member module the lakefile declares, and a
+# member with no `.olean` is a refusal naming it (verified). The four
+# default targets (`Cas`, `CasBackend`, `CasExamples`, `CasWp`) are
+# exactly the walked set, so this line is what makes the task correct
+# from a cold `.lake`; it costs ~0.2 s warm. `check:cas:surface` and its
+# two siblings run the same line for the same reason.
+run = [
+  "lake build",
+  "lake exe strata",
+]
 
 [tasks."gen:env-ledger"]
 description = "Regenerate the environment ledger (mise tool pins and task graph, every lean-toolchain pin, the lean_exe/task join) from the config files themselves"
@@ -472,7 +511,7 @@ sources = [
   "../../library/effects/archive/lean-model-0.3/lean-toolchain",
   "../../library/machine/lean-toolchain",
 ]
-outputs = ["../../docs/lab-core/ENVIRONMENT.json"]
+outputs = ["meta/out/environment.META.json"]
 run = "lake exe envledger"
 
 # THE GATE LOOP.
@@ -487,7 +526,7 @@ run = "lake exe envledger"
 # cost what they actually do. Every gate still runs, in the same order,
 # and `set -e` stops at the first red one exactly as separate `run`
 # lines did. The binaries are spelled out one per gate rather than
-# looped, deliberately: `docs/lab-core/ENVIRONMENT.json` joins each
+# looped, deliberately: `meta/out/environment.META.json` joins each
 # `[[lean_exe]]` to the command that gates it, and a loop would hide
 # every name from that join and land all thirteen in `ungated`.
 #
@@ -506,19 +545,34 @@ run = "lake exe envledger"
 # leave the gate "fresh" and skipped — the gate would stop being able to
 # fail. This is the one declaration on this task that is load-bearing
 # rather than an optimization.
+#
+# THE STRATA GATE IS IN THE BATCH, not split off like the three ledgers
+# above, and the reason is measured rather than assumed. The split
+# exists because `surface` (8.18 s) and `obligations` (4.98 s) pay
+# `importModules` WITH extensions and then pretty-print every
+# declaration in the library; `strata` imports the same modules with
+# `loadExts := false` and reads nothing but the header's import graph,
+# which measures 0.25–0.74 s of render time — the same order as the
+# batch's other gates and an order of magnitude under the split ones.
+# Its sources are also already this task's sources (the Lean tree plus
+# `lakefile.toml`, its membership authority), so a task of its own would
+# buy a cache worth a quarter of a second and cost a task nobody needs.
+# If it ever grows a walk that costs what `surface` costs, it splits on
+# the same measured argument.
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, word-wire, admission-table, architecture, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, word-wire, admission-table, architecture, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, environment-ledger, and strata byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
   "vectors/**", "schemas/**", "conformance/**", "mcp/**", "REGISTRY.md",
   "../effects/src/cas/generated/**", "../effects/test/generated/**",
-  "../../docs/lab-core/ENVIRONMENT.json",
+  "meta/out/environment.META.json",
+  "meta/out/strata.META.json",
   "../../experiments/entity-store-extract/inventory.json",
 ]
 run = [
-  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitarchitecture emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
-  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitarchitecture --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitarchitecture emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger strata surface obligations laws",
+  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitarchitecture --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check; .lake/build/bin/strata --check'",
   "mise run check:cas:surface",
   "mise run check:cas:obligations",
   "mise run check:cas:laws",
@@ -529,7 +583,7 @@ description = "The surface-ledger byte-identity gate — split from check:cas be
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
-  "surface/cas-surface.json",
+  "meta/out/surface.META.json",
 ]
 run = [
   "lake --wfail build",
@@ -541,7 +595,7 @@ description = "The obligation-ledger byte-identity gate and its planted-defect c
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
-  "surface/cas-obligations.json",
+  "meta/out/obligations.META.json",
 ]
 run = [
   "lake --wfail build",
@@ -553,7 +607,7 @@ description = "The law-index byte-identity gate and its planted-defect controls 
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
-  "surface/cas-laws.json", "SCHEMA-MATERIALIZATION.md",
+  "meta/out/laws.META.json", "SCHEMA-MATERIALIZATION.md",
 ]
 run = [
   "lake --wfail build",
@@ -646,8 +700,8 @@ run = [
 #
 #   git checks a clone out in index order, so a file's mtime is ordered
 #   by its PATH. Wherever an output path sorts after its source paths —
-#   `Cas/**` and `tools/**` sources against `docs/`, `schemas/`,
-#   `surface/`, `vectors/` outputs, which is nearly every task here —
+#   `Cas/**` and `tools/**` sources against `docs/`, `meta/`,
+#   `schemas/`, `vectors/` outputs, which is nearly every task here —
 #   the outputs are stamped LATER and the task is fresh on arrival.
 #
 # Verified: a fixture with sources under `aaa/` and outputs under `zzz/`,

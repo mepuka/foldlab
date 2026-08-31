@@ -63,13 +63,19 @@ above are the Lean emitters' output, read from disk per request (a
 regenerate needs no restart) and never authored here; an absent file
 answers 404, because an un-emitted projection is a fact. Their source
 paths resolve relative to `bin/mcp/http.ts`, so the claim above is
-scoped to a REPO CHECKOUT. From an installed `@foldlab/cas` only
-`cas-tools.json` resolves — the same `../../../cas/` trick
-`scripts/copy-mcp-manifest.ts` materializes for the boot gate — and
-`environment.json` cannot resolve inside a package at any depth,
-since its path leaves the package tree. Serving all seven from a
+scoped to a REPO CHECKOUT. Since the M4 meta-home migration all seven
+resolve through the same `../../../cas/` segment, which in an installed
+tree lands in `@foldlab/cas`; only `cas-tools.json` is actually there,
+because `scripts/copy-mcp-manifest.ts` materializes it for the boot
+gate. The other six are simply not shipped. Serving all seven from a
 published tarball is an OWED packaging decision (below), not a claim
 this document makes.
+
+The SERVED NAMES are the wire surface and did not move with the files:
+`cas-surface.json` and `cas-obligations.json` are served from
+`library/cas/meta/out/surface.META.json` and `…/obligations.META.json`,
+and `environment.json` from `…/environment.META.json`. Renaming a
+served path is a protocol change and is not one this migration made.
 
 ## Running it
 
@@ -381,11 +387,13 @@ Never file-copy or commit a live WAL database.
   obsoletes it) — until one lands, `cas.daemon.rss_bytes` is the
   watch and restart cadence the mitigation.
 - **`/projections` from a published package** — six of the seven
-  artifacts live outside the package tree, and `environment.json`
-  cannot be reached from inside it at any depth, so a tarball serves
-  one of seven. Closing this is a packaging decision (which emitted
-  ledgers the distributable carries, and at which paths) owned by the
-  package seat, not a serving one; until it is ruled the claim above
-  stays scoped to a repo checkout.
+  artifacts are not shipped in `@foldlab/cas`, so a tarball serves one
+  of seven. Since the meta-home migration this is purely a packaging
+  question: every source path now resolves through the `../../../cas/`
+  segment, where before `environment.json` read from `docs/` and could
+  not be reached from inside a package at any depth. Closing it is a
+  packaging decision (which emitted ledgers the distributable carries,
+  and at which paths) owned by the package seat, not a serving one;
+  until it is ruled the claim above stays scoped to a repo checkout.
 - **Run-size policy field** (total-frame bound as policy) — fenced to
   the handler/manifest lanes.

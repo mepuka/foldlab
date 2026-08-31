@@ -1,6 +1,6 @@
 import Cas.Core.Node
 import Cas.Core.Store
-import Cas.Values.Canonicalize
+import Cas.Core.Canonicalize.Json
 
 /-!
 # Typed references: the marker grammar and the `Root` type
@@ -40,6 +40,19 @@ ordinary `Ref`, which is what lets the store's admission law check
 typed edges with no projection-side machinery — and in a `Closed`
 store, every resident edge dereferences at its declared kind
 (`Store.Closed` is exactly that statement).
+
+discharges(values-refs-misfile): relocated to its stratum at the
+meta-home migration. The module was `Cas/Values/Refs.lean` and states
+store semantics outright — it imports `Cas.Core.Node` and
+`Cas.Core.Store`, and `Root.closed_deref` quantifies over
+`Store.Closed` — a `Cas`-stratum module by the strata rule, excluded
+from the `CasValues` library while sitting in `Cas/Values/`. It now
+sits beside the store it speaks of, as `Cas/Core/Refs.lean`, and the
+directory and the stratum agree.
+
+The namespace was already `Cas`, which is what every other `Cas/Core`
+module declares; only the directory was wrong, and only the directory
+moved.
 -/
 
 namespace Cas
@@ -58,7 +71,7 @@ def asMarker : Value → Option Nat
 /-! ## The decode-side judge
 
 Canonicalization on the scan side is `Cas.Json.canonValue`
-(`Cas/Values/Canonicalize.lean`): the packaged CAS-003 method, with
+(`Cas/Core/Canonicalize/Json.lean`): the packaged CAS-003 method, with
 `canonValue_idem` and `renderCompact_canonValue` already proved. This
 model states nothing about it that is not already a theorem there. -/
 

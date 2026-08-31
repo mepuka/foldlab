@@ -1,5 +1,3 @@
-import Cas.Core.Node
-
 /-!
 # Sorts — the grammar's nonterminals
 

@@ -48,7 +48,7 @@ const names = Schema.optionalKey(Schema.Array(Schema.String))
 const rows = Schema.optionalKey(Schema.Array(Schema.Unknown))
 
 /**
- * `docs/lab-core/ENVIRONMENT.json` — which Lean toolchains this estate
+ * `library/cas/meta/out/environment.META.json` — which Lean toolchains this estate
  * pins, how many gates are held out of the gate set, and how big the
  * task and executable tables are.
  */
@@ -60,7 +60,7 @@ export const EnvironmentLedger = Schema.Struct({
 })
 
 /**
- * `library/cas/surface/cas-laws.json` — how many rulings the library
+ * `library/cas/meta/out/laws.META.json` — how many rulings the library
  * states, and how many are bound to an enforcing declaration rather
  * than owed.
  */
@@ -74,7 +74,7 @@ export const LawLedger = Schema.Struct({
 })
 
 /**
- * `library/cas/surface/cas-obligations.json` — what the proof effort
+ * `library/cas/meta/out/obligations.META.json` — what the proof effort
  * has discharged, and what it still owes.
  */
 export const ObligationLedger = Schema.Struct({
@@ -106,31 +106,33 @@ export type AdmissionLedger = typeof AdmissionLedger.Type
 
 /** The four ledgers: where each lives relative to the repository root,
  * and the schema it is read through. The paths are the ones the audit
- * and `ENVIRONMENT.json` itself name. */
+ * and `environment.META.json` itself name — the meta plane's home since
+ * the M4 migration, with the `.META.` infix that marks
+ * self-description. */
 export const ledgers = {
   admissionMap: {
     path: "library/cas/conformance/admission-map.json",
     schema: AdmissionLedger,
   },
   environment: {
-    path: "docs/lab-core/ENVIRONMENT.json",
+    path: "library/cas/meta/out/environment.META.json",
     schema: EnvironmentLedger,
   },
   laws: {
-    path: "library/cas/surface/cas-laws.json",
+    path: "library/cas/meta/out/laws.META.json",
     schema: LawLedger,
   },
   obligations: {
-    path: "library/cas/surface/cas-obligations.json",
+    path: "library/cas/meta/out/obligations.META.json",
     schema: ObligationLedger,
   },
 }
 
 /** The directory a ledger path is resolved against — how the lab is
- * recognized from inside it. `library/cas/surface` is the marker
- * because it is the directory the surface emitters write into, so a
+ * recognized from inside it. `library/cas/meta/out` is the marker
+ * because it is the directory the ledger emitters write into, so a
  * checkout that has it is a checkout that can have ledgers at all. */
-const labMarker = "library/cas/surface"
+const labMarker = "library/cas/meta/out"
 
 /** Find the repository the ledgers live in: the nearest ancestor of a
  * starting directory that carries the lab's layout. Answers none when

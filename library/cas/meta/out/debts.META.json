@@ -15,7 +15,7 @@
       "excerpt": "…ted rather than asserted. What is still owed there is registry, not proof: wire tags 14 and 15 (`step`,…",
       "file": "library/cas/Cas.lean",
       "keyword": "owed",
-      "line": 37,
+      "line": 31,
       "module": "Cas",
       "source": "docstring",
       "state": "owed"
@@ -56,25 +56,6 @@
       "keyword": "owed",
       "line": 4,
       "module": "Cas.Backend.HttpProfile",
-      "source": "docstring",
-      "state": "owed"
-    },
-    {
-      "excerpt": "…s earned. - **Level 3 — LIMIT-STABLE** (owed(judge-limit-stable): definition): acceptance survives the…",
-      "file": "library/cas/Cas/Grammar/Judge.lean",
-      "id": "judge-limit-stable",
-      "keyword": "owed",
-      "line": 1,
-      "module": "Cas.Grammar.Judge",
-      "source": "docstring",
-      "state": "owed"
-    },
-    {
-      "excerpt": "…3) is NOT defined here; that rung stays owed at the ladder in `Judge`, and nothing below reaches it. Th…",
-      "file": "library/cas/Cas/Grammar/JudgeRate.lean",
-      "keyword": "owed",
-      "line": 3,
-      "module": "Cas.Grammar.JudgeRate",
       "source": "docstring",
       "state": "owed"
     },
@@ -158,6 +139,25 @@
       "keyword": "Owed",
       "line": 5,
       "module": "Cas.Lift.Decode",
+      "source": "docstring",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…s earned. - **Level 3 — LIMIT-STABLE** (owed(judge-limit-stable): definition): acceptance survives the…",
+      "file": "library/cas/Cas/Llm/Judge.lean",
+      "id": "judge-limit-stable",
+      "keyword": "owed",
+      "line": 1,
+      "module": "Cas.Llm.Judge",
+      "source": "docstring",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…3) is NOT defined here; that rung stays owed at the ladder in `Judge`, and nothing below reaches it. Th…",
+      "file": "library/cas/Cas/Llm/JudgeRate.lean",
+      "keyword": "owed",
+      "line": 3,
+      "module": "Cas.Llm.JudgeRate",
       "source": "docstring",
       "state": "owed"
     },

@@ -32,7 +32,7 @@ requires authorization.
 ## Iterate under a budget
 
 1. Retrieve exact-project declarations: the surface ledger first
-   (`library/cas/surface/cas-surface.json`, `jq`-queryable), local `rg`, hover, `#check`/`#print`,
+   (`library/cas/meta/out/surface.META.json`, `jq`-queryable), local `rg`, hover, `#check`/`#print`,
    project search, then approved remote search for recall. Never generate what the corpus holds.
 2. Run the deterministic ladder before model reasoning: `rfl`, `decide` where decidable and small,
    the house simp sets, `omega`, `exact?`/`apply?`.

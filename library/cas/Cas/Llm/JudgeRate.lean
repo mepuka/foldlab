@@ -1,4 +1,4 @@
-import Cas.Grammar.Judge
+import Cas.Llm.Judge
 
 /-!
 # The judge measured — compositionality scoped to the grammar
@@ -39,7 +39,7 @@ This module imports `Judge` and nothing else: the measurement is prior
 to the store, and every statement holds of an arbitrary frozen judge.
 -/
 
-namespace Cas.Grammar
+namespace Cas.Llm
 
 /-! ## Level 1 — stability under inert variation -/
 
@@ -152,4 +152,4 @@ theorem Judge.CompositionalOn.append {J : Judge} {F G : List (String × String)}
   show J.defectCount (F ++ G) = 0
   rw [Judge.defectCount_append, hF', hG']
 
-end Cas.Grammar
+end Cas.Llm

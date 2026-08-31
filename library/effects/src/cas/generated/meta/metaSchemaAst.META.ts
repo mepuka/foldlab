@@ -13,7 +13,9 @@
  * artifact, so these values stay the single source of truth.
  *
  * Each shape's JSON Schema (draft 2020-12) rides beside this file as
- * `<stem>.schema.json`, printed from the same term.
+ * `<stem>.META.schema.json`, printed from the same term. The `.META.`
+ * infix marks self-description (L1): the language plane's own
+ * emissions do not carry it.
  *
  * This plane describes the estate's own generated DOCUMENTS. It is
  * not the schema sort (`REGISTRY.md` row 0x53), whose payloads are
@@ -233,7 +235,7 @@ export const namesShape: MetaSchema = {
   ],
 }
 
-/** The shape of `cas-debts.json`.
+/** The shape of `debts.META.json`.
  * The debt projection: every docstring obligation still
  * owed, parked or pin-pending, and every unbound ruling. */
 export const debtsShape: MetaSchema = {
@@ -405,7 +407,7 @@ export const debtsShape: MetaSchema = {
   ],
 }
 
-/** The shape of `cas-axioms.json`.
+/** The shape of `axioms.META.json`.
  * The axiom gate's report: every declaration that depends
  * on an axiom, and the census over the clean set. */
 export const axiomsShape: MetaSchema = {
@@ -529,7 +531,7 @@ export const axiomsShape: MetaSchema = {
   ],
 }
 
-/** The shape of `cas-trust.json`.
+/** The shape of `trust.META.json`.
  * The trust census: every TypeScript file the effects
  * package ships, in the stratum that holds it. */
 export const trustShape: MetaSchema = {
@@ -633,6 +635,455 @@ export const trustShape: MetaSchema = {
             },
             {
               name: "gate",
+              schema: {
+                _tag: "opt",
+                inner: { _tag: "str" },
+              },
+            },
+          ],
+        },
+      },
+    },
+  ],
+}
+
+/** The shape of `strata.META.json`.
+ * The strata gate: the declared order, each library's
+ * membership as its lakefile globs decide it, the computed
+ * import edges, and the verdicts over them. */
+export const strataShape: MetaSchema = {
+  _tag: "record",
+  fields: [
+    {
+      name: "emitted",
+      schema: {
+        _tag: "record",
+        fields: [
+          {
+            name: "schemaVersion",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "emitter",
+            schema: { _tag: "str" },
+          },
+          {
+            name: "module",
+            schema: { _tag: "str" },
+          },
+          {
+            name: "toolchain",
+            schema: { _tag: "str" },
+          },
+        ],
+      },
+    },
+    {
+      name: "gate",
+      schema: { _tag: "str" },
+    },
+    {
+      name: "package",
+      schema: { _tag: "str" },
+    },
+    {
+      name: "convention",
+      schema: { _tag: "str" },
+    },
+    {
+      name: "counters",
+      schema: {
+        _tag: "record",
+        fields: [
+          {
+            name: "strata",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "modules",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "walked",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "edges",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "knownMisfiles",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "violations",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "known",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "fatal",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "stale",
+            schema: { _tag: "nat" },
+          },
+        ],
+      },
+    },
+    {
+      name: "strata",
+      schema: {
+        _tag: "array",
+        items: {
+          _tag: "record",
+          fields: [
+            {
+              name: "lib",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "declared",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "rank",
+              schema: { _tag: "nat" },
+            },
+            {
+              name: "leaf",
+              schema: { _tag: "bool" },
+            },
+            {
+              name: "walked",
+              schema: { _tag: "bool" },
+            },
+            {
+              name: "role",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "srcDir",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "globs",
+              schema: {
+                _tag: "array",
+                items: { _tag: "str" },
+              },
+            },
+            {
+              name: "roots",
+              schema: {
+                _tag: "array",
+                items: { _tag: "str" },
+              },
+            },
+            {
+              name: "modules",
+              schema: {
+                _tag: "array",
+                items: { _tag: "str" },
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      name: "knownMisfiles",
+      schema: {
+        _tag: "array",
+        items: {
+          _tag: "record",
+          fields: [
+            {
+              name: "check",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "module",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "imports",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "why",
+              schema: { _tag: "str" },
+            },
+          ],
+        },
+      },
+    },
+    {
+      name: "checks",
+      schema: {
+        _tag: "array",
+        items: {
+          _tag: "record",
+          fields: [
+            {
+              name: "check",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "statement",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "verdict",
+              schema: {
+                _tag: "enum",
+                values: ["ok", "known", "refused"],
+              },
+            },
+            {
+              name: "violations",
+              schema: {
+                _tag: "array",
+                items: {
+                  _tag: "record",
+                  fields: [
+                    {
+                      name: "check",
+                      schema: { _tag: "str" },
+                    },
+                    {
+                      name: "module",
+                      schema: { _tag: "str" },
+                    },
+                    {
+                      name: "lib",
+                      schema: { _tag: "str" },
+                    },
+                    {
+                      name: "imports",
+                      schema: { _tag: "str" },
+                    },
+                    {
+                      name: "importsLib",
+                      schema: { _tag: "str" },
+                    },
+                    {
+                      name: "status",
+                      schema: {
+                        _tag: "enum",
+                        values: ["known", "fatal"],
+                      },
+                    },
+                    {
+                      name: "why",
+                      schema: {
+                        _tag: "opt",
+                        inner: { _tag: "str" },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              name: "stale",
+              schema: {
+                _tag: "opt",
+                inner: {
+                  _tag: "array",
+                  items: {
+                    _tag: "record",
+                    fields: [
+                      {
+                        name: "check",
+                        schema: { _tag: "str" },
+                      },
+                      {
+                        name: "module",
+                        schema: { _tag: "str" },
+                      },
+                      {
+                        name: "imports",
+                        schema: { _tag: "str" },
+                      },
+                      {
+                        name: "why",
+                        schema: { _tag: "str" },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      name: "modules",
+      schema: {
+        _tag: "array",
+        items: {
+          _tag: "record",
+          fields: [
+            {
+              name: "module",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "lib",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "source",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "imports",
+              schema: {
+                _tag: "opt",
+                inner: {
+                  _tag: "array",
+                  items: { _tag: "str" },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  ],
+}
+
+/** The shape of `MANIFEST.META.json`.
+ * The meta plane's own registry: one row per emitted
+ * artifact under `library/cas/meta`, and the declared
+ * inputs an emitter is permitted to read. */
+export const manifestShape: MetaSchema = {
+  _tag: "record",
+  fields: [
+    {
+      name: "emitted",
+      schema: {
+        _tag: "record",
+        fields: [
+          {
+            name: "schemaVersion",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "emitter",
+            schema: { _tag: "str" },
+          },
+          {
+            name: "module",
+            schema: { _tag: "str" },
+          },
+          {
+            name: "toolchain",
+            schema: { _tag: "str" },
+          },
+        ],
+      },
+    },
+    {
+      name: "manifest",
+      schema: { _tag: "str" },
+    },
+    {
+      name: "home",
+      schema: { _tag: "str" },
+    },
+    {
+      name: "counters",
+      schema: {
+        _tag: "record",
+        fields: [
+          {
+            name: "outputs",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "described",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "awaiting",
+            schema: { _tag: "nat" },
+          },
+          {
+            name: "inputs",
+            schema: { _tag: "nat" },
+          },
+        ],
+      },
+    },
+    {
+      name: "inputs",
+      schema: {
+        _tag: "record",
+        fields: [
+          {
+            name: "convention",
+            schema: { _tag: "str" },
+          },
+          {
+            name: "rows",
+            schema: {
+              _tag: "array",
+              items: {
+                _tag: "record",
+                fields: [
+                  {
+                    name: "path",
+                    schema: { _tag: "str" },
+                  },
+                  {
+                    name: "role",
+                    schema: { _tag: "str" },
+                  },
+                  {
+                    name: "authority",
+                    schema: { _tag: "str" },
+                  },
+                  {
+                    name: "reader",
+                    schema: { _tag: "str" },
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
+      name: "outputs",
+      schema: {
+        _tag: "array",
+        items: {
+          _tag: "record",
+          fields: [
+            {
+              name: "path",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "emitter",
+              schema: { _tag: "str" },
+            },
+            {
+              name: "schema",
+              schema: {
+                _tag: "opt",
+                inner: { _tag: "str" },
+              },
+            },
+            {
+              name: "awaiting",
               schema: {
                 _tag: "opt",
                 inner: { _tag: "str" },

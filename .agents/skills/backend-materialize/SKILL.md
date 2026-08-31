@@ -26,10 +26,10 @@ runs from `library/cas` unless noted.
 | `lake exe emitgrammar` | the grammar manifest and `REGISTRY.md` | `--check` in `check:cas` |
 | `lake exe emitprograms` | generated Effect programs in effects `test/generated/` | `--check` in `check:cas` |
 | `lake exe mcpspec` | `mcp/cas-tools.json` (the R11/R15 MCP manifest) and `McpToolCodes.ts` in effects `src/cas/generated/` (the same rows as the typed table `bin/mcp/tools.ts` serves) | `--check` in `check:cas` |
-| `lake exe surface` | `surface/cas-surface.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
-| `lake exe obligations` | `surface/cas-obligations.json` (the obligation ledger: the named obligations written in the docstrings, plus the health counters) | `--check` and `--self-test` in `check:cas` |
-| `lake exe laws` | `surface/cas-laws.json` (the law index: the ruling registry joined to the `LAW SM-<n>:` lines the enforcing declarations carry) | `--check` and `--self-test` in `check:cas` |
-| `lake exe envledger` | `docs/lab-core/ENVIRONMENT.json` (the configuration plane: mise tool pins and task graph, every `lean-toolchain` pin, each `[[lean_exe]]` joined to the task driving it and the `--check` line gating it) | `--check` in `check:cas` |
+| `lake exe surface` | `meta/out/surface.META.json` (the report lane: per-declaration signatures, doc coverage, per-theorem axiom reports, axiom census) | `--check` in `check:cas` |
+| `lake exe obligations` | `meta/out/obligations.META.json` (the obligation ledger: the named obligations written in the docstrings, plus the health counters) | `--check` and `--self-test` in `check:cas` |
+| `lake exe laws` | `meta/out/laws.META.json` (the law index: the ruling registry joined to the `LAW SM-<n>:` lines the enforcing declarations carry) | `--check` and `--self-test` in `check:cas` |
+| `lake exe envledger` | `meta/out/environment.META.json` (the configuration plane: mise tool pins and task graph, every `lean-toolchain` pin, each `[[lean_exe]]` joined to the task driving it and the `--check` line gating it) | `--check` in `check:cas` |
 
 `mise run gen` runs all regenerations; `mise run check` asserts a
 clean tree after. A red byte gate means regenerate and READ THE DIFF —

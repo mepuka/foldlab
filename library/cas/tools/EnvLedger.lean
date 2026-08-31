@@ -21,9 +21,11 @@ runs in well under a second.
 
 Every cas task sets `dir = {{config_root}}/library/cas`, so a bare
 relative path resolves INSIDE `library/cas`. Every file this ledger
-reads, and the fixture it writes, lives above that. `repoRoot` is the
-one constant that carries the difference; `lakefile.toml` is the single
-input that is genuinely local.
+READS lives above that, and `repoRoot` is the one constant that carries
+the difference; `lakefile.toml` is the single input that is genuinely
+local. Since the meta-home migration the fixture it WRITES is local
+too — the ledger emits into `library/cas/meta/out/` with the rest of the
+self-description plane, not into `docs/`.
 
 ## The parser is the toolchain's; the refusals are the ledger's
 
@@ -81,7 +83,7 @@ directory walk, which this slice deliberately does not do.
 
 ## Modes
 
-- default — write `docs/lab-core/ENVIRONMENT.json`;
+- default — write `meta/out/environment.META.json`;
 - `--check` — the byte-identity gate in `check:cas`;
 - `--self-test` — plant one defect per rule and require each to be
   caught by that rule alone. A gate that cannot fail proves nothing.
@@ -93,8 +95,11 @@ directory walk, which this slice deliberately does not do.
 cas task sets. -/
 def repoRoot : System.FilePath := ".." / ".."
 
+/-- The ledger's home on the meta plane. Local, not `repoRoot`-relative:
+the configuration plane's document is self-description like every other
+ledger, and M4 gives the whole plane one home. -/
 def outPath : System.FilePath :=
-  repoRoot / "docs" / "lab-core" / "ENVIRONMENT.json"
+  "meta" / "out" / "environment.META.json"
 
 /-- The `dir` value that marks a task as running in this package — the
 join key between `lakefile.toml`'s executables and `mise.toml`'s tasks. -/
@@ -172,6 +177,7 @@ def residence : List (String × String × String) := [
   ("gen:grammar-manifest", "portable", "all inputs tracked"),
   ("gen:ledger", "portable", "committed bun lockfile pins every dependency"),
   ("gen:lift-manifest", "portable", "all inputs tracked"),
+  ("gen:strata", "portable", "all inputs tracked"),
   ("gen:trust", "portable", "all inputs tracked"),
   ("gen:vectors", "portable", "all inputs tracked")]
 

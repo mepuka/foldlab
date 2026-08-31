@@ -44,7 +44,7 @@ open Lean
 
 /-! ## The tool -/
 
-def outPath : System.FilePath := "surface" / "cas-obligations.json"
+def outPath : System.FilePath := "meta" / "out" / "obligations.META.json"
 
 def regen : String := "lake exe obligations"
 

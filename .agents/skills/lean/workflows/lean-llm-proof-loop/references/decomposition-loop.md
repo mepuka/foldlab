@@ -44,7 +44,7 @@ corpus pin pending — adapted to this estate's rules.)
   decomposition signal, not a grinding license — a long proof means
   the sketch is missing a lemma.
 - **Retrieval before generation.** Query the estate's own surface
-  ledger first (`library/cas/surface/cas-surface.json` — every public
+  ledger first (`library/cas/meta/out/surface.META.json` — every public
   declaration with signature and module, `jq`-queryable), then the
   toolchain sources. Retrieval raises the success rate while cutting
   spend; never generate a lemma the corpus already holds.

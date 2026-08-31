@@ -879,26 +879,34 @@ const layerFrontDoor = (options: {
  * a static host; the ruling moved it here, and FRONTEND.md says so.
  *
  * WHERE the files come from is a repo-checkout fact, honestly stated:
- * each source URL resolves relative to this file, and only
- * `cas-tools.json` also resolves inside an INSTALLED package (the
- * `../../../cas/` segment lands back in `@foldlab/cas`, which is what
- * `scripts/copy-mcp-manifest.ts` materializes). The other six resolve
- * outside any installed package — `environment.json` cannot resolve
- * inside one at any depth — so from a published tarball this plane
- * serves one of seven and answers 404 for the rest. SERVING.md scopes
- * the claim to repo-checkout serving and carries the OWED row.
+ * each source URL resolves relative to this file, and every one of the
+ * seven now resolves through the `../../../cas/` segment, which in an
+ * INSTALLED tree lands back in `@foldlab/cas`. Only `cas-tools.json` is
+ * actually there, because `scripts/copy-mcp-manifest.ts` materializes
+ * it; the other six are not shipped, so from a published tarball this
+ * plane serves one of seven and answers 404 for the rest. That is now a
+ * packaging question — WHICH emitted artifacts the distributable
+ * carries — and no longer a structural one: before the M4 meta-home
+ * migration, `environment.json` read from `docs/` and could not be
+ * reached from inside a package at any depth. SERVING.md scopes the
+ * claim to repo-checkout serving and carries the OWED row.
+ *
+ * The served NAMES are the wire surface and did NOT move with the
+ * files. The migration retargeted every source path into
+ * `library/cas/meta/out/`; renaming a served path is a protocol change,
+ * not a file-layout one.
  */
 export const projectionSources: ReadonlyArray<{
   readonly name: string
   readonly source: URL
 }> = [
   { name: "cas-tools.json", source: new URL("../../../cas/mcp/cas-tools.json", import.meta.url) },
-  { name: "cas-surface.json", source: new URL("../../../cas/surface/cas-surface.json", import.meta.url) },
-  { name: "cas-obligations.json", source: new URL("../../../cas/surface/cas-obligations.json", import.meta.url) },
+  { name: "cas-surface.json", source: new URL("../../../cas/meta/out/surface.META.json", import.meta.url) },
+  { name: "cas-obligations.json", source: new URL("../../../cas/meta/out/obligations.META.json", import.meta.url) },
   { name: "schema-index.json", source: new URL("../../../cas/schemas/index.json", import.meta.url) },
   { name: "schema-addresses.json", source: new URL("../../../cas/schemas/addresses.json", import.meta.url) },
   { name: "schema-verdicts.json", source: new URL("../../../cas/conformance/schema-verdicts.json", import.meta.url) },
-  { name: "environment.json", source: new URL("../../../../docs/lab-core/ENVIRONMENT.json", import.meta.url) },
+  { name: "environment.json", source: new URL("../../../cas/meta/out/environment.META.json", import.meta.url) },
 ]
 
 const layerProjections: Layer.Layer<

@@ -1,6 +1,6 @@
 {
   "counters": {
-    "discharged": 24,
+    "discharged": 26,
     "emptyDenotations": 6,
     "formless": 0,
     "owed": 20,
@@ -24,6 +24,15 @@
       "keyword": "discharged",
       "line": 432,
       "module": "Cas.Backend.Mcp",
+      "state": "discharged"
+    },
+    {
+      "declaration": "Cas.Json.pairwise_mergeSort_keys",
+      "excerpt": "…ivity and totality of the string order, discharged once for both pair carriers. Generic in the value type on p…",
+      "file": "library/cas/Cas/Core/Canonicalize/Json.lean",
+      "keyword": "discharged",
+      "line": 103,
+      "module": "Cas.Core.Canonicalize.Json",
       "state": "discharged"
     },
     {
@@ -171,15 +180,6 @@
       "state": "obligation"
     },
     {
-      "declaration": "Cas.Json.pairwise_mergeSort_keys",
-      "excerpt": "…ivity and totality of the string order, discharged once for both pair carriers. Generic in the value type on p…",
-      "file": "library/cas/Cas/Values/Canonicalize.lean",
-      "keyword": "discharged",
-      "line": 88,
-      "module": "Cas.Values.Canonicalize",
-      "state": "discharged"
-    },
-    {
       "declaration": "Cas.Json.natRepr_inj",
       "excerpt": "…is the lemma the schema plane named as sub-obligation 2 of `Json.RenderPlainInjective`.",
       "file": "library/cas/Cas/Values/Digits.lean",
@@ -264,7 +264,7 @@
       "excerpt": "…ted rather than asserted. What is still owed there is registry, not proof: wire tags 14 and 15 (`step`,…",
       "file": "library/cas/Cas.lean",
       "keyword": "owed",
-      "line": 37,
+      "line": 31,
       "module": "Cas",
       "state": "owed"
     },
@@ -304,29 +304,37 @@
       "state": "owed"
     },
     {
-      "excerpt": "…s earned. - **Level 3 — LIMIT-STABLE** (owed(judge-limit-stable): definition): acceptance survives the…",
-      "file": "library/cas/Cas/Grammar/Judge.lean",
-      "id": "judge-limit-stable",
-      "keyword": "owed",
-      "line": 1,
-      "module": "Cas.Grammar.Judge",
-      "state": "owed"
-    },
-    {
-      "excerpt": "…3) is NOT defined here; that rung stays owed at the ladder in `Judge`, and nothing below reaches it. Th…",
-      "file": "library/cas/Cas/Grammar/JudgeRate.lean",
-      "keyword": "owed",
-      "line": 3,
-      "module": "Cas.Grammar.JudgeRate",
-      "state": "owed"
-    },
-    {
-      "excerpt": "…re human meaning declines to compose. `discharges(judge-stable): STABLE is defined here` — Level 1 of the jud…",
-      "file": "library/cas/Cas/Grammar/JudgeRate.lean",
-      "id": "judge-stable",
+      "excerpt": "…ormalize-on-read stays a named defect. discharges(values-canonicalize-misfile): relocated to its stratum at t…",
+      "file": "library/cas/Cas/Core/Canonicalize/Json.lean",
+      "id": "values-canonicalize-misfile",
       "keyword": "discharges",
-      "line": 3,
-      "module": "Cas.Grammar.JudgeRate",
+      "line": 4,
+      "module": "Cas.Core.Canonicalize.Json",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…nce law `markerScan ∘ lower = range` is DISCHARGED IN GENERAL below (`markerScan_lower`), no longer only guard…",
+      "file": "library/cas/Cas/Core/Refs.lean",
+      "keyword": "DISCHARGED",
+      "line": 5,
+      "module": "Cas.Core.Refs",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…re.Closed` is exactly that statement). discharges(values-refs-misfile): relocated to its stratum at the meta-…",
+      "file": "library/cas/Cas/Core/Refs.lean",
+      "id": "values-refs-misfile",
+      "keyword": "discharges",
+      "line": 5,
+      "module": "Cas.Core.Refs",
+      "state": "discharged"
+    },
+    {
+      "excerpt": "…eral This model's own named follow-up, discharged. The fixtures above are now regression pins on a theorem ra…",
+      "file": "library/cas/Cas/Core/Refs.lean",
+      "keyword": "discharged",
+      "line": 289,
+      "module": "Cas.Core.Refs",
       "state": "discharged"
     },
     {
@@ -508,6 +516,32 @@
       "state": "owed"
     },
     {
+      "excerpt": "…s earned. - **Level 3 — LIMIT-STABLE** (owed(judge-limit-stable): definition): acceptance survives the…",
+      "file": "library/cas/Cas/Llm/Judge.lean",
+      "id": "judge-limit-stable",
+      "keyword": "owed",
+      "line": 1,
+      "module": "Cas.Llm.Judge",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…3) is NOT defined here; that rung stays owed at the ladder in `Judge`, and nothing below reaches it. Th…",
+      "file": "library/cas/Cas/Llm/JudgeRate.lean",
+      "keyword": "owed",
+      "line": 3,
+      "module": "Cas.Llm.JudgeRate",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…re human meaning declines to compose. `discharges(judge-stable): STABLE is defined here` — Level 1 of the jud…",
+      "file": "library/cas/Cas/Llm/JudgeRate.lean",
+      "id": "judge-stable",
+      "keyword": "discharges",
+      "line": 3,
+      "module": "Cas.Llm.JudgeRate",
+      "state": "discharged"
+    },
+    {
       "excerpt": "…te keeps on purpose, and each is a live obligation rather than a defect: 1. **`Ast.toJson` / `Ast.ofJson` — t…",
       "file": "library/cas/Cas/Schema/Basis.lean",
       "keyword": "obligation",
@@ -644,6 +678,14 @@
       "state": "obligation"
     },
     {
+      "excerpt": "…ges(…)` rows in the moved files, so the obligation ledger carries the paired lifecycle and the debt ledger car…",
+      "file": "library/cas/Cas/Values.lean",
+      "keyword": "obligation",
+      "line": 7,
+      "module": "Cas.Values",
+      "state": "obligation"
+    },
+    {
       "excerpt": "…all, which answers one value. The three sub-obligations this module named, and where each landed: 1. **`escapeCom…",
       "file": "library/cas/Cas/Values/JsonInj.lean",
       "keyword": "sub-obligation",
@@ -681,22 +723,6 @@
       "keyword": "DISCHARGED",
       "line": 768,
       "module": "Cas.Values.JsonParse",
-      "state": "discharged"
-    },
-    {
-      "excerpt": "…nce law `markerScan ∘ lower = range` is DISCHARGED IN GENERAL below (`markerScan_lower`), no longer only guard…",
-      "file": "library/cas/Cas/Values/Refs.lean",
-      "keyword": "DISCHARGED",
-      "line": 5,
-      "module": "Cas.Values.Refs",
-      "state": "discharged"
-    },
-    {
-      "excerpt": "…eral This model's own named follow-up, discharged. The fixtures above are now regression pins on a theorem ra…",
-      "file": "library/cas/Cas/Values/Refs.lean",
-      "keyword": "discharged",
-      "line": 276,
-      "module": "Cas.Values.Refs",
       "state": "discharged"
     }
   ]

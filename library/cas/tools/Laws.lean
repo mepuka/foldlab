@@ -4,7 +4,7 @@ import Law
 /-!
 # The law index — `lake exe laws`
 
-The gate over `Law`: emit or byte-check `surface/cas-laws.json`, then
+The gate over `Law`: emit or byte-check `meta/out/laws.META.json`, then
 report drift between the ruling registry and the tree. The registry
 itself, the `LAW <id>: <clause>` convention, the join and the document
 are `Law`, which `lake exe debts` reads too; this root is the fixture,
@@ -19,7 +19,7 @@ open Lean
 
 /-! ## The tool -/
 
-def outPath : System.FilePath := "surface" / "cas-laws.json"
+def outPath : System.FilePath := "meta" / "out" / "laws.META.json"
 
 def regen : String := "lake exe laws"
 

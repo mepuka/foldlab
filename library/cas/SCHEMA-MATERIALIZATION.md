@@ -513,7 +513,7 @@ Items surfaced by the landed slices, awaiting operator rulings; rulings
     exactly the lowering: `progStmts` walking a `PProg` instead of a
     `Tree`, which is what makes "the emitter emits only puts whose
     references name earlier answers" a theorem instead of prose.
-24. **Surface-ledger blind spot**: `surface/cas-surface.json` walks
+24. **Surface-ledger blind spot**: `meta/out/surface.META.json` walks
     the `Cas` library only — `Cas.Backend.*` is invisible to
     retrieval-before-generation. One-line fix in `tools/Surface.lean`'s
     import set when convenient.

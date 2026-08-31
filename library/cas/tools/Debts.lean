@@ -131,7 +131,7 @@ end Debt
 
 /-! ## The tool -/
 
-def outPath : System.FilePath := "surface" / "cas-debts.json"
+def outPath : System.FilePath := "meta" / "out" / "debts.META.json"
 
 def regen : String := "lake exe debts"
 

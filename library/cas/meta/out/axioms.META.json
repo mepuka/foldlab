@@ -1421,6 +1421,276 @@
       "name": "Cas.instCanonicalAdmittedNode"
     },
     {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonFields"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonFields_eq_map"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonFields_fix"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonFields_of_canonical"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonItems"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonItems_idem"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonItems_of_canonical"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonJson"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonJson_isCanon_of_canonical"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonJson_preserves_renderCompact"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonValue"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonValue_idem"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.canonValue_of_canonical"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.map_eq_self_of_mem"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.pairwise_mergeSort_keys"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.renderCompactFields_canon"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.renderCompactItems_canon"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.renderCompact_canonValue"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Canonicalize.Json",
+      "name": "Cas.Json.renderCompact_eq_of_equiv"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.addrA"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.addrB"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.asMarker"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonR"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonRFields"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonRFields_eq_map"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonRFields_fix"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonRItems"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonRItems_idem"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonR_idem"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.canonR_obj_fix"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.lower"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.lowerCanon_coh"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.lowerFields_coh"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.lowerItems_coh"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.markerScan"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.markerScan_lower"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.orderFixture"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.refA"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.refB"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.refFixtures"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.scanCanon"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.scanFields"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.scanItems"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.wellRefIndexed"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Core.Refs",
+      "name": "Cas.wellRefIndexed_lower"
+    },
+    {
       "axioms": ["propext"],
       "kind": "theorem",
       "module": "Cas.Core.Store",
@@ -1437,90 +1707,6 @@
       "kind": "theorem",
       "module": "Cas.Core.Store",
       "name": "Cas.Store.set_same"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Judge.Compositional"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Judge.accepts_op"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Judge.blame"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Judge.rejects_infects"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Panel.all_compositional"
-    },
-    {
-      "axioms": ["Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Panel.any_accepts"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Judge",
-      "name": "Cas.Grammar.Panel.any_not_compositional"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.Compositional.compositionalOn"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.CompositionalOn"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.CompositionalOn.append"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.compositionalOn_iff"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.defectCount"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.defectCount_append"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Grammar.JudgeRate",
-      "name": "Cas.Grammar.Judge.violates"
     },
     {
       "axioms": ["propext"],
@@ -1623,12 +1809,6 @@
       "kind": "def",
       "module": "Cas.Grammar.Manifest",
       "name": "Cas.Grammar.registry"
-    },
-    {
-      "axioms": ["Quot.sound"],
-      "kind": "theorem",
-      "module": "Cas.Grammar.Rewriter",
-      "name": "Cas.Grammar.Rewriter.Idempotent.andThen_self"
     },
     {
       "axioms": ["Quot.sound", "propext"],
@@ -3051,6 +3231,96 @@
       "kind": "theorem",
       "module": "Cas.Lift.Taxonomy",
       "name": "Cas.Lift.RefusalCode.all_complete"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Judge.Compositional"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Judge.accepts_op"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Judge.blame"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Judge.rejects_infects"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Panel.all_compositional"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Panel.any_accepts"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Judge",
+      "name": "Cas.Llm.Panel.any_not_compositional"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.Compositional.compositionalOn"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.CompositionalOn"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.CompositionalOn.append"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.compositionalOn_iff"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.defectCount"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.defectCount_append"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Llm.JudgeRate",
+      "name": "Cas.Llm.Judge.violates"
+    },
+    {
+      "axioms": ["Quot.sound"],
+      "kind": "theorem",
+      "module": "Cas.Llm.Rewriter",
+      "name": "Cas.Llm.Rewriter.Idempotent.andThen_self"
     },
     {
       "axioms": ["propext"],
@@ -5910,120 +6180,6 @@
     },
     {
       "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonFields"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonFields_eq_map"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonFields_fix"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonFields_of_canonical"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonItems"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonItems_idem"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonItems_of_canonical"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonJson"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonJson_isCanon_of_canonical"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonJson_preserves_renderCompact"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonValue"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonValue_idem"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.canonValue_of_canonical"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.map_eq_self_of_mem"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.pairwise_mergeSort_keys"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.renderCompactFields_canon"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.renderCompactItems_canon"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.renderCompact_canonValue"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Canonicalize",
-      "name": "Cas.Json.renderCompact_eq_of_equiv"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
       "kind": "theorem",
       "module": "Cas.Values.Digits",
       "name": "Cas.Json.canonDigits_toDigits"
@@ -6681,162 +6837,6 @@
       "kind": "def",
       "module": "Cas.Values.Markdown",
       "name": "Cas.Values.Markdown.renderTable"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.addrA"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.addrB"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.asMarker"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonR"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonRFields"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonRFields_eq_map"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonRFields_fix"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonRItems"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonRItems_idem"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonR_idem"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.canonR_obj_fix"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.lower"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.lowerCanon_coh"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.lowerFields_coh"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.lowerItems_coh"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.markerScan"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.markerScan_lower"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.orderFixture"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.refA"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.refB"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.refFixtures"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.scanCanon"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.scanFields"
-    },
-    {
-      "axioms": ["propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.scanItems"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "def",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.wellRefIndexed"
-    },
-    {
-      "axioms": ["Classical.choice", "Quot.sound", "propext"],
-      "kind": "theorem",
-      "module": "Cas.Values.Refs",
-      "name": "Cas.wellRefIndexed_lower"
     },
     {
       "axioms": ["Classical.choice", "Quot.sound", "propext"],

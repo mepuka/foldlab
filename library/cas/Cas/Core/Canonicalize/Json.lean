@@ -32,6 +32,21 @@ Direction-law position: normalize-side only (the acquisition loop's
 NORMALIZE verb, for hoovered carriers arriving in foreign key order).
 Never applied on the load path — renormalize-on-read stays a named
 defect.
+
+discharges(values-canonicalize-misfile): relocated to its stratum at
+the meta-home migration. The module was `Cas/Values/Canonicalize.lean`
+and imported `Cas.Core.Canonicalize` to package `canonValue` as the
+store's `Canonicalizer Value` instance — a `Cas`-stratum module by the
+strata rule, excluded from the `CasValues` library while sitting in
+`Cas/Values/`. It now sits beside the class it instantiates, as
+`Cas/Core/Canonicalize/Json.lean`, and the directory and the stratum
+agree.
+
+The namespace did NOT move with the file, deliberately: `Cas.Json` is
+where `Value` and its printers live, and `canonValue` is a function of
+the value plane whatever library holds it. The directory names the
+STRATUM, the namespace names the mathematical object; only the first
+of those was wrong.
 -/
 
 namespace Cas.Json
@@ -70,7 +85,7 @@ theorem canonFields_eq_map (fs : List (String × Value)) :
 /-- Mapping a function that fixes every member is the identity.
 
 Public because the reference-bearing twin of this method
-(`Cas.canonR`, `Cas/Values/Refs.lean`) discharges its own idempotence
+(`Cas.canonR`, `Cas/Core/Refs.lean`) discharges its own idempotence
 with the same two facts. Two carriers, one determination — the
 alternative is a second copy of a proof that is already here. -/
 theorem map_eq_self_of_mem {β : Type _} {f : β → β} :
@@ -88,7 +103,7 @@ private theorem le_of_key_lt {a b : String} (h : a < b) : a ≤ b :=
 /-- The sort's output is key-ordered — transitivity and totality of the
 string order, discharged once for both pair carriers. Generic in the
 value type on purpose: the same fact serves `Value` fields here and
-`RValue` fields in `Cas/Values/Refs.lean`. -/
+`RValue` fields in `Cas/Core/Refs.lean`. -/
 theorem pairwise_mergeSort_keys {β : Type _}
     (l : List (String × β)) :
     ((l.mergeSort fun a b => decide (a.1 ≤ b.1)).Pairwise

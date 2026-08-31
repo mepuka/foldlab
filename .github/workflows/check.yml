@@ -17,7 +17,7 @@
 # byte-gated as data (gen:env-ledger); host preparation is this
 # workflow's job.
 #
-# SKIP-LIST AUTHORITY: docs/lab-core/ENVIRONMENT.json. Its residence
+# SKIP-LIST AUTHORITY: library/cas/meta/out/environment.META.json. Its residence
 # column and excludedGates array are emitted and byte-gated
 # (gen:env-ledger), so what CI runs is checkable against them rather
 # than maintained by hand here. Precisely: CI attempts NO host-local

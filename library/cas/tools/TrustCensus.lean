@@ -1,3 +1,4 @@
+import Lean.Data.Json
 import Cas.Values.Json
 import Gate
 
@@ -49,18 +50,32 @@ SPAWNS (`test/DaemonHttp.test.ts` runs `bin/cas.ts` through
 census can see. Reading it as a verdict on the file is a mistake the
 header says out loud.
 
-## The curated list migrates
+## The curated list is a DECLARED INPUT
 
-`modelGated` is v0 data living in a Lean tool because that is where
+`modelGated` was v0 data living in this Lean tool because that is where
 the estate's other declared lists live (`EnvLedger.residence`,
-`Walk.libraryImports`). At the M4 reorg it moves to the meta plane's
-INPUT directory — the same place the other curated inputs go — and
-this tool reads it from there. The rows do not change; where they are
-written does.
+`Walk.libraryImports`). It has moved to the meta plane's INPUT
+directory — `meta/in/model-gated.META.json`, the plane's first declared
+input — and this tool reads it from there. The rows did not change;
+where they are written did, and the census's bytes are the evidence.
+
+That move is M4's input-admission law made mechanical for the first
+time. The file has a row in `MANIFEST.META.json`'s `inputs`, and this
+emitter reads it BECAUSE that row exists; the reverse direction is what
+the law is for — an emitter may read only files with a row, so the
+provenance of a generated artifact is enumerable without reading the
+emitter. The admission discipline is that a declared input which
+vanishes is a RED BUILD and never a silent default: a missing file, a
+document that is not JSON, a key the census does not read, a document
+addressed to another reader, and a duplicate path are each a refusal
+naming what is wrong, and none of them falls back to an empty list.
+
+The parser is the toolchain's and the refusals are the census's, which
+is `tools/EnvLedger.lean`'s doctrine at the other file-reading emitter.
 
 ## Modes
 
-- default — write `surface/cas-trust.json`;
+- default — write `meta/out/trust.META.json`;
 - `--check` — the byte-identity gate;
 - `--json` — the driver's machine line, as for every other emitter.
 -/
@@ -92,7 +107,7 @@ def testRoot : String := "test"
 matched, so the exclusion is auditable rather than clever. -/
 def skipDirs : List String := ["node_modules"]
 
-def outPath : System.FilePath := "surface" / "cas-trust.json"
+def outPath : System.FilePath := "meta" / "out" / "trust.META.json"
 
 def regen : String := "lake exe trust"
 
@@ -145,7 +160,7 @@ and nothing else: a `GENERATED` mentioned in prose halfway down a
 hand-written module is not a claim about the module. -/
 def markerWindow : Nat := 400
 
-/-! ## Stratum 2: the curated model-gated list
+/-! ## Stratum 2: the curated model-gated list, read from the declared input
 
 CURATED DATA. A row says: this file is held to the Lean model by the
 named conformance artifact, so a drift between the two is a red gate
@@ -155,37 +170,111 @@ longer exists REFUSES the census rather than dropping out of it, on
 `EnvLedger`'s principle that a declared path which moves must be
 caught by name.
 
-Migrates to the meta plane's input directory at the M4 reorg. -/
+The rows live at `meta/in/model-gated.META.json` and are read from
+there. What is DECLARED here is the shape of that document: its name,
+the reader it addresses, and the keys the census reads. A key the
+census does not read refuses the document — the drift a curated input
+exists to make visible would hide exactly in a field nobody looked
+at. -/
+
+/-- The declared input, local to the package like every other meta-plane
+path this tool spells. -/
+def modelGatedInput : System.FilePath := "meta" / "in" / "model-gated.META.json"
+
+/-- The name the document must declare itself by. A file that says it
+is something else is not this census's input, however it is spelled on
+disk. -/
+def inputName : String := "model-gated"
+
+/-- The reader the document must address. A declared input is a
+DIRECTED edge — a file admitted for one emitter — not an open file, so
+the census refuses a document written for somebody else rather than
+reading it anyway. -/
+def inputReader : String := "trust"
 
 structure GatedRow where
   path : String
   /-- What holds the file to the model, in the gate's own terms. -/
   gate : String
 
-/-- The conformance suite: the Lean-emitted vectors, the byte gates
-that keep them current, the generated fixtures the suite replays, and
-the fast-check properties over the same seam. -/
-def conformanceGate : String :=
-  "conformance suite (Lean-emitted vectors, byte gates, generated \
-fixtures, fast-check)"
+/-- The document's keys, and the only ones. -/
+def inputKeys : List String := ["input", "note", "reader", "rows"]
 
-def modelGated : List GatedRow := [
-  { path := "src/cas/Store.ts", gate := conformanceGate },
-  { path := "src/cas/Node.ts", gate := conformanceGate },
-  { path := "src/cas/Programs.ts", gate := conformanceGate },
-  { path := "src/cas/Value.ts", gate := conformanceGate },
-  { path := "src/cas/Blob.ts", gate := conformanceGate },
-  { path := "src/cas/CanonicalSchema.ts", gate := conformanceGate },
-  { path := "src/cas/Materialize.ts", gate := conformanceGate },
-  { path := "src/cas/ConformanceVector.ts", gate := conformanceGate },
-  { path := "src/cas/WordLog.ts", gate := conformanceGate },
-  { path := "src/internal/casCodec.ts", gate := conformanceGate },
-  { path := "src/internal/admission.ts", gate := conformanceGate },
-  { path := "src/internal/blobGraph.ts", gate := conformanceGate }]
+/-- One row's keys, and the only ones. -/
+def rowKeys : List String := ["path", "gate"]
 
--- One file, one row: two rows for one path would make the gate label
--- ambiguous.
-#guard decide ((modelGated.map (·.path)).Nodup)
+open Lean (Json)
+
+/-- A JSON field, with the refusal naming the file and the field. -/
+private def field (site : String) (j : Json) (key : String) :
+    Except String Json :=
+  match j.getObjVal? key with
+  | .ok v => .ok v
+  | .error _ => .error s!"{site}: no `{key}` field"
+
+private def str (site : String) (j : Json) (key : String) :
+    Except String String := do
+  match (← field site j key).getStr? with
+  | .ok s => .ok s
+  | .error _ => .error s!"{site}: `{key}` is not a string"
+
+private def quoted (ks : List String) : String :=
+  String.intercalate ", " (ks.map fun k => "`" ++ k ++ "`")
+
+/-- THE refusal a curated input needs: a key the census does not read is
+a key it will not silently drop, because a row somebody added and
+expected to matter would disappear exactly there. -/
+private def unread (site : String) (keys : List String) (j : Json) :
+    Except String Unit := do
+  let o ← match j.getObj? with
+    | .ok o => pure o
+    | .error _ => .error s!"{site}: expected a JSON object"
+  match o.keys.filter (fun k => !keys.contains k) with
+  | [] => .ok ()
+  | extra =>
+    .error s!"{site}: unknown key(s) {quoted extra} — the census reads \
+{quoted keys} and refuses the rest"
+
+/-- The input document, decoded. Every refusal is here and none of them
+defaults: an admitted input is read as declared or it is not read. -/
+def decodeInput (site : String) (doc : Json) : Except String (List GatedRow) := do
+  unread site inputKeys doc
+  let name ← str site doc "input"
+  unless name == inputName do
+    throw s!"{site}: declares itself `{name}`, not `{inputName}`"
+  let reader ← str site doc "reader"
+  unless reader == inputReader do
+    throw s!"{site}: is addressed to reader `{reader}`, not `{inputReader}`; \
+an emitter reads only the inputs declared for it"
+  -- Read and discarded: the note is the row's meaning in prose, and an
+  -- input that arrived without one would be a list nobody can read.
+  let _ ← str site doc "note"
+  let items ← match (← field site doc "rows").getArr? with
+    | .ok a => pure a
+    | .error _ => throw s!"{site}: `rows` is not an array"
+  let rows ← items.toList.mapM fun r => do
+    unread site rowKeys r
+    return ({ path := ← str site r "path", gate := ← str site r "gate" } : GatedRow)
+  match rows.find? fun r => (rows.filter (·.path == r.path)).length > 1 with
+  | some r =>
+    throw s!"{site}: two rows for «{r.path}» — one file, one row, or the \
+gate label is ambiguous"
+  | none => return rows
+
+/-- Read the declared input. A file that is not there is a refusal
+naming the manifest row that admitted it: the whole point of declaring
+an input is that its disappearance is loud. -/
+def readGated : IO (List GatedRow) := do
+  let text ← try IO.FS.readFile modelGatedInput
+    catch e => throw (IO.userError s!"trust census: cannot read the \
+declared input {modelGatedInput}: {e}. It carries a row in \
+meta/MANIFEST.META.json's `inputs`; a declared input that vanishes is a \
+red build, never a silent default")
+  let doc ← match Json.parse text with
+    | .ok j => pure j
+    | .error e =>
+      throw (IO.userError s!"trust census: {modelGatedInput} is not JSON — {e}")
+  IO.ofExcept (decodeInput modelGatedInput.toString doc)
 
 /-! ## Shared string vocabulary -/
 
@@ -364,13 +453,14 @@ def hasGeneratedHeader (bytes : ByteArray) : Bool := Id.run do
     if markerAt bytes i needle then return true
   return false
 
-def classify (imported : List String) (path : String) : IO Row := do
+def classify (gated : List GatedRow) (imported : List String) (path : String) :
+    IO Row := do
   if (segments path).contains generatedSegment then
     return { path, stratum := .emitted }
   let bytes ← IO.FS.readBinFile (effectsRoot / System.FilePath.mk path)
   if hasGeneratedHeader bytes then
     return { path, stratum := .emitted }
-  match modelGated.find? (·.path == path) with
+  match gated.find? (·.path == path) with
   | some r => return { path, stratum := .modelGated, gate := some r.gate }
   | none =>
     if imported.contains path then return { path, stratum := .tested }
@@ -394,9 +484,11 @@ def convention : String :=
   "stratum assignment is v0-COARSE and the strata are ORDERED — a file \
 lands in the first one that claims it. `emitted` is a `generated` path \
 segment or a GENERATED marker in the file's first 400 bytes. \
-`model-gated` is CURATED DATA: a hand-written list in \
-tools/TrustCensus.lean, one gate label per row, which migrates to the \
-meta plane's input directory at the M4 reorg. `tested` is a DIRECT \
+`model-gated` is CURATED DATA: a hand-written list at \
+library/cas/meta/in/model-gated.META.json, one gate label per row, \
+carrying a row in meta/MANIFEST.META.json's `inputs` and read from \
+there — a declared input that vanishes is a red build, not a silent \
+default. `tested` is a DIRECT \
 import from a file under library/effects/test — a module reached only \
 through another module's re-export is not tested by this rule, and a \
 binary a test SPAWNS rather than imports is not either. `bare` is the \
@@ -439,24 +531,27 @@ def document (rows : List Row) : String :=
 /-- A curated row naming a file that is not there refuses the census.
 The list is an assertion about the tree; an assertion that has quietly
 stopped being true is the failure the list exists to prevent. -/
-def checkCurated (shipped : List String) : IO Unit :=
-  match modelGated.find? (fun r => !shipped.contains r.path) with
+def checkCurated (gated : List GatedRow) (shipped : List String) : IO Unit :=
+  match gated.find? (fun r => !shipped.contains r.path) with
   | some r =>
-    throw (IO.userError s!"trust census: `modelGated` names «{r.path}», \
-which is not a file under the scanned roots; drop the row or fix the \
-path in tools/TrustCensus.lean")
+    throw (IO.userError s!"trust census: the declared input \
+{modelGatedInput} names «{r.path}», which is not a file under the \
+scanned roots; drop the row or fix the path")
   | none => pure ()
 
 /-- The census as the driver's single fixture. Every read and every
 refusal happens HERE — inside the action the driver forces only after
-arguments parse. -/
+arguments parse. The declared input is read FIRST: a census that walked
+the tree before discovering its input was missing would spend the walk
+to reach the same refusal. -/
 def fixtures : IO (List Gate.Fixture) := do
+  let gated ← readGated
   let roots ← shippedRoots.mapM filesUnder
   let shipped := roots.flatten.mergeSort (· < ·)
-  checkCurated shipped
+  checkCurated gated shipped
   let tests ← filesUnder testRoot
   let imported ← importedByTests tests (shipped ++ tests)
-  let rows ← shipped.mapM (classify imported)
+  let rows ← shipped.mapM (classify gated imported)
   return [⟨outPath, document rows,
     s!"{rows.length} files — {count rows .emitted} emitted, \
 {count rows .modelGated} model-gated, {count rows .tested} tested, \

@@ -36,7 +36,7 @@ that reprints them is a re-gen event the gate makes loud.
 
 open Lean Walk
 
-def outPath : System.FilePath := "surface" / "cas-surface.json"
+def outPath : System.FilePath := "meta" / "out" / "surface.META.json"
 
 /-- The ledger's emitted header. The document declared no version
 before this one, so its `schemaVersion` opens at 1. -/

@@ -1,7 +1,7 @@
 import Cas.Schema.SelfCodec
 import Cas.Schema.PayloadInj
 import Cas.Schema.Guarded
-import Cas.Values.Canonicalize
+import Cas.Core.Canonicalize.Json
 
 /-!
 # The ingestion door — foreign spelling in, canonical code out

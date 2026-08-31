@@ -671,3 +671,138 @@ working tree stands at ~116 changed/untracked paths — one coherent
 day, uncommitted, the operator's to review. Open docket unchanged
 from the fifteenth act, plus the sentinelKey mint.
 
+## Seventeenth act, same day — PROMOTED; the strata begin
+
+**The operator committed the day at 19:39** — `9bbcb901` "Refactor
+and clean up codebase", 148 files, +31,433/−5,672 — promoting
+everything through the D1 cutovers and ratifying the doc rows. The
+acts above are now history, not proposal.
+
+Then the partition work (LIBRARIES.md, asks L1–L3; the
+lean-design-patterns backlog stub seeded with 12 shapes; the
+zero-dependency census computed from the import graph — 9 modules at
+zero; the judge trio / byte floor / Sig-Prog / Backend.Ts identified
+as pure clusters; Grammar.Sorts→Core.Node flagged
+verify-then-trim):
+
+- **L3 landed twice-over**: the first attempt STOPPED on a refuted
+  premise — Values/Canonicalize and Values/Refs import Cas.Core
+  (Refs states `Root.closed_deref` over `Store.Closed`: store
+  semantics misfiled in the values tree); the agent probed the
+  mechanism (boundary is job-count-free), reverted, surfaced a
+  three-option fork. Coordinator ruled option 2 adapted: the lib is
+  THE PURE FIVE (+ aggregator), files unmoved, the misfile as two
+  structured debt rows (`values-canonicalize-misfile`,
+  `values-refs-misfile`) relocating at the migration. Executed:
+  `lake build CasValues` = 8 jobs, closure enumerated exact; full
+  build 110 (+1 = the aggregator, honestly accounted); the front
+  page ("the substrate every address is computed over… what makes
+  'same address' mean 'same value' instead of 'same value,
+  probably'"); the strata seed at the lakefile head WITH the honest
+  caveat — the lib boundary is a DECLARATION, not an enforcement
+  (its own probe proved the violating subtree builds green), which
+  raises the strata-gate lane's value; Cas.lean now imports the
+  stratum plus two visible exceptions; and a discovered harvester
+  hazard (prose containing backtick-`owed` in a walked docstring
+  mints a spurious row — reworded, documented).
+- **Operator ruled the llm lib**: the judge trio relocates to
+  `Cas/Llm/` organized by LLMs-as-FUNCTIONS (Rewriter) vs
+  LLMs-as-DECISION-POINTS (Judge, JudgeRate) — "rewrites produce,
+  verdicts select" as the front page; the floor becomes a two-lib
+  DAG (CasValues + CasLlm); banked in LIBRARIES.md; relocation
+  dispatched (cheap only today — nothing imports the trio yet).
+- Remaining uncommitted after the commit: the L3 files + the three
+  post-commit staged docs + the in-flight CasLlm move.
+- **M4 MIGRATION LANDED (P1)**: the meta home materialized —
+  `library/cas/meta/{MANIFEST.META.json, in/, out/}`; seven ledgers
+  moved + renamed to the `.META.` style (`surface/` removed;
+  `environment.META.json` home from docs/lab-core); generated
+  schemas/AST took the infix (no importers existed pre-D2); the
+  MANIFEST emitted self-describing with the language-plane exemption
+  made COMPUTABLE (names.json excluded by the home-predicate) and
+  the four not-yet-schema'd outputs as `awaiting` rows — the D2
+  queue as data. The two misfiled Values modules relocated
+  (`Cas/Core/Canonicalize/Json.lean`, `Cas/Core/Refs.lean`) with
+  their debts DISCHARGED as paired rows — the marker lifecycle
+  closed by the exact act promised at minting. Every producer,
+  checker, mise task, workflow line, and TS reader retargeted
+  (including `ledgers.ts`'s labMarker, which would otherwise have
+  pointed at a dead directory); daemon-served projection NAMES
+  deliberately unchanged (wire ≠ file layout); a false claim in
+  SERVING/PACKAGING corrected (environment now resolves in-package);
+  PDD contracts untouched as frozen adversarial records. All green:
+  111 jobs, every emitter + check at new paths, gen clean, check:cas
+  exit 0, 418 tests, doctor smoke through the new marker. Caveat
+  recorded: the incoming ledgers had stale oleans (never counted the
+  misfile owed markers — owed held at 20; net effect two discharged
+  rows).
+- **P2 LANDED** (coordinator-verified): `CasBytes` (5-job closure,
+  exactly Nat32→Bytes→Hex) and `CasProg` (4-job, exactly Sig→Prog)
+  as explicit-glob boundaries — the audit proved the explicit globs
+  LOAD-BEARING (Codec's neighbors reach Core; a subtree glob would
+  have pulled the Core closure into "a library named for bytes");
+  `Backend.Ts` DEFERRED on three stated grounds (first
+  double-claimed module; a one-name glob guards nothing; the scoped
+  build already measures standalone-ness), minting the seed heading
+  **"ZERO IMPORTS IS NOT A STRATUM"** — a stratum is carved around a
+  coherent vocabulary, never around whichever file needs no import
+  today (pattern #13, added to the backlog stub); the `Sorts` trim
+  landed (two-line diff, green — `Grammar.Sorts` now
+  zero-dependency, staying in the Cas stratum per the same
+  principle). Full build 111→111 (zero delta as designed); all
+  eight META artifacts md5-identical; every check green.
+- **P3 LANDED — the strata declaration is now LAW** (coordinator
+  accepts the lane's verification): `tools/Strata.lean` → `strata`
+  gate emitting `strata.META.json` (9 strata, 135 modules — 108
+  walked, 242 edges; 0.25–0.74s, batch-line wiring reasoned).
+  Design: membership from the LAKEFILE (Lake's own glob machinery +
+  isLocalModule precedence — the tool declares only the ORDER);
+  edges from compiled module headers; the module set from walking
+  srcDirs, because "a module nothing imports is exactly the one a
+  walk would miss."
+  **The gate found two declaration errors on its first run**:
+  (1) `Cas` root imports `Cas.Backend.HttpProfile` (rank 1 → rank 3
+  — the M10 ledger-visibility import) — now the first KNOWN
+  MISFILES row, nonfatal, settlement named (a move; a design
+  ruling, its own slice); (2) `CasWp` was declared a leaf and is
+  not (two Backend modules import `Lang.Wp`) — the DECLARATION was
+  corrected rather than the exception block abused. Refusal drills
+  all passed: the planted violation refused with the exact edge and
+  the doctrine ("a module lands in a stratum or it is refused —
+  'somewhere under Cas/' is not a home"); stale-exception and
+  missing-olean drills too; all reverted byte-identical. The
+  lakefile's "declaration, not enforcement" caveat RETIRED by the
+  thing it called for.
+  **Input admission live end-to-end**: `meta/in/model-gated.META.json`
+  is the plane's first declared input (MANIFEST inputs row; census
+  reads-and-refuses, five drills; trust output byte-identical except
+  the one now-false convention sentence — the diff is exactly that
+  line). `strata.META.json` joins the MANIFEST's DESCRIBED rows
+  (metaSchemaAst now 6 shapes; manifest counters 9 outputs / 5
+  described / 4 awaiting / 1 input). All 23 checks ok; `mise run
+  gen` a fixpoint; check:cas exit 0; 111 jobs.
+  Open follow-ups from the lane: the HttpProfile relocation ruling;
+  promoting Strata's TOML door into the Gate library (deliberate
+  duplication, written down); D2 unchanged in the queue.
+- **CasLlm LANDED** (coordinator-verified): the trio moved by
+  `git mv` + renamespace, content verbatim, debt markers riding by ID
+  (`judge-limit-stable` now under `Cas.Llm.Judge`; the `discharges`
+  row intact); front page "the frozen completion call as a
+  mathematical object" with the split's load-bearing reason (a
+  function's contract is its output language; a decision's contract
+  is which hypotheses have been measured); explicit-glob lakefile
+  boundary with its reason stated (a subtree glob would silently
+  admit the first store-aware judge filed in the directory — the
+  thing the boundary exists to refuse); `lake build CasLlm` = 6 jobs
+  closure-enumerated; full build 111 (+1 aggregator); declarations
+  CONSERVED exactly (Grammar 181→151 + Llm 30); all checks green,
+  check:cas exit 0. The agent fixed two live stale pointers
+  (JUDGE.md Lean-face path; the SPECS row path), left session-log
+  history alone, and FLAGGED the stale rung numbers decision 38 left
+  in the docs — coordinator reconciled same turn (JUDGE.md ladder
+  now L0/L1 STABLE/L2 COMPOSITIONAL/L3 LIMIT-STABLE/L4
+  DISTRIBUTIONAL; panels/measurement references renumbered; SPECS
+  row corrected). One disclosed wrinkle, cleanly recovered: its
+  baseline stash briefly swept the uncommitted CasValues work,
+  popped and verified immediately.
+

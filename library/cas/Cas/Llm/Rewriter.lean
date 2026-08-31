@@ -49,7 +49,7 @@ Like `Judge`, this module imports nothing: a text transformer is
 prior to the store, and every theorem holds of an arbitrary one.
 -/
 
-namespace Cas.Grammar
+namespace Cas.Llm
 
 /-- One FROZEN completion call: a pinned model, prompt and parameters,
 read as the transformer it is. The same input always produces the same
@@ -141,4 +141,4 @@ theorem Rewriter.Idempotent.andThen_self {R : Rewriter}
   funext s
   exact h s
 
-end Cas.Grammar
+end Cas.Llm

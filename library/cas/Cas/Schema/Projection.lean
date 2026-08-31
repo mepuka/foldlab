@@ -1,6 +1,6 @@
 import Cas.Schema.Codec
 import Cas.Schema.Described
-import Cas.Values.Refs
+import Cas.Core.Refs
 
 /-!
 # The projection — a described VALUE to a store node

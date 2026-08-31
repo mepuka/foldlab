@@ -131,7 +131,7 @@ end Ax
 
 /-! ## The tool -/
 
-def outPath : System.FilePath := "surface" / "cas-axioms.json"
+def outPath : System.FilePath := "meta" / "out" / "axioms.META.json"
 
 def regen : String := "lake exe axioms"
 

@@ -160,7 +160,8 @@ surface.
   in a weaker gate.
 - `check:extract-twin` uses `bash` outright — already declared
   host-local and outside the chain
-  (docs/lab-core/ENVIRONMENT.json `residence` column), so it makes no
+  (library/cas/meta/out/environment.META.json `residence` column), so
+  it makes no
   Windows claim.
 - The foreign-consumer smoke's junction-link leg
   (`check-dist-consumer.ts`) is written for Windows
@@ -172,7 +173,7 @@ surface.
 `.github/workflows/check.yml` → an install prelude for the three
 package trees the gen chain reads, then `mise run check:ci`: every
 emitter forced (`gen:ci`), `git diff --exit-code`, every gate forced.
-The skip-list authority is `docs/lab-core/ENVIRONMENT.json` —
+The skip-list authority is `library/cas/meta/out/environment.META.json` —
 precisely: CI attempts no host-local task, forces every task inside
 the chain, and the portable tasks it does not run are exactly the
 portable members of that ledger's `excludedGates` (the three frozen
