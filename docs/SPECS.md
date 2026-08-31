@@ -96,6 +96,19 @@ deleted.
 | [.staging/operational-structure/META-OUTPUTS.md](../.staging/operational-structure/META-OUTPUTS.md) | reflexive tooling | Ledger-apparatus proposal (2026-08-30, grounded in the day's landing friction): developer-facing D1 DEBTS projection (one pane merging owed markers + 28 unbound laws + pending receipts, on structured `owed(ID)`/`discharges(ID)` markers), D2 surface diff-by-name, D3 anchor checker (C5 as lint); prover-facing A1 `slice` proof-brief extractor, A2 `mentions` inverted index (the proof-plane EDB — unifies with the Datalog direction), A3 axioms-as-gate (replaces the scratch-file ritual), A4 unbound-laws as scout targets; vacuity census + name-length budget; asks M1–M2 |
 | [.staging/operational-structure/LEAN-AGENT-SURFACE-PASS-A.md](../.staging/operational-structure/LEAN-AGENT-SURFACE-PASS-A.md) | Lean agent surface | Staged Pass A implementation plan (2026-08-31): domain-contract docket, positive and rejected cases, semantic-level decisions, provisional declaration DAG, prior-art and correctness investigations, obligation ledger, Pass A work packages, and Pass B handoff; awaiting grill, no implementation authorized |
 | [.staging/algebraic-review/store-crdt.md](../.staging/algebraic-review/store-crdt.md) | store algebra | Staged direction (2026-08-30): the store's persistent state shown CRDT-by-construction (grow-only, no removal — the CRDTLog paper's hard case unconstructible; paper receipt pinned local, upstream pending); free Datalog reading (CALM; semi-naive deltas; no deletion ⇒ no DRed) + the rules-as-spec API emission direction; both ruling asks RULED same day (decisions 34/35); RUN-002 scout handoff EXECUTED and its T1–T3 core LANDED kernel-checked in `Cas/IR/Join.lean` same day (join realized by word append — no `Store.join` sort; `Compatible`/`Sub` minted as defs, CONTEXT drafts staged; axiom ceiling propext+Quot.sound); T5/T6 remain proposed |
+| [.staging/effect-core-v1/README.md](../.staging/effect-core-v1/README.md) | Effect Core v1 | Human packet index and exact pre-grade status; no cutover or promoted semantic claim |
+| [.staging/effect-core-v1/PLAN.md](../.staging/effect-core-v1/PLAN.md) | Effect Core v1 programme | Closed-alphabet scope, operator-set representation constraints, literature roles, ordered proof-bearing slices |
+| [.staging/effect-core-v1/EXISTING-TYPES.md](../.staging/effect-core-v1/EXISTING-TYPES.md) | Effect Core v1 reuse | Existing Lean/Effect declarations annotated as reuse, restriction, bridge, embedding, separate calculus, target-only, or proposed-new |
+| [.staging/effect-core-v1/ALGEBRA.md](../.staging/effect-core-v1/ALGEBRA.md) | Effect Core v1 semantics | Proposed graph, direct-handler, machine, relational/fixed-decision/finite-observation, cause, and target algebra over existing carriers |
+| [.staging/effect-core-v1/CLASSIFICATION.md](../.staging/effect-core-v1/CLASSIFICATION.md) | Effect Core v1 analysis | Independent D0–D14 abstract domains, concretizations, transfer obligations, precision boundaries, and PProg anchors |
+| [.staging/effect-core-v1/CONTRACT-PACKET.md](../.staging/effect-core-v1/CONTRACT-PACKET.md) | Effect Core v1 breaker contract | Quantified clauses, frames, decreases, falsifiers, and refusal/frontier/nondeterminism boundaries |
+| [.staging/effect-core-v1/PROOF-DAG.md](../.staging/effect-core-v1/PROOF-DAG.md) | Effect Core v1 proofs | Proposed declaration/theorem graph, existing anchors, contradicted-row amendments, and slice closure order |
+| [.staging/effect-core-v1/REIFICATION-CHECKLIST.md](../.staging/effect-core-v1/REIFICATION-CHECKLIST.md) | Effect Core v1 source/target closure | Recursive public-surface, raw TypeScript type, per-profile proof closure, closed target grammar, and exact Effect TS7 file-set gates |
+| [.staging/effect-core-v1/EXHIBITS-REVIEW.md](../.staging/effect-core-v1/EXHIBITS-REVIEW.md) | Effect Core v1 exhibits | Applicability limits for staged Lean probes; refusal ownership and relational nondeterminism ruling |
+| [.staging/effect-core-v1/COUNTEREXAMPLES.md](../.staging/effect-core-v1/COUNTEREXAMPLES.md) | Effect Core v1 counterexamples | Central stable-ID register separating counterexamples, falsifiers, negative fixtures, mutants, boundary witnesses, and evidence states |
+| [.staging/effect-core-v1/TYPE-CLOSURE.md](../.staging/effect-core-v1/TYPE-CLOSURE.md) | Effect Core v1 cutover | Per-type proof-edge schema and mechanical full-cutover refusal predicate |
+| [.staging/effect-core-v1/ORGANIZATION.md](../.staging/effect-core-v1/ORGANIZATION.md) | Effect Core v1 continuity | AGENTS ownership, authored/generated split, manifests, resume protocol, and context-loss gates |
+| [.staging/effect-core-v1/WORKSHOP-RESULTS.md](../.staging/effect-core-v1/WORKSHOP-RESULTS.md) | Effect Core v1 workshop | Exact local probe commands, theorem anchors, source-census measurements, and explicit evidence limits |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -626,3 +639,38 @@ records the 2026-08-29 session rulings that cut across specs.
     if any address is not 64-hex, at the seam decode, one authority;
     never a per-op second opinion, and the tint ladder never meets
     NaN.
+43. **Effect Core v1 commissioned as a staged, closed-alphabet lane**
+    (2026-08-31; the operator ordered the plan persisted, existing
+    types annotated, workshops begun, the vendored Effect surface made
+    mechanically exhaustive, and full proof closure required before
+    cutover). This is a versioned authored-language lane, not a repeal
+    of decision 9's wild-ingestion ceiling and not ratification of the
+    packet's proposed declarations. The representation economy is
+    ruled for the packet: block bodies are the existing `PProg`; scoped
+    children are `BlockId` data interpreted through existing
+    `Handler`/`Handler.sum`/`Handler.through` into a target that can observe
+    child state and failure (the scratch `ReaderT Env (Prog CasSig)` target is
+    not adequate for catch/finalization); no `HHandler`, public
+    `Behavior`, second straight-line carrier, duplicate CAS refusal
+    kind, or second EffHOL modality is admitted. Full meaning is
+    relational over typed decisions, replies, and schedules; only fixed
+    choices and the deterministic CAS subfragment receive uniqueness.
+    Coherence composes at `interpretRef`, because the existing
+    fixed-fuel no-composition theorem rules out a `run` bind law.
+    EffHOL specializes to existing `wlp`; fuel and unanswered choices
+    remain frontiers outside failure/cause. Rich ordered cause topology
+    stays project-owned and stock rc.112 receives an explicit lossy
+    quotient. The public Effect ledger is separate from the authored
+    alphabet; arbitrary closures are refused or target-only unless a
+    first-order registered implementation is supplied. Exact TS7
+    `@effect/tsgo` file-set coverage is mandatory hygiene evidence and
+    contributes no semantic trust. Every existing/proposed/source/target
+    type has a proof-closure row, and no full cutover is eligible while
+    any required edge or red control is open. Counterexamples live in
+    one stable-ID register and remain distinct from negative fixtures
+    and mutants. AGENTS prose remains authored; volatile links, pins,
+    type annotations, obligations, counterexamples, and status become
+    generated companion facts only after their schemas and consumers
+    are accepted. *Why: make arbitrary effect-flow work successive and
+    resumable without duplicating landed semantics, losing adversarial
+    evidence, or letting source-tool success masquerade as proof.*
