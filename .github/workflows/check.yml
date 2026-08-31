@@ -26,8 +26,10 @@
 # PORTABLE tasks CI does not run are exactly the portable members of
 # excludedGates, each excluded with its own stated reason (the three
 # frozen archive tasks; check:lift-roundtrip, whose lockfile does not
-# resolve under bun 1.4.0 — see its task description). Nothing inside
-# the chain is skipped: check:ci forces every task it names.
+# resolve under bun 1.4.0 — see its task description; and `dev`, the
+# workbench dev server, which runs until stopped and has no verdict
+# to give). Nothing inside the chain is skipped: check:ci forces
+# every task it names.
 #
 # JOB STRUCTURE, and the tradeoff stated honestly: the full chain
 # builds six Lake projects and force-regenerates every emitter — tens

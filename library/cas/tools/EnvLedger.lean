@@ -151,6 +151,12 @@ def residence : List (String × String × String) := [
   -- a task in `check:ci` would be the ledger asserting the CI chain
   -- cannot run on a fresh clone.
   ("check:workbench", "portable", "committed bun lockfile pins every dependency"),
+  -- The dev lane's server. Portable for the same reason
+  -- `check:workbench` is — one committed lockfile pins the whole
+  -- tree it starts — and unreachable from `check`/`check:ci`, so it
+  -- files itself under `excludedGates`: a task that runs until you
+  -- stop it has no verdict to contribute.
+  ("dev", "portable", "committed bun lockfile pins every dependency"),
   ("gen", "portable", "all inputs tracked"),
   ("gen:ci", "portable", "the forced mirror of `gen`; same inputs"),
   ("gen:inventory", "portable", "reads the vendored pinned Effect sources"),

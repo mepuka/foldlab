@@ -402,9 +402,34 @@ sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.t
 outputs = ["meta/out/obligations.META.json"]
 run = "lake exe obligations"
 
+# THE ONE EMITTER THAT USED TO RUN EVERY TIME. Until this declaration
+# landed, `gen:cas-laws` carried no `sources`, so the ledger filed it
+# under `undeclared` and `laws` under `unjoined`, and the runner had no
+# choice but to re-run `lake exe laws` on EVERY `mise run gen` — and so
+# on every `mise run check`. The bytes were never wrong; they were
+# byte-identical each time. The estate simply does not pay for a Lean
+# emitter run it can prove is unnecessary.
+#
+# The inputs ARE nameable, which is what made the hole an oversight
+# rather than the honest answer BS1 allows. The law index reads the
+# COMPILED ENVIRONMENT and nothing else: the ruling registry is a Lean
+# value (`tools/Law.lean` transcribes SCHEMA-MATERIALIZATION.md's queue
+# by hand) and the `LAW <id>` claims it joins are docstrings in the
+# tree. So the sibling emitters' source set is exactly right.
+#
+# `SCHEMA-MATERIALIZATION.md` is carried anyway — deliberate
+# over-declaration, and the same file `check:cas:laws` already lists.
+# The emitter does not read it, but it is the thing `Law.registry`
+# transcribes, and a ruling edited in the prose queue should re-run the
+# join rather than wait for an unrelated Lean edit to shake it loose.
 [tasks."gen:cas-laws"]
 description = "Regenerate the law index (the ruling registry joined to the LAW lines the enforcing declarations carry) from the compiled environment"
 dir = "{{config_root}}/library/cas"
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "SCHEMA-MATERIALIZATION.md",
+]
+outputs = ["meta/out/laws.META.json"]
 run = "lake exe laws"
 
 [tasks."gen:debts"]
@@ -821,6 +846,39 @@ run = [
 # any surface the store language already describes is generated, never
 # typed by hand. The next such surface joins the emitter that already
 # owns it, the same way.
+
+# THE DEV LANE'S ONE COMMAND. `check:workbench` is the gate; this is the
+# loop you sit in while writing the thing the gate will judge. It is a
+# task and not only a package script for the reason every other entry
+# point here is one: the runner is mise, and somebody who has read
+# AGENTS.md and nothing else should not have to learn which directory
+# the front end lives in before they can start it.
+#
+# It opens the TRUNK DEV FIXTURE VIEWER rather than the app root,
+# because that is the surface with something on it: the recorded
+# 220-receipt fixture rendered through the real engine (workbench
+# README, "Dev fixture viewer"). The app root is one click away at `/`
+# on the same server. The route itself is spelled ONCE, in the
+# package's own `dev:fixture` script, so this file does not carry a
+# second copy of a path that can drift.
+#
+# The frozen install runs first on purpose: the lane starts from the
+# pinned tree or it does not start, the same contract `check:workbench`
+# opens with, at a cost of about 50 ms when nothing has moved.
+#
+# NOT A GATE, and the ledger already says so. `dev` is unreachable from
+# `check` and `check:ci`, so `gen:env-ledger` files it under
+# `excludedGates` with the rest of what CI does not run — correctly: a
+# server that runs until you stop it has no verdict to give. It carries
+# no `sources`/`outputs` for the same reason, so it is never skipped as
+# fresh.
+[tasks.dev]
+description = "The workbench dev server, opened on the trunk dev fixture viewer (Vite + @foldkit/vite-plugin, so a hot update preserves the Model)"
+dir = "{{config_root}}/experiments/workbench"
+run = [
+  "bun install --frozen-lockfile",
+  "bun run dev:fixture",
+]
 
 [tasks."check:extract-twin"]
 description = """

@@ -97,28 +97,49 @@ What is load-bearing is only the shape of the boundary:
 
 ## Running it
 
+One command, from anywhere in the repo, starts the dev lane — frozen
+install, Vite, and the browser opened on the fixture viewer:
+
+```
+mise run dev
+```
+
+That is the estate's runner, so it needs no `cd` and no memory of which
+directory the front end lives in. The gate is its sibling and does all
+of the checking:
+
+```
+mise run check:workbench
+```
+
+`mise run check` includes the gate. `mise run dev` is deliberately NOT
+in either chain: a server that runs until you stop it has no verdict to
+give, and the environment ledger files it under `excludedGates` saying
+exactly that.
+
+Inside this package the scripts are the usual ones:
+
 ```
 bun install --frozen-lockfile
-bun run dev          # vite dev server
+bun run dev          # vite dev server, app root at /
+bun run dev:fixture  # the same server, opened on the fixture viewer
 bun run test         # Story + Scene
 bun run typecheck
 bun run lint
 bun run build
 ```
 
-Or through the estate's runner, which does all of it:
-
-```
-mise run check:workbench
-```
-
-`mise run check` includes it.
-
 ## Dev fixture viewer
 
 ```
-bun run dev          # then open http://localhost:5173/dev/index.html
+mise run dev
 ```
+
+It opens `http://localhost:5173/dev/index.html`. The app root is the
+same server at `/`. If you are already in this directory,
+`bun run dev:fixture` is the identical command without the frozen
+install; plain `bun run dev` starts the server on the app root and
+leaves the navigating to you.
 
 Renders the recorded 220-receipt fixture
 (`src/trunk/fixtures/word-history.fixture.json`) through the REAL
