@@ -14,6 +14,9 @@
  *
  * Materialized from a schema node (kind tag 0x53):
  *   - enumPin — 845c3cfccb9fe60e6bdc4976e3e7e111ec57f2f88ee3bbfb47a7ae447490f15e
+ *
+ * emitted — schemaVersion 1, emitter `materialize`,
+ * module `library/cas/tools/Materialize.lean`, toolchain Lean 4.33.1.
  */
 import { Schema } from "effect"
 

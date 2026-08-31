@@ -15,6 +15,9 @@
  * refused identically, because a tag with a second public
  * interpretation is the same hole either way — so this door's
  * membership did not move when those two rows did.
+ *
+ * emitted — schemaVersion 1, emitter `emitgrammar`,
+ * module `library/cas/tools/EmitGrammar.lean`, toolchain Lean 4.33.1.
  */
 
 /** One registry row's tag surface: the sort's registry name, its

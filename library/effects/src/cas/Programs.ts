@@ -309,9 +309,50 @@ export const decodeLine = (node: CasNodeInput): Option.Option<Line> =>
 const notAProgram = (detail: string): StoreFailure =>
   new StoreFailure({ reason: detail })
 
-const bounded = (program: Program): Option.Option<string> => {
+/** A field that must fit one wire byte. `version`, `tag`, and a
+ * reference's `expectedTag` are each `UInt8` in `Cas.Lang.PLine`, so the
+ * Lean TYPE carries this bound and the host `number` type does not —
+ * which is why the encoder would otherwise truncate `257` to `1`. */
+const isByte = (value: number): boolean =>
+  Number.isInteger(value) && value >= 0 && value < 256
+
+/** A field that must fit the 32-bit wire count. An answer index is a
+ * `Nat` under `i < 4294967296` in `Cas.Lang.PIn.WF`, so non-negativity
+ * and integrality are the Lean type's and this door's — which is why the
+ * encoder would otherwise truncate `-1` to `0xffffffff`. */
+const isNat32 = (value: number): boolean =>
+  Number.isInteger(value) && value >= 0 && value < wireBound
+
+/** Why an operand is not `Cas.Lang.PIn.WF`, if it is not. A literal
+ * names an address and is always well-formed; an answer's index must fit
+ * the wire count. */
+const operandRefusal = (where: string, operand: Operand): Option.Option<string> =>
+  operand._tag === "answer" && !isNat32(operand.index)
+    ? Option.some(`${where}: answer index ${operand.index} is not a 32-bit wire count`)
+    : Option.none()
+
+/** Why a program is not `Cas.Lang.PProg` of well-formed lines, if it is
+ * not — the host mirror of `∀ l ∈ p, PLine.WF l` (`Defun.lean:191`).
+ *
+ * The TypeScript `Line` type is WIDER than `Cas.Lang.PLine`: `version`,
+ * `tag`, and `expectedTag` are `number` here and `UInt8` there, and an
+ * answer index is `number` here and a bounded `Nat` there. Every field
+ * this checks is one the Lean type carries for free and this type does
+ * not, so a program that passes here has a `PLine` preimage and one that
+ * fails has none. Left ungated, the encoder does not refuse the wider
+ * values — it TRUNCATES them, minting the bytes and address of a
+ * DIFFERENT, well-formed program. This is the gate that makes the wider
+ * host type mean the narrower formal one, and every door that turns a
+ * `Program` into bytes shares it. */
+const wfRefusal = (program: Program): Option.Option<string> => {
   for (const [index, line] of program.entries()) {
     if (line._tag === "put") {
+      if (!isByte(line.version)) {
+        return Option.some(`line ${index}: version ${line.version} is not a wire byte`)
+      }
+      if (!isByte(line.tag)) {
+        return Option.some(`line ${index}: tag ${line.tag} is not a wire byte`)
+      }
       if (line.payload.length >= wireBound) {
         return Option.some(`line ${index}: the payload exceeds the 32-bit wire field`)
       }
@@ -319,12 +360,15 @@ const bounded = (program: Program): Option.Option<string> => {
         return Option.some(`line ${index}: the operand count exceeds the 32-bit wire field`)
       }
       for (const ref of line.refs) {
-        if (ref.source._tag === "answer" && ref.source.index >= wireBound) {
-          return Option.some(`line ${index}: an answer index exceeds the 32-bit wire field`)
+        if (!isByte(ref.expectedTag)) {
+          return Option.some(`line ${index}: expected tag ${ref.expectedTag} is not a wire byte`)
         }
+        const refusal = operandRefusal(`line ${index}`, ref.source)
+        if (Option.isSome(refusal)) return refusal
       }
-    } else if (line.source._tag === "answer" && line.source.index >= wireBound) {
-      return Option.some(`line ${index}: an answer index exceeds the 32-bit wire field`)
+    } else {
+      const refusal = operandRefusal(`line ${index}`, line.source)
+      if (Option.isSome(refusal)) return refusal
     }
   }
   return Option.none()
@@ -359,7 +403,7 @@ export const putProgram = (
   program: Program,
 ): Effect.Effect<StoredProgram, CasError> =>
   Effect.suspend(() =>
-    Option.match(bounded(program), {
+    Option.match(wfRefusal(program), {
       onSome: (refusal) => Effect.fail<CasError>(notAProgram(refusal)),
       // `forEach` is sequential by default, which is the admission
       // order the store law wants; the step nodes carry no references
@@ -386,12 +430,23 @@ export const programAddress = (
   digest: (bytes: Uint8Array) => Effect.Effect<ContentId, StoreFailure>,
   program: Program,
 ): Effect.Effect<StoredProgram, StoreFailure> =>
-  Effect.forEach(stepNodes(program), (node) => digest(encodeCasNode(node))).pipe(
-    Effect.flatMap((steps) =>
-      digest(encodeCasNode(tableNode(steps))).pipe(
-        Effect.map((address): StoredProgram => ({ address, steps })),
-      )
-    ),
+  Effect.suspend(() =>
+    Option.match(wfRefusal(program), {
+      // The address of an ill-formed table is the address of the
+      // well-formed table it truncates to — a wrong answer that looks
+      // like a right one. This door computes bytes without a store, so
+      // it is the one most able to launder a malformed program into a
+      // real-looking address; it refuses at the same gate as the rest.
+      onSome: (refusal) => Effect.fail(notAProgram(refusal)),
+      onNone: () =>
+        Effect.forEach(stepNodes(program), (node) => digest(encodeCasNode(node))).pipe(
+          Effect.flatMap((steps) =>
+            digest(encodeCasNode(tableNode(steps))).pipe(
+              Effect.map((address): StoredProgram => ({ address, steps })),
+            )
+          ),
+        ),
+    })
   )
 
 /** LOAD A PROGRAM: the cont node at an address, its step nodes, and
@@ -456,12 +511,16 @@ const contRefusal = (
 
 /* ── running ─────────────────────────────────────────────────────── */
 
-/** A run's outcome: the word — the addresses admitted, in admission
- * order — and the answer history the table threaded.
+/** A run's outcome: the word — the addresses this run ADMITTED, in
+ * admission order — and the answer history the table threaded.
  *
- * They are DIFFERENT lists and the difference is load-bearing. A put
- * extends both; a LOAD extends only the history, because loading
- * admits nothing. The designated result is the history's last entry. */
+ * They are DIFFERENT lists and the difference is load-bearing. Every
+ * put extends the history with its answered address, but only a put
+ * the store answers `fresh` extends the word: a duplicate admits
+ * nothing, exactly as `runP` leaves the word unchanged on the
+ * `.duplicate` arm (`Interp.lean:76-79`, `runPFrom_puts_sound`). A
+ * LOAD extends only the history, because loading admits nothing. The
+ * designated result is the history's last entry. */
 export interface RunOutcome {
   readonly word: ReadonlyArray<ContentId>
   readonly answers: ReadonlyArray<ContentId>
@@ -481,7 +540,10 @@ const dangling = (line: number, index: number, answered: number): CasError =>
  *
  * Each code point in order. A PUT resolves its operands against the
  * answer history, admits the node through the store's own door, and
- * extends both the word and the history with the answered address. A
+ * extends the history with the answered address — and the word only
+ * when the door answers `fresh`: the word is the run's ADMISSIONS, not
+ * its put lines, and a duplicate put admits nothing (`runP`'s
+ * `.duplicate` arm). A
  * LOAD resolves its operand and requires the address to be THERE —
  * `Word.find` in Lean, a real load here — extending the history alone.
  *
@@ -494,6 +556,11 @@ export const runProgram = (
   program: Program,
 ): Effect.Effect<RunOutcome, CasError> =>
   Effect.gen(function* () {
+    // The same admission gate the other doors share, before a single
+    // node is put: a run must not truncate an ill-formed field into a
+    // real store any more than an address computation may.
+    const refusal = wfRefusal(program)
+    if (Option.isSome(refusal)) return yield* notAProgram(refusal.value)
     const word: Array<ContentId> = []
     const answers: Array<ContentId> = []
     const resolve = (line: number, operand: Operand) =>
@@ -516,12 +583,13 @@ export const runProgram = (
         for (const ref of code.refs) {
           refs.push({ id: yield* resolve(line, ref.source), expectedTag: ref.expectedTag })
         }
-        answered = yield* store.put({
+        const put = yield* store.putOutcome({
           kind: { version: code.version, tag: code.tag },
           payload: code.payload,
           refs,
         })
-        word.push(answered)
+        answered = put.id
+        if (put._tag === "fresh") word.push(answered)
       } else {
         answered = yield* resolve(line, code.source)
         // The load must find something. `runPFrom`'s load case is

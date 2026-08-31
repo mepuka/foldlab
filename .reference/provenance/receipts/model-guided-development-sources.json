@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "model-guided-development-sources",
+  "observedAt": "2026-08-30T05:04:25-05:00",
+  "scope": "Sources used by the staged Foldlab proposal for model-guided pre-proof planning, invariant generation and selection, specification-sensitivity checks, proof repair, and development-cycle measurement. This receipt fixes research inputs only. It admits no tool, dependency, model output, implementation, correspondence claim, or proof claim.",
+  "localCache": ".staging/model-guided-development/sources",
+  "userInput": {
+    "path": "/Users/pooks/.codex/attachments/dfab8dee-ffad-4e92-9ea8-9afdc2ec446b/pasted-text.txt",
+    "role": "user-supplied synthesis and hypothesis list; audited against the publications below",
+    "content": {
+      "algorithm": "sha256",
+      "digest": "5b910d88c302aa9e3a4dcb7e8c2ffb2d9990d44acfc0a0fae7a7431b613ffe55",
+      "bytes": 9790
+    },
+    "trust": "proposal input only; not publication evidence"
+  },
+  "requestedSources": [
+    {
+      "id": "dafny-reference-latest-javascript",
+      "title": "Dafny Reference Manual, section 13.8.6 JavaScript",
+      "url": "https://dafny.org/latest/DafnyRef/DafnyRef#1386-javascript",
+      "localPath": ".staging/model-guided-development/sources/dafny-reference-latest.html",
+      "contentType": "text/html",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "85dfeb222a88fe6d38609ca4839e83a2889c783e5d5782ec1676ab15e734fde5",
+        "bytes": 2347435
+      },
+      "standing": "moving latest-release page; the implementation target is separately pinned to Dafny v4.11.0 below"
+    },
+    {
+      "id": "chockler-kupferman-kurshan-vardi-2001-original-host",
+      "title": "A Practical Approach to Coverage in Model Checking",
+      "url": "https://www.cs.huji.ac.il/~ornak/publications/cav01.pdf",
+      "localPath": ".staging/model-guided-development/sources/cav01-original-host-error.html",
+      "contentType": "text/html",
+      "retrievalResult": "host security error page, Support ID B_2262060933570512280",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "0f965f04ae9787153add133deca160478b7081d0f5f4c2e40c959f6c975f63e0",
+        "bytes": 580
+      },
+      "resolution": "The requested edition was resolved through its DOI and publisher PDF in publicationPins."
+    },
+    {
+      "id": "alloy-4-2-java-api-2011",
+      "title": "Alloy 4.2 Java API documentation",
+      "url": "https://alloytools.org/documentation/alloy-api/index.html",
+      "localPath": ".staging/model-guided-development/sources/alloy-api-index.html",
+      "contentType": "text/html",
+      "content": {
+        "algorithm": "sha256",
+        "digest": "d3f5541119e09ba3fceb5db48eb8d8ad3ce4d33267ba042bde4603600d91e45c",
+        "bytes": 1415
+      },
+      "mirror": {
+        "root": ".staging/model-guided-development/sources/alloy-api-2011/alloytools.org/documentation/alloy-api",
+        "files": 776,
+        "bytes": 7460866,
+        "treeDigestAlgorithm": "sha256 over bytewise-sorted UTF-8 relative paths; each path length and file length is encoded as unsigned 64-bit big-endian before its bytes",
+        "treeDigest": "1c7508513d3b5eafa85564e9b2c31395cc0f08ea79577ef90eb2bb25a2a2c13a"
+      },
+      "standing": "historical API evidence generated 2011-11-29; not a compatibility contract for Alloy 6.2.0"
+    }
+  ],
+  "publicationPins": [
+    {
+      "id": "chockler-kupferman-kurshan-vardi-2001-coverage",
+      "title": "A Practical Approach to Coverage in Model Checking",
+      "authors": ["Hana Chockler", "Orna Kupferman", "Robert P. Kurshan", "Moshe Y. Vardi"],
+      "identifier": {"scheme": "DOI", "value": "10.1007/3-540-44585-4_7"},
+      "venue": "CAV 2001, LNCS 2102, pages 66-78",
+      "url": "https://link.springer.com/content/pdf/10.1007/3-540-44585-4_7.pdf",
+      "localPath": ".staging/model-guided-development/sources/chockler-kupferman-kurshan-vardi-2001-coverage.pdf",
+      "pages": 13,
+      "content": {"algorithm": "sha256", "digest": "9b293f2206b884b3a57f4716be847fdc96e2620e8fa3ae333162757fa056e055", "bytes": 224906},
+      "role": "specification-sensitivity, mutation coverage, and vacuity prior art"
+    },
+    {
+      "id": "yang-et-al-2023-leandojo",
+      "title": "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models",
+      "identifier": {"scheme": "arXiv", "value": "2306.15626v2"},
+      "venue": "NeurIPS 2023 Datasets and Benchmarks Track",
+      "url": "https://arxiv.org/pdf/2306.15626v2",
+      "localPath": ".staging/model-guided-development/sources/yang-et-al-2023-leandojo.pdf",
+      "pages": 40,
+      "content": {"algorithm": "sha256", "digest": "8eb0b3e351150d330202e30af528c9eb548a79905f52bdb0db04686a75b02649", "bytes": 2967642},
+      "role": "accessible-premise filtering, project-aware retrieval, tactic interaction, and held-out novel-premise evaluation"
+    },
+    {
+      "id": "bayazit-li-si-2025-llmverify",
+      "title": "A Case Study on the Effectiveness of LLMs in Verification with Proof Assistants",
+      "identifier": {"scheme": "DOI", "value": "10.1145/3759425.3763391"},
+      "venue": "LMPL 2025",
+      "url": "https://lastland.github.io/pdfs/LLMVerify.pdf",
+      "localPath": ".staging/model-guided-development/sources/bayazit-li-si-2025-llmverify.pdf",
+      "pages": 15,
+      "content": {"algorithm": "sha256", "digest": "15c19e0dbbbf4a9925cd3eb71058a0c339c59ad9e24d99f504f17bd7861eb290", "bytes": 639749},
+      "role": "same-file and dependency-context ablation on mature Rocq verification projects"
+    },
+    {
+      "id": "kamath-et-al-2023-loopy",
+      "title": "Finding Inductive Loop Invariants using Large Language Models",
+      "identifier": {"scheme": "arXiv", "value": "2311.07948v1"},
+      "url": "https://arxiv.org/pdf/2311.07948v1",
+      "localPath": ".staging/model-guided-development/sources/kamath-et-al-2023-loopy-v1.pdf",
+      "pages": 18,
+      "content": {"algorithm": "sha256", "digest": "ec4197482a33bcaa5144f58e5df8d9b6a8c399504a53dcb892457b9fae8c66fa", "bytes": 805498},
+      "role": "atomic invariant portfolios, Houdini subset selection, sampling plateau, and verifier-guided repair"
+    },
+    {
+      "id": "chakraborty-et-al-2023-irank",
+      "title": "Ranking LLM-Generated Loop Invariants for Program Verification",
+      "identifier": {"scheme": "DOI", "value": "10.18653/v1/2023.findings-emnlp.614"},
+      "venue": "Findings of EMNLP 2023, pages 9164-9175",
+      "url": "https://aclanthology.org/2023.findings-emnlp.614.pdf",
+      "localPath": ".staging/model-guided-development/sources/chakraborty-et-al-2023-irank.pdf",
+      "pages": 12,
+      "content": {"algorithm": "sha256", "digest": "d0709980823a7662dcf615245510e65b56c358145cb0a5ca4cd87125e0ae4292", "bytes": 791746},
+      "role": "candidate ranking and semantic-deduplication cost trade-offs"
+    },
+    {
+      "id": "ospanov-farnia-yousefzadeh-2025-apollo",
+      "title": "APOLLO: Automated LLM and Lean Collaboration for Advanced Formal Reasoning",
+      "identifier": {"scheme": "arXiv", "value": "2505.05758v5"},
+      "publishedVenue": "NeurIPS 2025",
+      "url": "https://arxiv.org/pdf/2505.05758v5",
+      "localPath": ".staging/model-guided-development/sources/ospanov-farnia-yousefzadeh-2025-apollo-v5.pdf",
+      "pages": 28,
+      "content": {"algorithm": "sha256", "digest": "fa485da98d0e0a227ddbd82232c071ed284854f28e91b9fd14ce6ae5146c258d", "bytes": 7179755},
+      "role": "failed-fragment localization, local repair, automated subgoal closure, reassembly, and fresh checking"
+    },
+    {
+      "id": "faria-et-al-2026-dafny-annotations",
+      "title": "Automatic Generation of Formal Specification and Verification Annotations Using LLMs and Test Oracles",
+      "identifier": {"scheme": "arXiv", "value": "2601.12845v1"},
+      "url": "https://arxiv.org/pdf/2601.12845v1",
+      "localPath": ".staging/model-guided-development/sources/faria-et-al-2026-dafny-annotations-v1.pdf",
+      "pages": 37,
+      "content": {"algorithm": "sha256", "digest": "b0c6c27e95d9a4bbc49bb4fbb571fc2b63efb9c4c4b503d7bc6b8ee8f40225ae", "bytes": 1648815},
+      "role": "guess-check-repair-minimize workflow, negative test oracles, and small developer usability study",
+      "standing": "preprint"
+    },
+    {
+      "id": "wei-et-al-2026-quokka",
+      "title": "Quokka: Accelerating Program Verification with LLMs via Invariant Synthesis",
+      "identifier": {"scheme": "arXiv", "value": "2509.21629v4"},
+      "url": "https://arxiv.org/pdf/2509.21629v4",
+      "localPath": ".staging/model-guided-development/sources/wei-et-al-2026-quokka-v4.pdf",
+      "pages": 22,
+      "content": {"algorithm": "sha256", "digest": "6bf1d82883e207dafa2280c50fb99336625b64ba86d41ec1ae968052e60758cb", "bytes": 395291},
+      "role": "direct target-under-candidate validation, best-of-N plateau calibration, and modern SV-COMP outcome bank",
+      "standing": "preprint v4 observed 2026-08-30"
+    },
+    {
+      "id": "kim-yun-2026-process-verified-rl",
+      "title": "Process-Verified Reinforcement Learning for Theorem Proving via Lean",
+      "identifier": {"scheme": "ICLR paper hash", "value": "554a5982e26d0129f4038ad7a68fb3aa"},
+      "openReviewId": "P00k4DFaXF",
+      "venue": "ICLR 2026",
+      "url": "https://proceedings.iclr.cc/paper_files/paper/2026/file/554a5982e26d0129f4038ad7a68fb3aa-Paper-Conference.pdf",
+      "localPath": ".staging/model-guided-development/sources/kim-yun-2026-process-verified-rl.pdf",
+      "pages": 28,
+      "content": {"algorithm": "sha256", "digest": "8543f5c2a835d72a1eda66ac9c4d8417cafb8fabc5298f7af199e1ddcee0f23b", "bytes": 1461526},
+      "role": "structured first-error and tactic-level verifier feedback as training and ranking data"
+    }
+  ],
+  "discoverySources": [
+    {
+      "id": "rahim-rahim-2024-proof-state-compression",
+      "title": "Probabilistic Proof State Compression: Optimizing LLM-Guided Formal Verification",
+      "identifier": {"scheme": "OpenReview", "value": "x2yiUEH0f9"},
+      "venue": "NeurIPS 2024 MATH-AI workshop",
+      "metadataUrl": "https://mlanthology.org/neuripsw/2024/rahim2024neuripsw-probabilistic/",
+      "pdfUrl": "https://openreview.net/pdf?id=x2yiUEH0f9",
+      "localAccessFailure": {
+        "path": ".staging/model-guided-development/sources/rahim-rahim-2024-openreview-error.html",
+        "result": "OpenReview challenge page returned to command-line retrieval",
+        "content": {"algorithm": "sha256", "digest": "a2d811e0d24af89d9bd4b19cc9e8fbc474c67ef3827648550a6560eca2a5e332", "bytes": 12692}
+      },
+      "role": "preliminary lead for calibrated proof-state pruning; not an implementation dependency"
+    }
+  ],
+  "repositoryPins": [
+    {
+      "id": "dafny-v4.11.0",
+      "repository": "https://github.com/dafny-lang/dafny.git",
+      "selector": "refs/tags/v4.11.0",
+      "tagObject": "a04eea4dab324219e438f94ccc5ff0abcad11d86",
+      "commit": "fcb2042d6d043a2634f0854338c08feeaaaf4ae2",
+      "role": "current stable implementation-candidate pin; no Dafny tool is admitted or installed by this receipt"
+    },
+    {
+      "id": "alloy-v6.2.0",
+      "repository": "https://github.com/AlloyTools/org.alloytools.alloy.git",
+      "selector": "refs/tags/v6.2.0",
+      "commit": "59ba2033993449d483d54acad0e11a7bbf20354f",
+      "role": "current stable implementation-candidate pin; no Alloy tool is admitted or installed by this receipt"
+    }
+  ],
+  "claimBoundaries": [
+    "LLM and learned-ranker outputs are proposal or scheduling signals only.",
+    "A concrete counterexample may refute the encoded candidate under the recorded semantics; absence of one is scope-relative.",
+    "A verifier result concerns its encoded model and does not establish correspondence to a Foldlab carrier without a separate relation.",
+    "Specification coverage and negative tests assess sensitivity and adequacy; they do not prove completeness.",
+    "Only a freshly checked Foldlab Lean declaration can carry a Foldlab kernel-proof claim."
+  ],
+  "paperLockStatus": {
+    "status": "staged-research-cache-only",
+    "reason": "The PDFs and web mirrors remain pre-grade local research inputs. Promotion into a canonical paper catalog, tool admission, or source lock requires a separate operator-ratified act."
+  },
+  "result": "resolved-research-source-pins"
+}

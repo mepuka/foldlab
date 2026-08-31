@@ -1,47 +1,53 @@
 {
   "areaCensus": {
-    "Architecture": 34,
-    "Backend": 152,
-    "Codec": 278,
-    "Core": 365,
-    "Grammar": 143,
-    "IR": 145,
-    "Lang": 326,
+    "Architecture": 39,
+    "Backend": 273,
+    "Codec": 281,
+    "Core": 377,
+    "Grammar": 181,
+    "IR": 174,
+    "Lang": 374,
     "Lift": 77,
     "Schema": 764,
     "Values": 478,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 260,
-    "Quot.sound": 448,
-    "propext": 622
+    "Classical.choice": 261,
+    "Quot.sound": 459,
+    "propext": 663
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 207,
-    "Cas.Binding": 57,
+    "Cas.Addr32": 211,
+    "Cas.Binding": 74,
     "Cas.Grammar.Tree": 35,
-    "Cas.Grammar.Ty": 46,
+    "Cas.Grammar.Ty": 51,
     "Cas.Lang.Handler": 19,
     "Cas.Lang.Prog": 89,
-    "Cas.Lang.Refusal": 40,
+    "Cas.Lang.Refusal": 42,
     "Cas.Lang.Sig": 44,
     "Cas.Lang.Status": 64,
     "Cas.Lang.interpret": 14,
-    "Cas.Node": 94,
+    "Cas.Node": 96,
     "Cas.Schema.Ast": 372,
     "Cas.Schema.Described": 48,
     "Cas.Schema.El": 42,
-    "Cas.Word": 119
+    "Cas.Word": 141
   },
-  "declarations": 2150,
-  "documented": 1126,
+  "declarations": 2426,
+  "documented": 1283,
+  "emitted": {
+    "emitter": "surface",
+    "module": "library/cas/tools/Surface.lean",
+    "schemaVersion": 1,
+    "toolchain": "4.33.1"
+  },
   "library": "Cas",
   "modules": [
     {
-      "declarations": 41,
-      "documented": 9,
+      "declarations": 46,
+      "documented": 14,
       "module": "Cas.Architecture",
       "surface": [
         {
@@ -209,6 +215,14 @@
           "touches": ["Architecture"]
         },
         {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.backendsProvideOnlySeams",
+          "signature": "(Cas.foldlabCas.backends.all fun b => Cas.capsSubset b.provides Cas.foldlabCas.seams) = true",
+          "touches": ["Architecture"]
+        },
+        {
           "documented": true,
           "kind": "def",
           "name": "Cas.capabilityMatrix",
@@ -320,10 +334,42 @@
           "touches": ["Architecture"]
         },
         {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.lawsNeedOnlySeams",
+          "signature": "(Cas.foldlabCas.laws.all fun l => Cas.capsSubset l.needs Cas.foldlabCas.seams) = true",
+          "touches": ["Architecture"]
+        },
+        {
           "documented": true,
           "kind": "def",
           "name": "Cas.pin",
           "signature": "IO Unit"
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.readOnlyHonesty",
+          "signature": "Option.map (fun x => x.provides) (List.find? (fun x => decide (x.name = \"pathReader\")) Cas.foldlabCas.backends) = some [Cas.Capability.read]",
+          "touches": ["Architecture"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.readsRideTheLoader",
+          "signature": "Option.map (fun x => x.needs) (List.find? (fun x => decide (x.name = \"loader\")) Cas.foldlabCas.laws) = some [Cas.Capability.read] ∧ ([\"loader\", \"valueGet\", \"graphClosure\", \"graphVerify\"].all fun name => decide (Option.map (fun x => x.needs) (List.find? (fun x => decide (x.name = name)) Cas.foldlabCas.laws) = some [Cas.Capability.read])) = true",
+          "touches": ["Architecture"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.rootsHonesty",
+          "signature": "Option.map (fun x => x.provides) (List.find? (fun x => decide (x.name = \"kvs\")) Cas.foldlabCas.backends) = some [Cas.Capability.read, Cas.Capability.write]",
+          "touches": ["Architecture"]
         }
       ]
     },
@@ -960,6 +1006,1093 @@
           "name": "Cas.Backend.treeProgram",
           "signature": "{t : Cas.Grammar.Ty} → List String → String → Cas.Grammar.Tree t → Option Cas.Backend.Ts.ProgDecl",
           "touches": ["Backend", "Grammar"]
+        }
+      ]
+    },
+    {
+      "declarations": 153,
+      "documented": 63,
+      "module": "Cas.Backend.HttpProfile",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.HttpProfile.BlobShape",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.BlobShape.name",
+          "signature": "Cas.Backend.HttpProfile.BlobShape → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.BlobShape.payload",
+          "signature": "Cas.Backend.HttpProfile.BlobShape → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.BlobShape.refs",
+          "signature": "Cas.Backend.HttpProfile.BlobShape → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.BlobShape.tag",
+          "signature": "Cas.Backend.HttpProfile.BlobShape → UInt8",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Body",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Body.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Body → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Body) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Body.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Body.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Body → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Body.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Backend.HttpProfile.Body), Cas.Backend.HttpProfile.Body.ofNat x.ctorIdx = x",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.HttpProfile.CoTenant",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.CoTenant.prefixPath",
+          "signature": "Cas.Backend.HttpProfile.CoTenant → Cas.Backend.HttpProfile.Path",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.CoTenant.tenant",
+          "signature": "Cas.Backend.HttpProfile.CoTenant → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.CoTenant.ungoverned",
+          "signature": "Cas.Backend.HttpProfile.CoTenant → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.HttpProfile.Field",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Field.name",
+          "signature": "Cas.Backend.HttpProfile.Field → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Field.offset",
+          "signature": "Cas.Backend.HttpProfile.Field → Nat",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Field.width",
+          "signature": "Cas.Backend.HttpProfile.Field → Nat",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Method",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Method.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Method → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Method) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Method.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Method.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Method → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Method.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Backend.HttpProfile.Method), Cas.Backend.HttpProfile.Method.ofNat x.ctorIdx = x",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Method.wire",
+          "signature": "Cas.Backend.HttpProfile.Method → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Path",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Presence",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Presence.all",
+          "signature": "List Cas.Backend.HttpProfile.Presence",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Presence.all_complete",
+          "signature": "∀ (p : Cas.Backend.HttpProfile.Presence), p ∈ Cas.Backend.HttpProfile.Presence.all",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Presence.byte",
+          "signature": "Cas.Backend.HttpProfile.Presence → UInt8",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Presence.byte_lt_three",
+          "signature": "∀ (p : Cas.Backend.HttpProfile.Presence), p.byte < 3",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Presence.bytes_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.Presence.byte Cas.Backend.HttpProfile.Presence.all).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Presence.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Presence → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Presence) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Presence.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Presence.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Presence → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Presence.ofByte",
+          "signature": "UInt8 → Option Cas.Backend.HttpProfile.Presence",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Presence.ofByte_byte",
+          "signature": "∀ (p : Cas.Backend.HttpProfile.Presence), Cas.Backend.HttpProfile.Presence.ofByte p.byte = some p",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Presence.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Backend.HttpProfile.Presence), Cas.Backend.HttpProfile.Presence.ofNat x.ctorIdx = x",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.HttpProfile.Resource",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.cite",
+          "signature": "Cas.Backend.HttpProfile.Resource → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.method",
+          "signature": "Cas.Backend.HttpProfile.Resource → Cas.Backend.HttpProfile.Method",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.name",
+          "signature": "Cas.Backend.HttpProfile.Resource → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.path",
+          "signature": "Cas.Backend.HttpProfile.Resource → Cas.Backend.HttpProfile.Path",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.refusal",
+          "signature": "Cas.Backend.HttpProfile.Resource → List Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.request",
+          "signature": "Cas.Backend.HttpProfile.Resource → Cas.Backend.HttpProfile.Body",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.response",
+          "signature": "Cas.Backend.HttpProfile.Resource → Cas.Backend.HttpProfile.Body",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.space",
+          "signature": "Cas.Backend.HttpProfile.Resource → Cas.Backend.HttpProfile.Space",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Resource.success",
+          "signature": "Cas.Backend.HttpProfile.Resource → List Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Segment",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Segment.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Segment → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Segment) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Segment.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Segment.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Segment → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Segment.render",
+          "signature": "Cas.Backend.HttpProfile.Segment → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Space",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Space.addressed",
+          "signature": "Cas.Backend.HttpProfile.Space → Bool",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Space.all",
+          "signature": "List Cas.Backend.HttpProfile.Space",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Space.all_complete",
+          "signature": "∀ (s : Cas.Backend.HttpProfile.Space), s ∈ Cas.Backend.HttpProfile.Space.all",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Space.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Space → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Space) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Space.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Space.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Space → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Space.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Backend.HttpProfile.Space), Cas.Backend.HttpProfile.Space.ofNat x.ctorIdx = x",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Space.segment",
+          "signature": "Cas.Backend.HttpProfile.Space → String",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Space.segments_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.Space.segment Cas.Backend.HttpProfile.Space.all).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Backend.HttpProfile.Status",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Status.all",
+          "signature": "List Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Status.all_complete",
+          "signature": "∀ (s : Cas.Backend.HttpProfile.Status), s ∈ Cas.Backend.HttpProfile.Status.all",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Status.code",
+          "signature": "Cas.Backend.HttpProfile.Status → Nat",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Status.codes_avoid_redirect",
+          "signature": "(Cas.Backend.HttpProfile.Status.all.all fun s => !(decide (Cas.Backend.HttpProfile.redirectClass.fst ≤ s.code) && decide (s.code ≤ Cas.Backend.HttpProfile.redirectClass.snd))) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Status.codes_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.Status.code Cas.Backend.HttpProfile.Status.all).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Status.ctorElim",
+          "signature": "{motive : Cas.Backend.HttpProfile.Status → Sort u} → (ctorIdx : Nat) → (t : Cas.Backend.HttpProfile.Status) → ctorIdx = t.ctorIdx → Cas.Backend.HttpProfile.Status.ctorElimType ctorIdx → motive t",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.Status.ctorElimType",
+          "signature": "{motive : Cas.Backend.HttpProfile.Status → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.Status.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Backend.HttpProfile.Status), Cas.Backend.HttpProfile.Status.ofNat x.ctorIdx = x",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Backend.HttpProfile.StatusRow",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.StatusRow.cite",
+          "signature": "Cas.Backend.HttpProfile.StatusRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.StatusRow.condition",
+          "signature": "Cas.Backend.HttpProfile.StatusRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.StatusRow.meaning",
+          "signature": "Cas.Backend.HttpProfile.StatusRow → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.StatusRow.status",
+          "signature": "Cas.Backend.HttpProfile.StatusRow → Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.acceptHeader",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.addressBytes",
+          "signature": "Nat"
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.addressBytes_is_Addr32",
+          "signature": "∀ (a : Cas.Addr32), List.length a.val = Cas.Backend.HttpProfile.addressBytes",
+          "touches": ["Backend", "Codec", "Core"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.addressHexDigits",
+          "signature": "Nat"
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.addressHexDigits_eq_twice_bytes",
+          "signature": "Cas.Backend.HttpProfile.addressHexDigits = 2 * Cas.Backend.HttpProfile.addressBytes",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.authorizationHeader",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.bearerScheme",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.blobShapes",
+          "signature": "List Cas.Backend.HttpProfile.BlobShape",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.blobShapes_tags_are_sorts",
+          "signature": "Cas.Grammar.Ty.chunk.wireTag = 8 ∧ Cas.Grammar.Ty.tree.wireTag = 9 ∧ Cas.Grammar.Ty.manifest.wireTag = 10",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.blobShapes_tags_not_nodup",
+          "signature": "¬(List.map Cas.Backend.HttpProfile.BlobShape.tag Cas.Backend.HttpProfile.blobShapes).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.blobShapes_version",
+          "signature": "Cas.Grammar.schemeVersion = 0",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.capabilityEnvelopeBytes",
+          "signature": "Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.capabilityFields",
+          "signature": "List Cas.Backend.HttpProfile.Field",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.capabilityFields_contiguous",
+          "signature": "Cas.Backend.HttpProfile.contiguousOffsets 0 Cas.Backend.HttpProfile.capabilityFields = List.map Cas.Backend.HttpProfile.Field.offset Cas.Backend.HttpProfile.capabilityFields",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.capabilityFields_fill",
+          "signature": "(List.map Cas.Backend.HttpProfile.Field.width Cas.Backend.HttpProfile.capabilityFields).sum = Cas.Backend.HttpProfile.capabilityEnvelopeBytes",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.capabilityFields_names_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.Field.name Cas.Backend.HttpProfile.capabilityFields).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.capabilityFields_u32",
+          "signature": "(Cas.Backend.HttpProfile.capabilityFields.all fun f => decide (f.width = Cas.Backend.HttpProfile.keyListCountBytes)) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.chunkBytes",
+          "signature": "Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.coTenants",
+          "signature": "List Cas.Backend.HttpProfile.CoTenant",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.coTenants_claim_no_resource",
+          "signature": "(Cas.Backend.HttpProfile.coTenants.all fun t => Cas.Backend.HttpProfile.resources.all fun r => !List.isPrefixOf t.prefixPath r.path) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.coTenants_prefix_free",
+          "signature": "(Cas.Backend.HttpProfile.reservedPaths.all fun p => Cas.Backend.HttpProfile.coTenants.all fun t => !List.isPrefixOf p t.prefixPath && !List.isPrefixOf t.prefixPath p) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.coTenants_prefixes_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.CoTenant.prefixPath Cas.Backend.HttpProfile.coTenants).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.contentTypeHeader",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.contiguousOffsets",
+          "signature": "Nat → List Cas.Backend.HttpProfile.Field → List Nat",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.governedRequestHeaders",
+          "signature": "List String"
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.governedRequestHeaders_nodup",
+          "signature": "Cas.Backend.HttpProfile.governedRequestHeaders.Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.identityEncoding",
+          "signature": "String"
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqBody",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Body",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqField",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Field",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqField.decEq",
+          "signature": "(x x_1 : Cas.Backend.HttpProfile.Field) → Decidable (x = x_1)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqMethod",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Method",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqPresence",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Presence",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqSegment",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Segment",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqSegment.decEq",
+          "signature": "(x x_1 : Cas.Backend.HttpProfile.Segment) → Decidable (x = x_1)",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqSpace",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Space",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instDecidableEqStatus",
+          "signature": "DecidableEq Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprBlobShape",
+          "signature": "Repr Cas.Backend.HttpProfile.BlobShape",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprBlobShape.repr",
+          "signature": "Cas.Backend.HttpProfile.BlobShape → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprBody",
+          "signature": "Repr Cas.Backend.HttpProfile.Body",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprBody.repr",
+          "signature": "Cas.Backend.HttpProfile.Body → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprCoTenant",
+          "signature": "Repr Cas.Backend.HttpProfile.CoTenant",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprCoTenant.repr",
+          "signature": "Cas.Backend.HttpProfile.CoTenant → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprField",
+          "signature": "Repr Cas.Backend.HttpProfile.Field",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprField.repr",
+          "signature": "Cas.Backend.HttpProfile.Field → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprMethod",
+          "signature": "Repr Cas.Backend.HttpProfile.Method",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprMethod.repr",
+          "signature": "Cas.Backend.HttpProfile.Method → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprPresence",
+          "signature": "Repr Cas.Backend.HttpProfile.Presence",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprPresence.repr",
+          "signature": "Cas.Backend.HttpProfile.Presence → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprResource",
+          "signature": "Repr Cas.Backend.HttpProfile.Resource",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprResource.repr",
+          "signature": "Cas.Backend.HttpProfile.Resource → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprSegment",
+          "signature": "Repr Cas.Backend.HttpProfile.Segment",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprSegment.repr",
+          "signature": "Cas.Backend.HttpProfile.Segment → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprSpace",
+          "signature": "Repr Cas.Backend.HttpProfile.Space",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprSpace.repr",
+          "signature": "Cas.Backend.HttpProfile.Space → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprStatus",
+          "signature": "Repr Cas.Backend.HttpProfile.Status",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprStatus.repr",
+          "signature": "Cas.Backend.HttpProfile.Status → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Backend.HttpProfile.instReprStatusRow",
+          "signature": "Repr Cas.Backend.HttpProfile.StatusRow",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.instReprStatusRow.repr",
+          "signature": "Cas.Backend.HttpProfile.StatusRow → Nat → Std.Format",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.keyListBytes",
+          "signature": "Nat → Nat"
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.keyListBytes_empty",
+          "signature": "Cas.Backend.HttpProfile.keyListBytes 0 = Cas.Backend.HttpProfile.keyListCountBytes",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.keyListBytes_inj",
+          "signature": "∀ {m n : Nat}, Cas.Backend.HttpProfile.keyListBytes m = Cas.Backend.HttpProfile.keyListBytes n → m = n",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.keyListBytes_one",
+          "signature": "Cas.Backend.HttpProfile.keyListBytes 1 = 36",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.keyListCountBytes",
+          "signature": "Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.mediaType",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.profile",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.profileHeader",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.recipes",
+          "signature": "List (Nat × String)"
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.recipes_ids_nodup",
+          "signature": "(List.map Prod.fst Cas.Backend.HttpProfile.recipes).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.redirectClass",
+          "signature": "Nat × Nat"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.renderPath",
+          "signature": "Cas.Backend.HttpProfile.Path → String",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.reservedPaths",
+          "signature": "List Cas.Backend.HttpProfile.Path",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.resourcePaths",
+          "signature": "List Cas.Backend.HttpProfile.Path",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resourcePaths_prefix_free",
+          "signature": "(Cas.Backend.HttpProfile.resourcePaths.all fun p => Cas.Backend.HttpProfile.resourcePaths.all fun q => decide (p = q) || !List.isPrefixOf p q) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.resources",
+          "signature": "List Cas.Backend.HttpProfile.Resource",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resources_addressing",
+          "signature": "(Cas.Backend.HttpProfile.resources.all fun r => decide (Cas.Backend.HttpProfile.Segment.addr ∈ r.path) == r.space.addressed) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resources_head_is_space",
+          "signature": "(Cas.Backend.HttpProfile.resources.all fun r => decide (List.head? r.path = some (Cas.Backend.HttpProfile.Segment.lit r.space.segment))) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resources_names_nodup",
+          "signature": "(List.map Cas.Backend.HttpProfile.Resource.name Cas.Backend.HttpProfile.resources).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resources_routes_nodup",
+          "signature": "(List.map (fun r => (r.method, r.path)) Cas.Backend.HttpProfile.resources).Nodup",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.resources_success_refusal_disjoint",
+          "signature": "(Cas.Backend.HttpProfile.resources.all fun r => r.success.all fun s => decide ¬s ∈ r.refusal) = true",
+          "touches": ["Backend"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.retryAfterHeader",
+          "signature": "String"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Backend.HttpProfile.statusTable",
+          "signature": "List Cas.Backend.HttpProfile.StatusRow",
+          "touches": ["Backend"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Backend.HttpProfile.statusTable_covers",
+          "signature": "List.map Cas.Backend.HttpProfile.StatusRow.status Cas.Backend.HttpProfile.statusTable = Cas.Backend.HttpProfile.Status.all",
+          "touches": ["Backend"]
         }
       ]
     },
@@ -3831,6 +4964,168 @@
       ]
     },
     {
+      "declarations": 12,
+      "documented": 12,
+      "module": "Cas.Grammar.Judge",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.Compositional",
+          "signature": "Cas.Grammar.Judge → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.accepts",
+          "signature": "Cas.Grammar.Judge → {α : Type} → (α → String) → α → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.accepts_op",
+          "signature": "∀ {J : Cas.Grammar.Judge}, J.Compositional → ∀ {α : Type} {op : α → α → α} {name : α → String}, (∀ (a b : α), name (op a b) = name a ++ name b) → ∀ {a b : α}, J.accepts name a → J.accepts name b → J.accepts name (op a b)",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.blame",
+          "signature": "∀ {J : Cas.Grammar.Judge}, J.Compositional → ∀ {s t : String}, J (s ++ t) = false → J s = false ∨ J t = false",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.rejects_infects",
+          "signature": "∀ {J : Cas.Grammar.Judge}, J.Compositional → ∀ {s t : String}, J s = false → J (s ++ t) = false",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Panel",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Panel.all",
+          "signature": "Cas.Grammar.Panel → Cas.Grammar.Judge",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Panel.all_compositional",
+          "signature": "∀ {P : Cas.Grammar.Panel}, (∀ (J : Cas.Grammar.Judge), J ∈ P → J.Compositional) → P.all.Compositional",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Panel.any",
+          "signature": "Cas.Grammar.Panel → Cas.Grammar.Judge",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Panel.any_accepts",
+          "signature": "∀ {P : Cas.Grammar.Panel} {J : Cas.Grammar.Judge}, J ∈ P → ∀ {s : String}, J s = true → P.any s = true",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Panel.any_not_compositional",
+          "signature": "∃ P s t, (∀ (J : Cas.Grammar.Judge), J ∈ P → J.Compositional) ∧ P.any s = true ∧ P.any t = true ∧ P.any (s ++ t) = false",
+          "touches": ["Grammar"]
+        }
+      ]
+    },
+    {
+      "declarations": 8,
+      "documented": 8,
+      "module": "Cas.Grammar.JudgeRate",
+      "surface": [
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.Compositional.compositionalOn",
+          "signature": "∀ {J : Cas.Grammar.Judge}, J.Compositional → ∀ (F : List (String × String)), J.CompositionalOn F",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.CompositionalOn",
+          "signature": "Cas.Grammar.Judge → List (String × String) → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.CompositionalOn.append",
+          "signature": "∀ {J : Cas.Grammar.Judge} {F G : List (String × String)}, J.CompositionalOn F → J.CompositionalOn G → J.CompositionalOn (F ++ G)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.Stable",
+          "signature": "(String → String → Prop) → Cas.Grammar.Judge → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.compositionalOn_iff",
+          "signature": "∀ {J : Cas.Grammar.Judge} {F : List (String × String)}, J.CompositionalOn F ↔ ∀ (p : String × String), p ∈ F → J (p.fst ++ p.snd) = (J p.fst && J p.snd)",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.defectCount",
+          "signature": "Cas.Grammar.Judge → List (String × String) → Nat",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Judge.defectCount_append",
+          "signature": "∀ (J : Cas.Grammar.Judge) (F G : List (String × String)), J.defectCount (F ++ G) = J.defectCount F + J.defectCount G",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Judge.violates",
+          "signature": "Cas.Grammar.Judge → String × String → Bool",
+          "touches": ["Grammar"]
+        }
+      ]
+    },
+    {
       "declarations": 96,
       "documented": 28,
       "module": "Cas.Grammar.Manifest",
@@ -4504,6 +5799,110 @@
       ]
     },
     {
+      "declarations": 13,
+      "documented": 13,
+      "module": "Cas.Grammar.Rewriter",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter.Idempotent",
+          "signature": "Cas.Grammar.Rewriter → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": ["Quot.sound"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.Idempotent.andThen_self",
+          "signature": "∀ {R : Cas.Grammar.Rewriter}, R.Idempotent → R.andThen R = R",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter.Into",
+          "signature": "(String → Prop) → Cas.Grammar.Rewriter → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.Into.andThen_chain",
+          "signature": "∀ {P Q : String → Prop} {R S : Cas.Grammar.Rewriter}, Cas.Grammar.Rewriter.Into P R → (∀ (s : String), P s → Q (S s)) → Cas.Grammar.Rewriter.Into Q (R.andThen S)",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.Into.andThen_left",
+          "signature": "∀ {Q : String → Prop} {R S : Cas.Grammar.Rewriter}, Cas.Grammar.Rewriter.Into Q S → Cas.Grammar.Rewriter.Into Q (R.andThen S)",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.Into.preserves_of",
+          "signature": "∀ {Q : String → Prop} {R : Cas.Grammar.Rewriter}, Cas.Grammar.Rewriter.Into Q R → Cas.Grammar.Rewriter.Preserves Q R",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter.Preserves",
+          "signature": "(String → Prop) → Cas.Grammar.Rewriter → Prop",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter.andThen",
+          "signature": "Cas.Grammar.Rewriter → Cas.Grammar.Rewriter → Cas.Grammar.Rewriter",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.andThen_assoc",
+          "signature": "∀ (R S T : Cas.Grammar.Rewriter), (R.andThen S).andThen T = R.andThen (S.andThen T)",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.andThen_id",
+          "signature": "∀ (R : Cas.Grammar.Rewriter), R.andThen Cas.Grammar.Rewriter.id = R",
+          "touches": ["Grammar"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Grammar.Rewriter.id",
+          "signature": "Cas.Grammar.Rewriter",
+          "touches": ["Grammar"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Grammar.Rewriter.id_andThen",
+          "signature": "∀ (R : Cas.Grammar.Rewriter), Cas.Grammar.Rewriter.id.andThen R = R",
+          "touches": ["Grammar"]
+        }
+      ]
+    },
+    {
       "declarations": 11,
       "documented": 4,
       "module": "Cas.Grammar.Sorts",
@@ -4911,6 +6310,302 @@
           "name": "Cas.Grammar.utf8",
           "signature": "String → Cas.Bytes",
           "touches": ["Codec"]
+        }
+      ]
+    },
+    {
+      "declarations": 9,
+      "documented": 9,
+      "module": "Cas.IR.Column",
+      "surface": [
+        {
+          "carriers": ["Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.column",
+          "signature": "Cas.Grammar.Ty → Cas.Word → Cas.Word",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.columnBy",
+          "signature": "{L : Type} → [DecidableEq L] → (Cas.Binding → Option L) → L → Cas.Word → Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.columnBy_append",
+          "signature": "∀ {L : Type} [inst : DecidableEq L] (c : Cas.Binding → Option L) (l : L) (w₁ w₂ : Cas.Word), Cas.Word.columnBy c l (w₁ ++ w₂) = Cas.Word.columnBy c l w₁ ++ Cas.Word.columnBy c l w₂",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.columnBy_disjoint",
+          "signature": "∀ {L : Type} [inst : DecidableEq L] {c : Cas.Binding → Option L} {l l' : L}, l ≠ l' → ∀ {b : Cas.Binding} {w : Cas.Word}, b ∈ Cas.Word.columnBy c l w → ¬b ∈ Cas.Word.columnBy c l' w",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.column_append",
+          "signature": "∀ (t : Cas.Grammar.Ty) (w₁ w₂ : Cas.Word), Cas.Word.column t (w₁ ++ w₂) = Cas.Word.column t w₁ ++ Cas.Word.column t w₂",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.mem_columnBy_iff",
+          "signature": "∀ {L : Type} [inst : DecidableEq L] {c : Cas.Binding → Option L} {l : L} {b : Cas.Binding} {w : Cas.Word}, b ∈ Cas.Word.columnBy c l w ↔ b ∈ w ∧ c b = some l",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.mem_column_or_unregistered",
+          "signature": "∀ {b : Cas.Binding} {w : Cas.Word}, b ∈ w → (∃ t, b ∈ Cas.Word.column t w) ∨ b ∈ w.unregistered",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.unregistered",
+          "signature": "Cas.Word → Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.unregistered_append",
+          "signature": "∀ (w₁ w₂ : Cas.Word), (w₁ ++ w₂).unregistered = w₁.unregistered ++ w₂.unregistered",
+          "touches": ["IR"]
+        }
+      ]
+    },
+    {
+      "declarations": 14,
+      "documented": 13,
+      "module": "Cas.IR.Join",
+      "surface": [
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.RefsOk_mono",
+          "signature": "∀ {σ₁ σ₂ : Cas.Store}, σ₁.Sub σ₂ → ∀ {rs : List Cas.Ref}, Cas.RefsOk σ₁ rs → Cas.RefsOk σ₂ rs",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Store.Compatible",
+          "signature": "Cas.Store → Cas.Store → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Store.Compatible.symm",
+          "signature": "∀ {σ₁ σ₂ : Cas.Store}, σ₁.Compatible σ₂ → σ₂.Compatible σ₁",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Store.Sub",
+          "signature": "Cas.Store → Cas.Store → Prop",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Honest.compatible",
+          "signature": "∀ (H : Cas.Bytes → Cas.Addr32) {w₁ w₂ : Cas.Word}, Cas.Grammar.Honest H w₁ → Cas.Grammar.Honest H w₂ → Function.Injective H → w₁.toStore.Compatible w₂.toStore",
+          "touches": ["Codec", "Core", "Grammar", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.resolvesIn_prefix_lift",
+          "signature": "∀ {w₁ p v : Cas.Word} {r : Cas.Ref}, w₁.toStore.Compatible (p ++ v).toStore → p.resolvesIn r = true → (w₁ ++ p).resolvesIn r = true",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.toStore_append",
+          "signature": "∀ (w₁ w₂ : Cas.Word) (a : Cas.Addr32), (w₁ ++ w₂).toStore a = (w₁.toStore a).elim (w₂.toStore a) some",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.toStore_append_comm",
+          "signature": "∀ {w₁ w₂ : Cas.Word}, w₁.toStore.Compatible w₂.toStore → (w₁ ++ w₂).toStore = (w₂ ++ w₁).toStore",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.toStore_append_self",
+          "signature": "∀ (w : Cas.Word), (w ++ w).toStore = w.toStore",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.toStore_sub_append_left",
+          "signature": "∀ (w₁ w₂ : Cas.Word), w₁.toStore.Sub (w₁ ++ w₂).toStore",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.toStore_sub_append_right",
+          "signature": "∀ {w₁ w₂ : Cas.Word}, w₁.toStore.Compatible w₂.toStore → w₂.toStore.Sub (w₁ ++ w₂).toStore",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.wfFrom_left_extend",
+          "signature": "∀ {w₁ : Cas.Word} (rest p : Cas.Word), w₁.toStore.Compatible (p ++ rest).toStore → p.wfFrom rest = true → (w₁ ++ p).wfFrom rest = true",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.wf_append",
+          "signature": "∀ {w₁ w₂ : Cas.Word}, w₁.wf = true → w₂.wf = true → w₁.toStore.Compatible w₂.toStore → (w₁ ++ w₂).wf = true",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Node"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.put_duplicate_iff",
+          "signature": "∀ {H : Cas.Bytes → Cas.Addr32} {σ : Cas.Store} {n : Cas.AdmittedNode}, Cas.RefsOk σ n.val.refs → (Cas.put H σ n = Except.ok (Cas.PutOutcome.duplicate (Cas.addr H n)) ↔ σ (Cas.addr H n) = some n.val)",
+          "touches": ["Codec", "Core"]
+        }
+      ]
+    },
+    {
+      "declarations": 10,
+      "documented": 5,
+      "module": "Cas.IR.View",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Word.View",
+          "signature": "Type → Type"
+        },
+        {
+          "carriers": ["Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.column",
+          "signature": "Cas.Grammar.Ty → Cas.Word.View Cas.Word",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Word.View.empty",
+          "signature": "{α : Type} → Cas.Word.View α → α",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.height",
+          "signature": "Cas.Grammar.Ty → Cas.Word.View Nat",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Word.View.merge",
+          "signature": "{α : Type} → Cas.Word.View α → α → α → α",
+          "touches": ["IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.prod",
+          "signature": "{α β : Type} → Cas.Word.View α → Cas.Word.View β → Cas.Word.View (α × β)",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Word.View.run",
+          "signature": "{α : Type} → Cas.Word.View α → Cas.Word → α",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Word.View.run_append",
+          "signature": "∀ {α : Type} (self : Cas.Word.View α) (w v : Cas.Word), self.run (w ++ v) = self.merge (self.run w) (self.run v)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Word.View.run_nil",
+          "signature": "∀ {α : Type} (self : Cas.Word.View α), self.run [] = self.empty",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.unregistered",
+          "signature": "Cas.Word.View Cas.Word",
+          "touches": ["IR"]
         }
       ]
     },
@@ -7010,6 +8705,393 @@
           "kind": "def",
           "name": "Cas.Lang.Prog.op",
           "signature": "{S : Cas.Lang.Sig} → (e : S.Op) → Cas.Lang.Prog S (S.Ans e)",
+          "touches": ["Lang"]
+        }
+      ]
+    },
+    {
+      "declarations": 52,
+      "documented": 29,
+      "module": "Cas.Lang.RefusalMap",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lang.CasErrorTag",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.all",
+          "signature": "List Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.all_complete",
+          "signature": "∀ (t : Cas.Lang.CasErrorTag), t ∈ Cas.Lang.CasErrorTag.all",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.clause?",
+          "signature": "Cas.Lang.CasErrorTag → Option Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.clause?_hosts",
+          "signature": "∀ {c : Cas.Lang.Refusal.Clause} {t : Cas.Lang.CasErrorTag}, t ∈ c.hosts → t.clause? = some c",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.clause?_none_iff_hostOnly",
+          "signature": "∀ (t : Cas.Lang.CasErrorTag), t.clause? = none ↔ t ∈ Cas.Lang.CasErrorTag.hostOnly",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.ctorElim",
+          "signature": "{motive : Cas.Lang.CasErrorTag → Sort u} → (ctorIdx : Nat) → (t : Cas.Lang.CasErrorTag) → ctorIdx = t.ctorIdx → Cas.Lang.CasErrorTag.ctorElimType ctorIdx → motive t",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.ctorElimType",
+          "signature": "{motive : Cas.Lang.CasErrorTag → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.hostOnly",
+          "signature": "List Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.hostOnly_unmapped",
+          "signature": "∀ (t : Cas.Lang.CasErrorTag), t ∈ Cas.Lang.CasErrorTag.hostOnly → ∀ (c : Cas.Lang.Refusal.Clause), ¬t ∈ c.hosts",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.mapped_or_hostOnly",
+          "signature": "∀ (t : Cas.Lang.CasErrorTag), (∃ c, t ∈ c.hosts) ∨ t ∈ Cas.Lang.CasErrorTag.hostOnly",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Lang.CasErrorTag), Cas.Lang.CasErrorTag.ofNat x.ctorIdx = x",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.CasErrorTag.wire",
+          "signature": "Cas.Lang.CasErrorTag → String",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.CasErrorTag.wire_nodup",
+          "signature": "(List.map Cas.Lang.CasErrorTag.wire Cas.Lang.CasErrorTag.all).Nodup",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Lang.Refusal.Clause",
+          "signature": "Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.Clause.all",
+          "signature": "List Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.all_complete",
+          "signature": "∀ (c : Cas.Lang.Refusal.Clause), c ∈ Cas.Lang.Refusal.Clause.all",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.Clause.ctorElim",
+          "signature": "{motive : Cas.Lang.Refusal.Clause → Sort u} → (ctorIdx : Nat) → (t : Cas.Lang.Refusal.Clause) → ctorIdx = t.ctorIdx → Cas.Lang.Refusal.Clause.ctorElimType ctorIdx → motive t",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.Clause.ctorElimType",
+          "signature": "{motive : Cas.Lang.Refusal.Clause → Sort u} → Nat → Sort (max 1 u)",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.Clause.hosts",
+          "signature": "Cas.Lang.Refusal.Clause → List Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.hosts_disjoint",
+          "signature": "∀ {c c' : Cas.Lang.Refusal.Clause}, c ≠ c' → ∀ (t : Cas.Lang.CasErrorTag), t ∈ c.hosts → ¬t ∈ c'.hosts",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.hosts_ne_nil",
+          "signature": "∀ (c : Cas.Lang.Refusal.Clause), c.hosts ≠ []",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.hosts_nodup",
+          "signature": "(List.map Cas.Lang.Refusal.Clause.hosts Cas.Lang.Refusal.Clause.all).Nodup",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.ofNat_ctorIdx",
+          "signature": "∀ (x : Cas.Lang.Refusal.Clause), Cas.Lang.Refusal.Clause.ofNat x.ctorIdx = x",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.Clause.wire",
+          "signature": "Cas.Lang.Refusal.Clause → String",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.Clause.wire_nodup",
+          "signature": "(List.map Cas.Lang.Refusal.Clause.wire Cas.Lang.Refusal.Clause.all).Nodup",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.admissionClauses",
+          "signature": "List Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "carriers": ["Cas.Lang.Refusal"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.clause",
+          "signature": "Cas.Lang.Refusal → Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Lang.Refusal"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.clause_surjective",
+          "signature": "∀ (c : Cas.Lang.Refusal.Clause), ∃ r, r.clause = c",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.Refusal.instDecidableEqClause",
+          "signature": "DecidableEq Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.Refusal.instReprClause",
+          "signature": "Repr Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.Refusal.instReprClause.repr",
+          "signature": "Cas.Lang.Refusal.Clause → Nat → Std.Format",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Lang.Refusal.ofAdmission_clause",
+          "signature": "∀ (e : Cas.AdmissionError), (Cas.Lang.Refusal.ofAdmission e).clause ∈ Cas.Lang.Refusal.admissionClauses",
+          "touches": ["Core", "Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lang.RefusalMap.HostOnlyRow",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.HostOnlyRow.host",
+          "signature": "Cas.Lang.RefusalMap.HostOnlyRow → Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.HostOnlyRow.note",
+          "signature": "Cas.Lang.RefusalMap.HostOnlyRow → String",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Lang.RefusalMap.Row",
+          "signature": "Type"
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.Row.clause",
+          "signature": "Cas.Lang.RefusalMap.Row → Cas.Lang.Refusal.Clause",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.Row.host",
+          "signature": "Cas.Lang.RefusalMap.Row → Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.Row.note",
+          "signature": "Cas.Lang.RefusalMap.Row → String",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.hostOnlyTable",
+          "signature": "List Cas.Lang.RefusalMap.HostOnlyRow",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.RefusalMap.hostOnlyTable_hosts",
+          "signature": "List.map Cas.Lang.RefusalMap.HostOnlyRow.host Cas.Lang.RefusalMap.hostOnlyTable = Cas.Lang.CasErrorTag.hostOnly",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.RefusalMap.instReprHostOnlyRow",
+          "signature": "Repr Cas.Lang.RefusalMap.HostOnlyRow",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.instReprHostOnlyRow.repr",
+          "signature": "Cas.Lang.RefusalMap.HostOnlyRow → Nat → Std.Format",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.RefusalMap.instReprRow",
+          "signature": "Repr Cas.Lang.RefusalMap.Row",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.instReprRow.repr",
+          "signature": "Cas.Lang.RefusalMap.Row → Nat → Std.Format",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Lang.RefusalMap.table",
+          "signature": "List Cas.Lang.RefusalMap.Row",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.RefusalMap.table_agrees",
+          "signature": "(Cas.Lang.RefusalMap.table.all fun r => decide (r.clause.hosts = [r.host])) = true",
+          "touches": ["Lang"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Lang.RefusalMap.table_clauses",
+          "signature": "List.map Cas.Lang.RefusalMap.Row.clause Cas.Lang.RefusalMap.table = Cas.Lang.Refusal.Clause.all",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instDecidableEqCasErrorTag",
+          "signature": "DecidableEq Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "instance",
+          "name": "Cas.Lang.instReprCasErrorTag",
+          "signature": "Repr Cas.Lang.CasErrorTag",
+          "touches": ["Lang"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Lang.instReprCasErrorTag.repr",
+          "signature": "Cas.Lang.CasErrorTag → Nat → Std.Format",
           "touches": ["Lang"]
         }
       ]
@@ -16897,10 +18979,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1176,
-    "inductive": 53,
-    "instance": 112,
-    "structure": 72,
-    "theorem": 733
+    "def": 1312,
+    "inductive": 61,
+    "instance": 138,
+    "structure": 80,
+    "theorem": 831
   }
 }

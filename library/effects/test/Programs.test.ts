@@ -152,20 +152,71 @@ describe("the program codec agrees with Lean's, address for address", () => {
       }
     }).pipe(Effect.provide(Cas.layerMemoryLive)))
 
-  it.effect("running a stored program reproduces its vector's word", () =>
+  it.effect("a run's word takes only fresh admissions; a re-run admits nothing", () =>
     Effect.gen(function* () {
       const { lifts } = yield* fixtures
-      const store = yield* Store
+      const scheme = yield* Cas.AddressScheme
       for (const lift of lifts) {
-        const stored = yield* Programs.putProgram(store, toProgram(lift))
-        const direct = yield* Programs.runProgram(store, toProgram(lift))
-        // The whole brain stem: by ADDRESS, not by document.
+        // A fresh store per lift: freshness is the STORE's judgment,
+        // so the expectation below is exact only when nothing else has
+        // admitted this lift's nodes first.
+        const store = yield* Cas.makeMemoryStore(scheme)
+        const program = toProgram(lift)
+        const stored = yield* Programs.putProgram(store, program)
+        const direct = yield* Programs.runProgram(store, program)
+        // The word is the run's ADMISSIONS: `runP` appends only in the
+        // `.fresh` arm, so a table that puts the same node twice leaves
+        // ONE word entry for it (`runPFrom_puts_sound`; the worked
+        // example at `Defun.lean:2149-2156`). In a fresh store that is
+        // the first occurrence of each put answer, not one entry per
+        // put line — `shared-chunk` has five put lines and a
+        // four-letter word.
+        const putAnswers = direct.answers.filter((_, index) =>
+          program[index]?._tag === "put")
+        expect(`${lift.name} ${direct.word.join(",")}`)
+          .toBe(`${lift.name} ${[...new Set(putAnswers)].join(",")}`)
+        // The whole brain stem: by ADDRESS, not by document — against
+        // the SAME store, where the first run already admitted every
+        // node. Same answers, and every put now answers `duplicate`:
+        // the re-run's word is EMPTY, because a run's word is what it
+        // admitted, and a replay admits nothing.
         const byAddress = yield* Programs.runProgramAt(store, stored.address)
-        expect(`${lift.name} ${byAddress.word.join(",")}`)
-          .toBe(`${lift.name} ${direct.word.join(",")}`)
-        expect(`${lift.name} lines ${byAddress.word.length}`)
-          .toBe(`${lift.name} lines ${lift.instructions.length}`)
+        expect(`${lift.name} ${byAddress.answers.join(",")}`)
+          .toBe(`${lift.name} ${direct.answers.join(",")}`)
+        expect(`${lift.name} re-run word [${byAddress.word.join(",")}]`)
+          .toBe(`${lift.name} re-run word []`)
       }
+    }).pipe(Effect.provide(Cas.layerMemoryLive)))
+
+  it.effect("freshness is the store's judgment, not the run's", () =>
+    Effect.gen(function* () {
+      const { lifts } = yield* fixtures
+      const scheme = yield* Cas.AddressScheme
+      // `journalTwoEntries` re-puts nodes `fileReadme` already admits.
+      // Run the readme first and those nodes are RESIDENT, so the
+      // journal's puts answer `duplicate` for them and its word takes
+      // only what this store had not seen — the duplicate test is the
+      // store's residency (`Admission.lean:184`), not membership in
+      // this run's own word.
+      const readme = lifts.find((lift) => lift.name === "fileReadme")
+      const journal = lifts.find((lift) => lift.name === "journalTwoEntries")
+      if (readme === undefined || journal === undefined) {
+        throw new Error("fixture lifts missing: fileReadme / journalTwoEntries")
+      }
+      const store = yield* Cas.makeMemoryStore(scheme)
+      const first = yield* Programs.runProgram(store, toProgram(readme))
+      const program = toProgram(journal)
+      const second = yield* Programs.runProgram(store, program)
+      const putAnswers = second.answers.filter((_, index) =>
+        program[index]?._tag === "put")
+      const resident = new Set(first.answers)
+      // The exhibit only bites while the fixtures actually overlap; if
+      // a vector regeneration removes the shared nodes, fail loudly
+      // rather than pass vacuously.
+      expect(putAnswers.some((answer) => resident.has(answer))).toBe(true)
+      const expected = [...new Set(putAnswers)].filter((answer) => !resident.has(answer))
+      expect(`journal word ${second.word.join(",")}`)
+        .toBe(`journal word ${expected.join(",")}`)
     }).pipe(Effect.provide(Cas.layerMemoryLive)))
 })
 
@@ -275,5 +326,64 @@ describe("the program plane is fail-closed", () => {
       ]
       const outcome = yield* Effect.exit(Programs.runProgram(store, program))
       expect(outcome._tag).toBe("Failure")
+    }).pipe(Effect.provide(Cas.layerMemoryLive)))
+})
+
+/* ── the door is no wider than the Lean type ─────────────────────── */
+
+describe("the program door enforces PLine.WF at every entry", () => {
+  // The TypeScript `Line` type is WIDER than `Cas.Lang.PLine`: a
+  // `version`, `tag`, and `expectedTag` are `number` here and `UInt8`
+  // there, and an answer index is `number` here and a bounded `Nat`
+  // there. Every program below has NO `PLine` preimage — a value the
+  // Lean type could never hold — and the host encoder, left to itself,
+  // does not refuse it: it TRUNCATES. `Uint8Array.of(257)` is `1`, and
+  // `nat32(-1)` is `0xffffffff`, so a malformed table silently becomes
+  // the bytes of a DIFFERENT, well-formed one, at a wrong address. The
+  // gate that closes this is the host mirror of `∀ l ∈ p, PLine.WF l`,
+  // and it must sit at every door that turns a `Program` into bytes.
+  const someAddress = Cas.ContentId.make("aa".repeat(32))
+  const illFormed: ReadonlyArray<readonly [string, Cas.Programs.Program]> = [
+    ["a put tag past one byte", [
+      { _tag: "put", version: 0, tag: 257, payload: new Uint8Array(), refs: [] },
+    ]],
+    ["a put version past one byte", [
+      { _tag: "put", version: 256, tag: 1, payload: new Uint8Array(), refs: [] },
+    ]],
+    ["an expected tag past one byte", [
+      {
+        _tag: "put",
+        version: 0,
+        tag: 9,
+        payload: new Uint8Array(),
+        refs: [{ expectedTag: 257, source: Programs.literal(someAddress) }],
+      },
+    ]],
+    ["a negative answer index", [
+      { _tag: "load", source: Programs.answer(-1) },
+    ]],
+    ["a fractional answer index", [
+      { _tag: "load", source: Programs.answer(1.5) },
+    ]],
+  ]
+
+  it.effect("putProgram, programAddress, and runProgram all refuse it", () =>
+    Effect.gen(function* () {
+      const store = yield* Store
+      const scheme = yield* Cas.AddressScheme
+      for (const [name, program] of illFormed) {
+        const put = yield* Effect.exit(Programs.putProgram(store, program))
+        expect(`putProgram / ${name}`).toBe(
+          put._tag === "Failure" ? `putProgram / ${name}` : `putProgram admitted / ${name}`,
+        )
+        const addr = yield* Effect.exit(Programs.programAddress(scheme.digest, program))
+        expect(`programAddress / ${name}`).toBe(
+          addr._tag === "Failure" ? `programAddress / ${name}` : `programAddress admitted / ${name}`,
+        )
+        const ran = yield* Effect.exit(Programs.runProgram(store, program))
+        expect(`runProgram / ${name}`).toBe(
+          ran._tag === "Failure" ? `runProgram / ${name}` : `runProgram admitted / ${name}`,
+        )
+      }
     }).pipe(Effect.provide(Cas.layerMemoryLive)))
 })

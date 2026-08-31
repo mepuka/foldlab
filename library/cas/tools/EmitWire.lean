@@ -49,6 +49,13 @@ def decls : List Decl := Id.run do
     env := env ++ [(name, code)]
   return out
 
+/-- The mirror's emitted header. The module declared no version before
+this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "emitwire"
+  module := "library/cas/tools/EmitWire.lean"
+
 def wireModule : Ts.Module where
   header := [
     "GENERATED — do not edit. The canonical Effect Schema mirrors of the",
@@ -59,7 +66,7 @@ def wireModule : Ts.Module where
     "CanonicalSchemaPin suite compares their native representation bytes",
     "against the Lean-emitted fixtures — the drift tripwire, now",
     "derived on both sides."
-  ]
+  ] ++ emitted.headerLines
   imports := [
     .named ["Schema"] "effect"
   ]

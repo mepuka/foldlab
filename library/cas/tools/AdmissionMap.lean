@@ -38,6 +38,14 @@ open Cas.Schema
 
 def outPath : System.FilePath := "conformance" / "admission-map.json"
 
+/-- The map's emitted header. `schemaVersion` opens at the `mapVersion`
+the document already declares, and that field stays for one release
+beside the header that now carries it. -/
+def emitted : Gate.Emitted where
+  schemaVersion := admissionMapV0.mapVersion
+  emitter := "admissionmap"
+  module := "library/cas/tools/AdmissionMap.lean"
+
 /-- The committed inventory, relative to `library/cas` (the directory
 every `lake exe` in this package runs from). -/
 def inventoryPath : System.FilePath :=
@@ -70,9 +78,19 @@ inventory spells it {n} times — every inventory variant has exactly one row")
       s!"ACC-1: the inventory enumerates {total} variants and the map rows \
 {names.length} over the AST union — every inventory variant has exactly one row")
 
+-- The table's projection is an OBJECT, which is where the header goes.
+-- `Emitted.onto` passes a non-object through unchanged; this is what
+-- makes that arm unreachable here.
+#guard match admissionMapV0.toValue with | .obj _ => true | _ => false
+
+/-- The map, headed. The projection is `Cas.Schema`'s, so the header is
+prepended to the value rather than spelled into a field list. -/
+def document : String :=
+  Cas.Json.document (emitted.onto admissionMapV0.toValue)
+
 def fixtures : IO (List Gate.Fixture) := do
   checkTotality
-  return [⟨outPath, admissionDocument,
+  return [⟨outPath, document,
     s!"{admissionMapV0.rows.length} rows \
 ({admissionMapV0.count "ADMITTED"} admitted, \
 {admissionMapV0.count "DEFERRED"} deferred, \

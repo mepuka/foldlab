@@ -1,0 +1,15 @@
+{
+  "id": "lattice-representation-hypothesis",
+  "kind": "paper",
+  "title": "The Lattice Representation Hypothesis of Large Language Models",
+  "authors": ["Bo Xiong"],
+  "venue": "ICLR 2026 (per arXiv comments field)",
+  "arxiv": "2603.01227",
+  "arxivVersion": "v1",
+  "localPath": "2603.01227v1.pdf",
+  "sha256": "30bb98266acf9768abb44758d419a1a2bec1fe638eb651e710c2338efeee0a43",
+  "bytes": 1212167,
+  "resolvedAt": "2026-08-30",
+  "resolution": "operator-fetched local PDF, digested in place; upstream arXiv v1 PDF fetched 2026-08-30 and byte-compared: DIGEST-IDENTICAL to the local copy — upstream resolution CLOSED; read this session via the arXiv v1 HTML render by a reader agent (brief in the session record); v2/v3 exist upstream and were NOT read",
+  "consumers": [".staging/frontend-trunk/RESEARCH.md", ".staging/frontend-trunk/JUDGE.md"]
+}

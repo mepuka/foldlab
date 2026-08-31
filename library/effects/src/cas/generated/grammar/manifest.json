@@ -1,5 +1,11 @@
 {
   "closing": ["Rows 1 and 11–13 were previously marked \"illustrative\"; ruling 2 ratifies all seven data sorts into core. Consumer extension (profiles, the GrammarSpec registration pattern) is a named follow-up, not retrofitted here; a new tag enters only through the grill with a real consumer.", "Rows 14 and 15 carried a reconciliation debt on purpose: they were used by Cas/Lang/Defun.lean but were NOT Ty constructors, and Defun.lean guarded both literals against this table AND guarded that Ty.ofTag still REFUSED both tags. That debt is DISCHARGED: the rows were ratified 2026-08-29 and are the Ty.step and Ty.cont sorts. The refusal guards went red exactly as designed and were removed with the reservation they pinned; the two names survive in Defun.lean as abbreviations of the sorts' own tags, so neither number is now written twice.", "No row is RESERVED today, and no row is formless. The registry keeps both notions anyway — a row id that is a bare tag, a status that says so, and the guards that tie the two together — because the next reservation should cost a red build rather than a silent drift, and the machinery is cheaper kept than re-derived."],
+  "emitted": {
+    "emitter": "emitgrammar",
+    "module": "library/cas/tools/EmitGrammar.lean",
+    "schemaVersion": 1,
+    "toolchain": "4.33.1"
+  },
   "envelope": {
     "fields": [
       {

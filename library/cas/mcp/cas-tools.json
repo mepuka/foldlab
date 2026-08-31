@@ -1,4 +1,10 @@
 {
+  "emitted": {
+    "emitter": "mcpspec",
+    "module": "library/cas/tools/EmitMcp.lean",
+    "schemaVersion": 1,
+    "toolchain": "4.33.1"
+  },
   "language": "cas",
   "manifestVersion": 1,
   "schemaRevision": 1,

@@ -145,6 +145,7 @@ gates carry the trust.
 | Freezing public declarations | `lean` → formalization-strategy Pass B |
 | Writing or repairing proofs | `lean` → llm-proof-loop |
 | Any "formally verified" claim | `lean` → assurance-review |
+| Scouting a slice before contract work — candidate invariants, counterexamples, spec-adequacy gaps | `model-scout` (third role: feeds the breaker, never writes packets) |
 | Minting or sharpening vocabulary | `/mattpocock-skills:domain-modeling` |
 | Ratification pressure-testing | `/mattpocock-skills:grilling` |
 | Reading external sources | `/mattpocock-skills:research`, pins into `.reference/provenance/` |

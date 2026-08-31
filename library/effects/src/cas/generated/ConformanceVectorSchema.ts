@@ -7,6 +7,9 @@
  * CanonicalSchemaPin suite compares their native representation bytes
  * against the Lean-emitted fixtures — the drift tripwire, now
  * derived on both sides.
+ *
+ * emitted — schemaVersion 1, emitter `emitwire`,
+ * module `library/cas/tools/EmitWire.lean`, toolchain Lean 4.33.1.
  */
 import { Schema } from "effect"
 

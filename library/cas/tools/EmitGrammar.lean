@@ -1,18 +1,22 @@
 import Cas.Grammar.Manifest
 import Cas.Lang.Defun
+import Cas.Values.Refs
+import Cas.Schema.Codec.References
 import Cas.Backend.Ts
 import Gate
 
 /-!
 # The grammar-manifest emitter — `lake exe emitgrammar`
 
-Emits three projections of the grammar manifest (the R11 interchange
+Emits four projections of the grammar manifest (the R11 interchange
 document of the data grammar) from `Cas.Grammar.manifestV0`: the JSON
 the front ends consume, through the house manifest printer;
 `REGISTRY.md`, the human kind-tag registry, which is this manifest's
-Markdown rendering and nothing else; and `kindTags.ts`, the TypeScript
-door's refusal set, which is the same table's tag column. `--check` is
-the byte-identity gate over all three.
+Markdown rendering and nothing else; `kindTags.ts`, the TypeScript
+door's refusal set, which is the same table's tag column; and
+`names.json`, the derived-name inventory, which is every name the
+grammar gives a column, a block, a field, or an edge, mechanically
+joined. `--check` is the byte-identity gate over all four.
 
 The registry is regenerated IN PLACE rather than beside the JSON: the
 grammar's human surface already has a home at the library root, and a
@@ -150,6 +154,18 @@ private def decls : List Decl := [
     value := .arr (manifestV0.rows.map tagOf) }
 ]
 
+/-- The lane's emitted header, shared by all three machine
+projections. `schemaVersion` opens at the `manifestVersion` the
+manifest and the name inventory already declare, and that field stays
+in both for one release beside the header that now carries it.
+
+`REGISTRY.md` is not headed: it is the table's rendering FOR PEOPLE,
+and the JSON beside it is where a machine reads the provenance. -/
+def emitted : Gate.Emitted where
+  schemaVersion := manifestV0.manifestVersion
+  emitter := "emitgrammar"
+  module := "library/cas/tools/EmitGrammar.lean"
+
 private def module : Module where
   header := [
     "GENERATED — do not edit. THE KIND-TAG REGISTRY, as data: every wire",
@@ -168,11 +184,271 @@ private def module : Module where
     "refused identically, because a tag with a second public",
     "interpretation is the same hole either way — so this door's",
     "membership did not move when those two rows did."
-  ]
+  ] ++ emitted.headerLines
   imports := []
   decls := decls
 
 def rendered : String := Render.module house0 module
+
+/-! ## The reference discipline's reserved keys
+
+A sort table says which edges a form carries; it does not say how a
+reference SPELLS itself inside a payload, and that spelling is two
+reserved keys with two Lean homes. `src/internal/refMarkers.ts` used
+to open with both of them typed out — the last two hand-copied
+constants on the value plane's wire, and the pair a payload's whole
+identity turns on, since the walks refuse rather than escape a
+collision with either.
+
+They are not merely re-typed here. `refKey` is the model's own
+constant, and the sentinel key is READ OFF the codec that writes it:
+`Cas.Schema.encRef` builds a one-key object, and that key is the
+answer. Nothing in this section spells a `$`. -/
+
+/-- The marker key: what the k-th reference looks like in a stored
+payload, from the model's own `Cas.refKey`. -/
+private def markerKey : String := Cas.refKey
+
+/-- The sentinel key, read off the codec rather than spelled: the one
+object key `Cas.Schema.encRef` writes. `none` is unreachable — the
+codec's arm is a single-field object — and the guard below is what
+makes a change to it a build failure rather than an empty constant. -/
+private def sentinelKey? : Option String :=
+  match Cas.Schema.encRef 0 noAddr with
+  | .obj [(k, _)] => some k
+  | _ => none
+
+#guard sentinelKey?.isSome
+
+private def sentinelKey : String := sentinelKey?.getD ""
+
+-- The two keys are distinct and non-empty: they are what the walks
+-- discriminate ON, so one being the other — or being nothing — would
+-- collapse the encode side into the decode side's refusal.
+#guard markerKey != sentinelKey
+#guard !markerKey.isEmpty && !sentinelKey.isEmpty
+
+private def markerModule : Module where
+  header := [
+    "GENERATED — do not edit. THE RESERVED PAYLOAD KEYS of the",
+    "typed-reference law (CAS-005): the key a stored payload spells a",
+    "reference with, and the key an encode-side value carries one as",
+    "before the walk assigns indexes — emitted from",
+    "`library/cas/Cas/Values/Refs.lean` and",
+    "`library/cas/Cas/Schema/Codec/References.lean` by",
+    "`lake exe emitgrammar`; regeneration is byte-identity-gated",
+    "(`--check`, wired into `check:cas`).",
+    "",
+    "`src/internal/refMarkers.ts` is this file's consumer: the two",
+    "walks it carries are written against these keys, and both REFUSE",
+    "— never escape — user data that collides with one, because an",
+    "escape would invent a second spelling for the same value and",
+    "split its content identity. That is why the keys are emitted",
+    "rather than agreed: a payload's identity turns on them, and the",
+    "two sides of the wire cannot be allowed to disagree about which",
+    "two strings they are."
+  ] ++ emitted.headerLines
+  imports := []
+  decls := [
+    .const {
+      name := "RefMarkerKey",
+      doc := ["The marker key. A typed reference appears in a stored",
+        "payload as exactly `{<this key>: k}`, where k is the index of",
+        "the k-th marker in canonical byte order — indexes forced,",
+        "sharing by repeated entries."],
+      value := .str markerKey },
+    .const {
+      name := "RefSentinelKey",
+      doc := ["The sentinel key. An encode-side value carries a",
+        "reference under this key, as `{id, tag}`, until `markerize`",
+        "lowers it to a positional marker and an entry in the node's",
+        "reference array. Read off `Cas.Schema.encRef`, the codec that",
+        "writes the sentinel, rather than spelled a second time."],
+      value := .str sentinelKey }
+  ]
+
+def markersRendered : String := Render.module house0 markerModule
+
+/-! ## The derived-name inventory
+
+A front end over this store names things: a COLUMN per sort, a BLOCK
+per node form, a FIELD per payload slot, an EDGE per reference. Those
+names are not a vocabulary anyone gets to pick — they are the
+manifest's own identifiers joined by one separator, and `names.json`
+carries that join out so no consumer has to spell a name by hand and
+no two consumers can spell one differently.
+
+Nothing below transforms prose, changes casing, or pluralizes: every
+string is manifest identifiers concatenated with `sep` and the
+identifiers themselves, which is exactly why the inventory cannot name
+something the grammar does not have. The guards state that as the
+property that makes it true — no identifier carries the separator, so
+a derived name splits back into the identifiers it was built from, and
+every name sits under the one above it.
+
+A free-discipline form has no slot list, so its edges cannot be
+enumerated: there are any number of them and the count is not a
+manifest fact. The inventory states the PATTERN instead, under the
+discipline's own edge name (`item` for a folded context, `line` for a
+table), with the index left as the hole the conventions key names. -/
+
+/-- The separator the naming law joins identifiers with, stated once:
+every derived name below is this join and nothing else. -/
+private def sep : String := "."
+
+/-- The hole a free edge's name carries where its index goes. The
+number of edges a free form writes is a fact about a stored node, not
+about the grammar, so the inventory names the pattern and leaves this
+position open. -/
+private def indexHole : String := "<index>"
+
+/-- A derived name: manifest identifiers, joined. THE law — nothing
+else in this section builds a string. -/
+private def qualified (parts : List String) : String :=
+  String.intercalate sep parts
+
+/-- The naming law as data, so a consumer reads it rather than
+inferring it from examples. The three shapes here need a coordinate the
+manifest does not carry: an instance needs the stored node's address, a
+free edge its index, and a node at a tag with no registry row has no
+derived name at all — it is spelled by its tag, which is what makes an
+unregistered plane visibly unregistered. Each is built by the same join
+as the names it describes. -/
+private def conventions : Cas.Json.Value :=
+  .obj [
+    ("separator", .str sep),
+    ("instance", .str (qualified ["<sort>", "<form>"] ++ "@<address-hex>")),
+    ("freeEdge", .str (qualified ["<sort>", "<form>", "<edge>", indexHole])),
+    ("unregistered", .str "tag:0x<tag-hex>")]
+
+/-- A form's block name: its sort, then the form. -/
+private def blockName (r : Row) (f : Form) : String := qualified [r.name, f.name]
+
+private def fieldName (r : Row) (f : Form) (d : Field) : String :=
+  qualified [blockName r f, d.name]
+
+private def slotName (r : Row) (f : Form) (s : Slot) : String :=
+  qualified [blockName r f, s.name]
+
+/-- A free edge's pattern name: the block, the discipline's edge name,
+and the index hole. -/
+private def freeEdgeName (r : Row) (f : Form) (edge : String) : String :=
+  qualified [blockName r f, edge, indexHole]
+
+private def columnValue (r : Row) : Cas.Json.Value :=
+  .obj [
+    ("name", .str r.name),
+    ("tag", .nat r.id.wireTag.toNat),
+    ("tagHex", .str (hexTag r.id.wireTag))]
+
+private def blockValue (r : Row) (f : Form) : Cas.Json.Value :=
+  .obj [
+    ("name", .str (blockName r f)),
+    ("column", .str r.name),
+    ("meaning", .str f.meaning)]
+
+private def fieldValue (r : Row) (f : Form) (d : Field) : Cas.Json.Value :=
+  .obj [
+    ("name", .str (fieldName r f d)),
+    ("block", .str (blockName r f)),
+    ("encoding", .str d.enc.wire),
+    ("meaning", .str d.meaning)]
+
+private def slotValue (r : Row) (f : Form) (s : Slot) : Cas.Json.Value :=
+  .obj [
+    ("name", .str (slotName r f s)),
+    ("block", .str (blockName r f)),
+    ("expects", .str s.expects.sortName),
+    ("expectsTag", .nat s.expects.wireTag.toNat),
+    ("meaning", .str s.meaning)]
+
+/-- The pattern entry a free discipline contributes. `free` is what
+tells a reader this row stands for any number of edges rather than for
+one; the discipline names no sort, so there is no `expects` to state,
+and its law is the meaning. -/
+private def freeEdgeValue (r : Row) (f : Form) (edge law : String) :
+    Cas.Json.Value :=
+  .obj [
+    ("name", .str (freeEdgeName r f edge)),
+    ("block", .str (blockName r f)),
+    ("free", .bool true),
+    ("meaning", .str law)]
+
+/-- The edge entries one form contributes: its slots under a fixed
+discipline, one pattern under a free one. -/
+private def edgeValues (r : Row) (f : Form) : List Cas.Json.Value :=
+  match f.refs with
+  | .fixed slots => slots.map (slotValue r f)
+  | .free edge law => [freeEdgeValue r f edge law]
+
+private def edgeNamesOf (r : Row) (f : Form) : List String :=
+  match f.refs with
+  | .fixed slots => slots.map (slotName r f)
+  | .free edge _ => [freeEdgeName r f edge]
+
+private def columnNames : List String := manifestV0.rows.map Row.name
+
+private def blockNames : List String :=
+  manifestV0.rows.flatMap fun r => r.forms.map (blockName r)
+
+private def fieldNames : List String :=
+  manifestV0.rows.flatMap fun r =>
+    r.forms.flatMap fun f => f.fields.map (fieldName r f)
+
+private def edgeNames : List String :=
+  manifestV0.rows.flatMap fun r => r.forms.flatMap (edgeNamesOf r)
+
+-- The inventory covers the manifest exactly: a column per registry
+-- row, a block per form. Nothing is dropped between the table and the
+-- names projected off it.
+#guard columnNames.length == manifestV0.rows.length
+#guard blockNames.length == (manifestV0.rows.map fun r => r.forms.length).sum
+
+-- A name is how a consumer ADDRESSES a column, a block, a field, or an
+-- edge, so two of anything sharing one is that address going ambiguous.
+#guard decide (columnNames.Nodup)
+#guard decide (blockNames.Nodup)
+#guard decide (fieldNames.Nodup)
+#guard decide (edgeNames.Nodup)
+
+-- No identifier carries the separator. THIS is what makes the join
+-- reversible — a derived name splits back into exactly the manifest
+-- identifiers it was built from — and it is a property of the
+-- manifest, not of this tool, so it is checked here rather than
+-- assumed.
+#guard manifestV0.rows.all fun r =>
+  !r.name.contains '.' && r.forms.all fun f =>
+    !f.name.contains '.' &&
+    (f.fields.all fun d => !d.name.contains '.') &&
+    (match f.refs with
+     | .fixed slots => slots.all fun s => !s.name.contains '.'
+     | .free edge _ => !edge.contains '.')
+
+-- Every name sits under the one above it: a block under its column, a
+-- field and an edge under their block. True by construction today; the
+-- guard is what keeps it true if the join grows a case.
+#guard blockNames.all fun n => columnNames.any fun c => n.startsWith (c ++ sep)
+#guard fieldNames.all fun n => blockNames.any fun b => n.startsWith (b ++ sep)
+#guard edgeNames.all fun n => blockNames.any fun b => n.startsWith (b ++ sep)
+
+/-- The inventory as a JSON value: the manifest version it projects,
+the scheme those tags live in, the naming law, and the law carried out
+over every row in registry order. The house printer sorts the keys, so
+the spelling here is the reading order, never the bytes. -/
+private def namesValue : Cas.Json.Value :=
+  emitted.obj [
+    ("manifestVersion", .nat manifestV0.manifestVersion),
+    ("scheme", .nat manifestV0.scheme),
+    ("conventions", conventions),
+    ("columns", .arr (manifestV0.rows.map columnValue)),
+    ("blocks", .arr (manifestV0.rows.flatMap fun r =>
+      r.forms.map (blockValue r))),
+    ("fields", .arr (manifestV0.rows.flatMap fun r =>
+      r.forms.flatMap fun f => f.fields.map (fieldValue r f))),
+    ("edges", .arr (manifestV0.rows.flatMap fun r =>
+      r.forms.flatMap (edgeValues r)))]
+
+def namesDocument : String := Cas.Json.document namesValue
 
 /-! ## The fixtures -/
 
@@ -181,6 +457,17 @@ knowledge of its artifact. A positional argument overrides it; the
 registry rendering is at the library root either way. -/
 def defaultTarget : System.FilePath :=
   "../effects/src/cas/generated/grammar/manifest.json"
+
+-- The manifest's projection is an OBJECT, which is where the header
+-- goes; this is what makes `Emitted.onto`'s pass-through arm
+-- unreachable here.
+#guard match manifestV0.toValue with | .obj _ => true | _ => false
+
+/-- The manifest, headed. The projection is `Cas.Grammar`'s, so the
+header is prepended to the value rather than spelled into a field
+list. -/
+def manifestDocument : String :=
+  Cas.Json.document (emitted.onto manifestV0.toValue)
 
 /-- The registry document, at the library root. -/
 def registryTarget : System.FilePath := "REGISTRY.md"
@@ -192,14 +479,36 @@ def tagsTargetFor (json : System.FilePath) : System.FilePath :=
   | some dir => dir.join "kindTags.ts"
   | none => "kindTags.ts"
 
+/-- The derived-name inventory, beside the JSON and the door: one
+generated directory, so a re-pointed target moves all three machine
+projections together. -/
+def namesTargetFor (json : System.FilePath) : System.FilePath :=
+  match json.parent with
+  | some dir => dir.join "names.json"
+  | none => "names.json"
+
+/-- The reference discipline's reserved keys, beside the door: one
+generated directory, so a re-pointed target moves every machine
+projection together. -/
+def markersTargetFor (json : System.FilePath) : System.FilePath :=
+  match json.parent with
+  | some dir => dir.join "refMarkers.ts"
+  | none => "refMarkers.ts"
+
 def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
   let json := target.getD defaultTarget
   let sorts := s!"{manifestV0.rows.length} sorts"
   return [
-    ⟨json, Cas.Grammar.document, sorts⟩,
+    ⟨json, manifestDocument, sorts⟩,
     ⟨registryTarget, Cas.Grammar.registry, s!"{sorts}, the kind-tag registry"⟩,
     ⟨tagsTargetFor json, rendered,
-      s!"{doorTags.length} kind tags, the TypeScript door's refusal set"⟩]
+      s!"{doorTags.length} kind tags, the TypeScript door's refusal set"⟩,
+    ⟨markersTargetFor json, markersRendered,
+      "2 reserved payload keys, the typed-reference law's spelling"⟩,
+    ⟨namesTargetFor json, namesDocument,
+      s!"{columnNames.length} columns, {blockNames.length} blocks, " ++
+        s!"{fieldNames.length} fields, {edgeNames.length} edges — " ++
+        "every name the grammar derives"⟩]
 
 end EmitGrammarMain
 

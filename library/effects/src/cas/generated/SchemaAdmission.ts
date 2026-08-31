@@ -17,6 +17,9 @@
  * the Lean spelling does not carry, so exact-key enforcement would
  * refuse three registry rows as they are actually stored. That gap is
  * a ruling, recorded in Admission.lean, not a translation.
+ *
+ * emitted — schemaVersion 1, emitter `emitgate`,
+ * module `library/cas/tools/EmitGate.lean`, toolchain Lean 4.33.1.
  */
 
 /** THE refusal taxonomy, verbatim from Lean `Cas.Schema.IngestRefusal`:

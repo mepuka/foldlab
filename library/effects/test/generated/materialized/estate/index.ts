@@ -6,6 +6,9 @@
  *
  * The differential suite reads the registry through this barrel, so
  * a fixture that gains or loses a module moves these bytes.
+ *
+ * emitted — schemaVersion 1, emitter `materialize`,
+ * module `library/cas/tools/Materialize.lean`, toolchain Lean 4.33.1.
  */
 
 export { vectorDocument } from "./vector-document.ts"

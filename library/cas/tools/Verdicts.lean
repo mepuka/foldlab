@@ -849,6 +849,15 @@ def restrictions : List String := [
   "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"
 ]
 
+/-- The corpus's emitted header. `schemaVersion` opens at the
+`revision` the document already declares — `Cas.Schema.schemaRevision`,
+the canonical-schema revision every case's payload rides — and that
+field stays for one release beside the header that now carries it. -/
+def emitted : Gate.Emitted where
+  schemaVersion := schemaRevision
+  emitter := "verdicts"
+  module := "library/cas/tools/Verdicts.lean"
+
 def documentValue : Except String Json.Value := do
   let rows ← corpus.mapM caseJson
   let codes := corpus.length
@@ -860,7 +869,7 @@ def documentValue : Except String Json.Value := do
     | some a => n + (c.values.filter fun (_, v) =>
         valueVerdict a (Json.canonValue v) == "accept").length
     | none => n) 0
-  pure (.obj [
+  pure (emitted.obj [
     ("cases", .arr rows),
     ("counts", .obj [
       ("acceptValues", .nat accepted),

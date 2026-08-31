@@ -1,3 +1,5 @@
+import Cas.Values.Json
+
 /-!
 # The gate driver — `tools/Gate.lean`
 
@@ -38,9 +40,89 @@ the host that ran them, so they are TELEMETRY, never fixture bytes: no
 gate compares them, and nothing built from them may be committed. The
 prose line stays untimed — a human reading a red gate wants the
 diagnosis, not the milliseconds.
+
+## The emitted header
+
+`Emitted` is the one header every generated artifact carries, so a
+document found on disk says who wrote it without anyone having to
+grep for the emitter. Four fields and not a fifth: the artifact's own
+`schemaVersion`, the `emitter` that writes it, the `module` that
+declares it, and the `toolchain` that compiled that module.
+
+There is deliberately no timestamp and no input fingerprint. Both
+would make the header a function of WHEN the run happened rather than
+of what the model says, and the byte gate is the estate's freshness
+relation — a header that changed on every run would defeat it. Every
+field here is a constant of the build, so a regeneration that changes
+nothing changes no byte.
+
+`Lean.versionString` is the toolchain source. It comes from the
+compiler that built the emitter, which is exactly the thing a
+signature-printing artifact can drift on; a toolchain bump therefore
+reprints every artifact, and the gate says so once, loudly, instead of
+letting a re-pretty-printed signature look like a content change.
 -/
 
 namespace Gate
+
+/-! ## The emitted header -/
+
+/-- The provenance every generated artifact carries at its head.
+`toolchain` is not a field: it is `Lean.versionString`, read from the
+running emitter, so no caller can spell it wrong. -/
+structure Emitted where
+  /-- The ARTIFACT's version, not the header's. It starts at the
+  version the artifact already declared where it declared one
+  (`manifestVersion`, `revision`, `mapVersion`) and at 1 where it
+  declared none; the old field stays for one release so a consumer
+  reading the old name is not broken by the new one. -/
+  schemaVersion : Nat
+  /-- The executable that writes it — the `lake exe` name, bare. -/
+  emitter : String
+  /-- The tool source that declares it, repository-relative. -/
+  module : String
+
+/-- The header's own value: the four fields, in the order
+`Meta.emittedShape` declares them. Both canonical printers sort keys at
+render time, so this order is the reading order and never the bytes. -/
+def Emitted.value (e : Emitted) : Cas.Json.Value :=
+  .obj [("schemaVersion", .nat e.schemaVersion),
+        ("emitter", .str e.emitter),
+        ("module", .str e.module),
+        ("toolchain", .str Lean.versionString)]
+
+/-- The header as ONE field, ready to prepend to a document's top-level
+object. -/
+def Emitted.field (e : Emitted) : String × Cas.Json.Value :=
+  ("emitted", e.value)
+
+/-- A JSON document's top-level object, headed. This is the insertion
+every JSON emitter makes: `.obj [...]` becomes `e.obj [...]`, and the
+header cannot then be forgotten halfway down a field list. -/
+def Emitted.obj (e : Emitted) (fields : List (String × Cas.Json.Value)) :
+    Cas.Json.Value :=
+  .obj (e.field :: fields)
+
+/-- The header prepended to a value BUILT ELSEWHERE — the three
+documents whose top-level object is a projection of a library value
+(`Cas.Grammar.manifestV0.toValue`, `Cas.Backend.Mcp.manifest`) rather
+than a field list the tool spells. A non-object passes through
+unchanged, which is unreachable at every call site and pinned there by
+a `#guard`: a document that is not an object has nowhere to put a
+header, and inventing one would be the emitter deciding the shape. -/
+def Emitted.onto (e : Emitted) : Cas.Json.Value → Cas.Json.Value
+  | .obj fields => e.obj fields
+  | v => v
+
+/-- The header as the closing lines of a generated TypeScript module's
+doc block — the same four facts, in the register that file is read in.
+A comment rather than a value: a generated module's consumers import
+its declarations, and a provenance constant nobody reads would be one
+more export to keep. -/
+def Emitted.headerLines (e : Emitted) : List String :=
+  ["",
+   s!"emitted — schemaVersion {e.schemaVersion}, emitter `{e.emitter}`,",
+   s!"module `{e.module}`, toolchain Lean {Lean.versionString}."]
 
 /-- One committed artifact: its path, the bytes the model renders, and
 a short label naming what it carries (shown in the prose line and in
@@ -172,7 +254,10 @@ private def hex4 (n : Nat) : String :=
   String.ofList [digit (n / 4096 % 16), digit (n / 256 % 16),
                  digit (n / 16 % 16), digit (n % 16)]
 
-/-- JSON string escaping, kept local so the driver imports nothing. -/
+/-- JSON string escaping for the `--json` report line. Kept local: the
+report is telemetry about a run, not a document of the value plane, and
+building it through `Cas.Json` would put the gate's own diagnostics
+under the canonical printer's key sort. -/
 private def escape (s : String) : String :=
   s.foldl (init := "") fun acc c =>
     acc ++ match c with

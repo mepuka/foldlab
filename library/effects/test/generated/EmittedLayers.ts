@@ -26,6 +26,9 @@
  * estate's usual byte gate. The module's own BYTES are still gated by
  * `--check`; what is behavioural is only the claim that the wiring
  * means what the description says.
+ *
+ * emitted — schemaVersion 1, emitter `emitlayers`,
+ * module `library/cas/tools/EmitLayers.lean`, toolchain Lean 4.33.1.
  */
 import { ByteReader, ByteWriter, RootStore, layerMemoryBackend } from "../../src/cas/Backend.ts"
 import { layerKvsBackend } from "../../src/cas/KvsBackend.ts"

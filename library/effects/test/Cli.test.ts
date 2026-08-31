@@ -1099,14 +1099,21 @@ it.effect("put --program then run: the table goes in, and the run answers its hi
       expect(json["lines"]).toBe(6)
       expect(json["program"]).toBe("blobTwoLeaves")
 
-      // Run it: the human line says history, the machine line says
-      // word, and the two carry the same six admissions.
+      // Run it: the first run admits the table's six nodes and says
+      // so. A SECOND run of the same program admits nothing — every
+      // put answers `duplicate`, and the word (the run's ADMISSIONS,
+      // not its put lines) is empty. The human line still says
+      // "history" and `--json` still says `word` (collision 5, as
+      // ruled); what they carry is what the run admitted.
       const ran = yield* invoke("run", program, "--store", store)
       expect(ran[0]).toBe(`program    ${program}`)
       expect(ran[2]).toBe("history    6 admitted")
       const word = oneObject(yield* invoke("run", program, "--store", store, "--json"))
       expect(word["program"]).toBe(program)
-      expect((word["word"] as ReadonlyArray<unknown>)).toHaveLength(6)
+      expect(word["lines"]).toBe(6)
+      expect((word["word"] as ReadonlyArray<unknown>)).toHaveLength(0)
+      const rerun = yield* invoke("run", program, "--store", store)
+      expect(rerun[2]).toBe("history    0 admitted")
 
       // A program is on the `program` plane, so it is nameable.
       const named = yield* invoke("name", program, "blobTwoLeaves", "--store", store)

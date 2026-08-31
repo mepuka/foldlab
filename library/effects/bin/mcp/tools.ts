@@ -319,3 +319,48 @@ export const casToolkit = Toolkit.make(
  * other carrier. The row itself is no longer anyone's transcription.
  */
 export const servedTools: ReadonlyArray<ServedTool> = McpToolCodes
+
+/** What a forked pair of name sets resolves to. It is a string literal
+ * rather than `never` so the compiler's own message at the use site
+ * says which invariant broke instead of `not assignable to never`. */
+type ForkedToolNames =
+  "the emitted MCP tool names and the registered toolkit names have forked"
+
+/** Two name sets that must be one set. Mutual assignability IS equality
+ * for unions of string literals, and it is checked in the alias body
+ * because TypeScript refuses type parameters that constrain each
+ * other. */
+type SameNames<Emitted, Registered> = [Emitted] extends [Registered]
+  ? [Registered] extends [Emitted] ? Emitted : ForkedToolNames
+  : ForkedToolNames
+
+/**
+ * A served tool's name, as a type.
+ *
+ * `McpToolCodes` is a `ReadonlyArray<McpToolRow>` and a row's `name` is
+ * `string`, so the emitted table cannot give a name union on its own.
+ * `McpToolDescriptions` can: it is the same rows keyed BY name, so its
+ * key set is the emitted name set, spelled by `lake exe mcpspec` and
+ * byte-identity-gated like the rest of the generated module.
+ *
+ * The definition is also the gate-join. Passing that key set through
+ * `SameNames` against the toolkit's own registered keys makes this
+ * alias fail to resolve unless the two agree, so a tool served without
+ * an emitted row — or an emitted row nothing serves — is a type error
+ * here rather than a boot-time comparison failure in `manifest.ts` or,
+ * worse, a name that only telemetry ever sees.
+ *
+ * What it fixes at the use site: `bin/mcp/handlers.ts` labels every
+ * store-touching call with its tool name for the log annotation and
+ * the `cas.host.calls` counter, and those labels were six free-standing
+ * string literals. Typed as this, a name outside the emitted set does
+ * not compile. What it still does NOT catch is a name that is emitted
+ * but wrong for the handler it labels (`cas_load` written inside the
+ * `cas_put` arm); binding each label to its own handler key needs the
+ * table built through a mapped helper, which would restructure
+ * `layerHandlers` for a mislabel that no gate has ever seen.
+ */
+export type ServedToolName = SameNames<
+  keyof typeof McpToolDescriptions,
+  keyof typeof casToolkit.tools
+>

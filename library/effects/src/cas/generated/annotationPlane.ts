@@ -17,6 +17,9 @@
  * spells one by hand. `src/cas/Annotations.ts` is the third: it
  * builds the subject union's arms, and reads the system plane's
  * working tag from here rather than spelling it.
+ *
+ * emitted — schemaVersion 1, emitter `schemas`,
+ * module `library/cas/tools/Schemas.lean`, toolchain Lean 4.33.1.
  */
 
 /** One nameable plane: the subject union's arm name, and the wire

@@ -49,6 +49,7 @@ run = [
   "mise run gen:backend-wire",
   "mise run gen:backend-word",
   "mise run gen:backend-gate",
+  "mise run gen:backend-architecture",
   "mise run gen:backend-programs",
   "mise run gen:backend-layers",
   "mise run gen:backend-mcp",
@@ -60,6 +61,10 @@ run = [
   "mise run gen:cas-surface",
   "mise run gen:cas-obligations",
   "mise run gen:cas-laws",
+  "mise run gen:debts",
+  "mise run gen:axioms",
+  "mise run gen:meta",
+  "mise run gen:trust",
   "mise run gen:env-ledger",
   "mise run gen:ledger",
 ]
@@ -87,6 +92,7 @@ run = [
   "mise run --force gen:backend-wire",
   "mise run --force gen:backend-word",
   "mise run --force gen:backend-gate",
+  "mise run --force gen:backend-architecture",
   "mise run --force gen:backend-programs",
   "mise run --force gen:backend-layers",
   "mise run --force gen:backend-mcp",
@@ -98,6 +104,10 @@ run = [
   "mise run --force gen:cas-surface",
   "mise run --force gen:cas-obligations",
   "mise run --force gen:cas-laws",
+  "mise run --force gen:debts",
+  "mise run --force gen:axioms",
+  "mise run --force gen:meta",
+  "mise run --force gen:trust",
   "mise run --force gen:env-ledger",
   "mise run --force gen:ledger",
 ]
@@ -226,6 +236,7 @@ outputs = [
   "schemas/index.json",
   "schemas/addresses.json",
   "../effects/src/cas/generated/annotationPlane.ts",
+  "../effects/src/cas/generated/StoreKindSchema.ts",
 ]
 run = "lake exe schemas"
 
@@ -270,6 +281,13 @@ sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.t
 outputs = ["../effects/src/cas/generated/SchemaAdmission.ts"]
 run = "lake exe emitgate"
 
+[tasks."gen:backend-architecture"]
+description = "Regenerate the effects package's self-description (the data vocabulary, the seams, the laws, the backends, and the capability-matrix pin) from the Lean architecture value"
+dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["../effects/src/cas/generated/architecture.ts"]
+run = "lake exe emitarchitecture"
+
 [tasks."gen:backend-programs"]
 description = "Regenerate the straight-line Effect programs of the registered grammar terms, the lift documents the recognizer must answer for them (P3's Lean half), and the step/cont addresses each program has as store content (R7's stamp clause — the cross-host codec gate)"
 dir = "{{config_root}}/library/cas"
@@ -312,6 +330,8 @@ sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.t
 outputs = [
   "../effects/src/cas/generated/grammar/manifest.json",
   "../effects/src/cas/generated/grammar/kindTags.ts",
+  "../effects/src/cas/generated/grammar/refMarkers.ts",
+  "../effects/src/cas/generated/grammar/names.json",
   "REGISTRY.md",
 ]
 run = "lake exe emitgrammar"
@@ -379,6 +399,56 @@ description = "Regenerate the law index (the ruling registry joined to the LAW l
 dir = "{{config_root}}/library/cas"
 run = "lake exe laws"
 
+[tasks."gen:debts"]
+description = "Regenerate the debt projection (the docstring obligations still owed, parked or pin-pending, joined to the law index's unbound rulings) from the compiled environment"
+dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["surface/cas-debts.json"]
+run = "lake exe debts"
+
+# The emitter REFUSES — nonzero exit, naming the declaration — when a
+# declaration depends on an axiom outside `Walk.cleanAxioms`. That is
+# why the axiom gate is a `gen:` task and not only a `check:` one: the
+# refusal fires in `gen:ci` before `git diff --exit-code` is ever
+# reached, so a `sorryAx` cannot be regenerated into the tree quietly.
+[tasks."gen:axioms"]
+description = "Regenerate the axiom report (every declaration's axiom dependencies over the surface ledger's import closure) and refuse any dependency outside the clean set"
+dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = ["surface/cas-axioms.json"]
+run = "lake exe axioms"
+
+[tasks."gen:meta"]
+description = "Regenerate the meta plane: the closed schema AST the front end interprets, and one JSON Schema per generated ledger, both printed from the Lean shape declarations"
+dir = "{{config_root}}/library/cas"
+sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
+outputs = [
+  "../effects/src/cas/generated/meta/names.schema.json",
+  "../effects/src/cas/generated/meta/cas-debts.schema.json",
+  "../effects/src/cas/generated/meta/cas-axioms.schema.json",
+  "../effects/src/cas/generated/meta/cas-trust.schema.json",
+  "../effects/src/cas/generated/meta/metaSchemaAst.ts",
+]
+run = "lake exe emitmeta"
+
+[tasks."gen:trust"]
+description = "Regenerate the trust census (every TypeScript file the effects package ships, in the stratum that holds it: emitted, model-gated, tested, or bare)"
+dir = "{{config_root}}/library/cas"
+# Beyond the Lean tree: the census's whole subject is the SIBLING
+# package's TypeScript. `src` and `bin` are what it classifies; `test`
+# is what decides the `tested` stratum, so a test that stops importing
+# a module must re-run the census. It runs after `gen:meta` in the
+# chain because that emitter can add a `.ts` module to the generated
+# tree the census counts.
+sources = [
+  "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
+  "../effects/src/**/*.ts",
+  "../effects/bin/**/*.ts",
+  "../effects/test/**/*.ts",
+]
+outputs = ["surface/cas-trust.json"]
+run = "lake exe trust"
+
 [tasks."gen:env-ledger"]
 description = "Regenerate the environment ledger (mise tool pins and task graph, every lean-toolchain pin, the lean_exe/task join) from the config files themselves"
 dir = "{{config_root}}/library/cas"
@@ -437,7 +507,7 @@ run = "lake exe envledger"
 # fail. This is the one declaration on this task that is load-bearing
 # rather than an optimization.
 [tasks."check:cas"]
-description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, word-wire, admission-table, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
+description = "Build the CAS type model under --wfail and run the vector, schema, conformance-verdict, admission-map, wire-mirror, word-wire, admission-table, architecture, program + lift-document, layer, materialization, MCP-manifest, lift-manifest, grammar-manifest, and environment-ledger byte-identity gates (the supportInterpreter ledgers are check:cas:surface, check:cas:obligations, and check:cas:laws)"
 dir = "{{config_root}}/library/cas"
 sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
@@ -447,8 +517,8 @@ sources = [
   "../../experiments/entity-store-extract/inventory.json",
 ]
 run = [
-  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
-  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
+  "lake --wfail build Cas CasBackend CasExamples vectors schemas verdicts admissionmap emitwire emitword emitgate emitarchitecture emitprograms emitlayers materialize mcpspec emitlift emitgrammar envledger surface obligations laws",
+  "lake env sh -c 'set -e; .lake/build/bin/vectors --check; .lake/build/bin/schemas --check; .lake/build/bin/verdicts --check; .lake/build/bin/admissionmap --check; .lake/build/bin/emitwire --check; .lake/build/bin/emitword --check; .lake/build/bin/emitgate --check; .lake/build/bin/emitarchitecture --check; .lake/build/bin/emitprograms --check; .lake/build/bin/emitlayers --check; .lake/build/bin/materialize --check; .lake/build/bin/mcpspec --check; .lake/build/bin/emitlift --check; .lake/build/bin/emitgrammar --check; .lake/build/bin/envledger --check'",
   "mise run check:cas:surface",
   "mise run check:cas:obligations",
   "mise run check:cas:laws",

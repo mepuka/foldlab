@@ -22,7 +22,13 @@ import { Cause, Effect, Exit, Metric, Option, Semaphore } from "effect"
 import { Cas } from "../../src/index.ts"
 import { casErrorMessage, toBinding } from "../cli/render.ts"
 import * as Telemetry from "./telemetry.ts"
-import { casToolkit, Refused, type RunInstruction, type RunOperand } from "./tools.ts"
+import {
+  casToolkit,
+  Refused,
+  type RunInstruction,
+  type RunOperand,
+  type ServedToolName,
+} from "./tools.ts"
 
 /** A store refusal in the tools' register: the library's clause tag,
  * and the CLI's own rendering of it as the detail. */
@@ -156,9 +162,16 @@ export const layerHandlers = (limits: NodeLimits) =>
     /** One store-touching call, bounded and counted. Every outcome is
      * attributed: a success, a typed refusal (also counted under its
      * own clause, so `cas.host.refused` and the `Refused` reply agree),
-     * and anything else — a defect or an interrupt — as `failed`. */
+     * and anything else — a defect or an interrupt — as `failed`.
+     *
+     * The label is a `ServedToolName`, not a `string`: the six names
+     * below are the emitted table's own key set (`tools.ts`), so a name
+     * this host does not serve cannot be written here at all. The log
+     * annotation and the `cas.host.calls` attribute therefore carry
+     * names the manifest declares, by construction rather than by
+     * proofreading. */
     const served = <A, R>(
-      tool: string,
+      tool: ServedToolName,
       self: Effect.Effect<A, Refused, R>,
     ): Effect.Effect<A, Refused, R> =>
       gate.withPermits(1)(

@@ -7,6 +7,9 @@
  * host's own digest — and the VectorPrograms suite asserts the
  * answers equal the Lean-computed word, binding for binding: the
  * cross-host run gate.
+ *
+ * emitted — schemaVersion 1, emitter `emitprograms`,
+ * module `library/cas/tools/EmitPrograms.lean`, toolchain Lean 4.33.1.
  */
 import { Effect } from "effect"
 import type { CasStoreShape } from "../../src/cas/Store.ts"

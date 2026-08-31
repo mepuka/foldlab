@@ -6,6 +6,12 @@
     "rejected": 2,
     "rows": 22
   },
+  "emitted": {
+    "emitter": "admissionmap",
+    "module": "library/cas/tools/AdmissionMap.lean",
+    "schemaVersion": 0,
+    "toolchain": "4.33.1"
+  },
   "inventory": {
     "astVariants": 21,
     "path": "experiments/entity-store-extract/inventory.json"

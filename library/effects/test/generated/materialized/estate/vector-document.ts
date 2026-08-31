@@ -14,6 +14,9 @@
  *
  * Materialized from a schema node (kind tag 0x53):
  *   - vectorDocument — cf674c2dfdbd3582661e2f96a026969d31956880a8912f7c1ddd1bb613ad968c
+ *
+ * emitted — schemaVersion 1, emitter `materialize`,
+ * module `library/cas/tools/Materialize.lean`, toolchain Lean 4.33.1.
  */
 import { Schema } from "effect"
 

@@ -38,9 +38,12 @@ open Lean Walk
 
 def outPath : System.FilePath := "surface" / "cas-surface.json"
 
-/-- The three axioms the estate considers clean; anything else in a
-report is a finding. -/
-def cleanAxioms : List Name := [`propext, `Classical.choice, `Quot.sound]
+/-- The ledger's emitted header. The document declared no version
+before this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "surface"
+  module := "library/cas/tools/Surface.lean"
 
 def rowJson (r : Row) : Cas.Json.Value :=
   .obj <|
@@ -84,7 +87,7 @@ def document (modules : Array (Name × Array Row)) : String :=
       ("declarations", .nat m.2.size),
       ("documented", .nat (m.2.filter (·.documented) |>.size)),
       ("surface", .arr (m.2.toList.map rowJson))]
-  Cas.Json.render (.obj [
+  Cas.Json.render (emitted.obj [
     ("library", .str "Cas"),
     ("declarations", .nat allRows.size),
     ("documented", .nat documented),

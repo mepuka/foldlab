@@ -24,18 +24,29 @@
  * only annotation read the CAS plane performs.
  *
  * The namespace has a second face. Annotations that ride the DAG rather
- * than a live carrier are store content: `Annotation` below is the
- * described sidecar kind, whose subject is a typed reference to whatever
- * addressable plane the annotation is about. Its Lean twin is
- * `Cas.Schema.Annotation`, and the two are pinned to the same bytes.
+ * than a live carrier are store content: the described sidecar kind,
+ * whose subject is a typed reference to whatever addressable plane the
+ * annotation is about. That kind is authored once, in Lean
+ * (`library/cas/Cas/Schema/Annotation.lean`), and emitted into
+ * `generated/StoreKindSchema.ts` by `lake exe schemas`; this module
+ * names its three declarations and adds the constructors that build one
+ * subject arm and one annotation value. What that replaced was a
+ * hand-written twin held to the Lean bytes by a pin — a real gate on a
+ * copy, which is a weaker thing than the copy's absence.
+ *
+ * The two faces are different planes with the same word: the keys above
+ * ride LIVE Effect carriers, and the kind below rides the DAG.
  */
 import { cast, Option, Predicate, Schema, SchemaAST } from "effect"
-import { Byte, ContentId } from "./Node.ts"
-import { refWithTag, type Root } from "./Value.ts"
-import { GitKindTag, SchemaKindTag } from "../internal/kindTags.ts"
+import { ContentId } from "./Node.ts"
+import { type Root } from "./Value.ts"
 import { SystemKindTag as EmittedSystemKindTag } from "./generated/annotationPlane.ts"
 import { KindTagsByName } from "./generated/grammar/kindTags.ts"
-import { KindTag as ExchangeKindTag } from "./Exchanges.ts"
+import {
+  annotationSchema,
+  annotationSubjectSchema,
+  annotationValueSchema,
+} from "./generated/StoreKindSchema.ts"
 
 /** The prefix every persistent foldlab annotation key carries. */
 export const Namespace = "foldlab/cas/"
@@ -106,55 +117,26 @@ export const ProgramKindTag = KindTagsByName.cont
  * absent from `ReservedKindTags`. */
 export const SystemKindTag = EmittedSystemKindTag
 
-/** What one annotation is about, by plane — the hand mirror of Lean
- * `Cas.Schema.AnnotationSubject`.
+/** What one annotation is about, by plane.
  *
- * The subject was a bare `refWithTag(SchemaKindTag)`: a schema node and
- * nothing else. A projection of a program, a topology, an exchange or a
- * git object was literally unspellable, which made three separate
+ * The subject was a bare reference at the schema kind: a schema node
+ * and nothing else. A projection of a program, a topology, an exchange
+ * or a git object was literally unspellable, which made three separate
  * things impossible at once — a view's link to the value it projects, a
  * program's human-facing name, and a topology's link to written code.
  * A reference demands ONE kind tag, so "which plane" is genuinely
  * alternatives and the answer is a union, on the `Exchanges.Subject`
- * precedent.
- *
- * A derived union's mode is `oneOf` and the mode is part of its
- * identity, so this is `Schema.Union([...], { mode: "oneOf" })` and not
- * `Schema.TaggedUnion`, which builds at the default `anyOf`. Member
- * order and field order are the canonical order the deriving handler
- * spells: members by ascending tag, fields with `_tag` first. */
-export const Subject = Schema.Union([
-  Schema.Struct({
-    _tag: Schema.Literal("exchange"),
-    address: refWithTag(Byte.make(ExchangeKindTag)),
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("git"),
-    address: refWithTag(Byte.make(GitKindTag)),
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("program"),
-    address: refWithTag(Byte.make(ProgramKindTag)),
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("schema"),
-    address: refWithTag(Byte.make(SchemaKindTag)),
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("system"),
-    address: refWithTag(Byte.make(SystemKindTag)),
-  }),
-], { mode: "oneOf" })
+ * precedent. */
+export const Subject = annotationSubjectSchema
 
 /** What one annotation is about. */
 export type Subject = typeof Subject.Type
 
-/** What one annotation SAYS — the hand mirror of Lean
- * `Cas.Schema.AnnotationValue`.
+/** What one annotation SAYS.
  *
- * The value was a plain `Schema.String`, and the kind's own docstring
- * admitted what that cost: "a content address in hex when the value is
- * itself store content." A hex string is not an edge. It never reaches
+ * The value was a plain string, and the kind's own docstring admitted
+ * what that cost: "a content address in hex when the value is itself
+ * store content." A hex string is not an edge. It never reaches
  * `refCount`, `Graph.verify` never walks it, and `WrongKindReference`
  * can never fire on it — which is exactly the out-of-band config a
  * content-addressed estate exists to remove.
@@ -165,22 +147,12 @@ export type Subject = typeof Subject.Type
  * flattened copy of the plane list would drift from the first. Nesting
  * keeps admission checkable — every arm still names its tag, and the
  * store refuses an edge whose target is of another kind. */
-export const Value = Schema.Union([
-  Schema.Struct({
-    _tag: Schema.Literal("ref"),
-    address: Subject,
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("text"),
-    text: Schema.String,
-  }),
-], { mode: "oneOf" })
+export const Value = annotationValueSchema
 
 /** What one annotation says. */
 export type Value = typeof Value.Type
 
-/** The sidecar annotation kind — the hand mirror of Lean
- * `Cas.Schema.Annotation`, and the codec an annotation node is stored
+/** The sidecar annotation kind — the codec an annotation node is stored
  * through.
  *
  * Annotation content is STORE CONTENT: nothing is added to the schema
@@ -190,13 +162,8 @@ export type Value = typeof Value.Type
  * Every reference decodes to a `Root` and encodes to a reference
  * sentinel, so the same declaration this schema lowers to — what the
  * byte pin compares against the Lean fixture — is also the live
- * reference codec the value plane rides. Field order is the canonical
- * (sorted) order the Lean side authors in. */
-export const Annotation = Schema.Struct({
-  key: Schema.String,
-  subject: Subject,
-  value: Value,
-})
+ * reference codec the value plane rides. */
+export const Annotation = annotationSchema
 
 /** One annotation node's value. */
 export type Annotation = typeof Annotation.Type

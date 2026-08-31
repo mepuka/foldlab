@@ -61,6 +61,12 @@
       "spelling": "return [a, b]"
     }
   ],
+  "emitted": {
+    "emitter": "emitlift",
+    "module": "library/cas/tools/EmitLift.lean",
+    "schemaVersion": 0,
+    "toolchain": "4.33.1"
+  },
   "language": "cas-libfree",
   "manifestVersion": 0,
   "natBits": 32,

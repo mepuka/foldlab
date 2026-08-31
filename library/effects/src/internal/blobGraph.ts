@@ -2,11 +2,23 @@
 import { Data, Effect, Schema, SchemaGetter } from "effect"
 import { CasNodeInput, type CasError, type ContentId } from "../cas/Node.ts"
 import type { CasStoreShape } from "../cas/Store.ts"
-import { pow2Below } from "./merkleTree.ts"
 import { BlobManifestTag, BlobNodeTag, ChunkDataTag } from "./kindTags.ts"
 
 export { BlobManifestTag, BlobNodeTag, ChunkDataTag }
 export const ReferencedChunkRecipe = 1
+
+/** Largest power of two strictly below n, returning one below two.
+ *
+ * The ratified split: a parent of `n` leaves takes the first
+ * `pow2Below(n)` on the left and the rest on the right, which is what
+ * makes the tree shape a function of the leaf count alone and so makes
+ * a blob's address depend on nothing but its chunks. It lives here
+ * because `src/cas/Blob.ts` and the finalizer below are its only
+ * callers — the `internal/merkle*` mirror of the retired archive model
+ * that used to hold it was reachable through this four-line rule and
+ * nothing else, and is gone. */
+export const pow2Below = (n: number): number =>
+  n <= 2 ? 1 : 2 * pow2Below(Math.floor((n + 1) / 2))
 
 const MaxUint32 = 0xffff_ffff
 const MaxUint64 = 0xffff_ffff_ffff_ffffn

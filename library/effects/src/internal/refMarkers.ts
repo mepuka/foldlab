@@ -19,12 +19,23 @@
  * Both walks are typed over the closed `Schema.Json` union — the TS
  * twin of the model's `Json.Value` — so the only unparsed boundary is
  * where the caller parses wire text into that union.
+ *
+ * The two reserved keys are not written here. They are the model's —
+ * `Cas.refKey`, and the one object key `Cas.Schema.encRef` writes —
+ * and arrive through `lake exe emitgrammar`, beside the kind-tag
+ * registry: a payload's identity turns on them, so the two sides of
+ * the wire may not hold separate opinions about which two strings they
+ * are. What this file carries is the walks, which are a decision
+ * procedure and not data.
  */
 import { Data, Option, Predicate, Result, Schema } from "effect"
 import { Byte, ContentId, type CasReference } from "../cas/Node.ts"
+import {
+  RefMarkerKey,
+  RefSentinelKey,
+} from "../cas/generated/grammar/refMarkers.ts"
 
-export const RefMarkerKey = "$ref"
-export const RefSentinelKey = "$link"
+export { RefMarkerKey, RefSentinelKey }
 
 /** The sentinel body: what a reference field encodes to before the
  * walk assigns indexes. */

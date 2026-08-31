@@ -77,13 +77,33 @@ export class CasLoader extends Context.Service<CasLoader, CasLoaderShape>()(
   "foldlab/cas/CasLoader",
 ) {}
 
+/** What a put ANSWERS in the model: the host spelling of
+ * `Cas.PutOutcome` (`Cas/Core/Admission.lean`) — the address either
+ * way, and which arm fired. A duplicate is not an error (the byte
+ * plane is grow-only; a re-put answers the same address), but it is a
+ * different OUTCOME: the word law appends on `fresh` and leaves the
+ * word unchanged on `duplicate` (`Interp.lean:76-79`,
+ * `Handler.lean:84-85`), so an interpreter that cannot see the arm
+ * cannot leave the word `runP` leaves. */
+export type PutOutcome =
+  | { readonly _tag: "fresh"; readonly id: ContentId }
+  | { readonly _tag: "duplicate"; readonly id: ContentId }
+
 /** The whole store law: reading, plus the one operation that grows the
  * store. `put` is where admission is judged, which is why nothing below
  * this shape is allowed to judge it. */
 export interface CasStoreShape extends CasLoaderShape {
   /** Admit and store a node. Every referenced address must already resolve
-   * in the store, at its declared kind. */
+   * in the store, at its declared kind. Answers the address alone — the
+   * projection of `putOutcome` for the caller that only names content. A
+   * consumer whose law branches on admission (the run word does) uses
+   * `putOutcome` instead. */
   readonly put: (node: CasNodeInput) => Effect.Effect<ContentId, CasError>
+  /** The same admission, answering the model's `PutOutcome`: the address,
+   * and whether this put admitted the node (`fresh`) or found it already
+   * resident (`duplicate`). This is the operation the model calls `put`;
+   * the host `put` above is its address projection. */
+  readonly putOutcome: (node: CasNodeInput) => Effect.Effect<PutOutcome, CasError>
 }
 
 /** The store law in the context: admission at put, re-verification at
@@ -243,7 +263,9 @@ export const makeCasStoreOver = (
     return facts
   })
 
-  const put = Effect.fn("CasStore.put")(function* (input: CasNodeInput) {
+  const putOutcome = Effect.fn("CasStore.put")(function* (
+    input: CasNodeInput,
+  ): Effect.fn.Return<PutOutcome, CasError> {
     const node = yield* validateNode(input)
     yield* ensureKnownKind(node)
     const canonicalBytes = encodeCasNode(node)
@@ -270,7 +292,7 @@ export const makeCasStoreOver = (
           reason: `Content identifier collision at ${id}`,
         })
       case "AlreadyResident":
-        return id
+        return { _tag: "duplicate", id }
       case "NonCanonical":
       case "UnknownKind":
         // Unreachable for a validated, freshly encoded node; kept
@@ -296,12 +318,15 @@ export const makeCasStoreOver = (
             })),
           )
         }
-        return id
+        return { _tag: "fresh", id }
       }
     }
   })
 
-  return CasStore.of({ put, ...makeCasLoaderOver(address, reader) })
+  const put = (node: CasNodeInput): Effect.Effect<ContentId, CasError> =>
+    Effect.map(putOutcome(node), (outcome) => outcome.id)
+
+  return CasStore.of({ put, putOutcome, ...makeCasLoaderOver(address, reader) })
 }
 
 /** The address scheme as a service: the digest the laws recompute is a

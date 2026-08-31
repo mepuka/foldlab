@@ -75,6 +75,18 @@ structure Row where
   /-- The declaration's docstring, verbatim. `Surface` reads only
   whether there IS one; the obligation ledger reads the prose. -/
   doc : Option String := none
+  /-- The 1-based line the declaration STARTS on — its docstring, when
+  it has one, since `Lean.findDeclarationRanges?`'s `range` opens at the
+  doc comment and its `selectionRange` at the identifier. Read from the
+  compiled environment's declaration ranges, which the oleans carry, so
+  no source file is opened to find it.
+
+  `none` is a fact, not a failure: a handful of declarations (deriving
+  output, some instances) reach the environment with no range, and a row
+  that has none says so rather than inventing a zero. The obligation and
+  debt ledgers are the readers — an obligation nobody can open is an
+  obligation nobody discharges. -/
+  line : Option Nat := none
   axioms : List String := []
   /-- Architecture areas the SIGNATURE touches — the second component
   of each used constant's defining module (`Lang`, `Schema`,
@@ -92,6 +104,12 @@ def Row.documented (r : Row) : Bool := r.doc.isSome
 def moduleOf (env : Environment) (n : Name) : Option Name := do
   let idx ← env.getModuleIdxFor? n
   return env.header.moduleNames[idx.toNat]!
+
+/-- The three axioms the estate considers clean; anything else in a
+report is a finding. Stated here rather than in a tool because two
+projections read it — the surface ledger's census and the axiom gate —
+and a clean set with two spellings is a clean set with none. -/
+def cleanAxioms : List Name := [`propext, `Classical.choice, `Quot.sound]
 
 /-- The ratified core carriers (store-language skill vocabulary). -/
 def coreCarriers : List Name := [
@@ -157,13 +175,31 @@ def collect (env : Environment) : CoreM (Array (Name × Array Row)) := do
         let axs ← Lean.collectAxioms n
         pure (axs.toList.map Name.toString |>.mergeSort (· < ·))
       else pure []
+    let line := (← findDeclarationRanges? n).map (·.range.pos.line)
     let (touches, carriers) := classify env ci.type
     let row : Row := { name := n.toString, kind, signature := sig,
-                       doc, axioms, touches, carriers }
+                       doc, axioms, touches, carriers, line }
     byModule := byModule.insert m ((byModule.getD m #[]).push row)
   let sorted := byModule.toArray.qsort (fun a b => a.1.toString < b.1.toString)
   return sorted.map fun (m, rows) =>
     (m, rows.qsort (fun a b => a.name < b.name))
+
+private def part : Name → String
+  | .str _ s => s
+  | .num _ n => toString n
+  | .anonymous => ""
+
+/-- A library module's source, repository-relative. Lake's own rule is
+the whole of it — the package root is `library/cas` and a module name
+IS its path under it — so `Cas.Values.Json` is
+`library/cas/Cas/Values/Json.lean`.
+
+Stated here rather than in a tool because two ledgers anchor rows to a
+source file, and a path spelled twice is a path that drifts. Nothing
+opens the file: the anchor is derived from the name the environment
+already carries. -/
+def sourceOf (m : Name) : String :=
+  "library/cas/" ++ String.intercalate "/" (m.components.map part) ++ ".lean"
 
 /-- The library's own modules, in the total order projections sort by.
 Read from the header rather than from `collect`, so a module that

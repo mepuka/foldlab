@@ -1,5 +1,6 @@
 import Cas.Values.Json
 import Gate
+import Lake.Toml
 
 /-!
 # The environment ledger — `lake exe envledger`
@@ -24,15 +25,28 @@ reads, and the fixture it writes, lives above that. `repoRoot` is the
 one constant that carries the difference; `lakefile.toml` is the single
 input that is genuinely local.
 
-## The grammars refuse
+## The parser is the toolchain's; the refusals are the ledger's
 
-Lean core has no TOML parser, and the estate's direction law says to
-ingest a config format rather than re-implement it. The compromise is
-three deliberately NARROW line grammars, each admitting only the shapes
-the file it reads actually uses, and each REFUSING — by name, line
-number, and offending text — on anything else. A grammar that defaults
-past an unmatched line would silently drop the very drift the ledger
-exists to catch, so unmatched is an error, never a shrug.
+`mise.toml` and `lakefile.toml` are read with `Lake.Toml` — the parser
+`lake` itself reads `lakefile.toml` with, shipped in the toolchain this
+package already pins. The direction law says ingest a config format
+rather than re-implement it, and the implementation to ingest is the
+one the build already trusts. Quoting, single- versus double-quoted
+strings, arrays written over one line or many, the multi-line string,
+the dotted key: all of that is the parser's business now, and the
+ledger no longer holds an opinion about it that could be wrong.
+
+What the parser will not do is refuse on the estate's behalf. A parsed
+document is a tree of values; WHICH keys mean something is the ledger's
+question, and it is answered exactly as the line grammars answered it —
+every admitted key named, everything else refused by name, line number
+and offending text. A decoder that defaulted past an unread key would
+silently drop the very drift the ledger exists to catch, so unknown is
+an error, never a shrug.
+
+`lean-toolchain` keeps its own one-line grammar. It is not TOML: it is
+a single pin on a single line, and a parser for one line is the
+narrowest thing that can read it.
 
 ## The build relation (BS1)
 
@@ -131,6 +145,7 @@ def residence : List (String × String × String) := [
   ("gen", "portable", "all inputs tracked"),
   ("gen:ci", "portable", "the forced mirror of `gen`; same inputs"),
   ("gen:inventory", "portable", "reads the vendored pinned Effect sources"),
+  ("gen:backend-architecture", "portable", "all inputs tracked"),
   ("gen:backend-gate", "portable", "all inputs tracked"),
   ("gen:backend-layers", "portable", "all inputs tracked"),
   ("gen:cas-admission-map", "portable", "all inputs tracked"),
@@ -138,6 +153,9 @@ def residence : List (String × String × String) := [
     "the oxc surface census reads the full pinned source cache, gitignored with no bootstrap"),
   ("gen:cas-obligations", "portable", "all inputs tracked"),
   ("gen:cas-laws", "portable", "all inputs tracked"),
+  ("gen:debts", "portable", "all inputs tracked"),
+  ("gen:axioms", "portable", "all inputs tracked"),
+  ("gen:meta", "portable", "all inputs tracked"),
   ("gen:backend-materialize", "portable", "all inputs tracked"),
   ("gen:backend-mcp", "portable", "all inputs tracked"),
   ("gen:backend-programs", "portable", "all inputs tracked"),
@@ -154,28 +172,20 @@ def residence : List (String × String × String) := [
   ("gen:grammar-manifest", "portable", "all inputs tracked"),
   ("gen:ledger", "portable", "committed bun lockfile pins every dependency"),
   ("gen:lift-manifest", "portable", "all inputs tracked"),
+  ("gen:trust", "portable", "all inputs tracked"),
   ("gen:vectors", "portable", "all inputs tracked")]
 
-/-! ## Shared line vocabulary -/
+/-! ## Shared line vocabulary
+
+What is left of it. Quoting and key-value splitting went to the TOML
+parser; these three read the pin file and the COMMAND STRINGS the task
+table carries, which are shell text and not TOML structure. -/
 
 /-- Leading and trailing whitespace removed, as a `String`. -/
 def trimmed (s : String) : String := s.trimAscii.toString
 
 /-- The last `n` characters removed, as a `String`. -/
 def chop (s : String) (n : Nat) : String := (s.dropEnd n).toString
-
-def isQuoted (s : String) : Bool :=
-  s.length ≥ 2 && s.startsWith "\"" && s.endsWith "\""
-
-def unquote (s : String) : String := chop (s.drop 1).toString 1
-
-/-- `key = value` split at the FIRST ` = `; the remainder rejoins, so a
-value containing the separator survives. -/
-def splitKV (s : String) : Option (String × String) :=
-  match s.splitOn " = " with
-  | [] => none
-  | _ :: [] => none
-  | k :: rest => some (trimmed k, trimmed (String.intercalate " = " rest))
 
 /-- A command's words, blanks dropped. -/
 def words (s : String) : List String :=
@@ -196,7 +206,7 @@ def parseToolchain (path : String) (text : String) : Except String String :=
   | _ =>
     .error s!"{path}: {lines.length} non-empty lines; expected exactly one pin"
 
-/-! ## The `mise.toml` grammar -/
+/-! ## The mise task table -/
 
 structure MiseTask where
   name : String
@@ -214,149 +224,7 @@ structure Mise where
   tools : List (String × String)
   tasks : List MiseTask
 
-inductive Sect where
-  | none
-  | tools
-  | settings
-  | task
-deriving DecidableEq
-
-/-- Which array the grammar is currently inside. `run` carries commands,
-`sources` and `outputs` carry the build relation; the three share one
-bracket shape and differ only in where the entries land. -/
-inductive Arr where
-  | run
-  | sources
-  | outputs
-deriving DecidableEq
-
-structure MiseSt where
-  sect : Sect := .none
-  cur : Option MiseTask := none
-  inRun : Option Arr := none
-  /-- Inside a `description = \"\"\"` multi-line string (the standing-
-  exception prose shape); consumed without transcription, closed by a
-  line whose trimmed content ends with the `\"\"\"` delimiter. -/
-  inDesc : Bool := false
-  /-- Reversed while accumulating. -/
-  tools : List (String × String) := []
-  /-- Reversed while accumulating. -/
-  tasks : List MiseTask := []
-
-def flushMise (st : MiseSt) : MiseSt :=
-  match st.cur with
-  | none => st
-  | some t =>
-    { st with
-      cur := none,
-      tasks := { t with
-                 commands := t.commands.reverse,
-                 sources := t.sources.reverse,
-                 outputs := t.outputs.reverse } :: st.tasks }
-
-/-- Absorb one line's worth of array entries into the task being built.
-Shared by both array shapes: an entry per line inside a `run = [` block,
-and several comma-separated entries on one `sources = [...]` line. Every
-entry must be quoted — an unquoted one refuses, so a glob that lost its
-quotes cannot silently become no glob at all. -/
-def absorbEntries (ln : Nat) (which : Arr) (line : String) (st : MiseSt) :
-    Except String MiseSt := do
-  let entries := (line.splitOn ",").map trimmed |>.filter (fun e => !e.isEmpty)
-  match st.cur with
-  | none => throw s!"mise.toml:{ln}: array entry outside a task — «{line}»"
-  | some t =>
-    let mut cur := t
-    for entry in entries do
-      unless isQuoted entry do
-        throw s!"mise.toml:{ln}: unrecognized array entry — «{entry}»"
-      let v := unquote entry
-      cur := match which with
-        | .run => { cur with commands := v :: cur.commands }
-        | .sources => { cur with sources := v :: cur.sources }
-        | .outputs => { cur with outputs := v :: cur.outputs }
-    return { st with cur := some cur }
-
-/-- One line of `mise.toml`. Every admitted shape is spelled out; the
-final `throw` is the whole point of the grammar. -/
-def miseStep (ln : Nat) (raw : String) (st : MiseSt) : Except String MiseSt := do
-  let line := trimmed raw
-  if st.inDesc then
-    if line.endsWith "\"\"\"" then return { st with inDesc := false }
-    return st
-  if line.isEmpty || line.startsWith "#" then return st
-  if let some which := st.inRun then
-    if line == "]" then return { st with inRun := none }
-    return ← absorbEntries ln which line st
-  if line == "[tools]" then return { flushMise st with sect := .tools }
-  -- `[settings]` carries estate-wide build policy (the content-hash
-  -- freshness relation). Its keys are policy, not task structure, so
-  -- they are admitted and not transcribed — but the section must be
-  -- KNOWN, or the ledger refuses the file it is meant to describe.
-  if line == "[settings]" then return { flushMise st with sect := .settings }
-  if line.startsWith "[tasks." && line.endsWith "]" then
-    let inner := chop (line.drop 7).toString 1
-    let name := if isQuoted inner then unquote inner else inner
-    if name.isEmpty then throw s!"mise.toml:{ln}: empty task name — «{line}»"
-    return { flushMise st with
-             sect := .task,
-             cur := some { name, dir := none, commands := [] } }
-  if line.startsWith "[" then
-    throw s!"mise.toml:{ln}: unknown section header — «{line}»"
-  match splitKV line with
-  | none => throw s!"mise.toml:{ln}: unrecognized line — «{line}»"
-  | some (key, val) =>
-    if st.sect == .settings then return st
-    -- An array opened on its own line (`run = [`) or closed on the same
-    -- one (`sources = ["a", "b"]`). Both shapes appear in `mise.toml`.
-    if val.startsWith "[" && st.sect == .task then
-      let which : Option Arr :=
-        if key == "run" then some .run
-        else if key == "sources" then some .sources
-        else if key == "outputs" then some .outputs
-        else none
-      match which with
-      | none => throw s!"mise.toml:{ln}: array value for unknown task key «{key}»"
-      | some w =>
-        let body := trimmed (val.drop 1).toString
-        if val.endsWith "]" then
-          -- Inline `sources = ["a", "b"]`: absorb the body and close.
-          let inner := trimmed (chop body 1)
-          if inner.isEmpty then return st
-          return { ← absorbEntries ln w inner st with inRun := none }
-        else if body.isEmpty then return { st with inRun := some w }
-        else throw s!"mise.toml:{ln}: unexpected text after `[` for «{key}»"
-    if val == "[" then
-      throw s!"mise.toml:{ln}: array value for key «{key}» outside a task"
-    if val == "\"\"\"" then
-      if key == "description" && st.sect == .task then return { st with inDesc := true }
-      else throw s!"mise.toml:{ln}: multi-line string for key «{key}» outside a task `description`"
-    if isQuoted val then
-      let v := unquote val
-      match st.sect, st.cur with
-      | .tools, _ => return { st with tools := (key, v) :: st.tools }
-      | .task, some t =>
-        if key == "description" then return st
-        else if key == "dir" then return { st with cur := some { t with dir := some v } }
-        else if key == "run" then return { st with cur := some { t with commands := [v] } }
-        else throw s!"mise.toml:{ln}: unknown task key «{key}»"
-      | .task, none => throw s!"mise.toml:{ln}: task key outside a task — «{line}»"
-      -- Build policy, admitted and not transcribed; the guard above
-      -- already returned, so this arm is only for exhaustiveness.
-      | .settings, _ => return st
-      | .none, _ => throw s!"mise.toml:{ln}: key outside a section — «{line}»"
-    throw s!"mise.toml:{ln}: unrecognized value for «{key}» — «{val}»"
-
-def parseMise (text : String) : Except String Mise := do
-  let mut st : MiseSt := {}
-  let mut ln := 0
-  for raw in text.splitOn "\n" do
-    ln := ln + 1
-    st ← miseStep ln raw st
-  if st.inRun.isSome then throw "mise.toml: unterminated array"
-  let done := flushMise st
-  return { tools := done.tools.reverse, tasks := done.tasks.reverse }
-
-/-! ## The `lakefile.toml` grammar -/
+/-! ## The lakefile's executables -/
 
 structure LeanExe where
   name : String
@@ -365,78 +233,173 @@ structure LeanExe where
   supportInterpreter : Bool
 deriving Inhabited
 
-inductive Block where
-  | top
-  | lib
-  | exe
-deriving DecidableEq
+/-! ## The TOML door
 
-structure LakeSt where
-  block : Block := .top
-  cur : Option LeanExe := none
-  /-- Reversed while accumulating. -/
-  exes : List LeanExe := []
+One parser, two files, and a decoder per shape. Every refusal the line
+grammars made is still made here — it just has a key and a syntax
+reference to point at instead of a line and a substring. -/
 
-def flushLake (st : LakeSt) : LakeSt :=
-  match st.cur with
-  | none => st
-  | some e => { st with cur := none, exes := e :: st.exes }
+namespace Cfg
 
-def lakeStep (ln : Nat) (raw : String) (st : LakeSt) : Except String LakeSt := do
-  let line := trimmed raw
-  if line.isEmpty || line.startsWith "#" then return st
-  if line == "[[lean_lib]]" then
-    return { flushLake st with block := .lib }
-  if line == "[[lean_exe]]" then
-    return { flushLake st with
-             block := .exe,
-             cur := some { name := "", srcDir := none, root := none,
-                           supportInterpreter := false } }
-  if line.startsWith "[" then
-    throw s!"lakefile.toml:{ln}: unknown section header — «{line}»"
-  match splitKV line with
-  | none => throw s!"lakefile.toml:{ln}: unrecognized line — «{line}»"
-  | some (key, val) =>
-    if isQuoted val then
-      let v := unquote val
-      match st.block, st.cur with
-      | .exe, some e =>
-        if key == "name" then return { st with cur := some { e with name := v } }
-        else if key == "srcDir" then return { st with cur := some { e with srcDir := some v } }
-        else if key == "root" then return { st with cur := some { e with root := some v } }
-        else throw s!"lakefile.toml:{ln}: unknown lean_exe key «{key}»"
-      | .exe, none => throw s!"lakefile.toml:{ln}: lean_exe key with no block — «{line}»"
-      | .lib, _ =>
-        if key == "name" || key == "srcDir" then return st
-        else throw s!"lakefile.toml:{ln}: unknown lean_lib key «{key}»"
-      | .top, _ =>
-        if key == "name" then return st
-        else throw s!"lakefile.toml:{ln}: unknown package key «{key}»"
-    if val == "true" || val == "false" then
-      match st.block, st.cur with
-      | .exe, some e =>
-        if key == "supportInterpreter" then
-          return { st with cur := some { e with supportInterpreter := val == "true" } }
-        else throw s!"lakefile.toml:{ln}: unknown lean_exe flag «{key}»"
-      | _, _ => throw s!"lakefile.toml:{ln}: flag «{key}» outside a lean_exe"
-    if val.startsWith "[" && val.endsWith "]" then
-      match st.block with
-      | .exe => throw s!"lakefile.toml:{ln}: array key «{key}» in a lean_exe"
-      | _ =>
-        if key == "defaultTargets" || key == "globs" then return st
-        else throw s!"lakefile.toml:{ln}: unknown array key «{key}»"
-    throw s!"lakefile.toml:{ln}: unrecognized value for «{key}» — «{val}»"
+open Lake Lake.Toml
 
-def parseLakefile (text : String) : Except String (List LeanExe) := do
-  let mut st : LakeSt := {}
-  let mut ln := 0
-  for raw in text.splitOn "\n" do
-    ln := ln + 1
-    st ← lakeStep ln raw st
-  let exes := (flushLake st).exes.reverse
-  match exes.find? (·.name.isEmpty) with
-  | some _ => throw "lakefile.toml: a [[lean_exe]] block declares no `name`"
-  | none => return exes
+/-- One configuration file, with the map its parser built. The map is
+what turns a decode error's syntax reference back into the line number
+the refusals have always named. -/
+structure Source where
+  name : String
+  fileMap : Lean.FileMap
+
+/-- Where a refused key sits, spelled the way every other refusal in
+this file spells a position. -/
+def Source.spot (src : Source) (ref : Lean.Syntax) : String :=
+  match ref.getPos? with
+  | some p => s!"{src.name}:{(src.fileMap.toPosition p).line}"
+  | none => src.name
+
+/-- Run a decoder over a parsed table, rendering its errors as the
+ledger's refusals: where the offending key is, then what is wrong with
+it. Several errors join on one line — the decoders abort on the first,
+so more than one is possible only where a decoder deliberately keeps
+going. -/
+def run (src : Source) (x : EDecodeM α) : Except String α :=
+  let report (es : Array DecodeError) : String :=
+    String.intercalate "; " (es.toList.map fun e => s!"{src.spot e.ref}: {e.msg}")
+  match x #[] with
+  | .ok a es => if es.isEmpty then .ok a else .error (report es)
+  | .error _ es => .error (report es)
+
+/-- Parse one configuration text and decode it, answering a refusal as
+a VALUE. The controls need a refusal they can look at; the fixture
+action turns it into an `IO` error with `IO.ofExcept`. -/
+def readE (name text : String) (decode : Table → EDecodeM α) :
+    IO (Except String α) := do
+  let ictx := Lean.Parser.mkInputContext text name
+  match ← (loadToml ictx).toBaseIO with
+  | .error log =>
+    let lines ← log.toList.mapM (·.toString)
+    return .error
+      (s!"{name}: not TOML — " ++
+        String.intercalate " " (lines.map (·.trimAscii.toString)))
+  | .ok t => return run { name, fileMap := ictx.fileMap } (decode t)
+
+/-- The same, throwing. -/
+def read (name text : String) (decode : Table → EDecodeM α) : IO α := do
+  IO.ofExcept (← readE name text decode)
+
+/-- The key a table row carries. Every key this ledger addresses is one
+simple component — `gen:ci` is quoted in the file and simple in the
+tree — so a compound key is a shape the ledger does not admit. -/
+def simpleKey : Lean.Name → Option String
+  | .str .anonymous s => some s
+  | _ => none
+
+/-- THE refusal, and the whole discipline the line grammars carried: a
+key the ledger does not read is a key it will not silently drop,
+because the drift the ledger exists to catch would hide exactly
+there. -/
+def known (what : String) (keys : List Lean.Name) (t : Table) :
+    EDecodeM Unit := do
+  for (k, v) in t.items do
+    unless keys.contains k do
+      throwDecodeErrorAt v.ref
+        s!"unknown {what} key «{ppKey k}» — the ledger reads \
+{String.intercalate ", " (keys.map (·.toString))} and refuses the rest"
+
+/-- A table's rows under the simple names this ledger addresses them
+with, in the file's own order. -/
+def rows (what : String) (t : Table) : EDecodeM (List (String × Value)) :=
+  t.items.toList.mapM fun (k, v) =>
+    match simpleKey k with
+    | some s => pure (s, v)
+    | none =>
+      throwDecodeErrorAt v.ref s!"{what} «{ppKey k}» is not a simple name"
+
+/-! ### `mise.toml` -/
+
+/-- The task keys the file writes and this ledger reads. `description`
+is admitted and not transcribed — it is prose for a human running the
+task, and the ledger describes structure. -/
+def taskKeys : List Lean.Name :=
+  [`description, `dir, `run, `sources, `outputs]
+
+/-- One task. `run` is one command or a list of them — both shapes are
+in the file and both mean the same list — and an absent `sources` or
+`outputs` is UNDECLARED, transcribed as the empty list rather than as
+an empty relation. -/
+def task (name : String) (v : Value) : EDecodeM MiseTask := do
+  let t ← v.decodeTable
+  known "task" taskKeys t
+  let dir ← t.decode? (α := String) `dir
+  let commands : Array String ← match t.find? `run with
+    | none => pure #[]
+    | some r => Value.decodeArrayOrSingleton r
+  let sources ← t.decode? (α := Array String) `sources
+  let outputs ← t.decode? (α := Array String) `outputs
+  return { name, dir, commands := commands.toList,
+           sources := (sources.getD #[]).toList,
+           outputs := (outputs.getD #[]).toList }
+
+/-- The top-level sections. `[settings]` carries estate-wide build
+policy (the content-hash freshness relation): its keys are policy, not
+task structure, so it is admitted and not transcribed — but the section
+must be KNOWN, or the ledger refuses the file it is meant to
+describe. -/
+def miseKeys : List Lean.Name := [`tools, `settings, `tasks]
+
+def mise (t : Table) : EDecodeM Mise := do
+  known "top-level" miseKeys t
+  let tools ← match t.find? `tools with
+    | none => pure []
+    | some v => do
+      (← rows "tool" (← v.decodeTable)).mapM fun (k, tv) =>
+        return (k, ← tv.decodeString)
+  let tasks ← match t.find? `tasks with
+    | none => pure []
+    | some v => do
+      (← rows "task" (← v.decodeTable)).mapM fun (k, tv) => task k tv
+  return { tools, tasks }
+
+/-! ### `lakefile.toml` -/
+
+def packageKeys : List Lean.Name :=
+  [`name, `defaultTargets, `lean_lib, `lean_exe]
+
+def libKeys : List Lean.Name := [`name, `srcDir, `globs]
+
+def exeKeys : List Lean.Name := [`name, `srcDir, `root, `supportInterpreter]
+
+/-- One `[[lean_exe]]` block. The ledger reads the four keys the join
+needs and refuses a fifth: an executable configured in a way the ledger
+cannot describe is exactly the drift it exists to report. -/
+def exe (v : Value) : EDecodeM LeanExe := do
+  let t ← v.decodeTable
+  known "lean_exe" exeKeys t
+  let some name ← t.decode? (α := String) `name
+    | throwDecodeErrorAt v.ref "a [[lean_exe]] block declares no `name`"
+  let srcDir ← t.decode? (α := String) `srcDir
+  let root ← t.decode? (α := String) `root
+  let supportInterpreter ← t.decode? (α := Bool) `supportInterpreter
+  return { name, srcDir, root,
+           supportInterpreter := supportInterpreter.getD false }
+
+/-- Every `[[lean_lib]]` block, read ONLY to refuse a key the ledger
+does not know. The libraries are not in the document — the join is over
+executables — but a library configured in an unread way is still drift,
+and passing over it in silence is what this ledger does not do. -/
+def lib (v : Value) : EDecodeM Unit := do
+  known "lean_lib" libKeys (← v.decodeTable)
+
+def lakefile (t : Table) : EDecodeM (List LeanExe) := do
+  known "package" packageKeys t
+  match t.find? `lean_lib with
+  | none => pure ()
+  | some v => do for l in ← v.decodeValueArray do lib l
+  match t.find? `lean_exe with
+  | none => return []
+  | some v => do (← v.decodeValueArray).toList.mapM exe
+
+end Cfg
 
 /-! ## The task graph -/
 
@@ -593,6 +556,13 @@ the two chains must be the same set, or CI and local regenerate \
 different trees"
     | none => .ok ()
 
+/-- The ledger's emitted header. The document declared no version
+before this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "envledger"
+  module := "library/cas/tools/EnvLedger.lean"
+
 def document (m : Mise) (pins : List (String × String)) (exes : List LeanExe) :
     Except String String := do
   checkCiForcing m.tasks
@@ -626,7 +596,7 @@ def document (m : Mise) (pins : List (String × String)) (exes : List LeanExe) :
     match m.tasks.find? (drives e.name) with
     | some t => if t.outputs.isEmpty then some e.name else none
     | none => none)
-  return Cas.Json.render (.obj [
+  return Cas.Json.render (emitted.obj [
     ("ledger", .str "environment"),
     ("tools", .obj (m.tools.mergeSort (fun a b => a.1 < b.1) |>.map
       fun (k, v) => (k, Value.str v))),
@@ -649,24 +619,19 @@ def readAt (p : System.FilePath) : IO String := do
   try IO.FS.readFile p
   catch e => throw (IO.userError s!"cannot read {p}: {e}")
 
-def liftE (e : Except String α) : IO α :=
-  match e with
-  | .error msg => throw (IO.userError msg)
-  | .ok a => pure a
-
 /-- The ledger as the driver's single fixture. Every read and every
 refusal happens HERE — inside the action the driver forces only after
 arguments parse. -/
 def fixtures : IO (List Gate.Fixture) := do
   let miseText ← readAt (repoRoot / "mise.toml")
-  let m ← liftE (parseMise miseText)
+  let m ← Cfg.read "mise.toml" miseText Cfg.mise
   let lakeText ← readAt "lakefile.toml"
-  let exes ← liftE (parseLakefile lakeText)
+  let exes ← Cfg.read "lakefile.toml" lakeText Cfg.lakefile
   let pins : List (String × String) ← toolchainFiles.mapM fun p => do
     let text ← readAt (repoRoot / System.FilePath.mk p)
-    let pin ← liftE (parseToolchain p text)
+    let pin ← IO.ofExcept (parseToolchain p text)
     return (p, pin)
-  let doc ← liftE (document m pins exes)
+  let doc ← IO.ofExcept (document m pins exes)
   let distinct := (pins.map (·.2)).eraseDups.length
   return [⟨outPath, doc,
     s!"{m.tasks.length} tasks, {exes.length} exes, {pins.length} pins \
@@ -720,13 +685,15 @@ def selfTest : IO Unit := do
     match parseToolchain "planted/lean-toolchain" "leanprover/lean4 v4.33.1\n" with
     | .error msg => plantedControl label1 true msg
     | .ok pin => plantedControl label1 false s!"admitted «{pin}»"
-  -- Rule 2: the mise grammar refuses a `dir` it cannot read, rather
-  -- than yielding a task whose dir is silently absent.
-  let label2 := "mise refuses a `dir` the grammar misses"
-  let planted := miseFixture.replace "dir = \"{{config_root}}/library/cas\""
-                                     "dir = '{{config_root}}/library/cas'"
+  -- Rule 2: an unknown task key REFUSES, rather than yielding a task
+  -- whose `dir` is silently absent. This is the rule the line grammar
+  -- enforced by refusing an unmatched line; the TOML parser will read
+  -- any well-formed key, so the refusal now lives in the decoder and
+  -- the control is aimed there.
+  let label2 := "mise refuses a task key the ledger does not read"
+  let planted := miseFixture.replace "dir = " "directory = "
   let c2 ← do
-    match parseMise planted with
+    match ← Cfg.readE "mise.toml" planted Cfg.mise with
     | .error msg => plantedControl label2 true msg
     | .ok m =>
       let seen := ((m.tasks.find? (fun t => t.name == demoTask)).bind (·.dir)).getD "<none>"
@@ -734,9 +701,10 @@ def selfTest : IO Unit := do
   -- Rule 3: an executable with no driving task lands in `undriven`
   -- (and, having no gate either, in `ungated`).
   let c3 ← do
-    let m ← liftE (parseMise miseFixture)
-    let exes ← liftE (parseLakefile
-      "[[lean_exe]]\nname = \"demo\"\n\n[[lean_exe]]\nname = \"ghost\"\n")
+    let m ← Cfg.read "mise.toml" miseFixture Cfg.mise
+    let exes ← Cfg.read "lakefile.toml"
+      "[[lean_exe]]\nname = \"demo\"\n\n[[lean_exe]]\nname = \"ghost\"\n"
+      Cfg.lakefile
     let ghostDriven := m.tasks.any (drives "ghost")
     let ghostGated := m.tasks.any (gates "ghost")
     let demoDriven := m.tasks.any (drives "demo")
@@ -747,7 +715,7 @@ def selfTest : IO Unit := do
   -- refuses the document rather than being inferred into one.
   let label4 := "an undeclared task refuses the document"
   let c4 ← do
-    let m ← liftE (parseMise miseFixture)
+    let m ← Cfg.read "mise.toml" miseFixture Cfg.mise
     match document m [] [] with
     | .error msg => plantedControl label4 true msg
     | .ok _ =>
@@ -759,9 +727,9 @@ def selfTest : IO Unit := do
   -- than as a silent re-run.
   let label5 := "an emitter with no declared outputs lands in unjoined"
   let c5 ← do
-    let m ← liftE (parseMise miseFixture)
+    let m ← Cfg.read "mise.toml" miseFixture Cfg.mise
     let undeclaredMise := miseFixture.replace "outputs = [\"demo/out.json\"]\n" ""
-    let m' ← liftE (parseMise undeclaredMise)
+    let m' ← Cfg.read "mise.toml" undeclaredMise Cfg.mise
     let joined := ((m.tasks.find? (drives "demo")).map (·.outputs)).getD []
     let hole := ((m'.tasks.find? (drives "demo")).map (·.outputs)).getD []
     plantedControl label5 (joined == ["demo/out.json"] && hole.isEmpty)
@@ -784,7 +752,7 @@ batched other={batchedGate "other" batched}, looped demo={batchedGate "demo" loo
   let label7 := "a gen task missing from gen:ci refuses the document"
   let c7 ← do
     let drifted := miseFixture.replace "  \"mise run --force gen:demo\",\n" ""
-    let m ← liftE (parseMise drifted)
+    let m ← Cfg.read "mise.toml" drifted Cfg.mise
     match checkCiForcing m.tasks with
     | .error msg => plantedControl label7 true msg
     | .ok _ => plantedControl label7 false "admitted a gen chain gen:ci does not force"

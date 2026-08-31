@@ -1569,6 +1569,12 @@
     "refusedCodes": 35,
     "values": 103
   },
+  "emitted": {
+    "emitter": "verdicts",
+    "module": "library/cas/tools/Verdicts.lean",
+    "schemaVersion": 1,
+    "toolchain": "4.33.1"
+  },
   "restrictions": ["non-recursive: Ast has no Suspend/Reference constructor; a non-empty references table is a refusal case, never an admitted one (survey B3, ruling 2)", "non-float: Cas.Json.Value has no float, so no float triple is writable at all (ruling 15, the float ceiling)", "no undiscriminated-union values: El of an undiscriminated union is Empty, so Lean has no verdict for such a value; those codes carry admission verdicts only", "no declaration values: El of a general declaration is Empty (the named declEl obligation); Date/URL/Option carry admission verdicts only", "values are canonically spelled: every candidate is canonValue-normalized before its verdict is computed, so object key order is never the thing under test", "no enum values: El of an enum is Empty (the named enumEl obligation) — WF admits alias members, so the index a value carries would be a function of member order rather than of the value; enums carry admission verdicts only", "no tuple values: El of a tuple is Empty (the named tupleEl obligation) — an absent optional element shortens a JSON array rather than leaving a hole, so a non-trailing optional has no positional encoding at all; tuples carry admission verdicts only"],
   "revision": 1
 }

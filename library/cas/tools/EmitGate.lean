@@ -1,4 +1,5 @@
 import Cas.Backend.Admission
+import Cas.Backend.Ts
 import Gate
 
 /-!
@@ -20,8 +21,24 @@ argument overrides it. -/
 def defaultTarget : System.FilePath :=
   "../effects/src/cas/generated/SchemaAdmission.ts"
 
+/-- The table's emitted header. The module declared no version before
+this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "emitgate"
+  module := "library/cas/tools/EmitGate.lean"
+
+/-- The table, headed. The module is `Cas.Backend.Admission`'s, so the
+header is appended to its doc block rather than spelled in this tool —
+the table's prose belongs to the value, the provenance to the run that
+printed it. -/
+def rendered : String :=
+  Cas.Backend.Ts.Render.module Cas.Backend.Ts.house0
+    { Cas.Backend.Admission.module with
+      header := Cas.Backend.Admission.module.header ++ emitted.headerLines }
+
 def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
-  return [⟨target.getD defaultTarget, Cas.Backend.Admission.rendered,
+  return [⟨target.getD defaultTarget, rendered,
     s!"{Cas.Backend.Admission.nodes.length} nodes, \
 {Cas.Backend.Admission.clauses.length} clauses"⟩]
 

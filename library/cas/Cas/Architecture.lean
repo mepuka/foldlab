@@ -112,31 +112,62 @@ def foldlabCas : Architecture where
     ⟨"pathReader", [.read],
       "any host serving bytes at a path; writes do not compile"⟩ ]
 
-/-! ## The shape's own laws -/
+/-! ## The shape's own laws
+
+Five statements about `foldlabCas`, and they are THEOREMS rather than
+`#guard`s. The difference is not the checking — `decide` and `#guard`
+run the same decision procedure — but the record: a theorem is a named
+declaration of the library, so it earns a row in the surface ledger and
+an entry in the axiom census, and a claim the estate makes about its
+own shape is then in the ledger with every other claim rather than in
+a comment beside one. A `#guard` checks and says nothing afterwards.
+
+`decide` is the whole proof of each: every statement is a closed
+computation over a finite value, and it is that finiteness — not any
+argument — that makes the claims checkable at all. -/
 
 def capsSubset (xs ys : List Capability) : Bool := xs.all (ys.contains ·)
 
--- No law needs a capability no seam carries.
-#guard foldlabCas.laws.all fun l => capsSubset l.needs foldlabCas.seams
+/-- No law needs a capability no seam carries: the seam set is the
+whole of what the plane offers, so a law asking for more would be a law
+nothing can serve. -/
+theorem lawsNeedOnlySeams :
+    foldlabCas.laws.all fun l => capsSubset l.needs foldlabCas.seams := by
+  decide
 
--- No backend provides a capability no seam carries.
-#guard foldlabCas.backends.all fun b => capsSubset b.provides foldlabCas.seams
+/-- No backend provides a capability no seam carries: a backend
+offering more than the seams name would be offering it through no
+seam. -/
+theorem backendsProvideOnlySeams :
+    foldlabCas.backends.all fun b => capsSubset b.provides foldlabCas.seams := by
+  decide
 
--- Read-only honesty: the path reader provides exactly the read seam.
-#guard (foldlabCas.backends.find? (·.name = "pathReader")).map (·.provides)
-  = some [.read]
+/-- Read-only honesty: the path reader provides exactly the read seam.
+Any host serving bytes at a path is a store the laws above can read
+from and nothing more — writes do not compile. -/
+theorem readOnlyHonesty :
+    (foldlabCas.backends.find? (·.name = "pathReader")).map (·.provides)
+      = some [.read] := by
+  decide
 
--- Roots honesty: the key-value backend provides the byte plane and no
--- roots seam, because a key-value store carries no key enumeration —
--- publishing over it does not compile.
-#guard (foldlabCas.backends.find? (·.name = "kvs")).map (·.provides)
-  = some [.read, .write]
+/-- Roots honesty: the key-value backend provides the byte plane and no
+roots seam, because a key-value store carries no key enumeration —
+publishing over it does not compile. -/
+theorem rootsHonesty :
+    (foldlabCas.backends.find? (·.name = "kvs")).map (·.provides)
+      = some [.read, .write] := by
+  decide
 
--- Reads ride the loader: the load law and every typed read need only
--- the read seam, so the read-only backend serves them all.
-#guard (foldlabCas.laws.find? (·.name = "loader")).map (·.needs) = some [.read]
-#guard ["loader", "valueGet", "graphClosure", "graphVerify"].all fun name =>
-  (foldlabCas.laws.find? (·.name = name)).map (·.needs) = some [.read]
+/-- Reads ride the loader: the load law and every typed read need only
+the read seam, so the read-only backend serves them all. The first
+conjunct is the load law on its own — it is the one the other three
+factor through, and it is stated separately so that a change narrowing
+it is a change to a named claim. -/
+theorem readsRideTheLoader :
+    (foldlabCas.laws.find? (·.name = "loader")).map (·.needs) = some [.read] ∧
+      ["loader", "valueGet", "graphClosure", "graphVerify"].all fun name =>
+        (foldlabCas.laws.find? (·.name = name)).map (·.needs) = some [.read] := by
+  decide
 
 /-! ## The capability matrix — the shared pin -/
 

@@ -34,13 +34,17 @@ srcDir = "examples"
 # The shared tool substrate every tool root imports: `Gate` is the
 # driver (fixtures in, emit/--check/--json out) and `Walk` is the
 # single environment walk the projections over the compiled library
-# share. Declared as a library so the exe roots can import both; it is
-# not a default target because the exes that drive it are what
-# `check:cas` builds.
+# share. `Obl` (the docstring obligation harvester) and `Law` (the
+# ruling registry and its join) joined them when the debt projection
+# needed to read what the obligation and law ledgers read: two exe
+# roots cannot import one another — each must declare `main` — so a
+# projection shared between them lives in this library. Declared as a
+# library so the exe roots can import all four; it is not a default
+# target because the exes that drive it are what `check:cas` builds.
 [[lean_lib]]
 name = "Gate"
 srcDir = "tools"
-globs = ["Gate", "Walk"]
+globs = ["Gate", "Walk", "Obl", "Law"]
 
 # The vector emitter: `lake exe vectors` regenerates the committed
 # conformance fixtures under vectors/; `--check` is the byte-identity
@@ -154,6 +158,37 @@ srcDir = "tools"
 root = "Laws"
 supportInterpreter = true
 
+# The debt projection: `lake exe debts` collects everything the library
+# owes — the docstring obligations still `owed`/`parked`/`pin pending`,
+# and the ruling registry's UNBOUND rows — into surface/cas-debts.json;
+# `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "debts"
+srcDir = "tools"
+root = "Debts"
+supportInterpreter = true
+
+# The axiom gate: `lake exe axioms` collects every declaration's axiom
+# dependencies over the same import closure the surface ledger walks,
+# emits surface/cas-axioms.json for the ones that have any, and refuses
+# a dependency outside the clean set (`sorryAx`, `ofReduceBool`,
+# anything else); `--check` is the byte-identity gate as well.
+[[lean_exe]]
+name = "axioms"
+srcDir = "tools"
+root = "Axioms"
+supportInterpreter = true
+
+# The meta-schema emitter: `lake exe emitmeta` declares the row and file
+# shapes of the generated ledgers as terms of a closed schema AST and
+# prints each one twice — a JSON Schema per artifact, and the AST itself
+# plus the three shape values as TypeScript; `--check` is the
+# byte-identity gate over all four.
+[[lean_exe]]
+name = "emitmeta"
+srcDir = "tools"
+root = "MetaShapes"
+
 # The lift-manifest emitter: `lake exe emitlift` regenerates the
 # effect-lift lane's rule manifest (the R11 interchange document the
 # recognition engines consume) at the target the tool bakes in (a
@@ -173,6 +208,16 @@ root = "EmitLift"
 name = "emitgrammar"
 srcDir = "tools"
 root = "EmitGrammar"
+
+# The architecture emitter: `lake exe emitarchitecture` regenerates the
+# effects package's generated self-description — the data vocabulary,
+# the seams, the laws, the backends and the capability-matrix pin, as
+# data — at the target the tool bakes in (a positional path overrides
+# it); `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "emitarchitecture"
+srcDir = "tools"
+root = "EmitArchitecture"
 
 # The admission-map emitter: `lake exe admissionmap` regenerates the
 # ACC-1 carrier-adequacy table under conformance/ from
@@ -195,6 +240,17 @@ root = "AdmissionMap"
 name = "envledger"
 srcDir = "tools"
 root = "EnvLedger"
+
+# The trust census: `lake exe trust` classifies every TypeScript file
+# the effects package SHIPS (`src/` and `bin/`; the test tree is the
+# census's input, not its subject) into the four strata — emitted from
+# the Lean model, model-gated by a conformance artifact, imported by a
+# test, or bare — into `surface/cas-trust.json`. File reading only, so
+# no `supportInterpreter`; `--check` is the byte-identity gate.
+[[lean_exe]]
+name = "trust"
+srcDir = "tools"
+root = "TrustCensus"
 
 # The estate-native materializer: `lake exe materialize` reads the
 # committed schema payloads back through the ingestion door and prints

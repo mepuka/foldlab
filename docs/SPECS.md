@@ -79,6 +79,19 @@ deleted.
 | [.staging/ornamentation/WASM-CANVAS.md](../.staging/ornamentation/WASM-CANVAS.md) | canvas stack | Decision 31(e) research: DOM-first position, WebGL2 the escalation of record, Rust-WASM UI refused (a11y + second-emitter cost); WASM belongs in the store not the renderer; falsifiable trigger + three owed measurements |
 | [.staging/operational-structure/AUTH-AUDIT.md](../.staging/operational-structure/AUTH-AUDIT.md) | auth posture | Decision 31(c) full technical audit: two BROKEN-SILENT (unreadable config serves gated store open; --allow-host transitively grants origin write trust) — both routed to the daemon fix pass; secrets CLEAN across full history (23,466 objects); rotation of the non-expiring Turso RW token URGENT (operator) |
 | [.staging/research-backlog/agent-streaming-integrations.md](../.staging/research-backlog/agent-streaming-integrations.md) | streaming/integrations | Decision 31(a) research: pi dev studied (8 ranked borrows — telemetry vocabulary as emitted artifact first); protocol landscape; the sketch — since(n) beats every surveyed resumption mechanism, cas_word lands pull-first, push is additive into §13's advisory plane, never /mcp; extension = manifest row not plugin API; 9 refusals; 11 ruling asks |
+| [.staging/model-guided-development/SOURCE-STUDY.md](../.staging/model-guided-development/SOURCE-STUDY.md) | model scout | Staged strategy + source study (2026-08-30): the model-scout decision, eight operating strategies, source-by-source notes; 14 artifacts pinned with receipts; awaiting grill |
+| [.staging/model-guided-development/IMPLEMENTATION-PLAN.md](../.staging/model-guided-development/IMPLEMENTATION-PLAN.md) | model scout | Staged coded-kernel plan (MGS-001…013): event-sourced evidence kernel, 12 required laws, milestones M0–M6, 24-packet evaluation, 20% adoption bar; ratification stops explicit; awaiting grill |
+| [.staging/model-guided-development/LOOP.md](../.staging/model-guided-development/LOOP.md) | model scout | OPERATIONAL 2026-08-30 (operator: CAS APIs not ready — run the loop by hand): the ten-step scout run as agent procedure; third role beside breaker/implementer; run-ledger duty is the measurement apparatus |
+| [.staging/model-guided-development/BANK.md](../.staging/model-guided-development/BANK.md) | model scout | OPERATIONAL 2026-08-30: outcome-bank + blinded-benchmark data law over tracked markdown (depth-3 ruling honored); nine families seeded from the archived conformance registry's own vocabulary; 10 counterexamples, 8 patterns, 36 mined bench cases |
+| [.staging/model-guided-development/ANNOTATE.md](../.staging/model-guided-development/ANNOTATE.md) | model scout | OPERATIONAL 2026-08-30: gpt-5.6-luna harness law (read-only sandbox, schema-constrained, receipted; canonical script embedded); first live run receipted; scout-annotator ROLE EXTENSION row landed in TOOLS.md same day (ratifies at commit) |
+| [.staging/model-guided-development/GRILL.md](../.staging/model-guided-development/GRILL.md) | model scout | Vocabulary grill record (2026-08-30, operator go-ahead): nine family names confirmed as registry reuse (Registry.lean #guard); `constructors`→`templates` renamed lane-wide; checker-naming rule added; minting manifest for promotion; SOURCE-STUDY/IMPLEMENTATION-PLAN ratification explicitly not covered |
+| [.staging/frontend-trunk/COLUMNS.md](../.staging/frontend-trunk/COLUMNS.md) | front end | Trunk column orientation (2026-08-30): columnBy/column/unregistered algebra (partition operator = algebra, classifier = the view's; sorts view privileged by ofTag_wireTag); the naming homomorphism (free monoid over grammar identifiers, dot concatenation) + full 11-column inventory persisted, emitted as `names.json` (alias discipline: semantic names alias derived strings, never replace); two-audience positioning statement (boundary law: the effects correspondence is BUILT, joint = defunctionalized code points); 4 ruling asks (entry.agent, git refinement, fixed column order, hypotenuse-by-height) |
+| [.staging/frontend-trunk/GEOMETRY.md](../.staging/frontend-trunk/GEOMETRY.md) | front end | Trunk layout algebra + derivation programme (2026-08-30): two regimes (absolute = monotone fold, positions immutable; normalized = pure function of a cut) under the shared law "motion only at named cuts"; DOI/recency-compression as formulas; squares ruled presence marks (Cleveland–McGill/Stevens); replay-driven layout studies (the word is the laboratory); 12-row prior-art survey pin-PENDING (Draco flagship — constraint-checked view specs harmonize with the datalog direction); ruling asks G1–G4 |
+| [.staging/frontend-trunk/JUDGE.md](../.staging/frontend-trunk/JUDGE.md) | front end | The semantic judge (2026-08-30): human meaning functionalized as frozen, receipted LLM judgments over the derived names — an UNINTERPRETED function like H, empty trust contribution, judge-hypothesis lattice parallel to the hash lattice; "functor" earned at Level 1 (Compositional = Frege's principle of the judge → accepted structures form a subalgebra; blame bisection); panels (aggregator decides Level-1 survival); anti-smuggling law + judge-pin schema; the fold law (thesis-candidate sentence); Lean face `Cas/Grammar/Judge.lean`; ruling asks J1–J7 |
+| [.staging/frontend-trunk/RESEARCH.md](../.staging/frontend-trunk/RESEARCH.md) | front end | The concordance (2026-08-30, four reader briefs): the circle drawn — CRDTLog→store algebra→naming→judge→Gregory–Prest (interpretation functors: folds are an IFF, recovery "hidden but not lost", isolating pairs)→Xiong LRH (FCA in embedding space; cheap panel ≈75–83% of expensive judge)→Asperti et al. (error landscapes, codomain critique, de Bruijn 5–10, pass@k=union); aggregator theorem corroborated 3 independent ways; lattice re-rank RULED (decision 38); theorem backlog T-J1..7 (RUN-003 material); decidability boundary RULED (decision 39); anti-smuggling scores per paper; adopt/refuse vocabulary; 4 receipts (2 local-pinned, 2 pending copies); J10 open |
+| [.staging/frontend-trunk/STANDUP.md](../.staging/frontend-trunk/STANDUP.md) | front end | The UI standup plan (2026-08-30, research pinned): formalize laws not arithmetic — names DONE (names.json); views land as `Word.View` (view = monoid hom from the word; run_append = incremental render; column/unregistered/height/prod inhabitants); LLM calls land as `Rewriter` (NEW kind beside untouched Judge: pipelines = andThen, `Into` = schema-forced output, `Idempotent` = canonicalizer law w/ CX-003); geometry stays TS (one engine over the six-field spec, motion only at cuts) with the measured-monoid layout law formalizable on demand; interactions arc previewed (programs are already content); asks S1–S2 |
+| [.staging/operational-structure/META-OUTPUTS.md](../.staging/operational-structure/META-OUTPUTS.md) | reflexive tooling | Ledger-apparatus proposal (2026-08-30, grounded in the day's landing friction): developer-facing D1 DEBTS projection (one pane merging owed markers + 28 unbound laws + pending receipts, on structured `owed(ID)`/`discharges(ID)` markers), D2 surface diff-by-name, D3 anchor checker (C5 as lint); prover-facing A1 `slice` proof-brief extractor, A2 `mentions` inverted index (the proof-plane EDB — unifies with the Datalog direction), A3 axioms-as-gate (replaces the scratch-file ritual), A4 unbound-laws as scout targets; vacuity census + name-length budget; asks M1–M2 |
+| [.staging/algebraic-review/store-crdt.md](../.staging/algebraic-review/store-crdt.md) | store algebra | Staged direction (2026-08-30): the store's persistent state shown CRDT-by-construction (grow-only, no removal — the CRDTLog paper's hard case unconstructible; paper receipt pinned local, upstream pending); free Datalog reading (CALM; semi-naive deltas; no deletion ⇒ no DRed) + the rules-as-spec API emission direction; both ruling asks RULED same day (decisions 34/35); RUN-002 scout handoff EXECUTED and its T1–T3 core LANDED kernel-checked in `Cas/IR/Join.lean` same day (join realized by word append — no `Store.join` sort; `Compatible`/`Sub` minted as defs, CONTEXT drafts staged; axiom ceiling propext+Quot.sound); T5/T6 remain proposed |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -464,3 +477,83 @@ records the 2026-08-29 session rulings that cut across specs.
     owns no lane and no files; the ornament synthesis and images are
     optional input, not a parallel workstream. COORDINATION.md
     rewritten to match.
+34. **The name-resolution law** (2026-08-30, "I agree with both
+    asks"; asked by
+    [store-crdt.md](../.staging/algebraic-review/store-crdt.md)):
+    name resolution is a QUERY at the read boundary — stored naming
+    stays grow-only annotation nodes, nothing rebinds. The query is
+    multi-valued with fail-closed ties: it surfaces ALL maximal
+    claims for a name; a tie is SHOWN, never silently picked;
+    single-answer surfaces present the set or refuse with a typed
+    "ambiguous name" naming every claimant. A deterministic
+    tiebreak may exist only as an explicitly-labeled projection of
+    the multi-valued answer, never as the silent default.
+    Last-writer-wins is REFUSED: no wall-clock trust in a store
+    that otherwise trusts only content. Why: the 2026-08-30 audit
+    found stored state monotone everywhere — the CRDT-by-
+    construction reading holds — and this closes the one unpinned
+    read-boundary law without touching storage. Binding on every
+    future resolution surface; no current code violates it.
+35. **The replication target** (same breath): the store replicates
+    as what it is — objects shipped and UNIONED through the
+    existing seams (`ByteReader`/`ByteWriter`/`RootStore`) against
+    an S3-compatible object store; one immutable object per
+    address, roots as zero-byte keys. SQLite is demoted to a
+    derived local index, rebuildable from the object plane.
+    Litestream stays the admitted short-term mechanism
+    (single-writer); its owed Wave-3 lag metric is superseded in
+    shape — replica lag becomes a missing-object SET DIFFERENCE,
+    measurable per object by the read law. cr-sqlite and LiteFS
+    refused: machinery for conflicts the store cannot have. Why:
+    convergence by the join algebra
+    ([store-crdt.md](../.staging/algebraic-review/store-crdt.md)
+    T1/T3/T5) instead of by replication protocol; multi-writer
+    safety by construction. Rides the robustness lane's
+    adopt-vs-build table (decisions 22/23) for landing order.
+36. **The judge architecture** (2026-08-30, spoken): (a) THE HUMAN
+    IS THE JUDGE OF RECORD — the human's judgment is the view being
+    optimized for, and the user's control is the product value;
+    (b) NO MODEL-ON-MODEL FEEDBACK LOOPS — the optimization loop
+    closes only through the human; model judgments never optimize
+    against model judgments; (c) the operating shape is ONE LARGE
+    MODEL plus FINITE small-judge panels (never unbounded), panels
+    sampling their inputs from the sort lattice over the
+    content-addressed store; (d) VISIBILITY RULE: every LLM
+    completion is visible, with where its data came from — surfaced
+    provenance, human-facing, always; (e) THE BLINDING ABSTRACTION:
+    the large model must not know that material it receives derives
+    from smaller models' judgments — aggregates reach it as
+    provenance-ERASED data while the store keeps full provenance for
+    the human. The dual discipline: the human sees all provenance;
+    the large model sees none of the judgment-attribution.
+    Noninterference is the owed theorem shape (the large judge's
+    output well-defined through the erasure quotient); (f) small
+    models enter only as PINNED SPECIFIC ARCHITECTURES per the
+    judge-pin schema; (g) a WHITE-BOX NLP TIER is commissioned:
+    classical, encoding-free text operations (co-occurrence,
+    association, similarity — the Firth/Harris distributional
+    tradition, the pinned DisCoCat paper's own concrete-model
+    substrate) defined as deterministic derived views over the
+    store — fully specified algorithms carrying ordinary G-grades,
+    never pinned-oracle trust; they may feed panels. Why: control
+    stays with the person, and loops that could self-reinforce are
+    structurally cut.
+37. **Anti-smuggling adopted estate-wide** (same breath; JUDGE.md
+    ask J7): "meaning" appears in gated work only as a reference to
+    a pinned judge instance (receipt schema in JUDGE.md), and the
+    categorical bullshit test — objects instantiable as data, arrows
+    as algorithms, equations checked by kernel or measurement —
+    governs what may borrow mathematical authority.
+38. **The judge-hypothesis lattice re-ranked** (same breath;
+    RESEARCH.md ask J8, two independent literature votes): L0
+    nothing; L1 STABLE (inert-variation invariance); L2
+    COMPOSITIONAL; L3 LIMIT-STABLE (acceptance survives directed
+    growth); L4 DISTRIBUTIONAL. Formal definitions of L1/L3 ride the
+    theorem backlog (tracked as the Judge module's owed marker in
+    the obligations ledger); `Judge.lean` docstrings renumbered same
+    day.
+39. **The decidability boundary** (same breath; RESEARCH.md ask
+    J9): derived names are EMIT-ONLY; any parser of, or recursion
+    on, derived names is a ruling event — the
+    interpretation-from-a-free-structure template (Gregory–Prest
+    Cor 4.6–4.7) is the reason.

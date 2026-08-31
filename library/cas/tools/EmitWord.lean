@@ -44,6 +44,13 @@ def decls : List Decl := Id.run do
     env := env ++ [(name, code)]
   return out
 
+/-- The mirror's emitted header. The module declared no version before
+this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "emitword"
+  module := "library/cas/tools/EmitWord.lean"
+
 def wordModule : Ts.Module where
   header := [
     "GENERATED — do not edit. The canonical Effect Schema mirrors of the",
@@ -53,7 +60,7 @@ def wordModule : Ts.Module where
     "regeneration is byte-identity-gated (`--check`, wired into",
     "`check:cas`). The word log persists rows in this spelling and",
     "`cas history --json` answers this document."
-  ]
+  ] ++ emitted.headerLines
   imports := [
     .named ["Schema"] "effect"
   ]

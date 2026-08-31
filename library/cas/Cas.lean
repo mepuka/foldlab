@@ -19,11 +19,19 @@ import Cas.Values.Canonicalize
 import Cas.Codec.Hex
 import Cas.Schema.Schema
 import Cas.IR.Word
+import Cas.IR.Join
+import Cas.IR.Column
+import Cas.IR.View
 import Cas.Grammar.Grammar
+import Cas.Grammar.Judge
+import Cas.Grammar.Rewriter
+import Cas.Grammar.JudgeRate
 import Cas.Lang.Lang
+import Cas.Lang.RefusalMap
 import Cas.Lift.Manifest
 import Cas.Lift.Decode
 import Cas.Vectors.Vectors
+import Cas.Backend.HttpProfile
 import Cas.Architecture
 
 /-!
@@ -95,7 +103,11 @@ abstraction, lowest first, and imported above in that order.
   rung with its static-analysis status, store encoding, handler set, and
   agreement theorems by name, and what another effect system may assume
   when it consumes one. It is orthogonal to `Tower`, which is the
-  vertical SERVICE tower.
+  vertical SERVICE tower. `RefusalMap` is the CORRESPONDENCE: the
+  refusal clause that crosses the boundary, joined row by row to the
+  TypeScript `CasError` family, with the host tag the model
+  deliberately lacks declared host-only rather than left out, and
+  totality proved in both directions.
 - **`Lift/` — the read face.** The effect-lift lane's first-order
   data: the closed refusal taxonomy with its spectrum (`Taxonomy`),
   the v0 rule manifest (`Manifest`) — the R11 interchange
@@ -110,6 +122,18 @@ abstraction, lowest first, and imported above in that order.
   and named wire records. `Cas.Vectors.Schema` derives their canonical
   schema and TypeScript/Effect Schema correspondence; the `vectors`
   executable serializes only the checked registry.
+- **`Backend/HttpProfile` — the wire face.** `cas-http/0` as data: the
+  path grammar of the three reserved resource spaces, the profile
+  header, the status alphabet, the canonical key-list framing, the
+  capability envelope's byte layout, the presence alphabet, and §12's
+  blob node shapes — every row citing the section of
+  `library/effects/PROFILE-CAS-HTTP-0.md` it reads, and the places the
+  wire law and the store model already agree (address width, blob kind
+  tags, scheme version) stated as theorems rather than left as two
+  tables. It is the only `Backend/` module the root imports: the rest
+  of that directory is the TypeScript target plane, elaborated as its
+  own library. The manifest DECLARES and does not yet model exchange
+  semantics.
 - **`Architecture`** — the library described in itself, pinned against
   the TypeScript twin through one canonical matrix.
 

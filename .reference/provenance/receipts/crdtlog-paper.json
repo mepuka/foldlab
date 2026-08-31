@@ -1,0 +1,16 @@
+{
+  "id": "crdtlog-paper",
+  "kind": "paper",
+  "title": "A Datalog Framework for Conflict-Free Replicated Data Types",
+  "authors": ["Elena Yanakieva", "Annette Bieniusa", "Stefania Dumbrava"],
+  "venue": "Theory and Practice of Logic Programming (TPLP)",
+  "arxiv": "2605.31569",
+  "arxivVersion": "v2",
+  "arxivDated": "2026-06-08",
+  "localPath": "2605.31569v2.pdf",
+  "sha256": "c349d955aa2472549f99766a1d9418deb36c6874ebf23d0ed6170b4521a03fab",
+  "bytes": 525125,
+  "resolvedAt": "2026-08-30",
+  "resolution": "operator-supplied local file, digested in place; upstream arXiv v2 PDF fetched 2026-08-30 and byte-compared: DIGEST-IDENTICAL to the local copy (sha256 match) — upstream resolution CLOSED",
+  "consumers": [".staging/algebraic-review/store-crdt.md"]
+}

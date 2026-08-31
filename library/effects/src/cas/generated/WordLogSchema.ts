@@ -6,6 +6,9 @@
  * regeneration is byte-identity-gated (`--check`, wired into
  * `check:cas`). The word log persists rows in this spelling and
  * `cas history --json` answers this document.
+ *
+ * emitted — schemaVersion 1, emitter `emitword`,
+ * module `library/cas/tools/EmitWord.lean`, toolchain Lean 4.33.1.
  */
 import { Schema } from "effect"
 

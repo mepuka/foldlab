@@ -268,6 +268,13 @@ def header : List String := [
   "means what the description says."
 ]
 
+/-- The lane's emitted header. The module declared no version before
+this one, so its `schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "emitlayers"
+  module := "library/cas/tools/EmitLayers.lean"
+
 def rendered : IO String := do
   match topology with
   | none => throw (IO.userError
@@ -276,7 +283,9 @@ def rendered : IO String := do
     match emitModule header files bs with
     | none => throw (IO.userError
         "the topology does not resolve: a child address names nothing bound")
-    | some m => pure (Render.module house0 m)
+    | some m =>
+      pure (Render.module house0
+        { m with header := m.header ++ emitted.headerLines })
 
 /-- Where the generated layers live in the effects package — beside the
 generated programs, inside the test tree, so `tsc -p tsconfig.test.json

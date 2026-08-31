@@ -193,6 +193,23 @@ private def typeBlock : String :=
   "  readonly result: McpToolCode\n" ++
   "}"
 
+/-- The lane's emitted header, shared by the manifest and its
+TypeScript twin. `schemaVersion` opens at the `manifestVersion` the
+document already declares, and that field stays for one release beside
+the header that now carries it. -/
+def emitted : Gate.Emitted where
+  schemaVersion := Cas.Backend.Mcp.manifestVersion
+  emitter := "mcpspec"
+  module := "library/cas/tools/EmitMcp.lean"
+
+-- The manifest is an OBJECT, which is where the header goes; this is
+-- what makes `Emitted.onto`'s pass-through arm unreachable here.
+#guard match Cas.Backend.Mcp.manifest with | .obj _ => true | _ => false
+
+/-- The manifest, headed. -/
+def document : String :=
+  Cas.Json.render (emitted.onto Cas.Backend.Mcp.manifest) ++ "\n"
+
 private def module : Module where
   header := [
     "GENERATED — do not edit. THE MCP TOOL TABLE, as data: the rows",
@@ -208,7 +225,7 @@ private def module : Module where
     "two projections of ONE value, so it is trivially green and stays",
     "as defence in depth: a red one means the two renderings in",
     "`tools/EmitMcp.lean` have forked, never that a hand mirror drifted."
-  ]
+  ] ++ emitted.headerLines
   imports := []
   decls := [
     .raw typeBlock,
@@ -236,7 +253,7 @@ def mirrorTarget : System.FilePath :=
 def fixtures : IO (List Gate.Fixture) :=
   let tools := s!"{Cas.Backend.Mcp.tools.length} tools"
   return [
-    ⟨outPath, Cas.Backend.Mcp.document, tools⟩,
+    ⟨outPath, document, tools⟩,
     ⟨mirrorTarget, rendered, s!"{tools}, the TypeScript tool table"⟩]
 
 end EmitMcpMain

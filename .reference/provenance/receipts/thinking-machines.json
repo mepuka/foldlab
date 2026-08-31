@@ -1,0 +1,15 @@
+{
+  "id": "thinking-machines",
+  "kind": "paper",
+  "title": "Thinking Machines: Mathematical Reasoning in the Age of LLMs",
+  "authors": ["Andrea Asperti", "Alberto Naibo", "Claudio Sacerdoti Coen"],
+  "venue": "Big Data and Cognitive Computing 2026, 10(1), 38 (journal ref on v2; v1 read)",
+  "arxiv": "2508.00459",
+  "arxivVersion": "v1",
+  "localPath": ".reference/papers/2508.00459v1.pdf",
+  "sha256": "1644f1a1897ec678da44d7ef1c14758aa857c970b8209520602058b7c2709014",
+  "bytes": 1814110,
+  "readAt": "2026-08-30",
+  "resolution": "local copy fetched from arXiv 2026-08-30, identity confirmed against page 1 (title/authors/v1 date); read this session via the arXiv v1 HTML render by a reader agent; remaining curation handed to the codex lane per operator",
+  "consumers": [".staging/frontend-trunk/RESEARCH.md"]
+}

@@ -12,6 +12,9 @@
  * two projections of ONE value, so it is trivially green and stays
  * as defence in depth: a red one means the two renderings in
  * `tools/EmitMcp.lean` have forked, never that a hand mirror drifted.
+ *
+ * emitted — schemaVersion 1, emitter `mcpspec`,
+ * module `library/cas/tools/EmitMcp.lean`, toolchain Lean 4.33.1.
  */
 
 /** A canonical schema code in the revision-0 tagged projection —

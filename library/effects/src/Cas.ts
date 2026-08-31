@@ -154,6 +154,7 @@ export type {
   CasAddress as Address,
   CasLoaderShape as LoaderShape,
   CasStoreShape as StoreShape,
+  PutOutcome,
 } from "./cas/Store.ts"
 
 // Graph laws over the read seam alone: children-first closure and the

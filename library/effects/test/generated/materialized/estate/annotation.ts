@@ -14,6 +14,9 @@
  *
  * Materialized from a schema node (kind tag 0x53):
  *   - annotation — 17a8133b96bbbc7879c229263e0314e806085094a5f1606ed05093619ae2a5d2
+ *
+ * emitted — schemaVersion 1, emitter `materialize`,
+ * module `library/cas/tools/Materialize.lean`, toolchain Lean 4.33.1.
  */
 import { Schema } from "effect"
 import * as CanonicalSchema from "../../../../src/cas/CanonicalSchema.ts"

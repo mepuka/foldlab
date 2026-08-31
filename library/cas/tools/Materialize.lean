@@ -159,6 +159,14 @@ private def mentionsCanonicalSchema (rendered : String) : Bool :=
 (`test/generated/materialized/estate/<name>.ts`). -/
 def canonicalSchemaPath : String := "../../../../src/cas/CanonicalSchema.ts"
 
+/-- The lane's emitted header, shared by every materialized module and
+the barrel. The modules declared no version before this one, so their
+`schemaVersion` opens at 1. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "materialize"
+  module := "library/cas/tools/Materialize.lean"
+
 def moduleOf (row : Row) : Ts.Module :=
   let value := constructorExpr [] row.code
   let rendered := Render.expr house0 0 value
@@ -178,7 +186,7 @@ def moduleOf (row : Row) : Ts.Module :=
       "",
       s!"Materialized from a schema node (kind tag 0x{Nat.toDigits 16 schemaKindTag.toNat |> String.ofList}):",
       s!"  - {row.binding} — {row.address}"
-    ],
+    ] ++ emitted.headerLines,
     imports :=
       [.named ["Schema"] "effect"] ++
         (if mentionsCanonicalSchema rendered then
@@ -200,7 +208,7 @@ def indexModule (rows : List Row) : Ts.Module where
     "",
     "The differential suite reads the registry through this barrel, so",
     "a fixture that gains or loses a module moves these bytes."
-  ]
+  ] ++ emitted.headerLines
   imports := []
   decls := [.raw (String.intercalate "\n" (rows.map fun row =>
     "export { " ++ row.binding ++ " } from \"./" ++ row.name ++ ".ts\""))]

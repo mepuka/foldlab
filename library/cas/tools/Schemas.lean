@@ -4,6 +4,7 @@ import Cas.Schema.Annotation
 import Cas.Schema.Exchange
 import Cas.Schema.Notation
 import Cas.Backend.Ts
+import Cas.Backend.EmitAst
 import Gate
 
 /-!
@@ -174,6 +175,22 @@ def indexPath : System.FilePath := outDir / "index.json"
 
 def addressesPath : System.FilePath := outDir / "addresses.json"
 
+/-- The tool's emitted header for its two MANIFESTS. `schemaVersion`
+opens at the `revision` the index already declares —
+`Cas.Schema.schemaRevision` — and that field stays for one release
+beside the header that now carries it. The address file declared no
+version and rides the same one: the two are one manifest pair over one
+registry, and versioning them apart would say they can move apart.
+
+The payload files themselves are deliberately NOT headed. Their bytes
+ARE the schema node's payload — the pre-image `addresses.json` states
+the digest of — so a header there would not describe the artifact, it
+would change its identity. -/
+def emitted : Gate.Emitted where
+  schemaVersion := schemaRevision
+  emitter := "schemas"
+  module := "library/cas/tools/Schemas.lean"
+
 /-- The schema node a code stores as (kind tag 0x53, envelope payload,
 no references) — the same node `CanonicalSchema.nodeOf` builds on the
 TypeScript side. -/
@@ -195,7 +212,7 @@ def addressesDocument : String :=
     Cas.Json.Value.obj [
       ("name", .str name),
       ("address", .str (addressOf ast))]
-  Cas.Json.render (.obj [
+  Cas.Json.render (emitted.obj [
     ("digest", .str "sha256-scheme0"),
     ("kindTag", .nat Cas.Schema.schemaKindTag.toNat),
     ("schemas", .arr rows)
@@ -209,7 +226,7 @@ def indexDocument : String :=
       ("file", .str (name ++ ".json")),
       ("byteLength", .nat ast.payload.toUTF8.size)
     ]
-  Cas.Json.render (.obj [
+  Cas.Json.render (emitted.obj [
     ("revision", .nat schemaRevision),
     ("schemas", .arr rows)
   ]) ++ "\n"
@@ -287,7 +304,7 @@ private def annotationPlaneModule : Module where
     "spells one by hand. `src/cas/Annotations.ts` is the third: it",
     "builds the subject union's arms, and reads the system plane's",
     "working tag from here rather than spelling it."
-  ]
+  ] ++ emitted.headerLines
   imports := []
   decls := [
     .raw armTypeBlock,
@@ -347,10 +364,212 @@ beside the grammar registry it complements. -/
 def annotationPlaneTarget : System.FilePath :=
   "../effects/src/cas/generated/annotationPlane.ts"
 
+/-! ## The described store kinds, mirrored
+
+Two of the registered codes above — `exchange` and `annotation` — are
+not only pinned payloads: they are KINDS the effects package stores
+values through, so each had a hand-written Effect Schema twin
+(`src/cas/Exchanges.ts`, and the schema half of
+`src/cas/Annotations.ts`) whose own docstrings called it "the hand
+mirror of Lean `Cas.Schema.Exchange` — pinned to the same bytes". The
+pin was real and it held; what it could not do is author. Every arm,
+every field order, every union mode and every kind tag was retyped by
+hand and then checked, which makes the byte pin a tripwire on a copy
+rather than the copy's absence.
+
+`emitwire` and `emitword` already lower `Described` codes into the
+effects package with structural sharing. These two ride the same path;
+the one thing they need that no earlier mirror did is a LIVE
+reference. -/
+
+section StoreKinds
+open Cas.Backend Cas.Backend.Ts
+
+mutual
+
+/-- The live-reference substitution.
+
+`Cas.Backend.constructorExpr` renders a `.ref` as
+`CanonicalSchema.ref(tag)` — Effect's own `toCode` spelling of the
+reference DECLARATION (`Value.ts`'s `referenceRepresentation`), which
+is the right lowering for a mirror that exists to be COMPARED and the
+wrong one for a mirror that exists to be STORED THROUGH: that
+declaration's decoded side is the `{"$link":…}` sentinel, so a struct
+built from it neither accepts a `Root` at encode nor answers one at
+decode.
+
+These two kinds are stored through their mirrors — `Cas.value({schema:
+Exchanges.Exchange})` puts and gets real nodes — so the reference must
+be the runtime's `refWithTag`, whose representation is EXACTLY the
+declaration `constructorExpr` names. Hence one substitution on the
+rendered expression and nothing else: the sharing environment, the
+field order, the union modes and the literal spellings all stay the
+lowering's own. -/
+private def liveRefs : Expr → Expr
+  | .call (.ident "CanonicalSchema.ref") [.int tag] =>
+    .call (.ident "refWithTag") [.call (.ident "Byte.make") [.int tag]]
+  | .call fn args => .call (liveRefs fn) (liveRefsList args)
+  | .object fields => .object (liveRefsFields fields)
+  | .objectML fields => .objectML (liveRefsFields fields)
+  | .arr items => .arr (liveRefsList items)
+  | .arrow ty body => .arrow ty (liveRefs body)
+  | e => e
+
+private def liveRefsList : List Expr → List Expr
+  | [] => []
+  | e :: rest => liveRefs e :: liveRefsList rest
+
+private def liveRefsFields : List (String × Expr) → List (String × Expr)
+  | [] => []
+  | (name, value) :: rest => (name, liveRefs value) :: liveRefsFields rest
+
+end
+
+-- The substitution fires, and it fires on the exact text the lowering
+-- writes: a spelling change on either side goes red here rather than
+-- silently emitting a mirror that cannot store.
+#guard Render.expr house0 0 (liveRefs (constructorExpr [] (.ref schemaKindTag)))
+  == "refWithTag(Byte.make(83))"
+
+-- Nothing else about the lowering moves.
+#guard Render.expr house0 0
+    (liveRefs (constructorExpr [] (.union [.str, .bool] .oneOf)))
+  == "Schema.Union([Schema.String, Schema.Boolean], { mode: \"oneOf\" })"
+
+/-- The mirror registry: emission order is sharing order — a subject
+union is named before the kinds that carry it, so those kinds factor
+through the name exactly as the hand mirrors referred to the const. -/
+def mirrorRegistry : List (String × List String × Ast) := [
+  ("exchangeSubjectSchema",
+    ["What one exchange is about, by plane: a schema node, or the",
+     "exchange that came before it. A reference demands ONE kind tag",
+     "and \"what this exchange was about\" is genuinely alternatives, so",
+     "the arms are addressed references, and following the `exchange`",
+     "arm to exhaustion IS the conversation. A derived union's mode is",
+     "part of its identity, so the mode is always spelled; member order",
+     "is the deriving handler's canonical order, and reordering it",
+     "would be a different code."],
+    ExchangeSubject.schemaCode),
+  ("exchangeSchema",
+    ["One recorded turn of the agent seam (R15): the word put to the",
+     "model, the answer that came back, and the content the exchange",
+     "was about. The answer's bytes are kept AS SPOKEN — under the",
+     "acquisition loop a model's output is evidence and carries no",
+     "trust, so normalizing it here would destroy the thing a later",
+     "gate has to judge. No `role` field is spelled: role is a property",
+     "of an UTTERANCE and an exchange is the PAIR, so position already",
+     "says which side spoke."],
+    Exchange.schemaCode),
+  ("annotationSubjectSchema",
+    ["What one annotation is about, by plane: every addressable plane",
+     "the estate has today, each arm a typed reference at that plane's",
+     "tag. The subject was a bare schema reference, which made a view's",
+     "link to the value it projects, a program's human-facing name and",
+     "a topology's link to written code all unspellable at once.",
+     "Nothing is reserved for a plane that does not exist yet: growth",
+     "is by an arm, and an arm is arm-additive."],
+    AnnotationSubject.schemaCode),
+  ("annotationValueSchema",
+    ["What one annotation SAYS: a scalar, or a typed reference to",
+     "addressed content. The value was a plain string, and the kind's",
+     "own docstring admitted the cost — \"a content address in hex when",
+     "the value is itself store content\" — which is precisely the",
+     "out-of-band config a content-addressed estate exists to remove: a",
+     "hex string never reaches the reference count, the graph walk",
+     "never follows it, and a wrong-kind refusal can never fire on it.",
+     "The `ref` arm carries the subject union rather than a bare",
+     "reference because a reference must name its expected tag, so a",
+     "single generic arm cannot be spelled and a second flattened copy",
+     "of the plane list would drift from the first."],
+    AnnotationValue.schemaCode),
+  ("annotationSchema",
+    ["The sidecar annotation kind: one annotation node says one thing",
+     "about one addressed value, and the DAG carries as many per",
+     "subject as wanted. Annotation content is STORE CONTENT — nothing",
+     "is added to the schema carrier. Every reference decodes to a",
+     "`Root` and encodes to a reference sentinel, so the declaration",
+     "this lowers to — what the byte pin compares against the Lean",
+     "fixture — is also the live reference codec the value plane",
+     "rides."],
+    Annotation.schemaCode)
+]
+
+private def mirrorDecls : List Decl := Id.run do
+  let mut env : List (String × Ast) := []
+  let mut out : List Decl := []
+  for (name, doc, code) in mirrorRegistry do
+    out := out ++ [.const { doc, name, value := liveRefs (constructorExpr env code) }]
+    env := env ++ [(name, code)]
+  return out
+
+private def storeKindModule : Module where
+  header := [
+    "GENERATED — do not edit. THE DESCRIBED STORE KINDS, as Effect",
+    "Schema: the exchange kind and the sidecar annotation kind, lowered",
+    "from the Lean codes in `library/cas/Cas/Schema/Exchange.lean` and",
+    "`library/cas/Cas/Schema/Annotation.lean` (`Described.code` of the",
+    "authored kinds) by `lake exe schemas`; regeneration is",
+    "byte-identity-gated (`--check`, wired into `check:cas`).",
+    "",
+    "These are LIVE codecs, not comparison mirrors: a reference lowers",
+    "to `refWithTag`, so a value built here encodes a `Root` to a",
+    "reference sentinel and decodes one back, and the store's admission",
+    "law checks the arm's kind tag at the address. Their canonical",
+    "payloads are the committed `schemas/exchange.json` and",
+    "`schemas/annotation.json`, and the pin suites hold these",
+    "declarations to those bytes and to the addresses beside them.",
+    "",
+    "`src/cas/Exchanges.ts` and `src/cas/Annotations.ts` are this",
+    "file's consumers. What they add is what a schema is not: the",
+    "constructors that build one subject arm or one value arm, and —",
+    "on the annotation side — the estate's persistent annotation",
+    "namespace on live Effect carriers, which is a different plane",
+    "with the same name."
+  ] ++ emitted.headerLines
+  imports := [
+    .named ["Schema"] "effect",
+    .named ["Byte"] "../Node.ts",
+    .named ["refWithTag"] "../Value.ts"
+  ]
+  decls :=
+    (.const {
+      name := "ExchangeKindTag",
+      doc := ["The kind tag exchange nodes reside at",
+        "(`Cas.Schema.exchangeKindTag`). A WORKING tag, deliberately",
+        "absent from the reserved set: minting plane identity is the",
+        "reserved-tag ruling's question, and until it is answered an",
+        "exchange resides at a tag its callers own — which is what lets",
+        "`Cas.value` accept it. The `exchange` arm of the subject union",
+        "demands this tag, so a chain is only walkable when its nodes",
+        "reside here; that constraint is the whole content of the",
+        "ruling."],
+      value := .int (Int.ofNat exchangeKindTag.toNat) }) :: mirrorDecls
+
+/-- The store-kind mirrors, rendered in the effects package's style. -/
+def storeKindRendered : String :=
+  Cas.Backend.Ts.Render.module Cas.Backend.Ts.house0 storeKindModule
+
+-- No declaration-only reference survives into the emitted module: one
+-- that did would compile and then refuse every `Root` it was handed.
+#guard (storeKindRendered.splitOn "CanonicalSchema.ref").length == 1
+
+-- Seven live references — two arms of the exchange subject and five of
+-- the annotation subject. The other two kinds reach theirs through the
+-- shared name, which is what the sharing environment is for.
+#guard (storeKindRendered.splitOn "refWithTag(").length == 8
+
+/-- Where the mirrors land: the effects package's generated tree,
+beside the annotation plane's own projection. -/
+def storeKindTarget : System.FilePath :=
+  "../effects/src/cas/generated/StoreKindSchema.ts"
+
+end StoreKinds
+
 /-- The registry rendered as the driver's fixtures: one payload file
 per pinned code — the file's bytes ARE the schema-node payload — then
-the tracking manifest, the store-address file, and the annotation-plane
-projection the CLI's naming seat consumes. -/
+the tracking manifest, the store-address file, the annotation-plane
+projection the CLI's naming seat consumes, and the described store
+kinds' Effect Schema mirrors. -/
 def fixtures : IO (List Gate.Fixture) :=
   return registry.map (fun (name, ast) =>
       ({ path := pathOf name, content := ast.payload,
@@ -358,7 +577,9 @@ def fixtures : IO (List Gate.Fixture) :=
     [⟨indexPath, indexDocument, s!"{registry.length} schemas"⟩,
      ⟨addressesPath, addressesDocument, s!"{registry.length} addresses"⟩,
      ⟨annotationPlaneTarget, annotationPlaneRendered,
-       s!"{subjectArms.length} nameable planes, the annotation-plane projection"⟩]
+       s!"{subjectArms.length} nameable planes, the annotation-plane projection"⟩,
+     ⟨storeKindTarget, storeKindRendered,
+       s!"{mirrorRegistry.length} mirrors, the described store kinds"⟩]
 
 end SchemasMain
 

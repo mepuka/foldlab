@@ -1,0 +1,15 @@
+{
+  "id": "interpretation-functors",
+  "kind": "paper",
+  "title": "Representation embeddings, interpretation functors and controlled wild algebras",
+  "authors": ["Lorna Gregory", "Mike Prest"],
+  "venue": "Journal of the London Mathematical Society 94(3), 2016, 747-766 (per web search; arXiv v2 read)",
+  "arxiv": "1411.3221",
+  "arxivVersion": "v2",
+  "localPath": ".reference/papers/1411.3221v2.pdf",
+  "sha256": "8b85016786240037a533fe4c1766503c134252cf0a990ef06238a657e75b3a42",
+  "bytes": 289569,
+  "readAt": "2026-08-30",
+  "resolution": "local copy fetched from arXiv 2026-08-30 (18 pages, matching the reader's full read); remaining curation handed to the codex lane per operator. CAUTION recorded: Remark 3.12's inequality direction appears transposed against the paper's own Cor 3.9/Thm 5.10/Thm 6.7 — verify against the published JLMS version before citing it in either direction",
+  "consumers": [".staging/frontend-trunk/RESEARCH.md"]
+}

@@ -4,29 +4,29 @@
  * R15 rules the agent seam SYMMETRIC: an agent programs the store as a
  * client of `CasSig`, and the store programs an agent as a handler of
  * `LlmSig`, where `infer` is an operation whose ANSWER ENTERS ONLY AS
- * RECORDED CONTENT. This module is the stored form of that recording,
- * and it is the hand mirror of Lean `Cas.Schema.Exchange` — the two are
- * pinned to the same bytes and the same address.
+ * RECORDED CONTENT. This module is the stored form of that recording.
  *
  * Nothing here is new theory. An exchange is a described kind like any
  * other: it rides the store's admission law, its references are typed
  * edges the store checks, and the provenance of an answer is the DAG
  * walk the store already performs.
  *
- * `subject` is a tagged union rather than a single reference because a
- * reference demands ONE kind tag and "what this exchange was about" is
- * genuinely alternatives: the `schema` arm addresses a schema node, and
- * the `exchange` arm addresses the exchange before it. Following the
- * second arm to exhaustion IS the conversation.
- *
- * No `role` field is spelled. Role is a property of an UTTERANCE and an
- * exchange is the PAIR; the seam has one operation and one answer, so
- * position already says which side spoke.
+ * The kind itself is no longer written here. It is authored once, in
+ * Lean (`library/cas/Cas/Schema/Exchange.lean`), and emitted into
+ * `generated/StoreKindSchema.ts` by `lake exe schemas`; this module
+ * names those declarations and adds the constructors that build one
+ * subject arm and one recorded turn. What that replaced was a
+ * hand-written twin held to the Lean bytes by a pin — a real gate on a
+ * copy, which is a weaker thing than the copy's absence.
  */
-import { cast, Schema } from "effect"
-import { Byte, ContentId } from "./Node.ts"
-import { refWithTag, type Root } from "./Value.ts"
-import { SchemaKindTag } from "../internal/kindTags.ts"
+import type { ContentId } from "./Node.ts"
+import { cast } from "effect"
+import { type Root } from "./Value.ts"
+import {
+  ExchangeKindTag,
+  exchangeSchema,
+  exchangeSubjectSchema,
+} from "./generated/StoreKindSchema.ts"
 
 /** The kind tag exchange nodes reside at.
  *
@@ -36,43 +36,27 @@ import { SchemaKindTag } from "../internal/kindTags.ts"
  * lets `Cas.value` accept it. The `exchange` arm of the subject union
  * demands this tag, so a chain is only walkable when its nodes reside
  * here; that constraint is the whole content of the ruling. */
-export const KindTag = 0x58
+export const KindTag = ExchangeKindTag
 
-/** What one exchange is about, by plane — the hand mirror of Lean
- * `Cas.Schema.ExchangeSubject`.
+/** What one exchange is about, by plane.
  *
- * A derived union's mode is `oneOf` and the mode is part of its
- * identity, so this is `Schema.Union([...], { mode: "oneOf" })` and not
- * `Schema.TaggedUnion`, which builds at the default `anyOf`. Member
- * order and field order are the canonical order the deriving handler
- * spells: members by ascending tag, fields with `_tag` first. */
-export const Subject = Schema.Union([
-  Schema.Struct({
-    _tag: Schema.Literal("exchange"),
-    address: refWithTag(Byte.make(KindTag)),
-  }),
-  Schema.Struct({
-    _tag: Schema.Literal("schema"),
-    address: refWithTag(Byte.make(SchemaKindTag)),
-  }),
-], { mode: "oneOf" })
+ * `subject` is a tagged union rather than a single reference because a
+ * reference demands ONE kind tag and "what this exchange was about" is
+ * genuinely alternatives: the `schema` arm addresses a schema node, and
+ * the `exchange` arm addresses the exchange before it. Following the
+ * second arm to exhaustion IS the conversation. */
+export const Subject = exchangeSubjectSchema
 
 /** What one exchange is about. */
 export type Subject = typeof Subject.Type
 
-/** One recorded turn of the agent seam — the hand mirror of Lean
- * `Cas.Schema.Exchange`, and the codec an exchange node is stored
- * through.
+/** One recorded turn of the agent seam, and the codec an exchange node
+ * is stored through.
  *
- * The answer's bytes are kept AS SPOKEN. Under the acquisition loop the
- * model's output is evidence and carries no trust, so normalizing it
- * here would destroy the very thing a later gate has to judge. Field
- * order is the canonical (sorted) order the Lean side authors in. */
-export const Exchange = Schema.Struct({
-  answer: Schema.String,
-  prompt: Schema.String,
-  subject: Subject,
-})
+ * No `role` field is spelled. Role is a property of an UTTERANCE and an
+ * exchange is the PAIR; the seam has one operation and one answer, so
+ * position already says which side spoke. */
+export const Exchange = exchangeSchema
 
 /** One exchange node's value. */
 export type Exchange = typeof Exchange.Type

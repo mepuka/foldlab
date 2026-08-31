@@ -13,7 +13,6 @@ import {
   type CasError,
 } from "./Node.ts"
 import { CasStore, type CasStoreShape } from "./Store.ts"
-import { pow2Below } from "../internal/merkleTree.ts"
 import {
   BlobManifestTag as BlobManifestTagValue,
   BlobNodeTag as BlobNodeTagValue,
@@ -22,6 +21,7 @@ import {
   admitBlobLeaf,
   encodeBlobManifestPayload,
   finalizeBlobGraph,
+  pow2Below,
   ReferencedChunkRecipe as ReferencedChunkRecipeValue,
 } from "../internal/blobGraph.ts"
 

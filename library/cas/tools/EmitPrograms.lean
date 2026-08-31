@@ -137,6 +137,21 @@ def moduleDecls (rows : List Row) : IO (List Decl) := do
         .object [("name", .str fixture), ("run", .ident name)])
     }]
 
+/-- The lane's emitted header. The module declared no version before
+this one, so its `schemaVersion` opens at 1.
+
+The two JSON documents beside it are deliberately NOT headed. Both are
+top-level ARRAYS, and both are one half of a byte comparison the
+TypeScript side performs against its own rendering of the same value —
+`canonJson(liftSource(VectorPrograms.ts))` for the lift documents, a
+host's own digest answers for the addresses. A field this side alone
+writes would not describe the artifact, it would break the comparison
+the artifact exists for. -/
+def emitted : Gate.Emitted where
+  schemaVersion := 1
+  emitter := "emitprograms"
+  module := "library/cas/tools/EmitPrograms.lean"
+
 def programsModule (rows : List Row) : IO Ts.Module := do
   return {
     header := [
@@ -148,7 +163,7 @@ def programsModule (rows : List Row) : IO Ts.Module := do
       "host's own digest — and the VectorPrograms suite asserts the",
       "answers equal the Lean-computed word, binding for binding: the",
       "cross-host run gate."
-    ]
+    ] ++ emitted.headerLines
     imports := [
       .named ["Effect"] "effect",
       .types ["CasStoreShape"] "../../src/cas/Store.ts"
