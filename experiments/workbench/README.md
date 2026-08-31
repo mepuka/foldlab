@@ -114,6 +114,34 @@ mise run check:workbench
 
 `mise run check` includes it.
 
+## Dev fixture viewer
+
+```
+bun run dev          # then open http://localhost:5173/dev/index.html
+```
+
+Renders the recorded 220-receipt fixture
+(`src/trunk/fixtures/word-history.fixture.json`) through the REAL
+trunk engine — `decodeHistory` → `foldDocument` → `cutDoi` →
+`placementOf` → `place` — with no daemon and no store. It is **dev
+tooling, not the app**: plain DOM over the engine's output
+(`src/dev/`, breaker-built harness territory, S3b packet §6), and the
+page's banner says so. The fixture's addresses are syntactically valid
+and store-minted by nobody; never cite this view as store-backed.
+
+Freshness rules, enforced mechanically:
+
+- the fixture must decode through the generated `wordHistorySchema` —
+  `src/trunk/fixtures/conformance.test.ts` (S3a's gate);
+- the dev scene must fold to the known totals, disjoint, all five
+  tint steps — `src/dev/fixture-view.test.ts` (**the dev-fixture
+  freshness gate**); both run in `check:workbench`;
+- the generated mirrors under `src/generated/` are OUTPUTS of
+  `mise run gen:backend-word` and `mise run gen:grammar-manifest` —
+  regenerate there, never edit by hand; any drift reds the two gates
+  above. The dev view decodes through the engine's one door, so there
+  is no second parse to drift independently.
+
 ## Deliberately absent
 
 Pending **Lane B** (the workbench itself):

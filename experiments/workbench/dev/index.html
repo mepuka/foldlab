@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>trunk dev fixture viewer</title>
+    <style>
+      /* DEV-ONLY styles. Ink on paper; the token VALUES are the
+       * aesthetics report's (§1.2/§2.2) — the app's own tokens land in
+       * src/styles.css under contract law L-V6, and this page stays a
+       * separate dev witness either way. */
+      :root {
+        --paper: #fbfbfa;
+        --ink-soft: #5c5c66;
+        --owed: #bc442c;
+        --mark-strip: #6c6c6f;
+        --mark-0: #121216;
+        --mark-1: #141418;
+        --mark-2: #16161a;
+        --mark-3: #18181c;
+        --mark-4: #1a1a1e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #121214;
+          --ink-soft: #9a9aa4;
+          --owed: #ec775f;
+          --mark-strip: #87878a;
+          --mark-0: #e7e7ea;
+          --mark-1: #e9e9ed;
+          --mark-2: #ececf0;
+          --mark-3: #efeff2;
+          --mark-4: #f1f1f5;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        font: 16px/1.55 ui-sans-serif, system-ui, sans-serif;
+      }
+      #dev-root {
+        max-width: 62ch;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 6rem;
+      }
+      .dev-banner {
+        font: 600 0.75rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--owed);
+      }
+      .dev-face {
+        font: 0.7rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink-soft);
+      }
+      .owed-count {
+        color: var(--owed);
+      }
+      .dev-frame {
+        position: relative;
+      }
+      .mark.tint-0 { fill: var(--mark-0); }
+      .mark.tint-1 { fill: var(--mark-1); }
+      .mark.tint-2 { fill: var(--mark-2); }
+      .mark.tint-3 { fill: var(--mark-3); }
+      .mark.tint-4 { fill: var(--mark-4); }
+      .strip { fill: var(--mark-strip); }
+      .owed { fill: var(--owed); }
+      .dev-foot {
+        position: relative;
+        height: 96px;
+      }
+      .dev-label {
+        position: absolute;
+        top: 4px;
+        transform-origin: 0 0;
+        transform: rotate(-90deg) translateX(-100%);
+        font: 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.02em;
+        color: var(--ink-soft);
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dev-root"></div>
+    <script type="module" src="/src/dev/entry.ts"></script>
+  </body>
+</html>
