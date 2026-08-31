@@ -24,6 +24,18 @@ DO-NOT-RATIFY-AS-WRITTEN per PLAIN-LANGUAGE.md.
 Check a spec's category and open asks in SPECS.md before building
 from it.
 
+The pre-grade [Effect Core v1 packet](../../.staging/effect-core-v1/README.md)
+is the indexed successor study for arbitrary effect flow. Before changing a
+carrier or theorem for that lane, read its
+[existing-type ledger](../../.staging/effect-core-v1/EXISTING-TYPES.md),
+[counterexample register](../../.staging/effect-core-v1/COUNTEREXAMPLES.md), and
+[per-type closure gate](../../.staging/effect-core-v1/TYPE-CLOSURE.md). It does
+not replace current law: block bodies reuse `PProg`; scoped children elaborate
+through existing `Handler`/sum/tower machinery into a target that can observe
+child failure and state (plain `ReaderT Env (Prog CasSig)` is insufficient for
+catch/finalization); fixed-fuel `run` has no bind law; CAS refusals keep their
+existing classification.
+
 ## The two-minute rule
 
 If you cannot make progress on a proof for two minutes, STOP. Do not

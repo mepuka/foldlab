@@ -20,6 +20,12 @@ Active designs touching this lane:
 (emitter inventory E1–E6),
 [INGESTION-HARNESS](../../.staging/operational-structure/INGESTION-HARNESS.md)
 (the harness map and program-ingestion path).
+The pre-grade [Effect Core v1 packet](../../.staging/effect-core-v1/README.md)
+owns the full public-surface/reification study. Its
+[reification checklist](../../.staging/effect-core-v1/REIFICATION-CHECKLIST.md)
+requires recursive export/member/overload closure, profile-specific proof
+rows, and exact TS7 `@effect/tsgo` file-set coverage. Language-service output
+is source-hygiene evidence only; it never defines the Lean semantics.
 Serving plane (how `cas serve` and `cas daemon` are run, secured, and
 observed): [SERVING.md](SERVING.md) — Category 1 since decision 32(b),
 and it lives here rather than under `docs/lab-core/`; the wire
