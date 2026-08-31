@@ -24,6 +24,7 @@ from reading everything.
 | `formal/` | Formal verification artifacts (claim-gated) | — |
 | [`library/`](library/machine/README.md) | Distributable libraries, Lean 4 or mixed-language (claim-gated; machine and effects live here) | Building machine-algebra or effect-replay slices |
 | [EFFECTS-BACKEND](library/cas/EFFECTS-BACKEND.md) | The store language, RATIFIED law: semantics, handlers, the tower, backend targets, representation strata (R1–R15) | Working on the language, the backend, generated surfaces, or reasoning about effects |
+| [effect protocol](library/effect-protocol/README.md) | Language-neutral stable effect/type/operation identities, canonical bytes, profile membership, and shared vectors; Lean and host adapters remain separate authorities | Building any cross-language effectful interface or cutover profile |
 | [SPECS.md](docs/SPECS.md) | Spec ledger + operator decision record: every spec categorized with the rulings it carries and why | Building from any spec; recording or citing a ruling |
 | [Effect Core v1 packet](.staging/effect-core-v1/README.md) | Pre-grade closed-alphabet Effect model, public-surface reification plan, counterexample register, and per-type cutover closure | Working on general effectful programs, generated Effect TypeScript, or full reification beyond the existing sequential CAS fragment |
 | `experiments/` | Experimental artifacts (routing: [experiments/AGENTS.md](experiments/AGENTS.md)) | — |

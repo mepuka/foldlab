@@ -1,0 +1,18 @@
+{
+  "name": "@foldlab/effect-core-surface",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "effect-tsgo diagnostics --project tsconfig.json --format json --strict --list-files",
+    "typecheck:plain": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "effect": "4.0.0-rc.112"
+  },
+  "devDependencies": {
+    "@effect/tsgo": "0.38.0",
+    "typescript": "7.0.2"
+  }
+}

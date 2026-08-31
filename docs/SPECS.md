@@ -109,6 +109,9 @@ deleted.
 | [.staging/effect-core-v1/TYPE-CLOSURE.md](../.staging/effect-core-v1/TYPE-CLOSURE.md) | Effect Core v1 cutover | Per-type proof-edge schema and mechanical full-cutover refusal predicate |
 | [.staging/effect-core-v1/ORGANIZATION.md](../.staging/effect-core-v1/ORGANIZATION.md) | Effect Core v1 continuity | AGENTS ownership, authored/generated split, manifests, resume protocol, and context-loss gates |
 | [.staging/effect-core-v1/WORKSHOP-RESULTS.md](../.staging/effect-core-v1/WORKSHOP-RESULTS.md) | Effect Core v1 workshop | Exact local probe commands, theorem anchors, source-census measurements, and explicit evidence limits |
+| [library/effect-protocol/README.md](../library/effect-protocol/README.md) | language-neutral effect protocol | Scaffold boundary: portable identities, bytes, profiles, and vectors; no manifest or semantic declaration yet |
+| [formal/effect-core-v1/README.md](../formal/effect-core-v1/README.md) | Effect Core v1 Lean package | Empty module sweep reserving proof-owned categories; no semantic declaration or closure claim |
+| [experiments/effect-core-surface/README.md](../experiments/effect-core-surface/README.md) | Effect TypeScript profile instrument | Empty source-census, adapter, and exact-file-set language-service scaffold; no semantic trust |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
 
@@ -674,3 +677,41 @@ records the 2026-08-29 session rulings that cut across specs.
     are accepted. *Why: make arbitrary effect-flow work successive and
     resumable without duplicating landed semantics, losing adversarial
     evidence, or letting source-tool success masquerade as proof.*
+44. **The eight evidence-backed Effect Core §17 conditions ruled; the
+    cutover is one profile of a larger language-neutral interface**
+    (2026-08-31; operator: "rule the eight §17 conditions that already
+    have evidence ... the effects cut over should be a portion of the larger
+    effectful interface but not exclusive to the lean interfaces" and "yes
+    continue"). Conditions 10, 11, 15, 16, 18, 19, and 20 are adopted at
+    their proved representation boundaries; condition 17 is adopted only
+    for mask-selected classifier overlap, while renderer injectivity remains
+    open. Thus: full-core meaning is relational and has no choice-free
+    denotation function; existing refusal kinds/maps are reused with
+    H-dependent writes and explicit observation masks; raw `PProg` ingress is
+    partial and total injection starts at `CheckedPProg`; checking is
+    fail-first with existential rejection completeness and duplicate-free
+    checked rows; scoped recovery/finalization reuse existing `Handler` and
+    first-order `BlockId`, but the target must preserve post-body state on
+    failure (the minimum CAS witness has state outside error); `toPProg` is a
+    sound canonical-image recognizer only; and Mod-E uses existing `wlp` with
+    nonempty prefix and threaded history, while `wlp_append` is a new theorem
+    obligation derived from shipped `wpAux_append`.
+
+    Condition 14 remains open for the exact bridge from portable operation
+    identity into existing Lean `Sig.Op`; this is not permission to replace
+    `Sig`. The shared seam is a versioned language-neutral protocol whose
+    manifest owns stable identities, canonical bytes, profile membership, and
+    shared vectors. Lean owns admission, relational meaning, and proof; Effect
+    TypeScript rc.112 is one generated adapter/profile with exact
+    language-service coverage; later hosts may implement the same admitted
+    rows. Proof status and runtime evidence remain sidecars and cannot change
+    protocol identity.
+
+    Development proceeds from the immutable packet baseline through a
+    coordinator-owned integration worktree, with separate
+    breaker/builder/reviewer worktrees.
+    File stubs establish the broad category sweep, but implementation depth
+    waits for per-type proof-graph closure. *Why: preserve one portable
+    effectful core without making either Lean syntax or Effect TypeScript the
+    universal consumer API, while keeping every cutover claim mechanically
+    local.*

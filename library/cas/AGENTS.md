@@ -32,9 +32,30 @@ carrier or theorem for that lane, read its
 [per-type closure gate](../../.staging/effect-core-v1/TYPE-CLOSURE.md). It does
 not replace current law: block bodies reuse `PProg`; scoped children elaborate
 through existing `Handler`/sum/tower machinery into a target that can observe
-child failure and state (plain `ReaderT Env (Prog CasSig)` is insufficient for
-catch/finalization); fixed-fuel `run` has no bind law; CAS refusals keep their
-existing classification.
+child failure while retaining the post-body state on that failure. This is the
+state-outside-error information contract, not a required transformer spelling:
+plain `ReaderT Env (Prog CasSig)` cannot recover, and a state/error layout that
+discards state on error cannot implement catch/finalization correctly.
+`ensuring` is a reference-machine exit rule, never ordinary `Prog.bind`.
+Fixed-fuel `run` has no bind law; CAS refusals keep their existing
+classification.
+
+## Portable effect protocol seam
+
+The future `library/effect-protocol/` manifest owns stable cross-language
+operation/type IDs, canonical bytes, and profile membership. This lane remains
+the semantic authority: Lean admits selected manifest rows into the existing
+`Sig.Op`/`OpDesc` families and owns reference meaning and proofs. Do not mint a
+second signature, schema universe, `PProg`, refusal family, cause/frontier
+family, or CAS spelling in the neutral seam. Proof status and conformance
+results are sidecars keyed by the protocol digest, not identity-bearing
+manifest fields. Effect TypeScript is one adapter profile, not the protocol's
+exclusive consumer.
+
+Effect Core work follows the packet's clean baseline/integration and
+per-slice breaker-builder-reviewer worktree protocol. The first implementation
+slice is file stubs only; the broad ownership and proof-edge sweep precedes any
+deep per-type proof work.
 
 ## The two-minute rule
 
