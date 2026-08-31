@@ -1007,3 +1007,48 @@ files — MetaSchema.ts entered `tested`, ledgers.ts bare→tested, the
 exact D2 delta); seven TRACKED .DS_Store files untracked
 (rm --cached, staged for the operator's commit) with the .gitignore
 rule added; typecheck clean; 439/439 green.
+
+## Twenty-fourth act — the first castle stands; 011d455b
+
+The castle method's first full cycle CLOSED: the S1 implementer
+turned the breaker's 23-case battery green (plus BG-2 3/3, the
+instrumented OOM guard), 465/465 suite, lint baseline exact, the
+ServingDoc drift gate now REQUIRES /history — and en route KILLED A
+LIVE DEFECT the packet's laws were written against (store.ts arity
+coercion silently dropping `limit` on the daemon's own backend). It
+built and RAN two adversaries empirically: A1 confirmed BG-2 is the
+only OOM guard; A6 exposed R-4 as vacuously true (breaker-side
+sharpening flagged). Decision 42 stamped (QA-4 standing; OPEN-1
+refuse-and-surface; OPEN-2 document-boundary). TRUNK-PLAN v3: live
+status board + the corrections ledger (where the seeds died under
+attack, kept for the next seeder). The S3a implementer dispatched
+spike-first, decision-42-bound, engine-proceeds-if-spike-fails.
+THE COMMIT LANDED: 011d455b — the whole arc since d9cf99ee
+(decisions 40/41/42, D2, the query layer + lastK/cut-law, S0
+mirrors + CI wiring, the S1 castle, the S3a packet, the corpus,
+fifteen reports, the cleanup) with exactly one exclusion: the
+in-flight src/trunk/ engine, which lands with its green battery in
+the next commit. Tree clean but for that.
+
+## Twenty-fifth act — the takeover; the satisfiability probe
+
+Operator order: pause S3a, coordinator takes the implementer seat,
+review and solidify. The lane was stopped AFTER its spike PASSED
+with page-measured evidence (2,000 SVG rects namespace-correct in
+live Chrome over CDP, 15/16 columns memo-skipped, sub-ms folds, a
+DPR flip costing zero column re-renders — CV-3′ SVG confirmed, no
+Canvas2D fallback) and after all four engine modules were written.
+At takeover the battery stood 84/87; all three failures were
+breaker-side UNSATISFIABLE cases — vacuity's dual, no conforming
+implementation could pass them: `Doi.window` in the frozen surface
+vs L-P8's own substring scan (renamed `span`); L-P7's ">9000 ops"
+vs CI-2's equation (16·513 is the ceiling at ANY spread — re-aimed
+at the coverage equation); L-P1-growth demanding individuation of
+carrier-evicted rows (re-aimed inside the carrier). The battery's
+own L-C5 cases had stated the boundary correctly all along —
+sibling inconsistency. Adjudicated openly as packet §10, ledgered
+in TRUNK-PLAN §6, and CODIFIED as the breaker loop's new step 6
+(probe the battery both ways: degenerate for vacuity, then
+satisfiability against invariants, frozen surface, and siblings).
+87/87 green, zero cases weakened; all three leaf gates green; the
+lane report completed with the adjudication on record.

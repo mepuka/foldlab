@@ -30,7 +30,18 @@ defense; only the equations are.
    exhibit-form falsifier, each citing its catalog row or stating
    its work-specific ground. No executable falsifier, no admission.
 5. **Write the battery** — every falsifier a red host test.
-6. **Hand over and stop.**
+6. **Probe the battery both ways.** Against a DEGENERATE
+   implementation (constants, identities): any case that passes is
+   vacuous — sharpen or delete it. Then for SATISFIABILITY, vacuity's
+   dual: check every case's magnitudes against the packet's own
+   invariant class, run every source scan against the packet's own
+   frozen surface, and check sibling cases for consistency at shared
+   boundaries. A case no conforming implementation can pass is the
+   law contradicting itself (S3a, 2026-08-31: three found — a frozen
+   field name tripping the battery's own global scan, and two
+   carrier-blind magnitudes contradicting the invariant CI-2 while
+   sibling cases stated the same boundary correctly).
+7. **Hand over and stop.**
 
 ## Attack artifacts are record, never scratch
 

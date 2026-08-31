@@ -190,12 +190,12 @@ export type Op =
  * of that column; rows below it are Strip. Recomputed ONLY at a cut
  * (CANVAS §4: "aggregation is a CUT EVENT"). */
 export interface Doi {
-  readonly window: number
+  readonly span: number                     // renamed from `window`, §10 A-1
   readonly floor: ReadonlyArray<number>     // length === LANES.length
 }
 
 export const initialDoi: Doi                       // floor all zeros
-export const cutDoi: (model: Model, window: number) => Doi
+export const cutDoi: (model: Model, span: number) => Doi
 
 /** The FULL, unculled placement. Count honesty is stated here, never on
  * `place`'s culled output. */
@@ -1169,3 +1169,47 @@ battery fails at COLLECTION, on the missing modules — not on an
 assertion and not on a harness error. The first vertical slice is
 `model.ts`, which turns `model.test.ts` from a failed suite into ten
 named failures; go law by law from there.
+
+## 10. Amendments (coordinator adjudication, 2026-08-31)
+
+Three defects surfaced DURING the attack — all on the breaker's side,
+all of the UNSATISFIABLE class (the dual of the vacuity the
+degenerate-probe hunts: a case no conforming implementation can pass).
+The laws stand; their projections into the battery were wrong.
+Recorded here because the packet is the law and the law does not
+change silently.
+
+```
+A-1  §0 froze `Doi.window` while L-P8's substring scan forbids the
+     token `window` anywhere in `placement.ts` — the surface
+     contradicted its own battery, and every literal escape was an
+     obfuscation. RULING: the field is `span` (§0 now says so; the
+     battery's Doi literals follow). The scan stays at full strength —
+     and a browser-global homonym was a bad name in a front end
+     anyway, on five-seats grounds.
+
+A-2  The L-P7 case asserted `placement.ops.length > 9000`. CI-2 is an
+     EQUATION — `tail.length = min(K_CARRIER, count)` — so a
+     conforming model individuates at most 512 rows per lane:
+     16·513 = 8208 ops is the ceiling at ANY lane spread. The law's
+     own falsifier says "a placement of 10⁵ ROWS" — unculled is a
+     COVERAGE fact. RULING: the case asserts the coverage equation
+     `opTotal(placement) = receipts fed` plus the exact carrier
+     arithmetic `ops.length = LANES.length · (K_CARRIER + 1)`.
+
+A-3  The L-P1 growth case grew a lane 10 → 5010 and demanded rows
+     0..9 stay INDIVIDUATED under a floor-0 partition. CI-2 evicts
+     their addresses, and L-C5 rightly forbids a Square without its
+     address — the battery's own L-C5 cases state exactly this, and
+     its L-P9 `carrier` case uses the same construction expecting the
+     floor to be FORCED UP. RULING: the growth case tests the law
+     where its premise holds (10 → 410, inside the carrier); beyond
+     the carrier is L-P9 + CI-2's territory, already covered.
+
+Workflow lesson, owed to the implement skill's breaker catalog: after
+the degenerate-probe (which kills vacuous cases), run a
+SATISFIABILITY probe — check every case's magnitudes against the
+packet's own invariant class, check source scans against the packet's
+own frozen surface, and check each case against its sibling cases'
+statements of the same boundary (L-C5 knew what L-P1/L-P7 forgot).
+```

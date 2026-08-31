@@ -1,0 +1,111 @@
+{
+  "emptyAtTip": {
+    "next": 220,
+    "word": [
+    ]
+  },
+  "emptyMidWord": {
+    "next": 80,
+    "word": [
+    ]
+  },
+  "truncated": {
+    "next": 7,
+    "word": [
+    ]
+  },
+  "outOfOrder": {
+    "next": 4,
+    "word": [
+      {
+        "address": "3e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d8",
+        "at": 1756600000000,
+        "seq": 0,
+        "size": 32,
+        "tag": 83
+      },
+      {
+        "address": "1c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b6",
+        "at": 1756600900274,
+        "seq": 2,
+        "size": 106,
+        "tag": 71
+      },
+      {
+        "address": "a50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94f",
+        "at": 1756600900137,
+        "seq": 1,
+        "size": 69,
+        "tag": 71
+      },
+      {
+        "address": "83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d",
+        "at": 1756600900411,
+        "seq": 3,
+        "size": 143,
+        "tag": 71
+      }
+    ]
+  },
+  "overlapping": {
+    "next": 84,
+    "word": [
+      {
+        "address": "72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c",
+        "at": 1756607210412,
+        "seq": 76,
+        "size": 862,
+        "tag": 14
+      },
+      {
+        "address": "e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83",
+        "at": 1756607210549,
+        "seq": 77,
+        "size": 899,
+        "tag": 14
+      },
+      {
+        "address": "50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa",
+        "at": 1756607210686,
+        "seq": 78,
+        "size": 936,
+        "tag": 14
+      },
+      {
+        "address": "c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61",
+        "at": 1756607210823,
+        "seq": 79,
+        "size": 973,
+        "tag": 14
+      },
+      {
+        "address": "3e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d8",
+        "at": 1756607210960,
+        "seq": 80,
+        "size": 1010,
+        "tag": 14
+      },
+      {
+        "address": "a50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94f",
+        "at": 1756607211097,
+        "seq": 81,
+        "size": 56,
+        "tag": 14
+      },
+      {
+        "address": "1c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b6",
+        "at": 1756607211234,
+        "seq": 82,
+        "size": 93,
+        "tag": 14
+      },
+      {
+        "address": "83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d83e94fa50b61c72d",
+        "at": 1756607211371,
+        "seq": 83,
+        "size": 130,
+        "tag": 14
+      }
+    ]
+  }
+}

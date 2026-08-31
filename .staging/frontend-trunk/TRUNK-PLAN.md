@@ -265,6 +265,15 @@ not survive the attack — kept so the next seeder learns):
   not-Query (unitality — the monoid lives on the bounded subtype);
   the seq-guard is where replay safety comes from, BY THEOREM
   (`lastK_not_idem`/`lastK_not_comm`).
+- S3a implementation round (coordinator adjudication 2026-08-31,
+  packet §10): THREE battery cases were UNSATISFIABLE — the dual of
+  vacuity. `Doi.window` contradicted L-P8's own substring scan
+  (renamed `span`); L-P7's ">9000 ops" and L-P1-growth's
+  post-carrier individuation both contradicted CI-2's equation —
+  while the same battery's L-C5 cases stated the carrier boundary
+  correctly. New breaker duty: after the degenerate-probe, a
+  SATISFIABILITY probe — magnitudes vs the invariant class, scans
+  vs the packet's own frozen surface, sibling-case consistency.
 
 The seed lists (historical):
 
