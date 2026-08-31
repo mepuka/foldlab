@@ -11,19 +11,23 @@ into semantic drift.
 
 ## 1. Organizing law
 
-Effect Core v1 uses four non-overlapping authorities:
+Effect Core v1 uses five non-overlapping authorities:
 
 1. **Authored law and intent** — root/domain AGENTS files, ratified specs, and
    the decision record. These carry operator judgment and routing.
 2. **Semantic declarations** — Lean carriers, judgments, interpreters, and
    theorems. These own meaning.
-3. **Source evidence** — pinned Effect/TypeScript trees and generated census
+3. **Portable identity and bytes** — the versioned, language-neutral effect
+   protocol manifest. It owns stable operation and type IDs, canonical wire
+   schemas and encodings, and profile membership. It owns no semantics or
+   proof status.
+4. **Source evidence** — pinned Effect/TypeScript trees and generated census
    rows. These own what the subject source contains.
-4. **Derived orientation** — generated manifests, annotation tables,
+5. **Derived orientation** — generated manifests, annotation tables,
    obligation ledgers, status projections, and byte gates. These make the
-   first three discoverable and detect disagreement; they own no meaning.
+   first four discoverable and detect disagreement; they own no meaning.
 
-No single Markdown file is asked to be all four. In particular, AGENTS.md is
+No single Markdown file is asked to be all five. In particular, AGENTS.md is
 not a backup semantic specification and generated TypeScript is not a program's
 authoritative home.
 
@@ -36,9 +40,10 @@ authoritative home.
 | root `AGENTS.md` | estate conduct, disclosure, artifact/claim discipline, skill routing | One pointer to the staged packet after indexing; no packet details copied in. |
 | `library/cas/AGENTS.md` | store-language law, proof discipline, existing carriers and handlers | Pointer to the packet as the pre-grade successor study; reminder that `Sig`/`Prog`/`Handler`/`PProg` remain existing bases. |
 | `library/effects/AGENTS.md` | generated TS host, runtime/package/LSP lane rules | Pointer to the public-surface/LSP checklist and the TS7 `@effect/tsgo` coverage gate. |
+| `library/effect-protocol/AGENTS.md` | portable identity/byte/profile ownership and generation prohibitions | Created in B1 as an authored router; no canonical manifest exists yet. |
 | `.staging/effect-core-v1/AGENTS.md` | temporary packet read order, ownership, role split, resume and handoff protocol | Created now; governs only staged design and scratch work. |
-| future `formal/effect-core-v1/AGENTS.md` | promoted Lean package's declaration freeze, proof loop, axiom and claim gates | Created only when S1 is promoted. It links back to the ratified contract and generated obligation ledger. |
-| future `experiments/effect-core-surface/AGENTS.md` | hoover inputs/outputs, independent instruments, mutants, LSP file coverage | Created with S0 implementation, not in advance. |
+| `formal/effect-core-v1/AGENTS.md` | Lean scaffold's declaration freeze, proof loop, axiom and claim gates | Created in B1; every module is empty and no semantic declaration is promoted. |
+| `experiments/effect-core-surface/AGENTS.md` | hoover inputs/outputs, independent instruments, mutants, LSP file coverage | Created in B1 with empty v4-detectable modules and exact-file-set tooling only. |
 
 Nearest-file routing narrows the task; it never repeals a parent rule. A child
 file may add a stricter gate but cannot redefine an existing term or weaken a
@@ -46,7 +51,8 @@ claim boundary.
 
 ### 2.2 What is authored and what is generated
 
-AGENTS.md files are not generated wholesale. The repository's
+AGENTS.md files are always authored; no generator may create or rewrite their
+normative prose. The repository's
 `BOOTSTRAP.md` distinction is retained:
 
 - **Authored:** operator voice, conduct, read order, role separation,
@@ -55,10 +61,12 @@ AGENTS.md files are not generated wholesale. The repository's
   names, current slice, declaration digests, obligations, and gate status.
 
 Markdown has no trustworthy include mechanism, so generated facts live in
-companion manifests and generated human projections. AGENTS.md links them and
-a bidirectional gate checks the relationship. This avoids a generator
-rewriting operator prose and avoids hand-copying volatile facts into every
-router.
+companion manifests and generated human projections called **sidecars**.
+AGENTS.md links to sidecars but does not copy their volatile rows. A
+bidirectional gate checks the relationship. This avoids a generator rewriting
+operator prose and avoids hand-copying volatile facts into every router. A
+sidecar may report the current slice, digests, pins, coverage, obligations, and
+gate results; it may not add an instruction or weaken an authored rule.
 
 ### 2.3 Bidirectional AGENTS/spec gate
 
@@ -102,45 +110,84 @@ authority to AGENTS without a spec row are equally red.
   workshop/                 ignored local probes
 ```
 
-### 3.2 Promoted layout, only after slice ratification
+### 3.2 Current B1 scaffold and reserved generated paths
 
 ```text
 formal/effect-core-v1/
-  AGENTS.md
-  lakefile.toml / lean-toolchain
+  .gitignore / AGENTS.md
+  README.md / lakefile.toml / lake-manifest.json / lean-toolchain
+  EffectCore.lean              imports every empty category module
   EffectCore/
-    Types.lean
-    Alphabet.lean
-    ExistingTypes.lean
-    Raw.lean
-    Check.lean
-    Flow.lean
-    Handler.lean
-    Machine.lean
-    Approximation.lean
-    Classification/
-    CasEmbedding.lean
-    Target/
-    Generated/PublicSurface.lean
-    Generated/TypeAnnotations.lean
-    Generated/Obligations.lean
-  generated/
-    EFFECT-PUBLIC-SURFACE.md
-    EXISTING-TYPES.md
-    OBLIGATIONS.md
+    Foundation/               values, rows, alphabet metadata, pure boundary
+    Surface/                  source rows, TypeScript type graph, dispositions
+    Syntax/ Admission/ Semantics/
+    Handler/ Layer/
+    Concurrency/ Stateful/ Channel/
+    Foreign/ Classification/
+    Bridge/ Protocol/ Target/ Assurance/
+  contracts/attacks/
+  meta/schemas/ meta/in/ tools/
+  # No Generated/ or meta/out/ path exists in B1.
 
 experiments/effect-core-surface/
-  AGENTS.md
-  package.json / frozen lock
-  tsconfig.generated.json
-  src/                       hoover and independent checkers
-  fixtures/                  positive, negative, and mutation inputs
-  generated/                 canonical JSON evidence
+  AGENTS.md / README.md
+  package.json / bun.lock
+  tsconfig.json
+  src/                       empty v4-detectable module stubs
+  fixtures/
+    positive/ negative/ mutants/
+  # No generated/ path exists in B1.
+
+library/effect-protocol/
+  AGENTS.md                   authored portable-seam rules
+  README.md
+  v1/
+    README.md
+    schema/ profiles/ vectors/
+  # protocol.json and canonical vectors are future generated outputs, absent in B1.
+
+future library/effects/src/generated/effect-protocol/
+                               generated Effect TS profile bindings
+future library/effects/src/effect-protocol/
+                               authored Effect adapter
 ```
 
-The formal tree consumes generated first-order rows; it does not parse the
-Effect package during proof checking. The experiment tree reads the pinned
-package and produces evidence; it does not define semantic laws.
+Every current Lean and TypeScript source file in these trees is a stub. The
+formal tree will consume generated first-order rows; it will not parse the
+Effect package during proof checking. The experiment tree will read the pinned
+package and produce evidence; it will not define semantic laws.
+
+### 3.3 Language-neutral effect protocol seam
+
+`library/effect-protocol/` is the smallest shared interface between the Lean
+model and every host language. Its versioned manifest owns only:
+
+- stable operation, type, and profile IDs;
+- canonical request, response, and portable outcome schemas;
+- canonical byte encodings and their shared vectors; and
+- membership of operations and types in each named profile.
+
+Lean remains the sole owner of admission, relational meaning, reference
+interpretation, and proofs. Generated Lean rows admit a selected manifest
+profile into existing `Sig.Op`/`OpDesc` declarations and relate it to the
+reference semantics. Generated TypeScript rows provide codecs and identifiers;
+an authored Effect adapter realizes one selected profile. Effect TypeScript is
+the first consumer, not the protocol authority and not the whole effectful
+interface. A later host consumes the same manifest and supplies its own
+adapter.
+
+The neutral manifest must not contain theorem status, source-census facts,
+Effect-specific AST declarations, concrete handler implementations, host
+paths, LSP results, or runtime-conformance claims. Those are generated
+sidecars keyed by the protocol digest. There is one neutral manifest family,
+not a CAS manifest, an Effect manifest, and a future-host manifest that repeat
+the same IDs or bytes.
+
+The first authorized implementation slice is **file stubs only**: create the
+agreed directory and file names with ownership headers and no protocol rows,
+schema universe, generated declarations, adapter behavior, or semantic claim.
+Content begins only after the manifest shape and its admission consumer are
+grilled and frozen.
 
 ## 4. Generated continuity manifests
 
@@ -246,33 +293,91 @@ This becomes the first long-duration resume document after `README.md`.
 ## 5. Generation direction and ownership
 
 ```text
-authored contract + decisions
-          |
-          v
-accepted schemas and IDs
-          |
-          +-------------------------+
-          |                         |
-          v                         v
-pinned source census        Lean declarations/theorems
-          |                         |
-          v                         v
-PublicSurface JSON          proof/axiom receipts
-          |                         |
-          +------------+------------+
-                       v
-       annotations + obligations + orientation
-                       |
-          +------------+-------------+
-          v                          v
- generated Lean rows          generated Markdown status
+authored contract + decisions       neutral protocol manifest
+          |                                  |
+          v                                  v
+Lean semantic declarations          stable IDs, bytes, profiles
+          |                                  |
+          +----------------+-----------------+
+                           v
+                 generated admission rows
+                           |
+          +----------------+-----------------+
+          |                                  |
+          v                                  v
+pinned source census                 proof/axiom receipts
+          |                                  |
+          v                                  v
+PublicSurface JSON           annotations + obligations + orientation
+                                             |
+                               +-------------+-------------+
+                               v                           v
+                       generated host bindings    generated status sidecars
 ```
 
-No arrow points from generated TypeScript runtime observations back into the
-Semantic Model. A counterexample reopens a contract or proof, but the runtime
-does not silently rewrite meaning.
+The neutral manifest is checked against Lean admission; it does not generate
+meaning. No arrow points from generated TypeScript runtime observations back
+into the Semantic Model or from a host adapter back into protocol identity. A
+counterexample reopens a contract or proof, but the runtime does not silently
+rewrite meaning.
 
-## 6. Slice state machine
+## 6. Worktree and integration protocol
+
+Every proof-bearing slice starts from a clean, recorded packet baseline and
+uses four distinct worktree roles:
+
+1. **Packet baseline:** an immutable clean commit containing the reviewed
+   packet and declaration digest. No slice role edits this worktree.
+2. **Integration:** the coordinator-owned worktree. It is the only place where
+   shared packet documents, generated sidecars, and accepted slice results are
+   reconciled. Unknown or unrelated changes stop integration.
+3. **Per-slice breaker and builder:** two worktrees named for one slice and
+   based on recorded integration commits. The breaker first lands the frozen
+   statement and red controls. The builder starts from that accepted breaker
+   commit and may not weaken or rewrite the breaker battery.
+4. **Per-slice reviewer:** a fresh worktree at the proposed integration commit.
+   The reviewer reruns the named evidence and reports findings; it does not
+   repair the submission it reviews.
+
+The coordinator records the baseline commit, packet digest, integration base,
+role, file fence, and expected red/green commands before dispatch. Each role
+starts and ends with `git status --short` attributable to its own file fence.
+Agents never share an authority file concurrently. Accepted work is integrated
+in dependency order, conflicts are resolved against the packet authority, and
+the reviewer reruns after the exact integrated commit is known. A clean role
+worktree is not evidence that integration is clean; both states are recorded.
+
+## 7. Broad sweep before proof depth
+
+Implementation proceeds in these phases:
+
+1. **B0 — seal the baseline:** record the reviewed packet, decisions,
+   declaration snapshot, and counterexample register.
+2. **B1 — file stubs only:** establish the approved directory and file names,
+   ownership headers, imports, and empty gate entry points. Do not add a type,
+   operation row, protocol byte, adapter behavior, or proof claim.
+3. **B2 — broad ownership sweep:** traverse every required type, operation
+   family, profile, public-surface family, theorem edge, and red-control class.
+   Record owners, reuse/bridge decisions, and missing rows before proving one
+   family deeply.
+4. **B3 — broad executable skeleton:** make every planned generator, admission
+   boundary, checker, proof module, adapter, and sidecar path reachable with
+   explicit pending rows and planted controls. A placeholder cannot report
+   closure.
+5. **B4 — per-type vertical closure:** deepen one dependency-ready type row at
+   a time through breaker, builder, and independent reviewer worktrees. Cutover
+   is permitted only when that row's constructor, checker, meaning,
+   classification, lowering, byte, and red-control edges close.
+6. **B5 — profile integration:** join individually closed rows into a named
+   neutral-protocol profile, then run cross-language vectors and profile-level
+   closure. Effect TS may cut over as one profile without implying closure for
+   other hosts or for the whole effectful interface.
+
+The broad phases prevent a locally elegant proof from fixing the wrong
+boundary or duplicating an existing carrier. They do not discharge any deep
+proof edge; only B4 and B5 can close type or profile cutover rows.
+
+## 8. Slice state machine
 
 Each slice follows:
 
@@ -293,7 +398,7 @@ Rules:
 - A changed public declaration returns the slice to `proposed`; a proof script
   repair that preserves the snapshot does not.
 
-## 7. Long-duration resume algorithm
+## 9. Long-duration resume algorithm
 
 A new agent or human performs this bounded recovery:
 
@@ -314,7 +419,7 @@ This algorithm intentionally does not require old chat transcripts. A chat may
 explain intent, but repository state and recorded rulings decide what work is
 authorized and what has been established.
 
-## 8. Drift and context-loss gates
+## 10. Drift and context-loss gates
 
 Before the generated gates exist, incoming agent work is reconciled by the
 authored protocol in `AGENTS.md`: capture its classified revision, assign one
@@ -369,7 +474,7 @@ The future `check:effect-core-v1` must fail on:
 Every gate has a planted positive control and negative mutation. A gate that
 has never killed its named mutation is not live evidence.
 
-## 9. Preventing annotation rot
+## 11. Preventing annotation rot
 
 Annotations are keyed by declaration identity, not line number. A source move
 updates provenance; a signature/body change updates its digest and opens a
@@ -388,7 +493,7 @@ The source annotation and proof-status planes remain separate:
 
 No later state is inferred from an earlier one.
 
-## 10. Promotion plan
+## 12. Promotion plan
 
 This organizational layer is useful immediately as staged routing, but its
 generated machinery is implemented successively:
@@ -407,8 +512,10 @@ generated machinery is implemented successively:
    counterexample zero counters without making the projection authoritative.
 6. **O5 — surface integration:** join recursive Effect census rows and LSP
    coverage to annotations without granting either semantic authority.
-7. **O6 — promoted lane:** create formal/experiment AGENTS files only with
-   their first accepted consumer and wire all gates into root check/CI.
+7. **O6 — activated lane:** replace the current empty stubs only through their
+   first accepted consumers, then wire the admitted generators and red controls
+   into root check/CI.
 
-O0 records the organization. O1–O6 remain proposed implementation slices and
-must not be reported as present until their named files and red controls exist.
+O0 and the B1 file scaffold are present. O1–O6 remain proposed implementation
+slices and must not be reported as present until their named files and red
+controls exist.

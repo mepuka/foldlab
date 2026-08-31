@@ -58,6 +58,8 @@ do not copy the fact into both.
 - No generated path proposed by `ORGANIZATION.md` is created merely because it
   is named there. Generation begins only after its schema and consumer are
   accepted.
+- The first implementation slice creates approved file stubs only. It adds no
+  carrier, operation row, protocol byte, adapter behavior, or proof claim.
 - The pinned CAS carrier and canonical `PProg` identity are not replaced.
 
 ## Existing-type rule
@@ -80,7 +82,7 @@ version” is not an annotation.
 
 - The **breaker** owns quantified clauses, adversarial examples, and the
   frozen statement. The breaker does not implement the checker it attacks.
-- The **implementer** works only against a reviewed contract and records exact
+- The **builder** works only against a reviewed contract and records exact
   diagnostics when a statement is unimplementable as written.
 - The **reviewer** checks Effect-source fidelity, existing-carrier reuse,
   proof adequacy, and claim scope independently.
@@ -90,7 +92,44 @@ version” is not an annotation.
   are separately related targets.
 
 One person or agent may occupy different roles in different slices, but not
-breaker and implementer for the same falsifier battery.
+breaker and builder for the same falsifier battery.
+
+## Worktree and phase protocol
+
+The clean packet-baseline commit is immutable. The coordinator alone owns the
+integration worktree and reconciles shared packet documents and generated
+sidecars there. Each slice uses separate breaker, builder, and reviewer
+worktrees with recorded base commits, packet digests, file fences, and named
+checks. The breaker lands and freezes red controls first; the builder starts
+from their accepted commit and cannot weaken them; the reviewer starts fresh
+from the proposed integrated commit, reruns the evidence, and does not repair
+the work under review. Every role records attributable clean/dirty state at
+start and handoff. Two roles never edit the same authority file concurrently.
+
+Work proceeds broad before deep: seal the packet baseline; create file stubs
+only; sweep all types, operations, profiles, proof edges, and controls for
+ownership and gaps; connect the pending module/generator/gate skeleton; then
+close one dependency-ready type vertically through breaker, builder, and
+reviewer. Only individually closed type rows may enter a profile cutover.
+
+## Language-neutral protocol rule
+
+The future `library/effect-protocol/` manifest owns stable portable IDs,
+canonical bytes, and named profile membership. Lean owns admission, meaning,
+reference interpretation, and proof. Generated Effect TypeScript bindings and
+an authored Effect adapter consume one profile; they do not own protocol
+identity, and Effect is not the only permitted consumer. Proof status, source
+census, LSP coverage, and runtime evidence are generated sidecars keyed by the
+protocol digest, never manifest fields and never generated AGENTS prose.
+
+## Ensuring information rule
+
+`ensuring` is an exit rule, not ordinary `Prog.bind`. Its target or reference
+machine must retain the body's resulting state even when the body exits through
+typed error or refusal, so cleanup can begin with that state. “State outside
+error” names this information contract, not a mandated transformer spelling:
+a layout that discards state on error is inadequate even if its types mention
+both state and error.
 
 ## Incoming agent-report intake
 
@@ -149,6 +188,8 @@ diagnostic array without coverage is a failed harness.
 Every handoff reports:
 
 - current slice and packet digest;
+- packet-baseline, integration-base, and reviewed commit IDs;
+- worktree role, file fence, and attributable start/end status;
 - changed files;
 - exact checks run and their results;
 - public names added or changed;

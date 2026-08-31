@@ -1092,9 +1092,12 @@ semantic proof.
 ### 8.3 Cross-check and clean generated-program gate
 
 - [ ] Run the machine-readable command
-  `library/effects/node_modules/.bin/effect-tsgo diagnostics --project experiments/effect-core-surface/tsconfig.generated.json --format json --list-files`
-  from the repository root. The dedicated config is a frozen, handwritten
-  harness input, not a generated file.
+  `bun run --cwd experiments/effect-core-surface typecheck` from the repository
+  root. Require the package script to equal `effect-tsgo diagnostics --project
+  tsconfig.json --format json --strict --list-files`. Running in the experiment
+  directory is required for discovery of its pinned local TypeScript install.
+  The dedicated config is a frozen, handwritten harness input, not a generated
+  file.
 - [ ] Require valid JSON, zero stderr except declared progress output, and the
   exact schema fields `diagnostics`, `files`, and `summary`.
 - [ ] Require `summary.filesChecked = summary.totalFiles` and set equality
@@ -1415,7 +1418,7 @@ Command meanings:
 
 The generation task's declared sources must over-include the whole extractor,
 frozen packet, schemas, `library/effects/package.json`, `bun.lock`, dedicated
-`experiments/effect-core-surface/tsconfig.generated.json`, provenance lock,
+`experiments/effect-core-surface/tsconfig.json`, provenance lock,
 installed-package snapshot manifest, and the existing
 `library/cas/Cas/Lang/{RefusalMap,Defun}.lean`,
 `library/cas/Cas/Core/Admission.lean`, and

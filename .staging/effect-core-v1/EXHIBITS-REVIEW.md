@@ -102,10 +102,13 @@ reader over `Prog`. This is useful representation evidence: opaque higher-order
 host callbacks are not required in stored syntax.
 
 Packet consequence: start with the existing `Sig`, `Handler`, `Handler.sum`,
-and `Handler.through`. Introduce no higher-order handler carrier merely to pass
-named child blocks. A recovering catch or exit-aware finalizer may require a
-richer existing target-monad stack or the reference machine state, but not a
-new `HHandler` type: the handler still receives a first-order operation whose
+and `Handler.through`. `Handler.sum` is same-target family composition;
+`Handler.through` is used only for an upper `Handler S (Prog T)` followed by a
+lower `Handler T M`, not to retarget a scoped handler already aimed at its
+machine. Introduce no higher-order handler carrier merely to pass named child
+blocks. A recovering catch or exit-aware finalizer may require a richer
+existing target-monad stack or the reference machine state, but not a new
+`HHandler` type: the handler still receives a first-order operation whose
 children are code IDs.
 
 ### E6 — select `PProg` as each block's sequential body
@@ -249,9 +252,13 @@ support/size, not to the Lean type having finitely many inhabitants.
   a replay theorem; it does not collapse the
   relational semantics to a function.
 
-There is deliberately no global `denotes_unique`. The admissible theorems are
-`denotes_unique_given` under fixed decisions and the stronger deterministic
-CAS specialization.
+There is deliberately no global `denotes_unique`. The admissible uniqueness
+boundaries are relational agreement under one fixed compatible decision tape;
+the ask-free specialization only when every reachable `Decision` is proved
+subsingleton, excluding every other choice source; and the stronger stable
+non-frontier deterministic CAS specialization. The workshop
+`denotes_unique_on_the_askFree_fragment` supports only its ask-only fragment,
+not unqualified ask-free full-core execution.
 
 ## 5. Refusal-kind classification without duplicate error types
 

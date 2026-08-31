@@ -10,6 +10,13 @@ Representation constraints are imported from `EXHIBITS-REVIEW.md`; per-type
 implementation and cutover edges are owned by `TYPE-CLOSURE.md`. The scratch
 exhibit declarations are not public declarations in this algebra.
 
+The evidence-backed §17 rulings freeze conditions 10, 11, 15, 16, 18, 19,
+20, and only the classifier half of condition 17 as constraints on a later
+Pass B signature. Condition 14 remains open pending a neutral protocol
+operation identity and its admission bridge to `Sig.Op`; renderer injectivity,
+the second half of condition 17, also remains open. These rulings discharge no
+theorem in this PRE-GRADE packet.
+
 Every `EC1-*` name in this document is a **PROPOSED TERM** unless its line is
 explicitly labeled **PROPOSED RULING**, **PENDING THEOREM**, or **PENDING
 FALSIFIER**. Mathematical notation describes requested declarations; it is not
@@ -121,11 +128,11 @@ Defects and interruption inhabit `CauseTree E` but do not enlarge `E`.
 
 ### 2.2 Closed alphabet
 
-`EC1-A06 Alphabet` is content with a version, an existing semantic
-`Cas.Lang.Sig`, a finite canonical enumeration of that signature's `Sig.Op`,
-and a sorted dependent table of `EC1-A07 OpDesc` records. `OpDesc op` records
-metadata for the existing operation and proves that `answerTy` denotes
-`Sig.Ans op`:
+The current Lean-side candidate for `EC1-A06 Alphabet` is content with a
+version, an existing semantic `Cas.Lang.Sig`, a finite canonical enumeration
+of that signature's `Sig.Op`, and a sorted dependent table of `EC1-A07 OpDesc`
+records. `OpDesc op` records metadata for the existing operation and proves
+that `answerTy` denotes `Sig.Ans op`:
 
 ```text
 OpDesc =
@@ -162,6 +169,14 @@ reindexed over the left and right injections. The shipped `CasSig`, `RootSig`,
 `StoreSig`, `WordSig`, and `WordedSig` identities and their CAS non-disturbance
 and preservation theorems remain the extension-law anchors. D13 reification
 grades live in `OpDesc`/surface links, never as a field added to `Sig`.
+
+**OPEN FREEZE CONDITION 14.** This Lean-side shape is not yet the full public
+operation-identity design. Before it can freeze, the packet must define a
+neutral protocol operation identity and an explicit admission bridge from each
+Lean-modeled identity to its existing `Sig.Op`/`Sig.Ans`, while leaving
+host-obligation identities representable without pretending they already have
+a Lean `Sig.Op`. The shipped `Sig.sum` and Root/Word laws constrain that bridge;
+they do not by themselves settle it.
 
 ### 2.3 Public-surface mapping input
 
@@ -412,13 +427,22 @@ Every graph-backed clause elaborates to the existing `Cas.Lang.Handler` in a
 target monad carrying enough state/error/machine context to observe a child
 outcome before deciding recovery or cleanup. Named body, handler, finalizer,
 and scope children are `BlockId`s, so ordinary `Sig` and `Handler` suffice.
-Signature families compose with existing `Handler.sum` and handler towers with
-`Handler.through`; there is no `HHandler`. The proved
+The scoped handler targets that adequate machine directly. Signature families
+with the same target compose with existing `Handler.sum`. `Handler.through`
+is reserved for a genuine tower whose upper handler has type
+`Handler S (Prog T)` and whose lower handler has type `Handler T M`; it does
+not retarget a scoped handler already aimed at the machine. There is no
+`HHandler`. The proved
 `no_handler_into_ScopeM_catches` counterexample excludes
 `ReaderT Env (Prog CasSig)` as that target: its child refusal cannot be
-recovered. `scopeHandlerR` is only a minimal adequate-target witness, not the
-adopted machine semantics. The scratch `scopeHandler` is not adopted as catch,
-ensuring, scope, provision, or failure semantics.
+recovered. `scopeHandlerR` witnesses catch recovery only; because its error
+branch carries no word, it is inadequate for ensuring.
+The frozen information contract is that state survives failure. The minimum
+CAS witness has target
+`ReaderT Env (ExceptT Refusal (StateT Word Id))`. The scratch `scopeHandler`,
+`scopeHandlerR`, `scopeHandlerW`, and their helper carriers are evidence for
+this boundary, not promoted catch, ensuring, scope, provision, failure, or
+machine semantics.
 
 ## 7. Failure, scopes, and resources
 
@@ -781,10 +805,12 @@ total-correctness decomposition. This packet introduces no duplicate modality;
 any later full-core logic is either an explicit restriction or a bridge to
 these owners.
 
-EffHOL Mod-E transfers only through the existing history-indexed
-`wlp_append`: the prefix is nonempty and the suffix is interpreted with the
-answer history produced by that prefix. A restarted table-only suffix rule is
-false even with nonemptiness, so no unconditional sequence modality is added.
+EffHOL Mod-E is the new `EC1-T130` obligation, to be derived by specializing
+the shipped `wpAux_append`; the estate does not ship `wlp_append`. `EC1-T130`
+must require a nonempty prefix and interpret the suffix with the answer history
+produced by that prefix. A restarted table-only suffix rule is false even with
+nonemptiness, so no unconditional sequence modality is added. The scratch
+`wlp_append` proof is evidence only and is not promoted.
 
 ## 13. Generated TypeScript boundary
 
@@ -820,6 +846,8 @@ Because `render` is a Lean function, repeat-call determinism alone is
 tautological and earns no theorem. The substantive obligations are canonical
 output bytes, decode/render round trip, and injectivity on normalized admitted
 `TsCore`; distinct normalized targets may not collapse to the same bytes.
+Renderer injectivity is the still-open half of freeze condition 17: it remains
+a proposed obligation, not a frozen representation ruling or inherited fact.
 
 `EC1-A34 AcceptedTs` is only a source/tooling judgment:
 

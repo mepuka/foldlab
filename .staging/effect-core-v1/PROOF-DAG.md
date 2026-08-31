@@ -24,6 +24,11 @@ by appearing in this DAG.
 local counterexamples and theorem anchors used to shape the row premises below.
 Its report does not discharge any PENDING row.
 
+The evidence-backed §17 rulings freeze conditions 10, 11, 15, 16, 18, 19,
+20, and only the classifier half of condition 17 as constraints on a later
+Pass B signature. Condition 14 and renderer injectivity remain open. A ruled
+condition fixes packet shape; it does not discharge any PENDING node below.
+
 ## 1. Declaration DAG
 
 ```text
@@ -85,6 +90,12 @@ PROPOSED TERM EC1-D014  ForeignEffect : Alphabet -> OpId -> Type
 The source hoover owns completeness of `PublicSurface`;
 Lean consumes generated rows and decides disposition/mapping totality. The
 authored `Alphabet` is a mapped subset, never the source universe.
+
+`EC1-D011` is only the proposed Lean-modeled specialization. Freeze condition
+14 remains open until a neutral protocol operation identity and its explicit
+admission bridge to existing `Sig.Op`/`Sig.Ans` are declared; host-obligation
+identities may not be forced through that bridge or mistaken for Lean-modeled
+operations.
 
 Required instance/declaration obligations: decidable equality for codes and
 IDs; canonical ordering/normalization for rows and tables; typed lookup; finite
@@ -255,13 +266,22 @@ signature.
 | `EC1-T042` | PENDING THEOREM | `semEq_approx_iff : SemEq O p q <-> forall i n, mask O (approx n (initialConfig p i)) = mask O (approx n (initialConfig q i))` | relational definition of `SemEq`; `T039,T041`; no family extensionality |
 | `EC1-T043` | PENDING THEOREM | `semEq_equivalence : Equivalence (SemEq O)` | `T042` |
 | `EC1-T044` | PENDING THEOREM | `diverges_iff_live_prefixes : Diverges c decisions <-> forall n, Live (execN n decisions c)` | compatible infinite decision stream; live is neither Refusal nor Cause |
-| `EC1-T045` | PENDING THEOREM | `exec_prefix_unique_given : TapeCompatible c tape -> at most one normalized value of execN n tape c` | `T035–T041`; scheduler policy/state is in `c`; no separate schedule argument |
+| `EC1-T045` | PENDING THEOREM | `fixed_tape_relational_unique : TapeCompatible c tape -> RelPrefix n tape c r1 -> RelPrefix n tape c r2 -> normalizePrefix r1 = normalizePrefix r2` | `T035–T037`; proved from relation/executor adequacy, not function determinism; scheduler policy/state is in `c`; no separate schedule argument |
+| `EC1-T045A` | PENDING THEOREM | `ask_free_decision_irrelevant : AskFree c -> (forall c', Reachable c c' -> Subsingleton (Decision c')) -> TapeCompatible c tape1 -> TapeCompatible c tape2 -> RelPrefix n tape1 c r1 -> RelPrefix n tape2 c r2 -> normalizePrefix r1 = normalizePrefix r2` | `T035–T037`; the workshop `denotes_unique_on_the_askFree_fragment` is evidence only for the subfragment whose sole choices are asks; full-core ask-freedom alone does not exclude scheduler, race, foreign, or replay choices |
 | `EC1-T046` | PENDING THEOREM | `cas_block_stable_outcome_unique : two completed non-frontier CAS/block outcomes selected beyond sufficient unfolding fuel agree with the exhibited big-step result` | CAS injection; big-step handler interpretation; excludes exhaustion/frontier labels |
 
 `EC1-T035` is not the tautology that a Lean function has one output. It states
 that the explicit decision interface is exhaustive and exclusive for the
 relation's nondeterminism; together with `T033–T034` it makes a fixed decision
 tape the only executable choice source.
+
+`EC1-T045` is relational: two derivations from the same initial configuration
+and compatible tape must agree after normalization. It is not discharged by
+the fact that `execN` is a function. `EC1-T045A` records the narrower
+ask-free result supported by the workshop exhibit. In the full core,
+`AskFree` must be paired with a proved absence of every other decision source;
+ask-freedom by itself says nothing about scheduler ties, races, foreign
+responses, or replay selection.
 
 `EC1-T038` states that each produced approximation has finite structure. It
 does not assert that the type of all approximations has finitely many
@@ -290,16 +310,22 @@ given a nonexistent general bind law.
 | `EC1-T054` | PENDING THEOREM | `resume_at_most_once : ConfigWF c -> reachable c' -> consumedCount token c' <= 1` | `ResumeWF,T031` |
 | `EC1-T055` | PENDING THEOREM | `interpret_seq : denoteHandler h (seq p k) = semanticBind (denoteHandler h p) (denoteHandler h k)` | `T023,T041` |
 | `EC1-T056` | PENDING THEOREM | `direct_handler_elaborates : DirectHandlerWF d -> exists h : Handler, DirectHandlerDenotes d h` | existing `Handler`; direct-route checker; target exposes child `Exit`/machine state |
-| `EC1-T057` | PENDING THEOREM | `handler_tower_composes : DirectHandlerDenotes d1 h1 -> DirectHandlerDenotes d2 h2 -> DirectHandlerDenotes (sumOrThrough d1 d2) (Handler.sum/through h1 h2)` | existing `Handler.sum`; existing `Handler.through` |
-| `EC1-T058` | PENDING THEOREM | `handler_target_recovers : catch child handler in the selected state/error/machine target observes child failure and can return handler success` | adequate target; rejects `ReaderT Env (Prog CasSig)` by `no_handler_into_ScopeM_catches`; `scopeHandlerR` only a minimal witness |
-| `EC1-T059` | PENDING THEOREM | `ensure_runs_after_failure : registered ensure body finalizer and body exits by typed failure/refusal -> finalizer begins before scope exit` | machine unwind rules; existing `ensuring_never_finalises_a_refusal` excludes `Prog.bind` implementation |
+| `EC1-T057` | PENDING THEOREM | `handler_sum_composes : DirectHandlerDenotes dS hS -> DirectHandlerDenotes dT hT -> DirectHandlerDenotes (sum dS dT) (Handler.sum hS hT)` | existing `Handler.sum`; both handlers share the same target monad |
+| `EC1-T057T` | PENDING THEOREM | `handler_through_composes : DirectHandlerDenotes dUpper (hUpper : Handler S (Prog T)) -> DirectHandlerDenotes dLower (hLower : Handler T M) -> DirectHandlerDenotes (through dUpper dLower) (Handler.through hUpper hLower)` | existing `Handler.through`; applies only through the intermediate `Prog T` |
+| `EC1-T058` | PENDING THEOREM | `handler_target_recovers : catch child handler in the selected state/error/machine target observes child failure and can return handler success` | rejects `ReaderT Env (Prog CasSig)` by `no_handler_into_ScopeM_catches`; ensuring also requires state to survive failure; minimum CAS witness `ReaderT Env (ExceptT Refusal (StateT Word Id))` |
+| `EC1-T059` | PENDING THEOREM | `ensure_runs_after_failure : registered ensure body finalizer and body exits by typed failure/refusal -> finalizer begins before scope exit` | state-surviving failure target, minimally for CAS `ReaderT Env (ExceptT Refusal (StateT Word Id))`; machine unwind rules; existing `ensuring_never_finalises_a_refusal` excludes `Prog.bind` implementation |
 
 Scoped children are `BlockId`s interpreted by the same existing `Handler`
 carrier into an adequate state/error/machine target that observes child
-outcomes. There is no `HHandler` declaration or proof node. The scratch
+outcomes. That scoped interpretation is direct; it is not an application of
+`Handler.through`. `Handler.sum` handles same-target signature composition,
+while `Handler.through` discharges only the separately typed `Prog T` tower
+case in `EC1-T057T`. There is no `HHandler` declaration or proof node. The scratch
 `scopeHandler` clauses are not a semantic premise for catch, scope,
-interruption, or finalization, and `scopeHandlerR` is not promoted from its
-minimal witness role.
+interruption, or finalization. `scopeHandlerR` is a catch-only witness and loses
+the state needed by ensuring; it, `scopeHandlerW`, and all scratch helper
+carriers remain unpromoted. The adopted information contract is only that the
+selected target observes child outcome and preserves state on failure.
 
 ## 8. Scope, resource, and cause theorem bundle
 
@@ -397,7 +423,7 @@ closed model/host universes.
 | `EC1-T127` | PENDING THEOREM | every existing `Refusal.Clause` has a nonempty host image and every host tag is mapped or in the declared host-only row | existing `hosts_ne_nil`, `mapped_or_hostOnly`, `clause?_none_iff_hostOnly` |
 | `EC1-T128` | PENDING THEOREM | model-to-host and host-to-model table agreement is exactly existing `RefusalMap.table`/`hostOnlyTable` | existing table agreement/completeness family |
 | `EC1-T129` | PENDING THEOREM | refusal host images are disjoint and model/host wires are duplicate-free | existing `hosts_disjoint`, `wire_nodup` theorems |
-| `EC1-T130` | PENDING THEOREM | `modE_wlp_append : pre != [] -> wlp H (pre ++ post) Q w <-> wlp H pre (fun _ w' => wpAux H True (PProg.answersFrom H [] pre) post Q w') w` | existing `wlp_append`; suffix receives prefix answer history; no restarted table-only rule |
+| `EC1-T130` | PENDING THEOREM | `modE_wlp_append : pre != [] -> wlp H (pre ++ post) Q w <-> wlp H pre (fun _ w' => wpAux H True (PProg.answersFrom H [] pre) post Q w') w` | new obligation derived by specializing shipped `wpAux_append`; suffix receives prefix answer history; no restarted table-only rule; scratch `wlp_append` is not promoted |
 
 `EC1-T100` is the admission stop: raw empty and dangling `PProg` values remain
 representable but cannot be silently coerced into `CheckedProgram`.
@@ -409,9 +435,10 @@ alternative canonical CAS serializer.
 
 `EC1-T123–T124` specialize the general semantic judgments to the existing CAS
 logic. They do not introduce another `WPre`, `WPost`, EffHOL modality, `wlp`,
-or `wp` carrier. `EC1-T130` is the only proposed Mod-E transfer and retains
-both the nonempty-prefix and threaded-history premises of existing
-`wlp_append`.
+or `wp` carrier. `EC1-T130` is the only proposed Mod-E theorem and retains both
+the nonempty-prefix and threaded-history premises forced by the counterexamples.
+It is new work whose shipped derivation anchor is `wpAux_append`; no estate
+`wlp_append` theorem is inherited.
 
 ## 13. TypeScript target theorem bundle
 
@@ -443,7 +470,8 @@ a separately classified topology-preserving project-owned adapter.
 The omitted same-input `render_deterministic` equation is true of every Lean
 function and carries no design content. `EC1-T115` is the stronger,
 falsifiable no-collision obligation; the existing non-injective plain renderer
-is a warning, not an inherited proof.
+is a warning, not an inherited proof. Freeze condition 17 is closed only for
+classifier overlap; `EC1-T115` and the renderer half remain open.
 
 ## 14. Required source/tooling harnesses
 
@@ -453,7 +481,7 @@ These are not Lean theorems and contribute no denotational trust.
 | --- | --- | --- |
 | `EC1-H01` | PENDING HARNESS | Resolve exact Effect-TS/tsgo source/provenance plus npm package/version/integrity/lockfile row/resolved path/CLI `--version`/hash; matching platform package (locally `@effect/tsgo-darwin-arm64@0.38.0`)/integrity/binary hash/complete `upstream.json`; TypeScript package/version/head/integrity; Effect peer/dependency range and resolved version; Node/Bun/OS/architecture; and tool/config/catalog/input digests. |
 | `EC1-H02` | PENDING HARNESS | Assert exact `typescript@7.0.2` and git head `2bd066d87f5bafd315be9f40889d0a60b9e58e0b`, `@effect/tsgo@0.38.0`, matching platform `0.38.0`, upstream-head equality, successful `--typescript --oxlint` patch receipt, plugin name `@effect/language-service`, complete config/rules/overrides/severities, and diagnostic/action/refactor catalog digests before running. |
-| `EC1-H03` | PENDING HARNESS | Run `library/effects/node_modules/.bin/effect-tsgo diagnostics --project experiments/effect-core-surface/tsconfig.generated.json --format json --list-files` from repo root; require valid normalized JSON with exact `diagnostics`, `files`, and `summary`, zero stderr except declared progress, zero unapproved errors/warnings/messages/suggestions, canonical sort by file/span/rule/action/edit, and byte-identical fresh runs. |
+| `EC1-H03` | PENDING HARNESS | Run `bun run --cwd experiments/effect-core-surface typecheck` from repo root; require the script to equal `effect-tsgo diagnostics --project tsconfig.json --format json --strict --list-files`, valid normalized diagnostic JSON with exact `diagnostics`, `files`, and `summary`, zero stderr except declared Bun progress, zero unapproved errors/warnings/messages/suggestions, canonical sort by file/span/rule/action/edit, and byte-identical fresh runs. The experiment working directory is required so the pinned local TypeScript installation is discovered. |
 | `EC1-H04` | PENDING HARNESS | Independently resolve the dedicated tsconfig's expected sources and require exact equality with canonicalized reported files plus `filesChecked = totalFiles`; fail on missing or extra files even with empty diagnostics. |
 | `EC1-H05` | PENDING HARNESS | Require every file to report detected/supported Effect v4. The current library's 43/43, zero-message run is only a live-route witness until a reproducible receipt exists. |
 | `EC1-H06` | PENDING HARNESS | Enable diagnostics, refactors, quick information, completions, and actions; join every diagnostic/action symbol and every fix-inserted import to the independent public census/`U_package`; reject nonexistent, null-masked, internal, or uncensused imports without letting the language service catalog add/remove universe rows or define symbol identity. |
@@ -471,10 +499,10 @@ These are not Lean theorems and contribute no denotational trust.
 | `EC1-S1` | D0–D1 plus frozen type annotations | `T001–T009` including `T003E,T004S,T004X,T004RW`; `H11`; `F01–F03,F08,F20,F59,F60,F80,F82,F86,F87`; every required type row closes its constructor/checker/semantics/classifier/lowering/red-control edges before cutover |
 | `EC1-S2` | D2–D3 | `T006–T017`; `F01–F10,F81` |
 | `EC1-S3` | D10 CAS seam | `T100–T109` including `T101S,T101P`, plus `T123–T130`; `F41–F46,F74,F75,F79,F88,F91,F92` |
-| `EC1-S4` | D4–D6 sequential/direct | `T020,T030–T037,T050–T059`; sequential/handler falsifiers including `F78,F89,F90` |
-| `EC1-S5` | branch/cycle/call + D7 | `T026,T038–T046`; stable non-frontier CAS/block determinism boundary; `F13–F19,F31–F35,F38,F40,F69–F73,F77,F93` |
+| `EC1-S4` | D4–D6 sequential/direct | `T020,T030–T037,T050–T059,T057T`; sequential/handler falsifiers including `F78,F89,F90` |
+| `EC1-S5` | branch/cycle/call + D7 | `T026,T038–T046,T045A`; stable non-frontier CAS/block determinism boundary; `F13–F19,F31–F35,F38,F40,F69–F73,F77,F93` |
 | `EC1-S6` | AER and nonconcurrent D8 | `T080–T087` for D0–D6 classifier dimensions |
-| `EC1-S7` | handler/scoped bodies | `T050–T059`; handler provision/recovery/ensuring negatives including `F78,F89,F90` |
+| `EC1-S7` | handler/scoped bodies | `T050–T059,T057T`; handler provision/recovery/ensuring negatives including `F78,F89,F90` |
 | `EC1-S8` | D9 scope/resource/cause | `T060–T069`; `F21–F25,F30,F36,F61` |
 | `EC1-S9` | fibers/scheduler | `T070,T071,T072,T072J,T072I,T077,T078`; `F62,F63`; ownership/await/join/replay falsifiers |
 | `EC1-S10` | interruption/race/liveness | `T073–T079`; `F26–F29` |
@@ -489,55 +517,63 @@ These are not Lean theorems and contribute no denotational trust.
 | --- | --- | --- |
 | Checker | structural recursion plus decidable per-clause reflection | using successful examples as completeness |
 | Values | restrict/bridge the overlapping structural fragment to `Cas.Schema.El`; name empty/unsupported arms and new handle codes | duplicating an inhabited `El` meaning or silently treating an empty arm as inhabited |
-| Operation families | metadata indexed by existing `Sig.Op`; extension through `Sig.sum` with left/right preservation | modifying/replacing `Sig` to carry classification grades or flattening Root/Word extensions |
+| Operation families | pending condition 14: neutral protocol identity plus explicit admission bridge for Lean-modeled operations to existing `Sig.Op`; preserve `Sig.sum` with left/right laws | pretending every protocol identity already has a `Sig.Op`, or modifying/replacing `Sig` to carry classification grades or flattening Root/Word extensions |
 | Graph safety | induction on `Step`; one case per terminator/administrative rule | trusting checked constructors without preservation |
 | Runner relation | decision-indexed one-step iff, then induction on fuel | comparing only final return values |
 | Approximation | induction on depth; symbolic request frontiers; coherent truncation | enumerating infinite answer types or calling a sweep universal |
 | Algebra | graph simulation/bisimulation under explicit observation mask | syntactic rewriting across ordered resource/concurrency traces |
-| Direct handlers | elaborate the direct table to existing `Handler`; compose with `Handler.sum`/`Handler.through` in a state/error/machine target that observes child outcomes | minting `HHandler`, using inadequate `ReaderT Env (Prog CasSig)`, promoting `scopeHandlerR`, adopting scratch `scopeHandler`, or encoding ensuring-on-refusal with `Prog.bind` |
+| Direct handlers | elaborate scoped clauses to existing `Handler` directly in a state/error/machine target that observes child outcomes and preserves state on failure; use `Handler.sum` for same-target signature families; use `Handler.through` only for an upper `Handler S (Prog T)` followed by a lower `Handler T M` | minting `HHandler`, treating `Handler.through` as generic retargeting, using inadequate `ReaderT Env (Prog CasSig)`, promoting scratch `scopeHandlerR`/`scopeHandlerW`, adopting scratch `scopeHandler`, or encoding ensuring-on-refusal with `Prog.bind` |
 | Scope/resources | frame/ownership invariant plus trace-count lemmas | assuming finalizers terminate |
 | Concurrency | labeled transition simulation; scheduler state/policy in `Configuration`; typed tape selection; explicit fairness only for compatible infinite decision streams in liveness | a separate schedule input, global determinism, or implicit fairness |
 | Classifier | abstract interpretation soundness per transfer; SCC fixed point; certificate checks for lower facts; reindexed D4 sequence; separate D1/D2/D10 carriers; mask-selected concretization overlap under `SemEq` | conflating may and must, operation occurrence/world delta/order, demanding whole-product invariance, or narrowing unknown foreign frames |
 | CAS | admit only `CheckedPProg`; recognize only `CasImage`; reuse existing `runP`, envelope, frame, canonical representation, complete `RefusalMap`, and `Auth.lean` theorem families through one simulation | total raw-`PProg` injection, treating `toPProg` as semantic projection, restating CAS semantics, weakening Level-0 security to receipt replay, or minting another serializer |
-| CAS program logic | specialize semantic partial correctness to existing `wlp`; reuse `wp_iff_wlp_and_total`; transfer sequence only through nonempty-prefix, history-threaded `wlp_append` | adding a duplicate EffHOL modality, table-only suffix rule, `WPre`, `WPost`, `wlp`, or `wp` |
+| CAS program logic | specialize semantic partial correctness to existing `wlp`; reuse `wp_iff_wlp_and_total`; prove new `EC1-T130` from shipped `wpAux_append` with nonempty-prefix and threaded-history premises | citing a shipped `wlp_append`, adding a duplicate EffHOL modality, table-only suffix rule, `WPre`, `WPost`, `wlp`, or `wp` |
 | Lowering | per-constructor forward simulation, weak reflection for administrative target steps, coherent-prefix lifting; canonical renderer round trip and injectivity on normalized admitted targets | source text snapshots or tautological function determinism as semantic proof |
 | Tooling | exact pins, machine-readable diagnostics, idempotence, mutation, structural decode | granting TypeScript/LSP diagnostics semantic authority |
 
 ## 17. Freeze conditions
 
-A Pass B signature freeze is blocked until the grilling pass explicitly rules:
+A Pass B signature freeze remains blocked by every **OPEN** item below. The
+grilling pass has frozen the evidence-backed items marked **RULED** as packet
+constraints; that status does not discharge their PENDING proof rows.
 
-1. the precise `ValueTy` universe and row representation;
-2. whether daemon fibers are admitted in v1 or remain a checked refusal;
-3. the full closed alphabet/version and direct-handler table;
-4. the default observation mask and independent-event quotient;
-5. the external-request frontier representation in `FinApprox`;
-6. the TypeScript target constructor list;
-7. the selected `@effect/tsgo` source/provenance pin and code-action set;
-8. CAS canonical normalization behavior; and
-9. which classifier fields must be exact in v1 versus conservative bounds;
-10. the CAS/block-only boundary of deterministic `Denotes`/coherence and the
+1. **OPEN** — the precise `ValueTy` universe and row representation;
+2. **OPEN** — whether daemon fibers are admitted in v1 or remain a checked refusal;
+3. **OPEN** — the full closed alphabet/version and direct-handler table;
+4. **OPEN** — the default observation mask and independent-event quotient;
+5. **OPEN** — the external-request frontier representation in `FinApprox`;
+6. **OPEN** — the TypeScript target constructor list;
+7. **OPEN** — the selected `@effect/tsgo` source/provenance pin and code-action set;
+8. **OPEN** — CAS canonical normalization behavior;
+9. **OPEN** — which classifier fields must be exact in v1 versus conservative bounds;
+10. **RULED** — the CAS/block-only boundary of deterministic `Denotes`/coherence and the
     absence of a full-core uniqueness theorem;
-11. reuse of existing `Refusal.Clause`/`RefusalMap`, H-dependent write facts,
+11. **RULED** — reuse of existing `Refusal.Clause`/`RefusalMap`, H-dependent write facts,
     and the refusal-word observation masks; and
-12. the O0 per-type proof-closure schema from `EXISTING-TYPES.md` and
+12. **OPEN** — the O0 per-type proof-closure schema from `EXISTING-TYPES.md` and
     `ORGANIZATION.md`;
-13. the exact supported overlap and explicit insufficiency boundary between
+13. **OPEN** — the exact supported overlap and explicit insufficiency boundary between
     `ValueTy` and `Cas.Schema.El`;
-14. `Alphabet` metadata indexed by existing `Sig.Op`, including `Sig.sum` and
-    Root/Word extension-law reuse;
-15. `CasAdmissible` and the rejection boundary for empty/dangling raw `PProg`;
-16. first-error checker semantics and duplicate-free row-normalization
+14. **OPEN** — the neutral protocol operation identity and its admission bridge
+    to existing `Sig.Op`/`Sig.Ans`, while retaining `Sig.sum` and Root/Word
+    extension-law reuse for admitted Lean-modeled operations;
+15. **RULED** — `CasAdmissible` and the rejection boundary for empty/dangling raw `PProg`;
+16. **RULED** — first-error checker semantics and duplicate-free row-normalization
     premises; and
-17. mask-selected classifier overlap rather than whole-product `SemEq`
-    invariance, plus renderer injectivity on normalized admitted targets;
-18. the adequate state/error/machine target for scoped recovery and ensuring,
-    with `ReaderT Env (Prog CasSig)`, scratch `scopeHandler`, `scopeHandlerR`,
-    and `Prog.bind` kept at their proved boundaries;
-19. `toPProg` as a sound `CasImage` normal-form recognizer rather than a
+17. **PARTIALLY RULED** — classifier meaning is mask-selected concretization
+    overlap rather than whole-product `SemEq` invariance; **OPEN** — renderer
+    injectivity on normalized admitted targets;
+18. **RULED** — the scoped-handler information contract requires child-outcome
+    observation and state survival on failure, minimally witnessed for CAS by
+    `ReaderT Env (ExceptT Refusal (StateT Word Id))`; `ReaderT Env (Prog CasSig)`,
+    scratch `scopeHandler`/`scopeHandlerR`/`scopeHandlerW`, and `Prog.bind` stay at
+    their proved boundaries and no scratch carrier is promoted;
+19. **RULED** — `toPProg` as a sound `CasImage` normal-form recognizer rather than a
     semantic projection; and
-20. Mod-E's nonempty-prefix/threaded-history `wlp_append` premises and the
-    stable non-frontier boundary of CAS/block uniqueness.
+20. **RULED** — Mod-E's nonempty-prefix/threaded-history premises and the stable
+    non-frontier boundary of CAS/block uniqueness. The carrying theorem is the
+    new PENDING `EC1-T130`, derived from shipped `wpAux_append`, not an inherited
+    `wlp_append`.
 
 Every type required by a slice has one cutover row whose edges are
 `constructor`, `checker`, `semantics`, `classifier`, `lowering`, and
@@ -546,5 +582,6 @@ its named evidence. A full Effect Core cutover is blocked while any required
 row has an open edge; closing a neighboring type or running a finite probe
 cannot satisfy it.
 
-Until those are ruled, the identifiers above are organizational targets only,
-and every proof remains PENDING.
+Until every **OPEN** portion is ruled, the identifiers above are organizational
+targets only. The ruled constraints bind subsequent packet work, but every
+proof remains PENDING.

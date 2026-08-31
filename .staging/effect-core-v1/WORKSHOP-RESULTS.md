@@ -48,15 +48,19 @@ than open design choices.
    replay path but does not collapse the public semantics to a function.
 3. `Handler`, `Handler.sum`, `Handler.through`, `interpret_bind`, and
    `interpret_through` remain the handler basis. No `HHandler` is introduced.
+   `Handler.sum` combines handlers with one target; `Handler.through` applies
+   only to an upper `Handler S (Prog T)` and lower `Handler T M`. A scoped
+   handler already targeting the state/error machine is interpreted directly.
    The breaker proves, however, that `ReaderT Env (Prog CasSig)` is too weak to
    implement recovery: the same existing `Handler` must target a machine that
    can observe child success/failure and state.
 4. `Prog.bind` is failure-strict, so the scratch `ensuring` clause does not run
    a finalizer after refusal.
-5. EffHOL's modality is existing `wlp`, but its elimination/composition rule is
-   inherited only in the estate's nonempty-prefix, answer-history-threaded
-   form. The unconditional table-only reading has two kernel-checked
-   counterexamples.
+5. EffHOL's modality is existing `wlp`. Its elimination/composition rule is the
+   new pending `EC1-T130`, to be derived from shipped `wpAux_append` with a
+   nonempty prefix and the prefix-produced answer history threaded into the
+   suffix. No `wlp_append` is inherited. The unconditional table-only reading
+   has two kernel-checked counterexamples.
 6. `toPProg` is a sound recognizer for one literal normal form, not a semantic
    projection from arbitrary CAS-only graphs.
 
@@ -354,7 +358,7 @@ dispatched (see §5); this is the spine.
              │                                   (and C6: the word gate
              ▼                                    cannot see this class)
   L2  Handler.through
-      interpret_through     ═══════════════════▶ T053, handler-clauses-
+      interpret_through     ═══════════════════▶ T057T, handler-clauses-
       through_monoid                                as-graphs (ALGEBRA §6)
              │
              ▼
@@ -434,7 +438,7 @@ should read them before inventing a style.
 
 | Existing | Site | Bears on |
 |---|---|---|
-| `Handler.through`, `interpret_through` | [`Tower.lean:65,71`](../../library/cas/Cas/Lang/Tower.lean) | `EC1-T053`, handler-clauses-as-graphs |
+| `Handler.through`, `interpret_through` | [`Tower.lean:65,71`](../../library/cas/Cas/Lang/Tower.lean) | `EC1-T057T`, handler-clauses-as-graphs |
 | `through_assoc`, `through_id_left/right`, `through_monoid` | [`Universal.lean:739,757,765,785`](../../library/cas/Cas/Backend/Universal.lean) | handler-tower composition |
 
 `ALGEBRA.md` §6 wants "handlers whose clauses are themselves checked core
@@ -779,10 +783,14 @@ judgment (`wp_iff_interpretRef`, `:629`) and anchors `wlp` only at the run
 `PartialTriple_iff_interpretRef`, both `[propext]` — and they are candidates for
 the library on their own merits, independent of this packet.
 
-Four rows are discharged outright by this document's exhibits: `EC1-T045`
-INHERITS from `denotes_unique`, `EC1-T046` from `inject_embed` (the injection is
-*syntactic*), and `EC1-T056`/`EC1-T057` were upgraded to INHERITS after the lane
-read §6 — the scoped-handler construction held under a second reader.
+The first-pass anchor classification called four rows discharged. The breaker
+supersedes that classification. Its `denotes_unique` is executable function
+determinism, so it cannot discharge the now-relational `EC1-T045`; the
+ask-free witness supports only the narrower `EC1-T045A` premises. The scoped
+handler construction into `ReaderT Env (Prog CasSig)` is well typed but cannot
+recover, so it does not discharge direct scoped-target adequacy. `Handler.sum`
+supports `EC1-T057`; `Handler.through` supports only the separate, correctly
+typed `EC1-T057T` tower. `EC1-T046` retains only its CAS specialization anchor.
 
 One first-pass revision folded in, and it sharpens §1.5 rather than confirming
 it: **`EC1-T039` moves NO ANCHOR → SIMULATES, not INHERITS.** What §5 proves is a

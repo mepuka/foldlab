@@ -12,8 +12,18 @@ Depends on: `PLAN.md`, `ALGEBRA.md`, `CLASSIFICATION.md`
 scratch exhibits. `TYPE-CLOSURE.md` owns the per-type proof graph and cutover
 predicate. Neither file is implementation evidence for a pending clause here.
 
-Every contract row is explicitly **PROPOSED**. Every named proof and executable
-counterexample is **PENDING**. This packet is not a ratification act.
+Every contract row is explicitly **PROPOSED**. A contract proof, falsifier, or
+harness remains **PENDING** unless its row says otherwise. Supporting
+counterexamples may already be kernel-checked; their authoritative evidence
+state and exact command live in `COUNTEREXAMPLES.md`. This packet is not itself
+an implementation or proof artifact.
+
+The evidence-backed §17 rulings freeze conditions 10, 11, 15, 16, 18, 19,
+20, and only the classifier half of condition 17 as constraints on a later
+Pass B signature. Condition 14 remains open pending a neutral protocol
+operation identity and its admission bridge to `Sig.Op`; renderer injectivity,
+the second half of condition 17, also remains open. No ruling changes a
+PENDING proof, falsifier, or harness into evidence.
 
 ## CATEGORIES
 
@@ -80,6 +90,12 @@ with `Sig.Ans`; it does not replace or modify `Sig`. Semantic-family extension
 uses existing `Sig.sum`, preserving the separate `CasSig`, `RootSig`/`StoreSig`,
 and `WordSig`/`WordedSig` packages and their non-disturbance laws.
 
+That indexing is only the current Lean-side candidate. Freeze condition 14
+remains open until a neutral protocol operation identity and an explicit
+admission bridge to existing `Sig.Op`/`Sig.Ans` are specified for Lean-modeled
+operations. Host-obligation identities must remain representable without being
+misclassified as already admitted Lean operations.
+
 ### `EC1-K03` — pure boundary
 
 Status: **PROPOSED CONTRACT CLAUSE**.
@@ -102,13 +118,19 @@ implicit fallthrough are absent.
 
 Graph-backed clauses elaborate to existing `Cas.Lang.Handler` values in an
 adequate state/error/machine target that can observe child success and failure
-before recovery or cleanup. Named children are `BlockId`s; family and tower
-composition reuse `Handler.sum` and `Handler.through`. No higher-order handler
-carrier is admitted. `ReaderT Env (Prog CasSig)` is explicitly inadequate by
-`no_handler_into_ScopeM_catches`; `scopeHandlerR` is a minimal adequacy witness,
-not the adopted reference semantics. The scratch exhibit's `scopeHandler` is
-only a type-shape witness and establishes none of this packet's catch,
-ensuring, scope, provision, ownership, failure, or finalization laws.
+before recovery or cleanup. Named children are `BlockId`s. A scoped handler
+targets that adequate machine directly. `Handler.sum` combines signature
+families sharing one target; `Handler.through` applies only when an upper
+handler has target `Prog T` and is followed by a lower `Handler T M`. No
+higher-order handler carrier is admitted. `ReaderT Env (Prog CasSig)` is
+explicitly inadequate by
+`no_handler_into_ScopeM_catches`. `scopeHandlerR` witnesses catch recovery only
+and is inadequate for ensuring because failure discards the word. The frozen
+information contract requires state to survive failure; the minimum CAS witness
+is `ReaderT Env (ExceptT Refusal (StateT Word Id))`. The scratch exhibit's
+`scopeHandler`, `scopeHandlerR`, `scopeHandlerW`, and helper carriers are not
+promoted and establish none of this packet's adopted catch, ensuring, scope,
+provision, ownership, failure, or finalization semantics.
 
 ### `EC1-K05` — observation declaration
 
@@ -159,13 +181,15 @@ successor tool is still PENDING if not resolved in the source lock.
 The machine-readable run is exactly:
 
 ```text
-library/effects/node_modules/.bin/effect-tsgo diagnostics \
-  --project experiments/effect-core-surface/tsconfig.generated.json \
-  --format json --list-files
+bun run --cwd experiments/effect-core-surface typecheck
 ```
 
-The dedicated tsconfig is a frozen handwritten harness input. The result must
-be valid JSON with zero stderr except declared progress output and exact fields
+The package script fixes `effect-tsgo diagnostics --project tsconfig.json
+--format json --strict --list-files` and runs with the experiment directory as
+the tool working directory, so the pinned local TypeScript installation is
+discoverable. The dedicated tsconfig is a frozen handwritten harness input.
+The diagnostic payload must be valid JSON with zero stderr except declared Bun
+progress output and exact fields
 `diagnostics`, `files`, and `summary`; report
 `summary.filesChecked = summary.totalFiles`; list exactly the source set
 independently resolved from that tsconfig; and mark every file
@@ -542,11 +566,12 @@ pair.
 The CAS program-logic bridge reuses existing `wlp` for the EffHOL-style
 partial-correctness modality and existing `wp_iff_wlp_and_total` for total
 correctness. No duplicate modality, `WPre`/`WPost`, `Triple`, or
-`PartialTriple` carrier is admitted.
-EffHOL Mod-E is transferred only through existing `wlp_append`: the prefix is
-nonempty and the suffix receives the answer history produced by that prefix.
-There is no unconditional table-only suffix law or restart-at-empty-history
-rule.
+`PartialTriple` carrier is admitted. EffHOL Mod-E remains the new
+`EC1-T130` theorem obligation, to be derived by specializing the shipped
+`wpAux_append`; the estate does not ship `wlp_append`. Its prefix is nonempty
+and its suffix receives the answer history produced by that prefix. There is no
+unconditional table-only suffix law or restart-at-empty-history rule, and the
+scratch `wlp_append` witness is not promoted.
 
 ### `EC1-K23` — target lowering and source acceptance
 
@@ -578,6 +603,10 @@ obligation. The next five are required
 tooling batteries. The tenth is the trust boundary.
 No combination of these clauses licenses a stock-runtime full-`CauseTree`
 topology claim.
+
+Item 4's renderer-injectivity component is the still-open half of freeze
+condition 17. It remains a proposed proof obligation and is neither frozen nor
+supported by inherited evidence.
 
 ## DECREASES
 
@@ -715,7 +744,7 @@ failures but, by current authorization, creates no test or script.
 | `EC1-F81` | PENDING FALSIFIER | Give one raw program two independent defects and demand the later diagnostic. | Fail-first checker returns and justifies only the least defect in canonical clause order; completeness still rejects the program. |
 | `EC1-F82` | PENDING FALSIFIER | Permute a duplicate-key raw row and assert equal normalization. | Duplicate-free premise is unavailable and admission rejects both rows; no permutation theorem applies. |
 | `EC1-F86` | PENDING FALSIFIER | Add a second value meaning for an inhabited `Cas.Schema.El` code or silently inhabit one of `El`'s empty arms. | Existing-type/bridge gate demands the `El` equivalence or a named insufficiency proof row. |
-| `EC1-F87` | PENDING FALSIFIER | Add reification metadata to `Sig`, replace `Sig.Op`, or flatten `RootSig`/`WordSig` extension arms into a new signature carrier. | Existing-type and `Sig.sum` extension-law gates reject the duplicate semantic family. |
+| `EC1-F87` | PENDING FALSIFIER | Add reification metadata to `Sig`, replace `Sig.Op`, flatten `RootSig`/`WordSig` extension arms, or treat a neutral protocol identity as a Lean operation without an admission bridge. | Existing-type and `Sig.sum` gates reject the duplicate family; open freeze condition 14 requires the explicit identity-to-`Sig` bridge. |
 
 ### Algebra and semantics equations
 
@@ -737,7 +766,7 @@ failures but, by current authorization, creates no test or script.
 | `EC1-F77` | PENDING FALSIFIER | Promote full-core `denotes_unique`, a public `Behavior` carrier, or fixed-fuel bind coherence. | Nondeterministic branch or existing `run` no-composition counterexample rejects the claim. |
 | `EC1-F78` | PENDING FALSIFIER | Add `HHandler` or treat the scratch `scopeHandler` as catch/scope/finalizer semantics. | Existing-handler annotation or scope/catch/finalizer law battery rejects it. |
 | `EC1-F83` | PENDING FALSIFIER | Require full `ClassProduct` equality for two `SemEq` programs whose checked graphs have different answer-dataflow edges. | D4 summaries may differ; only mask-selected concrete projections must agree and inhabit both sound concretizations. |
-| `EC1-F89` | PENDING FALSIFIER | Use `Handler ScopeSig (ReaderT Env (Prog CasSig))` for typed recovery. | Existing `no_handler_into_ScopeM_catches` rejects every clause; an adequate state/error/machine target must observe child outcomes. |
+| `EC1-F89` | PENDING FALSIFIER | Use `Handler ScopeSig (ReaderT Env (Prog CasSig))` for typed recovery, or use a target whose failure branch discards state for ensuring. | `no_handler_into_ScopeM_catches` rejects the former; the ensuring information contract requires state to survive failure, witnessed minimally for CAS by `ReaderT Env (ExceptT Refusal (StateT Word Id))`. |
 | `EC1-F90` | PENDING FALSIFIER | Implement ensuring-on-refusal as ordinary `Prog.bind`. | Existing refusal-strict interpretation skips the finalizer; `ensuring_never_finalises_a_refusal` detects it. |
 | `EC1-F93` | PENDING FALSIFIER | Use a later unique CAS/block result to equate every earlier exhausted/refusal label. | Two pre-completion fuels expose distinct labels; uniqueness begins only at stable non-frontier outcomes. |
 
@@ -790,7 +819,7 @@ failures but, by current authorization, creates no test or script.
 | `EC1-F75` | PENDING FALSIFIER | Claim exact write addresses without `H`, or compare refusal runs without declaring whether their partial words are masked. | H-dependence or observation-mask gate rejects the claim. |
 | `EC1-F79` | PENDING FALSIFIER | Add a second EffHOL-style modality or restate CAS `WPre`/`WPost`. | Existing-type gate requires `wlp` and the existing `wp ↔ wlp ∧ total` bridge. |
 | `EC1-F88` | PENDING FALSIFIER | Replace the existing RefusalMap family with a partial table, assume injective `H`, or reduce authenticated computation to receipt replay. | Host-only/disjointness/wire or Level-0 security/correctness bridge fails on the existing counterexample. |
-| `EC1-F91` | PENDING FALSIFIER | Apply EffHOL Mod-E to a restarted suffix with empty answer history or omit the nonempty-prefix premise. | Existing `wlp_append` premises fail; the suffix can refuse alone while succeeding after its prefix. |
+| `EC1-F91` | PENDING FALSIFIER | Apply EffHOL Mod-E to a restarted suffix with empty answer history or omit the nonempty-prefix premise. | The new `EC1-T130` premises are necessary; the suffix can refuse alone while succeeding after its prefix. Shipped `wpAux_append` is the derivation anchor, not a shipped `wlp_append`. |
 | `EC1-F92` | PENDING FALSIFIER | Treat `toPProg` as a semantic projection of every observationally CAS-only graph. | Unreachable-tail and relocated-entry graphs are equivalent to injection but the recognizer returns `none`. |
 
 ### TypeScript and Effect-tooling equations
