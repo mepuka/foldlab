@@ -143,6 +143,26 @@ The future generated register joins every `EC1-F*` contract falsifier and every
 type-closure edge to these IDs. It must not silently coerce an invalid-input
 fixture into a refutation of the model.
 
+## 8b. Provisional-ID reconciliation (breaker report -> register)
+
+The breaker lane assigned working IDs before this register existed. The register
+is the authority; those numbers are **provisional and superseded**. Recorded here
+because §1 forbids reusing an ID, and `EC1-CE045`-`CE048` currently denote
+different statements in `2026-08-31-effect-core-breaker.md` than they do here.
+
+| Breaker report (provisional) | Canonical row | Statement |
+| --- | --- | --- |
+| `EC1-CE045` | **`EC1-CE040`** | `projectCas` is a projection out of the CAS-only fragment |
+| `EC1-CE046` | **`EC1-CE041`** | scoped operations need no new handler target |
+| `EC1-CE047` | **`EC1-CE045`** | the exhibited `ensuring` clause finalizes |
+| `EC1-CE048` | **`EC1-CE046`** | EffHOL's (Mod-E) is unconditionally satisfied by `wlp` |
+| `EC1-CE051` | folded into **`EC1-CE003`** | `exhausted_is_not_a_refusal`'s second conjunct holds generally; witnesses `loop_exhausts_at_0_1_2`, `loop_run_exhausts` remain in `breaker-exhibits.lean` and narrow `CE003` rather than opening a row |
+| `EC1-CE052` | folded into **`EC1-CE032`** | `SemEq` under the CAS mask read at a fuel the mask has not fixed; witness `load12_differ_at_fixed_fuel` |
+
+No provisional number is reissued to a new statement. Any document citing a
+left-column ID is citing the breaker report's internal numbering and must be read
+through this table.
+
 ## 9. Existing estate witnesses reused by the packet
 
 The following owners remain canonical and should be linked, not copied:

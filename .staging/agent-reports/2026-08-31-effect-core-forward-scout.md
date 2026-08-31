@@ -184,3 +184,106 @@ Suggested order, cheapest-risk-reduction first:
   `PROOF-DAG.md` row.
 
 — **Opus**
+
+---
+
+# Second pass — scouting Phase 1, 2026-08-31
+
+Phase 0 has landed (`28a9e632`, parent `56a938fe` as planned; `codex/ec1-integration`
+== `codex/ec1-packet-baseline`, no scaffold yet). All eight Lean witnesses are in
+the baseline — the `.gitignore:11` blocker was fixed by force-add. This section
+scouts what Phase 1 walks into.
+
+## S1 — the estate already has a `formal/` package precedent, and the plan diverges from it
+
+`formal/fips202/` is a completed artifact and the only `formal/` package in the
+tree. It carries, beside its Lean modules:
+
+| File | Lines | Role |
+| --- | ---: | --- |
+| `PASSA-CONTRACT.md` | 184 | the domain contract — `lean-formalization-strategy` Pass A |
+| `PASSB-SNAPSHOT.md` | 163 | **the frozen signature snapshot** — Pass B |
+| `MODEL-INVARIANTS.md` | 106 | `lean-model-invariants` output |
+| `PROVENANCE.md` | 36 | pins |
+| `TOOLING-NOTES.md`, `CODEX-HANDOFF.md`, `README.md` | 264 | — |
+
+`lakefile.toml` is five lines (`name`, `version`, `defaultTargets`, one
+`[[lean_lib]]`); `lean-toolchain` is `leanprover/lean4:v4.33.1`, identical to
+`library/cas`.
+
+**`PASSB-SNAPSHOT.md` is the finding.** `PROOF-DAG.md` §17's twenty freeze
+conditions *are* Pass B decisions, and the estate already has a file convention
+for recording them — with supersession semantics proven in anger:
+
+> "REV2 … responding to the codex review (all five blockers confirmed). The rev 1
+> approval is superseded; the six theorems landed under rev 1 … are unchanged by
+> this revision and stand."
+
+That is exactly the mechanism the eight §17 rulings need: a ratified snapshot
+that can be revised without invalidating what was proved under the prior
+revision. The proposed `formal/effect-core-v1/` tree has `AGENTS.md`,
+`README.md`, `lakefile.toml`, `lean-toolchain` and puts state in
+`Assurance/TypeClosure.lean` + `Generated/` — but has **no home for a ratified
+Pass A contract or Pass B snapshot**. The rulings currently live in an agent
+report, which the packet's own `README.md` classifies as "evidence input, not
+packet authority."
+
+Divergence may be right — Effect Core is far larger than fips202 and generated
+manifests suit that scale. But it should be deliberate, and the Pass A/Pass B
+contract files have no replacement in the proposed structure.
+
+## S2 — cross-package `require` works; the estate has simply never used it
+
+Ten lakefiles in the tree. **Zero contain a `[[require]]` block.** Every Lean
+package is standalone. The proposed `Bridge/CasAdmission.lean`,
+`CasEmbedding.lean`, `CasRefusal.lean`, `CasLogic.lean` must import `Cas.Lang.*`,
+so Phase 1 needs the estate's first cross-package dependency.
+
+**Tested, not assumed.** A probe package with
+
+```toml
+[[require]]
+name = "cas"
+path = "…/library/cas"
+```
+
+built clean in **2.0s**, reusing `library/cas`'s existing `.lake` rather than
+rebuilding it. So the pattern is new here but not blocked, and Phase 1's "clean
+builds" exit condition is reachable.
+
+## S3 — the cost lands per worktree, and the pipeline has four
+
+`library/cas/.gitignore:1` ignores `/.lake/`. Build output is therefore never
+shared through git, and each worktree needs its own:
+
+| Location | `library/cas/.lake` |
+| --- | --- |
+| main checkout | 2.2G |
+| `.claude/worktrees/ec1-integration` | 1.8G |
+| `.claude/worktrees/ec1-packet-baseline` | **absent — cold** |
+
+Four concurrent lanes in four worktrees means four caches of roughly two
+gigabytes, and the first build in each is paid before that lane can check
+anything.
+
+**The current witness pattern has none of this cost.** Every one of the eight
+witnesses works by `lake env lean <path>` run *from* `library/cas`, borrowing its
+environment while living outside every lake target. That is why they check in
+seconds from a cold start in any worktree that has the main cache.
+
+The trade-off is real and worth making explicitly rather than by default:
+
+| | package under `formal/` | `lake env lean` from `library/cas` |
+| --- | --- | --- |
+| build gate | yes — `lake build` fails on a broken module | none |
+| module structure / import discipline | enforced | by convention only |
+| `EffectCore.lean` import gate (plan's closure mechanism) | works | not available |
+| per-worktree cost | ~2GB build each | zero |
+| precedent in this estate | fips202 | all eight current witnesses |
+
+The plan's `EffectCore.lean`-imports-only-closed-modules gate is a genuine
+mechanical device and it requires the package. My read is that the package is
+right and the cache cost should simply be budgeted — but a lane that discovers
+a 2GB rebuild mid-dispatch will read it as a broken environment.
+
+— **Opus**

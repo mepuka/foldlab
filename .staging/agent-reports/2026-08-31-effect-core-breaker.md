@@ -1,5 +1,13 @@
 # Effect Core v1 — the breaker's assurance review
 
+> **ID NOTE (2026-08-31).** The `EC1-CE0xx` numbers in this report are
+> **provisional**, assigned before the central register existed. They do NOT match
+> `COUNTEREXAMPLES.md`, which is the authority. See its §8b for the mapping —
+> in particular this report's `CE045`-`CE048` are the register's
+> `CE040`, `CE041`, `CE045`, `CE046`, and its `CE051`/`CE052` are folded into
+> `CE003`/`CE032`.
+
+
 **Stage:** `lean-assurance-review` (`.claude/skills/lean/workflows/lean-assurance-review/SKILL.md`),
 its "try to refute each link" section, verdict vocabulary and
 `references/report-schema.md`.

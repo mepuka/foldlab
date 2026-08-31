@@ -39,16 +39,31 @@ and they are ordered by how much must be fixed:
 merely "is not proved unique". Any row proposing a total denotation function is
 refuted before it is written.
 
-**Note for codex, flagged conditional by the lane that found it.** The witness
-lane reports that the same refutation goes through at declarations already in
-`library/`: `¬ ∃ f, ∀ oracle p w, interpretRef H (p.handleLlm oracle) w = f p w`,
-because `Prog.handleLlm`'s `oracle` parameter *is* a decision tape in function
-form. If that holds, relational semantics is not an Effect Core design choice —
-it is already forced on `main` the moment `AgentSig` is admitted. **I have not
-independently verified that section**; it should be checked before it is relied
-on, because it would widen this ruling's scope considerably.
+**Note for codex — VERIFIED AND NARROWED, 2026-08-31.** The witness lane reported
+that the same refutation goes through at declarations already in `library/`, and
+concluded that "relational semantics is not an Effect Core design choice — it is
+already forced on main the moment `AgentSig` is admitted." I checked it. The
+theorem is sound; **the conclusion is over-claimed, and I had repeated it.**
 
----
+- `Prog.handleLlm (oracle : String → String) : Prog AgentSig A → Prog CasSig A`
+  does exist (`Cas/Lang/Interp.lean:184`), and `¬ ∃ f, ∀ oracle p w,
+  interpretRef H (p.handleLlm oracle) w = f p w` is true — two oracles answering
+  one `infer` differently give different results.
+- **But the oracle is an explicit parameter, in the type.** `runAgent`
+  (`Interp.lean:190`) takes it explicitly too. So main does not *need* a
+  relational semantics; main already *answers* nondeterminism the way this
+  ruling's admissible statement (1) does — fix the decision source as an explicit
+  argument and recover a function. `handleLlm` is `denotes_unique_given` in
+  concrete form.
+- A second reason not to lean on it: `Cas/Backend/Universal.lean:802` records that
+  L18 reaches `handleLlm` only **conditionally** on `IsMonadMorphism AgentSig`,
+  whose `bind_law` "is precisely the judgment `Interp.lean:19,181-183` asserts and
+  **nothing on main proves**." The declaration's own handler law is owed.
+
+**Net effect on this ruling: none.** R10 stands on `EC1-CE042` and `EC1-CE048`,
+which are in the packet and verified here. The correct use of the `handleLlm`
+observation is as *precedent for the fixed-tape form*, not as evidence that main
+is already relational — and no row should cite it as the latter.
 
 ## R11 — CAS refusal classification, H-dependence, and the refusal-word mask are all reused, not re-minted
 
