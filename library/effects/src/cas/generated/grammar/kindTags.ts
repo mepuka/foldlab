@@ -80,8 +80,28 @@ export const KindTagRows: ReadonlyArray<KindTagRow> = [
     reserved: false,
   },
   {
+    name: "annotation",
+    tag: 65,
+    reserved: false,
+  },
+  {
     name: "git",
     tag: 71,
+    reserved: false,
+  },
+  {
+    name: "agent",
+    tag: 73,
+    reserved: false,
+  },
+  {
+    name: "query",
+    tag: 81,
+    reserved: false,
+  },
+  {
+    name: "result",
+    tag: 82,
     reserved: false,
   },
   {
@@ -103,7 +123,11 @@ export const KindTagsByName = {
   context: 13,
   step: 14,
   cont: 15,
+  annotation: 65,
   git: 71,
+  agent: 73,
+  query: 81,
+  result: 82,
   schema: 83,
 }
 
@@ -111,4 +135,4 @@ export const KindTagsByName = {
  * in registry order. `Cas.value` refuses each of these, so a
  * caller-defined projection can never give a registry row a second
  * public interpretation. */
-export const GrammarKindTags: ReadonlyArray<number> = [1, 8, 9, 10, 11, 12, 13, 14, 15, 71, 83]
+export const GrammarKindTags: ReadonlyArray<number> = [1, 8, 9, 10, 11, 12, 13, 14, 15, 65, 71, 73, 81, 82, 83]

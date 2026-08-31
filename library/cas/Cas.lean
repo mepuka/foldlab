@@ -18,6 +18,8 @@ import Cas.IR.Word
 import Cas.IR.Join
 import Cas.IR.Column
 import Cas.IR.View
+import Cas.IR.Query
+import Cas.IR.Reach
 import Cas.Grammar.Grammar
 import Cas.Llm
 import Cas.Lang.Lang
@@ -52,13 +54,16 @@ abstraction, lowest first, and imported above in that order.
   injectivity (`Digits`), the rendering's injectivity direction
   (`JsonInj`), the strict parser that proves it — accepting exactly
   the rendering's image, with adequacy and exactness (`JsonParse`) —
-  and the typed-reference marker grammar with `Root α` (`Refs`).
+  the typed-reference marker grammar with `Root α` (`Refs`), and the
+  cut law (`Cut`) — `IsCutting cut` says a cutter's pieces join back to
+  the string it was given, with one proved fixed-size cutter, which is
+  what a streaming lane owes the exchange node's verbatim promise.
   The substrate half of this directory is its own Lake library,
   `CasValues`, rooted at `Cas/Values.lean` and imported above in its
-  place: `Json`, `Digits`, `JsonInj`, `JsonParse` and `Markdown`
+  place: `Cut`, `Json`, `Digits`, `JsonInj`, `JsonParse` and `Markdown`
   import nothing from `Cas`, so the bottom of the library is a fact of
   the build and not a claim in prose — `lake build CasValues` builds
-  those five and nothing else in the package. `Canonicalize` and
+  those six and nothing else in the package. `Canonicalize` and
   `Refs` are deliberately NOT in it: both import `Cas.Core`, so they
   belong to THIS stratum and are imported here by name. The directory
   disagreeing with the stratum is carried as a debt row in each of the
@@ -89,6 +94,30 @@ abstraction, lowest first, and imported above in that order.
 - **`IR/` — the store word.** Named `Binding`s in children-first
   admission order, non-empty and proof-bearing admitted wrappers,
   `wf`, and the bridge `toStore` with `wf_toStore_closed` (ledger L1).
+  Above the carrier sit the readings of it: `Column` partitions the
+  word by a pointwise classifier, `View` is a query carrying its two
+  homomorphism laws as fields, and `Query` is the layer BENEATH `View`
+  — the word is the free monoid on `Binding`, so a query is one
+  `Aggregator` (a target monoid, spelled as a record) plus one function
+  on bindings, and `run_nil`/`run_append` are proved ONCE for all of
+  them. `View.ofQuery` is the bridge, and `column`, `unregistered`,
+  column height and `toStore` itself are re-derived through it
+  (`Query.run_storeAgg`) rather than replaced. The bridge is not total,
+  and `View.lastK` — the front end's carrier, the last `k` bindings of
+  ONE column — is the witness: its merge truncates, so it is
+  associative on the word and has no unit there, and
+  `View.lastK_not_ofQuery` proves no aggregator carries it. It is also
+  the library's first RUNG-0 view, order-sensitive and not replay-safe
+  by `lastK_not_comm`/`lastK_not_idem`, which is where the consumer's
+  seq-guard rule comes from. `Reach` is the reference graph: the edge
+  off the RESOLVED binding — with the shadowing witness that forces that
+  cut mechanized (`occurrence_two_cycle` on an admitted
+  word) — an in-tree reflexive-transitive closure, monotonicity under
+  append (the patchability licence), and — under `wf` — acyclicity with
+  the theorem beneath it, that admission order is a topological sort of
+  the reference graph. That theorem is also the termination measure, so
+  the closure is DECIDED (`reachB`, sound on any word and complete on an
+  admitted one) where Mathlib decides no closure at all.
 - **`Grammar/` — layer 2, the data grammar.** Sorts with wire tags,
   the indexed `Tree` family elaborating onto `Node` through the real
   codec, the content address as a fold under abstract `H`, `flatten`

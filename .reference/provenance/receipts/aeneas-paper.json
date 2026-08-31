@@ -1,0 +1,16 @@
+{
+  "id": "aeneas-paper",
+  "kind": "paper",
+  "title": "Aeneas: Rust Verification by Functional Translation",
+  "authors": ["Son Ho", "Jonathan Protzenko"],
+  "venue": "arXiv preprint",
+  "arxiv": "2206.07185",
+  "arxivVersion": "v2",
+  "arxivDated": "2022-09-28",
+  "localPath": ".reference/papers/2206.07185v2.pdf",
+  "sha256": "5a75ed1543f5db5a47b7506753898443bc7b88ecb7a2f76325e80ed5494664bc",
+  "bytes": 596202,
+  "resolvedAt": "2026-08-30",
+  "resolution": "operator-supplied local file; deduplicated against a byte-identical root copy; title and arXiv identity extracted from the first two pages with liteparse 2.0.0; the document prints only a placeholder DOI",
+  "consumers": ["docs/research/lean4-llm-language-modeling-tooling-reference.md", "docs/research/effect-operational-semantics-reference-sweep.md"]
+}

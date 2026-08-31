@@ -25,9 +25,13 @@
  * arm, an arm still DEMANDS ITS TAG, and what refusal means is that the
  * node at the address is of another kind or is not there at all.
  *
- * The node kind an annotation resides at is the caller's — the
- * annotation plane has no reserved tag of its own — so this suite picks
- * one, exactly as any consumer would.
+ * The node kind an annotation resides at USED to be the caller's — the
+ * annotation plane had no reserved tag of its own, and this suite
+ * picked `0x41` exactly as any consumer would. Decision 40 ratified
+ * that same byte as the `annotation` registry row, so the plane is
+ * library-owned now and `Cas.value` refuses it like every other row.
+ * The projection under test is therefore `Annotations.Node`, the row's
+ * one interpretation, at the emitted tag and revision.
  */
 import { expect, it } from "@effect/vitest"
 import { Effect, Layer, cast } from "effect"
@@ -43,12 +47,9 @@ const { Annotations, CanonicalSchema } = Cas
 const layer = Layer.mergeAll(Cas.layerMemoryLive, layerDiskFs)
 const utf8 = new TextDecoder("utf-8", { fatal: true })
 
-/** An annotation projection: revision 1 at an unreserved kind tag. */
-const AnnotationNode = Cas.value({
-  kindTag: 0x41,
-  revision: 1,
-  schema: Annotations.Annotation,
-})
+/** THE annotation projection: the library's own, at the ratified row
+ * `0x41` and the emitted revision. */
+const AnnotationNode = Annotations.Node
 
 const fixture = readFixtureBytes("../cas/schemas/annotation.json").pipe(
   Effect.orDie,

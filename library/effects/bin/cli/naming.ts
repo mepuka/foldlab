@@ -7,11 +7,17 @@
  * saying `foldlab/name` about an addressed subject, and nothing about
  * the subject moves. Every spelling here is the Lean pin's own
  * (`library/cas/Cas/Schema/Annotation.lean`): the key is `foldlab/name`
- * (`pinName`), the node rides working tag 0x41 at revision 1
- * (`pinAnnotationKindTag`, the same choice `SchemaAnnotation.test.ts`
- * makes), and the wire is the `Annotation` mirror through the ordinary
- * doors — `Cas.value` to put, admission to refuse, `RootStore` to
- * publish.
+ * (`pinName`), the node rides tag 0x41 at revision 1, and the wire is
+ * the `Annotation` mirror through the ordinary doors — the library's
+ * own projection to put, admission to refuse, `RootStore` to publish.
+ *
+ * That tag used to be a WORKING one, so this module built its own
+ * `Cas.value({ kindTag: 0x41, … })`. Decision 40 ratified the same byte
+ * as the `annotation` registry row, and `Cas.value` refuses every
+ * registry row — a caller-defined projection at a ratified tag is the
+ * aliasing that door exists against. The projection is therefore the
+ * library's, `Cas.Annotations.Node`, and this module names it rather
+ * than constructing a second one.
  *
  * ## Why a name is PUBLISHED
  *
@@ -28,34 +34,28 @@
  * ## What can be named
  *
  * Only what the ratified subject union spans. `AnnotationSubject` is a
- * `oneOf` union over five addressable planes — exchange, git, program,
- * schema, system — because a reference must declare the kind tag it
- * expects. A plane outside the union is not nameable, and this module
- * says so rather than inventing an arm the Lean twin does not have.
+ * `oneOf` union over thirteen addressable planes since decision 40's
+ * rider CA-1 — the meta and agent five, the four content planes, and
+ * the four sorts that batch ratified — because a reference must declare
+ * the kind tag it expects. A plane outside the union is not nameable,
+ * and this module says so rather than inventing an arm the Lean twin
+ * does not have.
  */
 import { Array as Arr, cast, Effect, Option } from "effect"
 import { Cas } from "../../src/index.ts"
-import {
-  AnnotationKindTag,
-  AnnotationNameKey,
-  AnnotationRevision,
-  AnnotationSubjectArms,
-} from "../../src/cas/generated/annotationPlane.ts"
+import { AnnotationSubjectArms } from "../../src/cas/generated/annotationPlane.ts"
 
 /** The name seat's key — the EMITTED spelling (`annotationPlane.ts`,
  * from `Cas/Schema/Annotation.lean`'s own pins, byte-gated), given the
  * house name the CLI reads it under. */
-export const NameKey = AnnotationNameKey
+export const NameKey = Cas.Annotations.NameKey
 
-/** The annotation projection: the emitted revision at the emitted
- * working tag, the same projection the Lean byte pins are checked
- * against. Neither number is spelled here — a projection's revision is
- * part of the wire, so a second spelling of it is a second wire. */
-export const AnnotationNode = Cas.value({
-  kindTag: AnnotationKindTag,
-  revision: AnnotationRevision,
-  schema: Cas.Annotations.Annotation,
-})
+/** The annotation projection — THE one, the library's, at the emitted
+ * revision and the emitted tag. Neither number is spelled here, and
+ * since decision 40 neither is the projection: a caller-built
+ * `Cas.value` at a ratified registry row is refused at the door, and
+ * `Cas.Annotations.Node` is the row's one interpretation. */
+export const AnnotationNode = Cas.Annotations.Node
 
 /**
  * The nameable planes, exactly as the emitted arm table spells them —
@@ -87,6 +87,16 @@ const constructors: ReadonlyMap<string, (id: Cas.ContentId) => Cas.Annotations.S
     Cas.Annotations.onProgram,
     Cas.Annotations.onSchema,
     Cas.Annotations.onSystem,
+    // The content planes and the sort event's own four — decision 40's
+    // rider CA-1. Each is here because the walk below fails without it.
+    Cas.Annotations.onValue,
+    Cas.Annotations.onChunk,
+    Cas.Annotations.onFile,
+    Cas.Annotations.onContext,
+    Cas.Annotations.onAnnotation,
+    Cas.Annotations.onAgent,
+    Cas.Annotations.onQuery,
+    Cas.Annotations.onResult,
   ].map((make): readonly [string, (id: Cas.ContentId) => Cas.Annotations.Subject] =>
     [make(probe)._tag, make]
   ))

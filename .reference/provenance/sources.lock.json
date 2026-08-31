@@ -364,7 +364,7 @@
       },
       "artifacts": [
         {
-          "path": "program_proofs.pdf",
+          "path": ".reference/papers/program_proofs.pdf",
           "role": "book-source-pdf",
           "gitBlob": "not-applicable — local file, not tracked as a git blob",
           "contentDigest": {

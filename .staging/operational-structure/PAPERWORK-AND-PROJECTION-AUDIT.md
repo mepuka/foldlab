@@ -139,7 +139,7 @@ What is working, stated first because it is real: **all 273 lines of `docs/SPECS
 
 **D8 — R7 CLAUSE UNDISCHARGED.** Address stamping on generated program projections. Detailed under Q2.
 
-**D9 — ROOT STRAYS.** `2606.26442v1.pdf` (325 KB, at root since 2026-08-19; `.gitignore:26-29`'s `/*.pdf` rule was added *because* it slipped the net — the comment says so). And `untitled folder`, created 2026-08-29 04:47, empty, invisible to `git status` only because git does not track empty directories, anticipated by no rule. *Fix: delete both; if the paper is wanted, its identifiers and digest belong in `.reference/catalog/REFERENCES.md` per the stated policy.*
+**D9 — PARTIALLY RESOLVED 2026-08-30.** `2606.26442v1.pdf` moved from the root into `.reference/papers/`, with its identifier and digest recorded in the AXLE receipt and catalog entry. `untitled folder`, created 2026-08-29 04:47, remains empty and invisible to `git status` because Git does not track empty directories. *Remaining fix: delete the empty directory when cleanup is authorized.*
 
 **D10 — EMPTY STAGING DIRS.** `.staging/machine/` is empty; `.staging/e2/` holds only an ignored cache. Neither has a README or a row.
 

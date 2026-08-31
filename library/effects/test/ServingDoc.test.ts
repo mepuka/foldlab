@@ -9,7 +9,12 @@
  *
  * What is checked, and against which authority:
  *
- * - routes            ← `bin/mcp/http.ts` (mcpPath, metricsPath, projectionsPath)
+ * - routes            ← `bin/mcp/http.ts` (mcpPath, metricsPath,
+ *                        projectionsPath, historyPath) — every route
+ *                        the daemon binds is NAMED here, because a
+ *                        route this gate cannot see is one whose row
+ *                        in SERVING.md and in PROFILE §14 goes stale
+ *                        silently and forever after
  * - policy fields     ← `ServePolicy`'s own schema keys
  * - protocol ceiling  ← `offeredProtocols` (every offered revision named;
  *                        the ceiling stated as the newest)
@@ -28,6 +33,7 @@ import { describe, expect, it } from "@effect/vitest"
 import { Effect, FileSystem, Layer, Path } from "effect"
 import { ServePolicy } from "../bin/cli/store.ts"
 import {
+  historyPath,
   mcpPath,
   metricsPath,
   projectionsPath,
@@ -87,7 +93,7 @@ describe("SERVING.md — the factual vocabularies match the estate", () => {
   it.effect("names the routes the daemon actually binds", () =>
     Effect.gen(function* () {
       const doc = yield* servingDoc
-      for (const route of [mcpPath, metricsPath, projectionsPath]) {
+      for (const route of [mcpPath, metricsPath, projectionsPath, historyPath]) {
         expect(doc).toContain(`\`${route}\``)
       }
     }).pipe(Effect.provide(layerFiles)))

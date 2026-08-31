@@ -8,14 +8,13 @@ the book supplies the words and the teaching register.
 
 K. Rustan M. Leino, *Program Proofs*, MIT Press.
 
-- Local artifact: `program_proofs.pdf` (repo root),
+- Local artifact: `.reference/papers/program_proofs.pdf`,
   SHA-256 `a14a98037799512eb343bdfe8efa4ff2022b09b08446ba8205b5e995fcddf025`,
   25,299,717 bytes.
-- Pin status: row owed in
-  `.reference/provenance/sources.lock.json` (C6) — proposed as
-  slice 0 of PROOF-DRIVEN-DEVELOPMENT.md.
+- Pin: the `program-proofs` row in
+  `.reference/provenance/sources.lock.json`.
 - Text projection: regenerate on demand —
-  `liteparse parse program_proofs.pdf --format markdown -o <out>.md`.
+  `liteparse parse .reference/papers/program_proofs.pdf --format markdown -o <out>.md`.
 
 ## Book term → estate referent
 

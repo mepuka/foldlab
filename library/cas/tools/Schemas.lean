@@ -263,13 +263,25 @@ def subjectArms : List (String × UInt8) :=
   | .union members _ => members.length
   | _ => 0) == subjectArms.length
 
--- The table is the five planes, at the library's own tag spellings —
--- read off the code and equal to the named constants, so the emitted
+-- The table is the THIRTEEN planes, at the library's own tag spellings
+-- — read off the code and equal to the named constants, so the emitted
 -- projection, the union, and the tag definitions cannot drift apart.
+-- Five meta/agent planes, the four content planes rider CA-1 admitted,
+-- and decision 40's own four sorts. In the deriving handler's canonical
+-- member order, which is ascending constructor name.
 #guard subjectArms == [
-  ("exchange", exchangeKindTag), ("git", gitKindTag),
-  ("program", programKindTag), ("schema", schemaKindTag),
-  ("system", systemKindTag)]
+  ("agent", agentKindTag), ("annotation", annotationKindTag),
+  ("chunk", chunkKindTag), ("context", contextKindTag),
+  ("exchange", exchangeKindTag), ("file", fileKindTag),
+  ("git", gitKindTag), ("program", programKindTag),
+  ("query", queryKindTag), ("result", resultKindTag),
+  ("schema", schemaKindTag), ("system", systemKindTag),
+  ("value", valueKindTag)]
+
+-- No `text` arm. The CRDT run was refused from decision 40's batch on
+-- vision grounds, so there is no tag for an arm to demand, and an arm
+-- would be the sort minted sideways.
+#guard !(subjectArms.map Prod.fst).contains "text"
 
 open Cas.Backend.Ts in
 private def armExpr (arm : String × UInt8) : Expr :=
@@ -286,42 +298,52 @@ private def armTypeBlock : String :=
 open Cas.Backend.Ts in
 private def annotationPlaneModule : Module where
   header := [
-    "GENERATED — do not edit. THE ANNOTATION PLANE, as data: the",
-    "working tag annotation nodes ride and the everyday word for it,",
-    "the revision they ride, the name seat's key, and the subject",
+    "GENERATED — do not edit. THE ANNOTATION PLANE, as data: the tag",
+    "annotation nodes ride and the everyday word for it, the revision",
+    "they ride, the ratified `foldlab/` key family, and the subject",
     "union's arm-to-tag table, emitted from",
     "`library/cas/Cas/Schema/Annotation.lean` by `lake exe schemas`;",
     "regeneration is byte-identity-gated (`--check`, wired into",
     "`check:cas`). The arm table is read off",
     "`AnnotationSubject.schemaCode` — the deriving handler's output —",
-    "so it widens when the union does and never before.",
+    "so it widens when the union does and never before. Decision 40",
+    "widened it by eight arms and ratified the tag, in one event.",
     "",
-    "`bin/cli/naming.ts` is this file's consumer: `cas name` writes",
-    "annotation nodes at `AnnotationKindTag` under `AnnotationNameKey`,",
-    "and refuses subjects on planes this table does not carry.",
-    "`bin/cli/render.ts` is the second: every everyday kind word the",
-    "annotation plane owns is seeded from here, so no rendered surface",
-    "spells one by hand. `src/cas/Annotations.ts` is the third: it",
-    "builds the subject union's arms, and reads the system plane's",
-    "working tag from here rather than spelling it."
+    "`src/cas/Annotations.ts` is this file's first consumer: it builds",
+    "the subject union's arms, exports THE projection annotation nodes",
+    "are stored through (`Annotations.Node`, at the tag below), and",
+    "reads the system plane's working tag from here rather than",
+    "spelling it. `bin/cli/naming.ts` is the second: `cas name` writes",
+    "through that projection under `AnnotationNameKey`, and refuses",
+    "subjects on planes this table does not carry. `bin/cli/render.ts`",
+    "is the third: every everyday kind word the annotation plane owns",
+    "is seeded from here, so no rendered surface spells one by hand."
   ] ++ emitted.headerLines
   imports := []
   decls := [
     .raw armTypeBlock,
     .const {
       name := "AnnotationKindTag",
-      doc := ["The working tag annotation nodes ride — the Lean pin's own",
-        "choice (`pinAnnotationKindTag`). Working means the kind registry",
-        "gives it no row: the annotation plane deliberately has no",
-        "reserved tag, and this is the caller's spelling, pinned."],
+      doc := ["The tag annotation nodes ride (`pinAnnotationKindTag`).",
+        "It was a WORKING tag — a byte the callers owned, with no",
+        "registry row — until decision 40 ratified THAT VERY BYTE as the",
+        "`annotation` row rather than minting a fresh one, so no stored",
+        "annotation moved address. It is read off the grammar's sort",
+        "table in Lean now, which is what makes the promotion a fact of",
+        "the build. The plane is library-owned, so its projection is",
+        "`Cas.Annotations.Node` and not a caller's `Cas.value`: the",
+        "reserved-tag door refuses every registry row, and this row's",
+        "one interpretation is the library's own."],
       value := .int (Int.ofNat pinAnnotationKindTag.toNat) },
     .const {
       name := "AnnotationKindWord",
-      doc := ["The everyday word for that kind — what `cas show` prints",
-        "where a registry row would give a name, since this plane has",
-        "none to give. Emitted rather than written in TypeScript: a",
-        "rendered kind name enters the human register off the generated",
-        "registry (decision 25)."],
+      doc := ["The everyday word for that kind. It is emitted rather",
+        "than written in TypeScript because a rendered kind name enters",
+        "the human register off the generated registry and never off a",
+        "hand-written table (decision 25). Since decision 40 the kind",
+        "HAS a registry row, and `tools/EmitGrammar.lean` pins this word",
+        "to that row's own name, so the overlay and the registry cannot",
+        "say different words."],
       value := .str pinAnnotationKindWord },
     .const {
       name := "AnnotationRevision",
@@ -334,6 +356,19 @@ private def annotationPlaneModule : Module where
       doc := ["The name seat's annotation key, exactly as the Lean worked",
         "example pins it (`pinName`)."],
       value := .str pinName.key },
+    .const {
+      name := "AnnotationKeys",
+      type := some "ReadonlyArray<string>",
+      doc := ["THE RATIFIED `foldlab/` KEY FAMILY (decision 40, rider",
+        "CA-2), read off the Lean worked pins rather than agreed:",
+        "the name seat, then related, search-note, pref, embedding and",
+        "tombstone. Keys are structurally OPEN strings — the codec reads",
+        "`key` as text and could not care which one — so ratifying a",
+        "family narrows nothing; it makes the spelling exist once, at",
+        "byte level, the way `foldlab/name` already did. A key not on",
+        "this list is legal and unratified, which is a different thing",
+        "from refused."],
+      value := .arr (keyFamily.map Cas.Backend.Ts.Expr.str) },
     .const {
       name := "SystemKindTag",
       doc := ["The service-topology plane's WORKING tag",
@@ -465,9 +500,15 @@ def mirrorRegistry : List (String × List String × Ast) := [
      "the estate has today, each arm a typed reference at that plane's",
      "tag. The subject was a bare schema reference, which made a view's",
      "link to the value it projects, a program's human-facing name and",
-     "a topology's link to written code all unspellable at once.",
-     "Nothing is reserved for a plane that does not exist yet: growth",
-     "is by an arm, and an arm is arm-additive."],
+     "a topology's link to written code all unspellable at once. It",
+     "then stopped at the meta and agent planes, which left an",
+     "annotation about STORED CONTENT — and a note about a note —",
+     "equally unspellable; decision 40's rider CA-1 widened it to the",
+     "content planes and to the four sorts that batch ratified. No",
+     "`text` arm: the CRDT run was refused from the batch, so there is",
+     "no tag for an arm to demand. Nothing is reserved for a plane that",
+     "does not exist yet: growth is by an arm, and an arm is",
+     "arm-additive."],
     AnnotationSubject.schemaCode),
   ("annotationValueSchema",
     ["What one annotation SAYS: a scalar, or a typed reference to",
@@ -553,10 +594,12 @@ def storeKindRendered : String :=
 -- that did would compile and then refuse every `Root` it was handed.
 #guard (storeKindRendered.splitOn "CanonicalSchema.ref").length == 1
 
--- Seven live references — two arms of the exchange subject and five of
--- the annotation subject. The other two kinds reach theirs through the
+-- Fifteen live references — two arms of the exchange subject and
+-- thirteen of the annotation subject, which decision 40's rider CA-1
+-- widened from five. The other two kinds reach theirs through the
 -- shared name, which is what the sharing environment is for.
-#guard (storeKindRendered.splitOn "refWithTag(").length == 8
+#guard (storeKindRendered.splitOn "refWithTag(").length
+  == 1 + 2 + subjectArms.length
 
 /-- Where the mirrors land: the effects package's generated tree,
 beside the annotation plane's own projection. -/

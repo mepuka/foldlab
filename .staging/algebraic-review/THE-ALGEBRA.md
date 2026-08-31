@@ -474,7 +474,7 @@ zero call sites in the whole library (verified by grep at HEAD).
 | L207 | the tag is the gate: a non-step node decodes to nothing | GATED | `Programs.ts:295-296`; `Programs.test.ts:230-240` |
 | L208 | `programAddress` (no store) = `putProgram` (store) | GATED | `Programs.test.ts:211-224` |
 | L209 | the step/cont tag numbers are the registry's | GATED (byte) | `Programs.ts:92, 96` reads `generated/grammar/kindTags.ts` |
-| L210 | `RunOutcome.word` = "the addresses admitted, in admission order" | ASSERTED ✗ | `Programs.ts:459-461`; `word.push` is unconditional at `:524` (§3.1) |
+| L210 | `RunOutcome.word` = "the addresses admitted, in admission order" | **RE-VERIFIED 2026-08-31: DISCHARGED** (was ASSERTED ✗) | the CX-007 fix landed in `9bbcb901`: `Programs.ts:592` pushes only on `fresh`, matching L92; the old `:524` cite is now the interface declaration. Stream-loop review QE-A10 caught these rows stale |
 | L211 | a load extends the answer history and NOT the word | GATED | `Programs.ts:525-533`; `Programs.test.ts:204-208` |
 | L212 | naming an answer that has not been given refuses | GATED | `Programs.ts:473-478`; `Programs.test.ts:264-278` |
 | L213 | `runProgramAt(s, putProgram(s,p).address) = runProgram(s,p)` | ASSERTED ✗ | `Programs.ts:544-548`; the only check is a self-comparison (§3.9, exhibit D) |
@@ -496,7 +496,7 @@ zero call sites in the whole library (verified by grep at HEAD).
 | L224 | every vector binding's node re-encodes to its declared address on this host | GATED | `test/ConformanceVectors.test.ts:32-35` |
 | L225 | the index's `root` is the last binding's address | GATED | `test/ConformanceVectors.test.ts:84` |
 | L226 | the daemon's `cas_run_ref` word equals the Lean word — **for one program** | GATED | `test/BrainStem.test.ts:367` (`fileReadme`) |
-| L227 | a program's word has one entry per put LINE | GATED — **and contradicts L92/L130** | `test/Programs.test.ts:166-167` (§3.1) |
+| L227 | a program's word takes only fresh admissions (was: one entry per put LINE, contradicting L92/L130) | **RE-VERIFIED 2026-08-31: the gate now asserts AGREEMENT** | `test/Programs.test.ts:160+` gates "a run's word takes only fresh admissions; a re-run admits nothing" — the divergence-baking test was rewritten with the CX-007 fix (`9bbcb901`) |
 | L228 | word equality in the `List Binding` sense, cross-host | — | **NOTHING COMPARES IT ANYWHERE** (§3.5) |
 | L229 | the differential schema corpus: `Materialize.fromPayload` admits exactly where `ingest` admits, by the same name | GATED | `conformance/schema-verdicts.json`, `test/SchemaVerdicts.test.ts` |
 | L230 | the byte-identity gate on every generated surface | GATED | `mise run check:cas`, `mise.toml:429-445` |
@@ -513,7 +513,7 @@ other work.
 
 | Rank | Debt | Rows | If it stays open |
 |---|---|---|---|
-| **1** | **The host↔model word agreement.** Whichever object §4/Q1 rules to be "the word", the law that the host computes it. | L210, L227, L228, L92, L130 | R5 is the estate's ONLY cross-host conformance gate. Today the two carriers count differently, a green registered vector exhibits the divergence, and a green test asserts it as law. Every conformance claim in the estate is silently scoped to tables with no duplicate put, run from an empty store. |
+| **1** | **The host↔model word agreement.** Whichever object §4/Q1 rules to be "the word", the law that the host computes it. **LARGELY DISCHARGED 2026-08-31**: the host now appends fresh-only (`9bbcb901`, L210/L227 re-verified above) — the carriers agree; the residue is L228 (cross-host `List Binding` word equality still compared nowhere). Note for the record: the discharge landed under the commit message "Refactor and clean up codebase" with no ledger update — caught by the stream-loop review (QE-A10), re-cited here. | L210 ✓, L227 ✓, L228 open, L92, L130 | Residual exposure is L228 only: no gate compares the full binding-level word cross-host. |
 | **2** | **The sum injection laws** `interpret (h.sum g) p.inl = interpret h p` (+ `.inr`, + `inl` is a monad morphism). | L21–L26, L30 | The word gate is blind to their falsifier **by construction** (§3.2): an `inl` that performs every operation twice is `ObsEq`-equal to the real one for every `CasSig` program. The statement is the whole of the protection. `liftCas`, `liftRootedCas`, `handleLlm` and the incoming `WordSig` all ride on it. |
 | **3** | **`treeProg` correctness** — the emitted table's meaning is `Tree.prog`'s. | L231, L127, L232 | The estate's flagship generated artifact (7 programs, the R5 gate itself) is tied to the grammar by nothing, and `runP` — the operation R5's prose names — acquires no executed consequence. This is the single lane that closes §3.5 and §3.31 together. |
 | **4** | **`ofRepresentationJson_exact`** — the revision-1 decoder is exact on its domain. | L153, L168 | "The same code from any spelling lands at the same address" is ASSERTED. A domain-widening decoder passes every stated law of the module and silently discards a check while readdressing the schema (§3.10). The *value* plane has this law with no premise; the *self*-codec does not. |

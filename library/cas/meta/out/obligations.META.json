@@ -3,7 +3,7 @@
     "discharged": 26,
     "emptyDenotations": 6,
     "formless": 0,
-    "owed": 20,
+    "owed": 21,
     "parked": 5,
     "pinPending": 1
   },
@@ -264,7 +264,7 @@
       "excerpt": "…ted rather than asserted. What is still owed there is registry, not proof: wire tags 14 and 15 (`step`,…",
       "file": "library/cas/Cas.lean",
       "keyword": "owed",
-      "line": 31,
+      "line": 33,
       "module": "Cas",
       "state": "owed"
     },
@@ -336,6 +336,15 @@
       "line": 289,
       "module": "Cas.Core.Refs",
       "state": "discharged"
+    },
+    {
+      "excerpt": "…opological sort\" read computationally. owed(reach-search-memoized): `reachIn` re-explores shared subgra…",
+      "file": "library/cas/Cas/IR/Reach.lean",
+      "id": "reach-search-memoized",
+      "keyword": "owed",
+      "line": 3,
+      "module": "Cas.IR.Reach",
+      "state": "owed"
     },
     {
       "excerpt": "## The premise is discharged, not assumed",
@@ -681,7 +690,7 @@
       "excerpt": "…ges(…)` rows in the moved files, so the obligation ledger carries the paired lifecycle and the debt ledger car…",
       "file": "library/cas/Cas/Values.lean",
       "keyword": "obligation",
-      "line": 7,
+      "line": 8,
       "module": "Cas.Values",
       "state": "obligation"
     },

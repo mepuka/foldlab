@@ -216,13 +216,13 @@ it begins at; it never implies the store began there.*
 
 **N2 — "N admissions."** The word names two different objects and a
 green test asserts the divergence — `THE-ALGEBRA.md` §3.1, the ledger's
-**debt rank 1**. Lean appends only on `.fresh` (**L92**,
-`Handler.lean:84-86`); the host pushes unconditionally
-(`src/cas/Programs.ts:524`); `RunOutcome.word` = "the addresses
-admitted, in admission order" is **L210 ASSERTED ✗**, and
-`Programs.test.ts:166-167` bakes the divergence in as a gate
-(**L227**). The registered witness is `shared-chunk` — five put lines,
-four distinct addresses.
+**debt rank 1**. **DISCHARGED 2026-08-31 (re-verified; stream-loop
+review QE-A10)**: the CX-007 fix (`9bbcb901`) made the host append
+fresh-only (`Programs.ts:592`), matching Lean's L92, and the test now
+GATES the agreement instead of the divergence. The historical record
+of what stood before: Lean appended only on `.fresh` (**L92**) while
+the host pushed unconditionally; `shared-chunk` (five put lines, four
+distinct addresses) was the registered witness.
 *Design rule, derived: **the trunk renders RECEIPTS (the word log),
 never `RunOutcome.word`,** until **Q1** is ruled.* The log is on the
 model's side of the divergence by construction — "a duplicate put is
@@ -578,7 +578,7 @@ what PDD-6 laws 3–5 would license (N4).
 
 | Element | Hard because | Row | Gating ruling |
 |---|---|---|---|
-| **any count of "admissions"** | the word names two objects; a green test bakes the divergence in | **L210 ✗**, **L227**, **L92**, **L130**; §3.1 | **Q1** (+**Q2**) — debt **rank 1** |
+| **any count of "admissions"** | ~~the word names two objects~~ **DISCHARGED 2026-08-31**: host and model agree fresh-only (`9bbcb901`; L210/L227 re-verified) — counts are now safe; Q1's residue is L228 (cross-host binding-level word equality, compared nowhere) | L210 ✓, L227 ✓, L228 open | Q1 softened to L228's residue |
 | **fork / undo / "go back"** | prefix admission has no named lemma | **L74 OWED** (absent at `Word.lean`) | docket **D** / `[c7] prefix-wf` (`GRILLING-DOCKET:177`); FE-O7 |
 | **a subscription rather than a poll** | at-most-once, the empty-at-frontier iff, and the funnel are unstated | PDD-6 laws 3, 4, 5 | **PDD-6 dispatch** — QUEUED behind a merge that has landed |
 | **a browser reading history at all** | there is no word tool and no history route | `cas-tools.json` (6 tools); `http.ts:891-903` | FRONTEND **ask 3** — **absent from the docket** (`PROOF-OBLIGATIONS.md` §0) |
@@ -679,7 +679,7 @@ One foldkit view over one reader.
 |---|---|
 | fork / undo | **L74** (N3) |
 | a subscription | PDD-6 laws 3–5 (N4) |
-| any admissions counter | **Q1** (N2) |
+| ~~any admissions counter~~ **RETIRED 2026-08-31** — N2 discharged (see §1.4 N2); counters are safe and the face-facts line ships one (TRUNK-PLAN) | — |
 | a roots panel | **Q14** (N7) |
 | generated components | FRONTEND ask 6 (un-docketed) |
 | any write from the browser | FRONTEND ask 2, tier 2 |
@@ -699,9 +699,11 @@ clock.
    no Lean edit and rides decision 32(c)'s ruled co-tenancy), or the
    word becomes the seventh MCP tool — a `Mcp.lean` event that both
    PDD-6 and this spec fence off.
-2. **Ratify the receipts rule.** *The trunk renders receipts (the word
-   log), never `RunOutcome.word`, until Q1 is ruled.* Making this the
-   front end's standing rule means no view has to wait on debt rank 1.
+2. **~~Ratify the receipts rule~~ — RETIRED 2026-08-31.** The premise
+   (Q1 open, debt rank 1) is DISCHARGED: host and model agree
+   fresh-only (`9bbcb901`; §1.4 N2). Receipts-first remains the
+   trunk's design as a matter of architecture (the log is the
+   object), no longer as a quarantine.
 3. **Recognize `prefix-wf` as the front end's licence.** Docket item
    **D** / `[c7] prefix-wf` and **L74** and FE-O7 are plausibly one
    lemma. Confirming that at merge, rather than duplicating it, gives

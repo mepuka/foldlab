@@ -7,8 +7,15 @@ import { expect, it } from "@effect/vitest"
 import { cast, Effect, Layer, Schema } from "effect"
 import { Cas, Server } from "../src/index.ts"
 
+/** A caller-defined projection, at a tag no registry row claims.
+ *
+ * It rode `0x41` until decision 40 ratified that byte as the
+ * `annotation` row — and `Cas.value` refusing it afterwards is the door
+ * working, not breaking: a consumer's own projection may not alias a
+ * kind plane the library already reads. `0x21` is what a consumer picks
+ * instead, which is what this file is here to exercise. */
 const Note = Cas.value({
-  kindTag: 0x41,
+  kindTag: 0x21,
   revision: 0,
   schema: Schema.Struct({ text: Schema.String }),
 })

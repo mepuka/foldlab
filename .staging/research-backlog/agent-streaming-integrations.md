@@ -8,6 +8,12 @@ studied as tier-one harness prior art"). Not dispatched. Pre-grade: nothing here
 is ratified, nothing here mints an abstraction, and every recommendation is
 written as an ask the operator rules on (§6).
 
+**Pinned implementation companion.** [Multica daemon streaming — recovered
+RFC, failure semantics, and Foldlab lessons](MULTICA-DAEMON-STREAMING.md)
+tests this landscape against one exact production harness revision: daemon
+control WebSockets, local agent streams, liveness, buffering, disconnect,
+transcript durability, and the resulting Foldlab ruling packet.
+
 **Register.** This is conception mode (C3). External claims carry a URL and the
 date they were read (C6); anything I could not resolve to a primary source is
 marked **PENDING** in place. Estate claims carry `file:line` or a branch-

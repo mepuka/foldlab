@@ -391,7 +391,7 @@ def corpus : List Case := [
   -- naming ruling: the subject is a union over every addressable
   -- plane, and the value is alternatives — text, or a typed reference.
   { name := "annotation",
-    note := "the sidecar annotation kind: key, a subject union over the five addressable planes (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), and a value that is either text or a typed reference",
+    note := "the sidecar annotation kind: key, a subject union over the thirteen addressable planes — the meta and agent five (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), the content four decision 40's rider CA-1 admitted (0x01 value, 0x08 chunk, 0x0B file, 0x0D context), and that decision's own four sorts (0x41 annotation, 0x49 agent, 0x51 query, 0x52 result) — and a value that is either text or a typed reference",
     source := .code Annotation.schemaCode,
     values := [
       ("on-schema-text", .obj [
@@ -449,6 +449,53 @@ def corpus : List Case := [
         ("value", .obj [
           ("_tag", .str "text"),
           ("text", .str "the turn this describes")])]),
+      -- The REFLEXIVE rung, rider CA-1: a note about a note. There was
+      -- no arm for it while the annotation plane had no tag of its own,
+      -- because an arm is a reference and a reference demands one tag.
+      ("tombstone-on-annotation", .obj [
+        ("key", .str "foldlab/tombstone"),
+        ("subject", .obj [
+          ("_tag", .str "annotation"),
+          ("address", sentinel sampleAddr annotationKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "superseded")])]),
+      -- The CONTENT planes, rider CA-1, in the shape that made them
+      -- wanted: content to vector, the subject the content and the
+      -- value a typed edge at the chunk the vector's bytes live in.
+      ("embedding-on-value", .obj [
+        ("key", .str "foldlab/embedding"),
+        ("subject", .obj [
+          ("_tag", .str "value"),
+          ("address", sentinel sampleAddr valueKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "ref"),
+          ("address", .obj [
+            ("_tag", .str "chunk"),
+            ("address", sentinel sampleAddr chunkKindTag.toNat)])])]),
+      -- The search plane's own association edge, at the sorts decision
+      -- 40 ratified for it.
+      ("related-query-to-query", .obj [
+        ("key", .str "foldlab/related"),
+        ("subject", .obj [
+          ("_tag", .str "query"),
+          ("address", sentinel sampleAddr queryKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "ref"),
+          ("address", .obj [
+            ("_tag", .str "query"),
+            ("address", sentinel sampleAddr queryKindTag.toNat)])])]),
+      -- `text` was REFUSED from decision 40's batch, so the CRDT run
+      -- has no tag and the union has no arm for it. This triple is what
+      -- makes that refusal observable rather than merely written down.
+      ("subject-refused-text-arm", .obj [
+        ("key", .str "foldlab/name"),
+        ("subject", .obj [
+          ("_tag", .str "text"),
+          ("address", sentinel sampleAddr valueKindTag.toNat)]),
+        ("value", .obj [
+          ("_tag", .str "text"),
+          ("text", .str "no run sort")])]),
       -- An arm's tag is part of the arm: a schema-tagged sentinel under
       -- the system arm is not the same edge.
       ("subject-arm-tag-swapped", .obj [

@@ -297,6 +297,78 @@ breaker: T1 likely realizes WORD-LEVEL — `toStore (w₁ ++ w₂)` under
 `Honest.no_alias` / `toStore_append_shadowed` — so the `Store.join`
 mint may reduce to notation. Read the run note before packet work.
 
+## The sort event — the greenfield decision (proposed 2026-08-30)
+
+Operator: "this is all green field, nothing's been built, we can
+declare new sorts right now… let's make a decision on the most useful
+sorts to add." This section is that decision laid out for ruling. It
+SCOPES the no-new-sorts law rather than repealing it: **one batch
+event, grilled once, then stillness again** — the registry's growth
+discipline honored by doing the growth as a single ruled event.
+
+**The principle** (the registry's own, from Annotation.lean's
+subject-union argument): *a thing deserves a sort iff the algebra
+needs typed, admission-checked references TO it* — a reference
+demands one tag, and expected-tag checking is per-tag. Things only
+looked up or described ride composites and annotations; things
+REFERENCED get tags.
+
+**The five, ranked, each with its reference-demand evidence:**
+
+| sort | shape (sketch) | who references it (the tag demand) | column speed class |
+|---|---|---|---|
+| **`annotation`** | promote working tag 0x41 to a ratified row (shape landed: key, subject, value) | notes-about-notes (the reflexive rung); sessions citing the annotations they consumed; TODAY it has no registry row at all — a de facto sort missing its papers. The trunk gains the MEANING column — the fold law's `J_t`, visible | steady-fast |
+| **`query`** | the spec as content: {generator/rules, aggregator, rung} payload | results bind spec→query; related-edges; annotations-about-queries; the reflexive tower needs the query column visible. The product's center object | steady-fast |
+| **`result`** | {spec→query, mark, member edges (free discipline)} | later session steps (addresses-not-payloads hands RESULT handles onward); annotations. Bonus: the memoization key becomes the node's own preimage — spec+mark+members — so dedup-as-memoization is exact by construction. Also this IS the "index kind" naming.ts anticipates: a materialized R2 view page | steady-fast |
+| **`agent`** | the identity anchor (the three-edge form the agent language already writes, given its OWN tag instead of riding `entry`) | everything attributed: annotation provenance, sessions, exchanges. The killer: on `entry`'s tag, an edge expecting AGENT-specifically is UNSPELLABLE (per-tag checking) — "who" queries (QD-3) need the distinct tag. Supersedes the entry.agent section ask with a cleaner event; greenfield means the migration is free | near-still |
+| **`text`** | the CRDT run: {run payload, parent→text, site, counter} (text-crdt.md) | the parent pointer is SELF-referencing — an edge expecting `text` is unspellable without the tag; structurally forced the day the buffer ships. Greenfield argues declare now so the buffer lands into a ruled wire form; deferring to the buffer build is the honest alternative (TB-2) | bursty on typing |
+
+**Refused a sort, deliberately** (the principle cutting the other way):
+
+- **`vec`/embedding** — nothing references vectors by typed edge;
+  lookups go content→vector THROUGH an annotation
+  (`foldlab/embedding`, subject = the content, value = ref to the
+  chunk). Carrier: chunk bytes + annotation. No tag demand.
+- **`index`** — derived; `result` is the materialized page; the
+  reverse-ref index is a result family.
+- **memory / preference / judge-pin / tombstone** — all annotation
+  KEYS, not sorts. The annotation plane is exactly the machine for
+  open vocabulary over closed carriers.
+- **`step.query`** — a FORM on `step` (additive), not a sort; still
+  deferred to SR-1's Lean half (SEARCH-CARRIERS CA-4).
+
+**What rides the same event** (one versioning batch, priced by
+Annotation.lean:85-97 — schema-code address moves, stored nodes
+don't; there are no stored annotation nodes to re-author):
+
+- the `AnnotationSubject`/`AnnotationValue.ref` widening (CA-1) —
+  arms for the content planes (value, file, context, chunk) AND the
+  five new sorts, so annotations can be about anything addressable
+  including each other;
+- the key-family ratification (CA-2): `foldlab/related`,
+  `foldlab/search-note`, `foldlab/pref`, `foldlab/embedding`,
+  `foldlab/tombstone` — spellings to grill;
+- COLUMNS order extension: `agent` joins near-still; `query`,
+  `result`, `annotation` join steady-fast; `text` beside `chunk`.
+
+**RULED 2026-08-30 — decision 40** ("ok lets stick to it 1-4
+added. done", after the ordered vision readback):
+
+- **S-1 ADOPTED**: the core four — `annotation`, `query`, `result`,
+  `agent` — one grilled batch event.
+- **S-2 REFUSED, vision-grounded**: `text` does not ride — no logged
+  vision sentence orders collaborative editing, and the operator
+  clarified same day that Paper is a DESIGN inspiration, not the
+  product identity. TB-1's parameterized Lean model stays available
+  sortless; the tag is forced only if a buffer is ever commissioned
+  (TB-2's original posture stands).
+- **S-3 ADOPTED, scoped to the four**: the union widening (content
+  planes + the four new sorts; no text arm), the key family
+  (spellings at grill), the column placements.
+- The decision principle (a sort iff typed references TO it are
+  needed) is adopted with the batch; the stillness law resumes the
+  moment the batch lands.
+
 **LANDED same day** (`library/cas/Cas/IR/Join.lean`, kernel-checked;
 axiom ceiling `propext`+`Quot.sound`, no `Classical.choice`): **T1**
 as the left-biased characterization + both inclusions + commutativity

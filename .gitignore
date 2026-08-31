@@ -31,3 +31,6 @@ corpus/
 # are still in the working tree in plaintext. The fix is to hold secrets
 # outside the repo (or in the keychain) and rotate anything that has sat here.
 /turso_tok.md
+
+# macOS Finder droppings — never content
+.DS_Store

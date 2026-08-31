@@ -1,0 +1,16 @@
+{
+  "id": "axle-paper",
+  "kind": "paper",
+  "title": "AXLE: A Cloud Infrastructure for LEAN 4 Theorem Proving Utilities",
+  "authors": ["Jimmy Xin", "Alex Schneidman", "Chris Cummins", "Karun Ram", "Srihari Ganesh", "Jannis Limperg"],
+  "venue": "arXiv preprint",
+  "arxiv": "2606.26442",
+  "arxivVersion": "v1",
+  "arxivDated": "2026-06-24",
+  "localPath": ".reference/papers/2606.26442v1.pdf",
+  "sha256": "82d1b44e8a3d8388a092a07f15941e03bf42bd53c5bdab8b1abd5bd3c52bbb51",
+  "bytes": 325179,
+  "resolvedAt": "2026-08-30",
+  "resolution": "operator-supplied local file; title and arXiv identity extracted from the first two pages with liteparse 2.0.0",
+  "consumers": [".staging/schema-materialization/TOOLS-DX-REVIEW.md"]
+}

@@ -2,11 +2,11 @@
   "census": "trust",
   "convention": "stratum assignment is v0-COARSE and the strata are ORDERED — a file lands in the first one that claims it. `emitted` is a `generated` path segment or a GENERATED marker in the file's first 400 bytes. `model-gated` is CURATED DATA: a hand-written list at library/cas/meta/in/model-gated.META.json, one gate label per row, carrying a row in meta/MANIFEST.META.json's `inputs` and read from there — a declared input that vanishes is a red build, not a silent default. `tested` is a DIRECT import from a file under library/effects/test — a module reached only through another module's re-export is not tested by this rule, and a binary a test SPAWNS rather than imports is not either. `bare` is the remainder. A row says what the census can see, not what the file is worth.",
   "counters": {
-    "bare": 9,
+    "bare": 8,
     "emitted": 10,
-    "files": 59,
+    "files": 60,
     "modelGated": 12,
-    "tested": 28
+    "tested": 30
   },
   "emitted": {
     "emitter": "trust",
@@ -38,7 +38,7 @@
     },
     {
       "path": "bin/cli/ledgers.ts",
-      "stratum": "bare"
+      "stratum": "tested"
     },
     {
       "path": "bin/cli/naming.ts",
@@ -139,6 +139,10 @@
       "gate": "conformance suite (Lean-emitted vectors, byte gates, generated fixtures, fast-check)",
       "path": "src/cas/Materialize.ts",
       "stratum": "model-gated"
+    },
+    {
+      "path": "src/cas/MetaSchema.ts",
+      "stratum": "tested"
     },
     {
       "gate": "conformance suite (Lean-emitted vectors, byte gates, generated fixtures, fast-check)",

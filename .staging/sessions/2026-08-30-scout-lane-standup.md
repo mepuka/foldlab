@@ -806,3 +806,204 @@ verify-then-trim):
   baseline stash briefly swept the uncommitted CasValues work,
   popped and verified immediately.
 
+
+## Eighteenth act, same day — the searcher, the sorts, decision 40
+
+The post-compact arc, digest form. D2 landed green (the
+`toEffectSchema` interpreter, ledgers.ts cut over to the
+manifest-derived registry, thirteen path-naming refusal drills, 439
+tests; report banked). D2b (the four awaiting meta shapes) was
+dispatched and KILLED BY THE OPERATOR pre-edit — the meta plane is
+paused; nothing was touched. The operator's pivot: "start more
+fundamentally from the operations on the data structure… peruse
+Mathlib… think in human semantics." What followed, each staged and
+reader-verified:
+
+- **QUERIES.md**: the query layer below View — one function on a
+  binding + an Aggregator; `run_nil`/`run_append` become generic
+  theorems; `toStore` revealed as the oldest instance; the
+  refinement ladder (comm ⇒ replica agreement, idem ⇒ replay
+  safety); three shapes (Q-HOM/Q-SEG/Q-FIX); the CALM patchability
+  law; the human-search inventory yielding debts QD-1..7 (Reach +
+  the admission-order-is-a-topological-sort theorem the biggest).
+- **The Mathlib audit** (reader, source-verified at tag v4.33.1 —
+  our exact toolchain): the fit is literal (`FreeMonoid α := List α`
+  defeq; `lift` a genuine Equiv; `Multiset.prod_add` = the R1
+  claim; `dlookup_append` IS `toStore_append`; `SupBotHom` =
+  View's twin; `Filter.eventually_atTop` = the L3 rung). Where
+  Mathlib is ABSENT: decidable closures, DAG/topo theory — the
+  Reach mint is genuinely ours. AList erases what our word keeps:
+  the divergence IS the product. Report banked.
+- **SEARCH.md**: the LLM-as-searcher plane — searches ARE programs
+  (SR-1 "searches leave receipts"); sub-results as content
+  (dedup = memoization; addresses-not-payloads); identity as a
+  sub-query; embeddings as pinned functions with top-k as an R2
+  aggregator; the reflexive tower collapses to classifiers; the
+  query fold `ctx_{n+1} = ctx_n ⋄ step(q_n)` (= mkMulAction) as
+  the operator's "query as a function of the previous query"; the
+  fuzziness quarantine (soft judgments once at write, exact reads).
+- **The SOTA survey** (reader + self-correcting addendum, banked):
+  write-time annotation best-evidenced (LogicalRAG parity at 1/41
+  build cost; Contextual Retrieval $1.02/Mtok); the cost claim
+  CORRECTED against measured scans (1–2 orders at 10⁶, int8 not
+  binary at 768d, the local-encoder law); append-only dissolves
+  cache eviction (NP-hard) and rollback; four 2026 papers reach our
+  architecture, none benchmarks; the two empty evaluation slots are
+  the operator's own axes. One prompt-injection attempt in a vendor
+  page, caught and inert.
+- **text-crdt.md**: Evan Wallace's construction mapped — causal
+  delivery becomes `wf`, ID uniqueness becomes the address,
+  convergence (unproven there) becomes our R1/R2 factorization;
+  CRDT = R2 state query + pure render; the storage-cost model
+  computed (~200B/binding; the granularity law: chunk down to 64KB,
+  batch up past 1KB).
+- **SEARCH-CARRIERS.md**: the algebra laid onto the registry as it
+  exists — association edges are the landed `pinLink` example;
+  preferences-on-turns spellable TODAY via the exchange arm; the
+  gaps exactly CA-1..4, all additive.
+- **Decision 40 — the sort event**: after the operator's ordered
+  VISION READBACK ("i always lose conviction when i get into the
+  weeds"; Paper clarified as design inspiration only), the
+  greenfield batch RULED: `annotation`/`query`/`result`/`agent`
+  adopted with riders (union widening, key family, placements);
+  `text` refused vision-grounded; the sort-iff-typed-references
+  principle adopted; stillness resumes when the batch lands.
+  Stamped in SPECS.md + store-crdt.md; no-new-abstractions memory
+  scoped.
+
+Standing order minted mid-act: agent reports persist to
+`.staging/agent-reports/` (three banked today), never
+transcript-only. Open threads: D2's TS work uncommitted; D2b's meta
+shapes paused by operator brake; the sort-event implementation lane
+unbuilt (awaiting dispatch word); the UI discussion arc still queued
+behind all of it.
+
+## Nineteenth act, into the small hours — decision 40 lands
+
+The sort batch built clean: four rows ratified (`annotation` AT its
+existing 0x41 — zero stored nodes re-authored; `agent` 0x49, "I for
+identity" on the system→topology→T precedent; `query` 0x51; `result`
+0x52), the subject union 5→13 arms with the text-arm refusal made an
+OBSERVABLE gate (a conformance triple whose verdict is a refusal),
+the key family pinned and EMITTED (`Cas.Annotations.Keys`), exactly
+one schema address moved (annotation's, the arm-additive pricing made
+visible in a one-line addresses.json diff), and the full battery
+green twice — check:cas exit 0 ×2, effects 439/439, lint baseline
+exact. The lane's largest finding: ratifying 0x41 would have killed
+`cas name` at module load (the `Cas.value` door refuses registry
+tags) — resolved by the library-owned-plane pattern (`libraryValue`
+internal seam; `Cas.Annotations.Node` as the row's ONE projection).
+Nine judgment calls collected for the grill; report at
+agent-reports/2026-08-30-decision-40-sort-batch.md. Codegen-level
+assessment staged the same hours (CODEGEN-LEVEL.md): D2's
+interpreter shape ruled RIGHT-leveled; the 41 raw-arm emitter sites
+measured as the un-algebra; the Effect-fragment bounds (own-forms
+closure, Schema.AST as the reified type level, residue-as-content);
+the continuation reframe (Prog is the free monad — the 35% was the
+linear rung, not the theory; the ladder linear→branch→fix with host
+closures the only principled residue). Trust ledger stale owed to
+the paused meta lane, flagged not fixed. Tree uncommitted, carrying
+the batch + D2's TS work.
+
+## Twentieth act, 2026-08-31 — the query layer proves; the canvas derives
+
+QA-1 and QA-3 LANDED (Cas/IR/{Query,Reach}.lean, check:cas exit 0,
+surface 2426→2499 = exactly the two modules, effects untouched at
+439): the Aggregator primitive with generic run_nil/run_append;
+run_perm = QA-6's replication companion DELIVERED; run_redelivered
+(full per-message replay, no debt); the three landed views proved
+STRUCTURALLY EQUAL to ofQuery forms; toStore agreement premise-free.
+Reach: the Edge occurrence-reading REFUTED by a shadowing
+counterexample (Pass B changed a theorem's truth value before any
+proof); wf_edge_index = admission order is a topological sort;
+reach_acyclic; reach_mono premise-free; AND the decision procedure
+landed (reachB — sound unconditionally, complete on wf words) where
+Mathlib has no decidable closure at all. One debt:
+owed(reach-search-memoized). A measured Lean pattern banked: decide
+over == on subtypes avoids Classical.choice (backlog rows 14/15).
+Same hours: the front-end arc opened — the trunk-canvas correction
+(operator: the canvas, not a feed; transcript searched, sketch
+recovered), foldkit-with-canvas-inside architecture (Scene as closed
+measured-monoid AST; painter as the one handler; SVG as canonical
+text register), CANVAS.md staged and CV-1..4 + the /history host
+route RULED ("I agree with all of this"); aesthetics research +
+adversarial canvas review dispatched; the daemon/MCP top-down opener
+delivered (cache-header freebie, limit param, MCP blocks nothing).
+Tree carries THREE green uncommitted lanes: sort batch + D2 + query
+layer.
+
+## Twenty-first act — three review lanes land; the unbiased pass goes out
+
+The front-end triptych completed: the ADVERSARIAL CANVAS REVIEW
+(42 findings — layout was non-monotone as designed and the estate's
+own patchability law fixes it; the canvas is a viewport not the
+document, with the epoch-terminator list enumerated; the carrier is
+View.prod(height, lastK k) ≈ 1MB@10⁷; rects-only union with the SVG
+register as fallback content = one artifact/four jobs; CANVAS.md
+rewritten to v2, then extended with the aesthetics companion). The
+AESTHETICS RESEARCH (measured: fifteen categorical hues fails CVD —
+Tableau 10 already broken at ten; verdict INK ON PAPER, the one
+saturated colour spent on unregistered = doubt; the sediment band;
+the century rule; address-keyed micro-tint; the restraint list;
+WCAG target-size makes keyboard nav a v1 conformance requirement;
+asks A1–A6). The STREAM-LOOP REVIEW (the law upheld + sharpened —
+"the server may execute anything whose answer is an ADDRESS, nothing
+whose answer is a computed VALUE"; two blockers: since has NO limit
+(cold start = OOM) and no materializer exists anywhere; the naming
+plane is the lying-materializer detector for free; Last-Event-ID IS
+since; the off-CAS liveness ruling dissolves the
+liveness/granularity/dedup trilemma with numbers; the cut law
+concat(cut s)=s is the one new Lean obligation; poke-only
+recommended; QUERY-ENGINE.md revised with adoptions + QE-4).
+CLEANUP run on its orders: N2/L210/L227/rank-1 re-verified as
+DISCHARGED in THE-ALGEBRA.md + SPEC.md (the fix had landed under a
+generic commit message with no ledger update — the eyebrow recorded);
+STANDUP's Rewriter path fixed; SEARCH.md's "panel"→ANNOTATOR
+vocabulary fixed (G4); SEARCH-CARRIERS stamped CA-1/CA-2 discharged
+by the sort batch. The consolidated ruling slate (A1–A6, CV-5/6,
+QE-1..4) was presented and HELD — the operator ordered another pass
+first: an UNBIASED production-canvas research lane (how
+high-performance beautiful canvas is genuinely done — Figma, Perfetto,
+Glide, tldraw, deck.gl, xterm.js et al.) + a foldkit API deep dive,
+forbidden from reading our design docs. Out now; the build brief
+waits on it.
+
+## Twenty-second act — the slate ruled whole; the plan consolidated; slices cut
+
+The operator adopted every recommendation ("Ill go with all
+recommendations") — A1–A6, CV-5/CV-6/CV-3′, QE-1..4 — stamped as
+DECISION 41 in docs/SPECS.md. The unbiased production-canvas pass
+had landed first (persisted file-first per the strengthened
+standing order): twelve convergent practices; the middle rung
+deleted (VS Code removed Canvas2D; xterm defaults DOM); the unnamed
+fidelity-for-continuity discipline; Perfetto's
+LOD-in-the-database = QUERY-ENGINE's law found in the wild; foldkit
+facts (Canvas.view has no perf machinery or DPR; SVG a fully-typed
+peer with vdom/lazy/a11y/tests) — reopening CV-3 into CV-3′: v1
+renders as SVG in foldkit (one artifact = gate+SSR+a11y+tests+live
+view), Canvas/WebGL the later Mount-admitted scale handler on
+measured budgets. TRUNK-PLAN.md written as the plan of record:
+ruled decisions, corpus map, THREE PARALLEL LANES with package
+partition (A: /history+limit-on-seam+ETag; B: lastK + the cut law,
+then S4 QuerySpec/registry/vectors; C: the trunk v1 — Model/fold,
+Placement→place→SVG, ink-on-paper tokens, keyboard nav, inspector
+appends, golden SVGs + Scene tests, fake-seam-first), the deferred
+ladder, standing constraints, and the owed rows carried
+consciously. A plan-review lane dispatched (persist-as-you-go) to
+audit slice correctness, file-level parallelizability, gate
+sufficiency, and the missing — its findings gate the lane
+dispatches. Cleanup from the retracted MCP mid-turn message: none
+acted on, per operator's explicit ignore.
+
+## Twenty-third act — the standing debt swept
+
+Cleanup on operator order while the plan review runs: the
+CanonicalSchema.ts:605 no-useless-return ERROR fixed (return→break)
+— `check:effects:ts` green for the first time since it entered the
+docket; lint exit 0 with the 172-warning ruled baseline intact
+(scratch/foldkit noise investigated: operator-committed, deliberately
+linted, left); trust.META.json regenerated and gate-green (59→60
+files — MetaSchema.ts entered `tested`, ledgers.ts bare→tested, the
+exact D2 delta); seven TRACKED .DS_Store files untracked
+(rm --cached, staged for the operator's commit) with the .gitignore
+rule added; typecheck clean; 439/439 green.

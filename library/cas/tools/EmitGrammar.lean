@@ -1,6 +1,7 @@
 import Cas.Grammar.Manifest
 import Cas.Lang.Defun
 import Cas.Core.Refs
+import Cas.Schema.Annotation
 import Cas.Schema.Codec.References
 import Cas.Backend.Ts
 import Gate
@@ -23,6 +24,17 @@ grammar's human surface already has a home at the library root, and a
 second Markdown spelling of the sort table is exactly what closing
 ruling-queue item 26 was about. The TypeScript projection rides beside
 the JSON, so a re-pointed target moves the pair together.
+
+TWO MORE FIXTURES, for the workbench. `kindTags.ts` and `names.json` are
+emitted a second time into `experiments/workbench/src/generated/`,
+because the front end is a separate package that may not import the
+effects package's copies — the two name different `effect` versions, and
+that split is unruled (`experiments/workbench/README.md`, C6 pending). A
+front end spelling a wire tag or a derived name by hand is exactly what
+that README refuses, so the copies are emitted from this same manifest
+in this same run. Their targets are FIXED rather than derived from the
+positional override: they are mirrors in another package, not siblings
+in one generated directory.
 
 This root is also where the grammar manifest and the `Lang` layer meet,
 so the cross-layer pins live here — the manifest cannot import `Defun`
@@ -87,6 +99,55 @@ private def witnessOf (row form : String) : Option Cas.Node :=
 -- the manifest's constant `H` writes into the one edge it exhibits.
 #guard witnessOf "cont" "cont"
   == some (Cas.Lang.tableNode (fun _ => noAddr) [wLinePut])
+
+/-! ## The annotation sort, pinned across the same layering
+
+`Cas/Grammar/Manifest.lean` may not import `Cas/Schema/Annotation.lean`
+either — the annotation kind is written through the schema plane's
+projection, which sits above the grammar — so the `annotation` witness
+spells that projection's output by hand, exactly as the program
+witnesses spell `Defun`'s. This root imports both planes, so this is
+where the hand-spelling is held to the projection: the witness node must
+be the node `Cas.Schema.putNode` actually writes at this kind, envelope
+payload and edge order included.
+
+The pinned annotation is `pinLink`'s shape with RATIFIED arms — the
+subject on the program plane, the value's reference on the git plane —
+because the manifest's free-discipline guard reads every witness edge
+through `Ty.ofTag`, and the union's `system` and `exchange` arms sit at
+working tags with no registry row. That divergence is stated in the
+row's own law rather than hidden: a real annotation may carry an edge at
+a working tag, and the row says so.
+
+The `agent` row has no pin here and cannot: its writer is
+`CasExamples.AgentStep`, and `CasExamples` is a LEAF the strata gate
+holds to being imported by nothing. Its witnesses are held the way
+`context`'s is — by the consumer's own build, and by the row's notes
+naming it. -/
+
+/-- The annotation the `annotation.annotation` witness states: a typed
+reference value, on the two ratified planes. -/
+private def wAnnotationPin : Cas.Schema.Annotation :=
+  { key := "foldlab/view"
+  , subject := .program ⟨noAddr⟩
+  , value := .ref (.git ⟨noAddr⟩) }
+
+-- The `annotation` form IS `Cas.Schema.putNode`'s node at this kind.
+#guard witnessOf "annotation" "annotation"
+  == Cas.Schema.putNode Cas.Grammar.schemeVersion
+      Cas.Schema.pinAnnotationKindTag Cas.Schema.pinAnnotationRevision
+      wAnnotationPin
+
+-- The kind's everyday word IS the registry's name for its row. The
+-- annotation plane emitted that word because it had no row to give one;
+-- since decision 40 it has, and the two spellings meet here rather than
+-- drifting.
+#guard Cas.Schema.pinAnnotationKindWord == Ty.annotation.sortName
+
+-- And the tag the plane's pins ride IS the row's. Both directions of
+-- the promotion, held: the sort table gives the byte, and the schema
+-- plane reads it rather than choosing one.
+#guard Cas.Schema.pinAnnotationKindTag == Ty.annotation.wireTag
 
 /-! ## The TypeScript door
 
@@ -166,8 +227,16 @@ def emitted : Gate.Emitted where
   emitter := "emitgrammar"
   module := "library/cas/tools/EmitGrammar.lean"
 
-private def module : Module where
-  header := [
+/-- The door's table, at whichever header its copy is read under. The
+`decls` are the SAME value for every copy — one manifest, lowered once —
+so two renderings of this table can differ only in the prose that says
+where each one lives and why, never in a row. -/
+private def moduleWith (header : List String) : Module where
+  header := header ++ emitted.headerLines
+  imports := []
+  decls := decls
+
+private def module : Module := moduleWith [
     "GENERATED — do not edit. THE KIND-TAG REGISTRY, as data: every wire",
     "tag `Cas.Grammar.manifestV0` gives a row, emitted from",
     "`library/cas/Cas/Grammar/Manifest.lean` by `lake exe emitgrammar`;",
@@ -184,11 +253,47 @@ private def module : Module where
     "refused identically, because a tag with a second public",
     "interpretation is the same hole either way — so this door's",
     "membership did not move when those two rows did."
-  ] ++ emitted.headerLines
-  imports := []
-  decls := decls
+  ]
 
 def rendered : String := Render.module house0 module
+
+/-- The workbench's copy of the same table. The front end is a separate
+package that may not import the effects package's rendering — the two
+name different `effect` versions, and that split is unruled
+(`experiments/workbench/README.md`, C6 pending) — so it reads the
+manifest's own projection rather than a transcription of it.
+
+The header quotes the obligation that makes it a fixture rather than a
+hand copy, because the file is where somebody tempted to edit it will be
+standing. -/
+private def workbenchModule : Module := moduleWith [
+  "GENERATED — do not edit. THE KIND-TAG REGISTRY, as data: every wire",
+  "tag `Cas.Grammar.manifestV0` gives a row, emitted from",
+  "`library/cas/Cas/Grammar/Manifest.lean` by `lake exe emitgrammar`;",
+  "regeneration is byte-identity-gated (`--check`, wired into",
+  "`check:cas`). `REGISTRY.md` is the same table's human rendering and",
+  "`grammar/names.json` beside this file the inventory of every name the",
+  "grammar derives.",
+  "",
+  "THE WORKBENCH'S COPY, and the law it exists under —",
+  "`experiments/workbench/README.md`: «any surface the store language",
+  "already describes must be generated, never typed by hand». The kind",
+  "tags are such a surface: a front end that spells a wire tag by hand",
+  "is a second, unregistered opinion about what a stored node means. The",
+  "rows below are the SAME Lean values",
+  "`library/effects/src/cas/generated/grammar/kindTags.ts` carries,",
+  "printed by the same printer in the same run; only this header",
+  "differs, and it differs because the two files are read by different",
+  "people.",
+  "",
+  "A RESERVED row is a code point the registry holds outside `Ty`; none",
+  "is today (14 and 15 were ratified as the `step` and `cont` sorts on",
+  "2026-08-29). Reserved or ratified, a row is refused identically at",
+  "the library's door, because a tag with a second public interpretation",
+  "is the same hole either way."
+]
+
+def workbenchTagsRendered : String := Render.module house0 workbenchModule
 
 /-! ## The reference discipline's reserved keys
 
@@ -495,9 +600,41 @@ def markersTargetFor (json : System.FilePath) : System.FilePath :=
   | some dir => dir.join "refMarkers.ts"
   | none => "refMarkers.ts"
 
+/-! ### The workbench's two
+
+FIXED targets, not derived from the effects target the way the three
+above are: those are siblings in ONE generated directory, and these are
+mirrors in a DIFFERENT package, so a re-pointed effects artifact must
+not drag the front end's copies after it. `registryTarget` is the
+precedent for a fixture the positional override does not move.
+
+Two of the five, not all five. The front end reads the door's refusal
+set and the derived-name inventory — the two projections a surface over
+this store needs to name a node and to refuse an unregistered plane.
+`manifest.json` and `refMarkers.ts` are not emitted here: the first is
+the whole interchange document and nothing in the workbench reads it
+yet, and the second is the payload-key law of a codec the front end does
+not run. Both are one line each the day something needs them. -/
+
+/-- The workbench's copy of the door's table. -/
+def workbenchTagsTarget : System.FilePath :=
+  "../../experiments/workbench/src/generated/kindTags.ts"
+
+/-- The workbench's copy of the derived-name inventory. No header prose
+distinguishes it — a JSON document's `emitted` header is four fields and
+no place to put a sentence — so this file and the effects package's
+`grammar/names.json` are BYTE-IDENTICAL, which is the strongest form the
+mirror claim takes anywhere in this emitter. -/
+def workbenchNamesTarget : System.FilePath :=
+  "../../experiments/workbench/src/generated/grammar/names.json"
+
 def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
   let json := target.getD defaultTarget
   let sorts := s!"{manifestV0.rows.length} sorts"
+  let namesLabel :=
+    s!"{columnNames.length} columns, {blockNames.length} blocks, " ++
+      s!"{fieldNames.length} fields, {edgeNames.length} edges — " ++
+      "every name the grammar derives"
   return [
     ⟨json, manifestDocument, sorts⟩,
     ⟨registryTarget, Cas.Grammar.registry, s!"{sorts}, the kind-tag registry"⟩,
@@ -505,10 +642,10 @@ def fixtures (target : Option System.FilePath) : IO (List Gate.Fixture) :=
       s!"{doorTags.length} kind tags, the TypeScript door's refusal set"⟩,
     ⟨markersTargetFor json, markersRendered,
       "2 reserved payload keys, the typed-reference law's spelling"⟩,
-    ⟨namesTargetFor json, namesDocument,
-      s!"{columnNames.length} columns, {blockNames.length} blocks, " ++
-        s!"{fieldNames.length} fields, {edgeNames.length} edges — " ++
-        "every name the grammar derives"⟩]
+    ⟨namesTargetFor json, namesDocument, namesLabel⟩,
+    ⟨workbenchTagsTarget, workbenchTagsRendered,
+      s!"{doorTags.length} kind tags, the workbench's copy"⟩,
+    ⟨workbenchNamesTarget, namesDocument, s!"{namesLabel}, the workbench's copy"⟩]
 
 end EmitGrammarMain
 

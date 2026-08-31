@@ -79,6 +79,7 @@ deleted.
 | [.staging/ornamentation/WASM-CANVAS.md](../.staging/ornamentation/WASM-CANVAS.md) | canvas stack | Decision 31(e) research: DOM-first position, WebGL2 the escalation of record, Rust-WASM UI refused (a11y + second-emitter cost); WASM belongs in the store not the renderer; falsifiable trigger + three owed measurements |
 | [.staging/operational-structure/AUTH-AUDIT.md](../.staging/operational-structure/AUTH-AUDIT.md) | auth posture | Decision 31(c) full technical audit: two BROKEN-SILENT (unreadable config serves gated store open; --allow-host transitively grants origin write trust) — both routed to the daemon fix pass; secrets CLEAN across full history (23,466 objects); rotation of the non-expiring Turso RW token URGENT (operator) |
 | [.staging/research-backlog/agent-streaming-integrations.md](../.staging/research-backlog/agent-streaming-integrations.md) | streaming/integrations | Decision 31(a) research: pi dev studied (8 ranked borrows — telemetry vocabulary as emitted artifact first); protocol landscape; the sketch — since(n) beats every surveyed resumption mechanism, cas_word lands pull-first, push is additive into §13's advisory plane, never /mcp; extension = manifest row not plugin API; 9 refusals; 11 ruling asks |
+| [.staging/research-backlog/MULTICA-DAEMON-STREAMING.md](../.staging/research-backlog/MULTICA-DAEMON-STREAMING.md) | streaming/daemon harness | G0 pinned implementation recovery (2026-08-31): Multica daemon control socket, local agent adapters, liveness, buffering, disconnect, task-claim uncertainty, configuration repair, transcript and auxiliary-state durability, 20-entry robustness register, and 9 pre-grade Foldlab asks; not ratified or dispatched |
 | [.staging/model-guided-development/SOURCE-STUDY.md](../.staging/model-guided-development/SOURCE-STUDY.md) | model scout | Staged strategy + source study (2026-08-30): the model-scout decision, eight operating strategies, source-by-source notes; 14 artifacts pinned with receipts; awaiting grill |
 | [.staging/model-guided-development/IMPLEMENTATION-PLAN.md](../.staging/model-guided-development/IMPLEMENTATION-PLAN.md) | model scout | Staged coded-kernel plan (MGS-001…013): event-sourced evidence kernel, 12 required laws, milestones M0–M6, 24-packet evaluation, 20% adoption bar; ratification stops explicit; awaiting grill |
 | [.staging/model-guided-development/LOOP.md](../.staging/model-guided-development/LOOP.md) | model scout | OPERATIONAL 2026-08-30 (operator: CAS APIs not ready — run the loop by hand): the ten-step scout run as agent procedure; third role beside breaker/implementer; run-ledger duty is the measurement apparatus |
@@ -93,6 +94,7 @@ deleted.
 | [.staging/research-backlog/lean-design-patterns.md](../.staging/research-backlog/lean-design-patterns.md) | design patterns | BACKLOG STUB (2026-08-30, operator order — "not now"): the house Lean-4 API-with-theorems design patterns, seeded with 12 shapes from one day's landings (uninterpreted-function+hypothesis-lattice, parameterize-don't-import, two-halves theorems, partial join w/ typed refusal, monoid-hom-as-view, closed registry+round-trip pin, decide-over-#guard, emitter+gate, structured debts, hand/derived split, refute-own-premise stops, biased-fact+earned-symmetry); companion to the scout bank's PT ledger |
 | [.staging/operational-structure/LIBRARIES.md](../.staging/operational-structure/LIBRARIES.md) | packaging | The publish-shaped partition (2026-08-30, pre-migration): META adjudicated (yes for plane/artifacts, NEVER a Lean namespace — Lean.Meta collision; lib = CasMeta); the `.META.` infix for self-description artifacts only (language-plane exempt, one rename event at M4); five-lib Lean strata (CasValues→Cas→CasBackend→CasMeta + Wp/Examples) with a DECLARED, MACHINE-CHECKED dependency DAG (`strata --check`) and the no-loose-modules rule; TS mirrors the strata inside one package with lint-enforced direction; sequencing CasValues-first; asks L1–L3 |
 | [.staging/operational-structure/META-OUTPUTS.md](../.staging/operational-structure/META-OUTPUTS.md) | reflexive tooling | Ledger-apparatus proposal (2026-08-30, grounded in the day's landing friction): developer-facing D1 DEBTS projection (one pane merging owed markers + 28 unbound laws + pending receipts, on structured `owed(ID)`/`discharges(ID)` markers), D2 surface diff-by-name, D3 anchor checker (C5 as lint); prover-facing A1 `slice` proof-brief extractor, A2 `mentions` inverted index (the proof-plane EDB — unifies with the Datalog direction), A3 axioms-as-gate (replaces the scratch-file ritual), A4 unbound-laws as scout targets; vacuity census + name-length budget; asks M1–M2 |
+| [.staging/operational-structure/LEAN-AGENT-SURFACE-PASS-A.md](../.staging/operational-structure/LEAN-AGENT-SURFACE-PASS-A.md) | Lean agent surface | Staged Pass A implementation plan (2026-08-31): domain-contract docket, positive and rejected cases, semantic-level decisions, provisional declaration DAG, prior-art and correctness investigations, obligation ledger, Pass A work packages, and Pass B handoff; awaiting grill, no implementation authorized |
 | [.staging/algebraic-review/store-crdt.md](../.staging/algebraic-review/store-crdt.md) | store algebra | Staged direction (2026-08-30): the store's persistent state shown CRDT-by-construction (grow-only, no removal — the CRDTLog paper's hard case unconstructible; paper receipt pinned local, upstream pending); free Datalog reading (CALM; semi-naive deltas; no deletion ⇒ no DRed) + the rules-as-spec API emission direction; both ruling asks RULED same day (decisions 34/35); RUN-002 scout handoff EXECUTED and its T1–T3 core LANDED kernel-checked in `Cas/IR/Join.lean` same day (join realized by word append — no `Store.join` sort; `Compatible`/`Sub` minted as defs, CONTEXT drafts staged; axiom ceiling propext+Quot.sound); T5/T6 remain proposed |
 
 ## Category 3 — Era records (archival; read for provenance, not authority)
@@ -559,3 +561,68 @@ records the 2026-08-29 session rulings that cut across specs.
     on, derived names is a ruling event — the
     interpretation-from-a-free-structure template (Gregory–Prest
     Cor 4.6–4.7) is the reason.
+40. **The sort event — one greenfield batch** (2026-08-30;
+    store-crdt.md §"The sort event"; ruled after the operator's
+    ordered vision readback — "lets stick to it, 1-4 added, done").
+    FOUR sorts adopted as a single grilled batch: `annotation`
+    (working tag 0x41 promoted to a ratified registry row — the
+    trunk's meaning column), `query` (specs as content — the
+    product's center object), `result` ({spec→query, mark, member
+    edges} — materialized answers whose memoization key is the
+    node's own preimage; the "index kind" naming.ts anticipates),
+    `agent` (the attribution anchor on its OWN tag — a typed
+    →agent edge is unspellable while the form rides `entry`'s tag).
+    Riders in the same versioning event (priced by Annotation.lean's
+    arm-additive ruling): the `AnnotationSubject`/`AnnotationValue.ref`
+    widening to the content planes and the new sorts; the `foldlab/`
+    key-family ratification (related, search-note, pref, embedding,
+    tombstone — spellings at grill); column placements (agent
+    near-still; query/result/annotation steady-fast). `text` (the
+    CRDT run) REFUSED from the batch on VISION grounds: no logged
+    vision sentence orders collaborative document editing, and the
+    operator clarified same day that Paper is a design inspiration,
+    not the product identity; TB-1's parameterized Lean model stays
+    available sortless, and the self-referencing parent pointer
+    forces the tag only if a buffer is ever commissioned. Adopted
+    with the batch, the DECISION PRINCIPLE: a thing deserves a sort
+    iff the algebra needs typed, admission-checked references TO it
+    — a reference demands one tag. This decision SCOPES the
+    no-new-abstractions stillness rather than repealing it: one
+    batch, grilled once, stillness resumes. Why: the search, meaning,
+    and identity planes the vision names land fail-closed on
+    registry vocabulary instead of riding convention.
+41. **The trunk slate — adopted whole** (2026-08-31; "I'll go with
+    all recommendations"; plan of record
+    `.staging/frontend-trunk/TRUNK-PLAN.md` §1, which carries the
+    letter of each item): aesthetics A1–A6 (ink on paper, hue only
+    on `unregistered`; family palette as deferred teaching overlay;
+    sediment band over recency compression; hypotenuse as later
+    chord toggle; keyboard-nav a11y in v1; address-keyed
+    micro-tint); canvas CV-5/CV-6/CV-3′ (aggregation at cuts +
+    Placement/place split + lastK carrier + rects-only union +
+    virtualized viewport; `limit` on the seam now, `from`/`to`
+    later; **v1 renders as SVG in foldkit's vdom** — one artifact is
+    gate, SSR, a11y, tests, and the live view — with Canvas/WebGL
+    the later Mount-admitted scale handler on measured budgets);
+    query-engine QE-1..4 (derived folds where the consumer is; the
+    server executes only what answers an ADDRESS; QuerySpec AST as
+    the `query` payload; no query-SQL in v1; the cut law +
+    poke-only off-CAS liveness as the streaming lane's entry).
+    Three parallel implementation lanes cut (effects route / Lean
+    minis / workbench trunk), reviewed before dispatch.
+42. **QA-4 ratified + the S3a packet's two OPENs ruled** (2026-08-31,
+    "yeah proceed", adopting the coordinator's recommendations).
+    (a) **The patchability law is standing surface rule**: a query's
+    rendered answer may be PATCHED across growth iff the query is
+    monotone under append; a non-monotone answer is computed at a
+    cut and carries its mark on its face (QUERIES §4, previously an
+    open ask — the epoch law's licence now ruled, closing plan-review
+    TP-11). (b) **OPEN-1**: a page whose `next` is BELOW the current
+    mark (the truncation-repair signature) is REFUSED AND SURFACED
+    ("store truncated — reset?"); the fold resets only by explicit
+    user action, never silently — a backwards `next` is a repair
+    event, not growth. (c) **OPEN-2**: address-syntax validity is
+    DOCUMENT-BOUNDARY validation — the fold refuses the whole page
+    if any address is not 64-hex, at the seam decode, one authority;
+    never a per-op second opinion, and the tint ladder never meets
+    NaN.

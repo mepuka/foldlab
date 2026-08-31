@@ -91,6 +91,7 @@ export {
   WordLog,
   wordLogColumns,
   wordLogLockRelativePath,
+  wordLogPageLimit,
   wordLogRelativePath,
 } from "./cas/WordLog.ts"
 export type {

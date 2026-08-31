@@ -6,7 +6,7 @@
   "venue": "ICLR 2026 (per arXiv comments field)",
   "arxiv": "2603.01227",
   "arxivVersion": "v1",
-  "localPath": "2603.01227v1.pdf",
+  "localPath": ".reference/papers/2603.01227v1.pdf",
   "sha256": "30bb98266acf9768abb44758d419a1a2bec1fe638eb651e710c2338efeee0a43",
   "bytes": 1212167,
   "resolvedAt": "2026-08-30",

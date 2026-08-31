@@ -8,11 +8,10 @@ nothing below is minted. Every adaptation is priced against decision 2
 proof stratum and docs.
 
 Source: K. Rustan M. Leino, *Program Proofs*, MIT Press.
-Local artifact: `program_proofs.pdf` (repo root),
+Local artifact: `.reference/papers/program_proofs.pdf`,
 SHA-256 `a14a98037799512eb343bdfe8efa4ff2022b09b08446ba8205b5e995fcddf025`,
-25,299,717 bytes. **Pin owed**: this file has no row in
-`.reference/provenance/sources.lock.json`; under C6 its definitions
-may not inform gated work until the row lands. Proposed as slice 0.
+25,299,717 bytes. Pin: the `program-proofs` row in
+`.reference/provenance/sources.lock.json`.
 
 ---
 

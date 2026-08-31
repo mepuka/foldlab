@@ -564,7 +564,11 @@ const layerSqlitePlanes = (store: string): Layer.Layer<
               }),
               Context.add(Cas.WordLog, {
                 append: (entry) => Telemetry.timeSql(writes.append(entry)),
-                since: (mark) => Telemetry.timeSql(reads.since(mark)),
+                // The page bound travels: a wrapper that forwarded the
+                // mark alone would silently answer the DEFAULT page to
+                // every caller that asked for a smaller one, which is
+                // the unbounded read wearing a bounded seam's clothes.
+                since: (mark, limit) => Telemetry.timeSql(reads.since(mark, limit)),
               }),
             )
           ),

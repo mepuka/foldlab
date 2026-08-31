@@ -60,7 +60,7 @@ project's approved-tools rule). Start light; grow as work gets defined.
 
 | codex CLI, scout-annotator role (same `codex-cli@0.146.0` pin as the row above — a ROLE EXTENSION, not a second admission; `gpt-5.6-luna` primary, `gpt-5.6-sol` capped at one planning call per run; role added 2026-08-30) | Bank annotator and candidate proposer for the model-scout lane (`.staging/model-guided-development/`): annotates obligation-family entries and proposes atomic candidate invariants under the lane's harness law ([ANNOTATE.md](../../.staging/model-guided-development/ANNOTATE.md) — read-only sandbox, schema-constrained output, every call receipted with prompt and output digests) | Empty trust contribution, always: an annotation is a search hint. Output lands only in `## Annotations` blocks and candidate lists inside the lane; a curating session's move into curated fields is the acceptance act and carries the receipt digest; nothing it writes enters a packet, gate, doc, or formal artifact without an independent checker or the operator's grill, and lane statuses are working language, never gate stamps. Version drift of CLI or model is a re-admission event. |
 
-| liteparse (mise shim; `npm:@llamaindex/liteparse`, PDF/document parser) | Text projection of pinned PDFs: produced the markdown projection of `program_proofs.pdf` (the `program-proofs` row, `.reference/provenance/sources.lock.json`) | Mechanical extraction with OCR fallback; prose is reliable, code blocks may carry OCR artifacts; projections are working copies, never the source of truth — the pinned PDF is. |
+| liteparse (mise shim; `npm:@llamaindex/liteparse`, PDF/document parser) | Text projection of pinned PDFs: produced the markdown projection of `.reference/papers/program_proofs.pdf` (the `program-proofs` row, `.reference/provenance/sources.lock.json`) | Mechanical extraction with OCR fallback; prose is reliable, code blocks may carry OCR artifacts; projections are working copies, never the source of truth — the pinned PDF is. |
 
 Pending admission (not yet used in gated work): wink-naive-bayes-text-classifier
 (`npm:wink-naive-bayes-text-classifier@2.2.1` exactly, MIT, winkjs family;
@@ -82,7 +82,7 @@ open contract gap `TG1`, and a ruling is owed before it becomes machinery.
 
 Promoted 2026-08-30: liteparse (`npm:@llamaindex/liteparse`) is superseded
 by the formal register row above — it produced a projection now cited from
-gated documentation (the `program_proofs.pdf` markdown projection), so it
+gated documentation (the `.reference/papers/program_proofs.pdf` markdown projection), so it
 carries a trust statement rather than a pending-admission note. It remains,
 as before, the extractor behind the
 [paper corpus](../../.reference/catalog/PAPERS.md).

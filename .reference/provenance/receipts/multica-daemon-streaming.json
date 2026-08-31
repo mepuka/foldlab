@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "kind": "reference-research-resolution-receipt",
+  "id": "multica-daemon-streaming",
+  "observedAt": "2026-08-31T02:34:31-05:00",
+  "scope": "Primary Multica implementation and test sources used to recover the daemon WebSocket control protocol, local agent subprocess streaming contract, transcript persistence path, liveness behavior, buffering, disconnection, and recovery semantics. This receipt fixes a G0 source study only; it admits no Multica component as a Foldlab tool and makes no conformance, correspondence, or proof claim.",
+  "repository": {
+    "url": "https://github.com/multica-ai/multica.git",
+    "selector": "refs/heads/main",
+    "commit": "7c0e750452599ef5ead020c8c787b32c512f2cd4",
+    "tree": "27061b3720ac2c0654540726206de2bd6d9c9bf2",
+    "originMain": "7c0e750452599ef5ead020c8c787b32c512f2cd4",
+    "commitDate": "2026-08-31T14:59:46+08:00",
+    "commitSubject": "MUL-6569 feat(wecom): give every undelivered reply a reason an operator can count (#7428)",
+    "gitObjectFormat": "sha1",
+    "worktreeState": "clean and equal to origin/main after git fetch origin"
+  },
+  "fileSelection": "The commit and tree fix the complete source. The blob inventory records the highest-load evidence subset; exact-path citations in the companion report remain resolved by the repository pin even when a cited file is not repeated below.",
+  "evidenceSets": [
+    {
+      "role": "declared daemon wire vocabulary and toolchain pin",
+      "files": [
+        {"path": "server/go.mod", "blob": "ecf6a9097e20b52312254397d1428879a5c7a427"},
+        {"path": "server/pkg/protocol/events.go", "blob": "f372f949f19f465a4df59dacf86426fa4fd485fe"},
+        {"path": "server/pkg/protocol/messages.go", "blob": "df85319e11dde36f526c1af9d595a92e1341d426"}
+      ]
+    },
+    {
+      "role": "server WebSocket hub, relay, authentication, claim RPC, liveness, and source tests",
+      "files": [
+        {"path": "server/internal/daemonws/hub.go", "blob": "3e717b72241933ce6e151a1fb81a2661266a3b64"},
+        {"path": "server/internal/daemonws/hub_test.go", "blob": "00349a8d916b55ef9b0123157f787090452b7cd9"},
+        {"path": "server/internal/daemonws/rpc_dispatch_test.go", "blob": "c077d77d018faa35061daadf1868a8f40c796158"},
+        {"path": "server/internal/daemonws/notifier.go", "blob": "bb98e4f29703829142188ea14788cdf1e0e2265f"},
+        {"path": "server/internal/daemonws/pending_work_test.go", "blob": "f8160df91e1ec12a464e777e299e071314c9cfbb"},
+        {"path": "server/internal/daemonws/metrics.go", "blob": "63bd2ce770b11b146841ef8e7a6eb70f85f3b768"},
+        {"path": "server/internal/handler/daemon_ws.go", "blob": "89d78f5f3195e735733d52f646467cbfc328f58b"},
+        {"path": "server/internal/handler/daemon_rpc.go", "blob": "9a88332ba528ce1f23095008df3e194feefbc7a8"},
+        {"path": "server/internal/handler/daemon_rpc_test.go", "blob": "3d92a37e65a5178892eef4a6f427d9afa5f4df79"},
+        {"path": "server/internal/handler/daemon.go", "blob": "dc2b0d8f2eecae6cc3b7aeb9929fa9df1fdea8f5"},
+        {"path": "server/internal/middleware/daemon_auth.go", "blob": "cc9646a22418dedd3dbab83354269d77e36eaa30"},
+        {"path": "server/internal/realtime/redis_relay.go", "blob": "d1c889add4e9d168f6fae2abce5cf928af75b399"},
+        {"path": "server/internal/realtime/sharded_stream_relay.go", "blob": "1666a1067dcf4caee4f1c9b54bf3797686a307c0"},
+        {"path": "server/internal/realtime/sharded_stream_relay_test.go", "blob": "486820d78ccbbcfd1995a2a8f79a0a1c1518c696"},
+        {"path": "server/internal/service/task.go", "blob": "9a31da4ff6cf6fcf0cd2f5624b56aef1a607c9f3"}
+      ]
+    },
+    {
+      "role": "daemon client connection, heartbeat, RPC certainty, runtime recovery, transcript drain, and source tests",
+      "files": [
+        {"path": "server/internal/daemon/client.go", "blob": "ec30957a5da3e2eb1b919d1535a7aaf5b9592824"},
+        {"path": "server/internal/daemon/config.go", "blob": "422bb88353b103ec65f5998d3bba141e76ed1825"},
+        {"path": "server/internal/daemon/daemon.go", "blob": "af10ca7bbf32c5e69560d301f9133dc5c132a14f"},
+        {"path": "server/internal/daemon/daemon_test.go", "blob": "2ffb727c808d272914c54538a3b368e3a5e0bcaf"},
+        {"path": "server/internal/daemon/runtime_gone_test.go", "blob": "f44fcbed596768b5859541310d5cf45ba71ca077"},
+        {"path": "server/internal/daemon/wakeup.go", "blob": "041f4b3c9d2d8cc94af2e0fb4da18f9288d5c39a"},
+        {"path": "server/internal/daemon/wakeup_test.go", "blob": "8def0ff688dcdb5cc95e3f9c4d3cf15d06f81fa2"},
+        {"path": "server/internal/daemon/wsrpc.go", "blob": "4e9356a2222223fecbfefea6f1f7c23843dcbd5a"},
+        {"path": "server/internal/daemon/wsrpc_test.go", "blob": "87f39280d1ef20fdfffda8c9804ea812530be96d"}
+      ]
+    },
+    {
+      "role": "local agent stream abstraction, framing, terminal selection, representative adapters, process lifecycle, and source tests",
+      "files": [
+        {"path": "server/pkg/agent/agent.go", "blob": "e3246d4a4c10c1ce4e9f1c1b4f362f535e19ddbf"},
+        {"path": "server/pkg/agent/stream_scanner.go", "blob": "ec94e2d79ea983cf2a2398cf4c9881f3aeb9503b"},
+        {"path": "server/pkg/agent/stream_scanner_test.go", "blob": "4cec912b025ffd0d80553e098ddb03abf302c61c"},
+        {"path": "server/pkg/agent/stream_json_result.go", "blob": "b7a3b6be5ecb19a6b8f27d411f529ce999ca3436"},
+        {"path": "server/pkg/agent/stream_json_final_output_test.go", "blob": "3a5580b24f5a2776acd20939866759c31cab598d"},
+        {"path": "server/pkg/agent/codex.go", "blob": "c72c53b83493147a597337069400164ba7225a15"},
+        {"path": "server/pkg/agent/codex_test.go", "blob": "5a5b2183398429c256758ed58ad724439c6d4d5a"},
+        {"path": "server/pkg/agent/claude.go", "blob": "14d9c20dddb2d14749e7a999d1f0369cea0814a3"},
+        {"path": "server/pkg/agent/opencode.go", "blob": "10483db3e8fa97e4442c4a60288fa67af7379a87"},
+        {"path": "server/pkg/agent/pi.go", "blob": "049c10c700a835707a3d5e7aaccdd27c86c7dbc2"},
+        {"path": "server/pkg/agent/run_collect.go", "blob": "f2519c7ee0ef3a2d216065fb5a143c99eb6a3153"}
+      ]
+    },
+    {
+      "role": "task-message persistence, catch-up ordering, and atomic batch tests",
+      "files": [
+        {"path": "server/internal/handler/task_message_batch_test.go", "blob": "536f6f0aa33e1da7e15cd8a68fed9f58c37216a2"},
+        {"path": "server/pkg/db/queries/task_message.sql", "blob": "b664c2ac916bdc297e8bc45f1e71549f11ee8f3a"},
+        {"path": "server/migrations/026_task_messages.up.sql", "blob": "db0163d6cb415584eeb8e1862cc3a726c181d09f"}
+      ]
+    }
+  ],
+  "claimBoundaries": [
+    "RFC-style MUST, SHOULD, and MAY language in the companion report recovers observed behavior at the pinned commit; it is not a Multica-published compatibility promise.",
+    "Source tests establish executable examples only when named as executed; source inspection of a test is labeled separately.",
+    "Robustness consequences not directly asserted by code or an executed test are labeled inference.",
+    "Foldlab translations and refusals are pre-grade recommendations, not ratified vocabulary, protocol law, implementation authority, or proof claims."
+  ],
+  "verification": {
+    "toolchain": "/opt/homebrew/bin/go under the module working directory selected go1.26.6 darwin/arm64 with GOTOOLCHAIN=auto",
+    "workingDirectory": "/Users/pooks/Dev/multica/server",
+    "executed": [
+      {
+        "command": "/opt/homebrew/bin/go test ./pkg/protocol",
+        "result": "pass",
+        "detail": "package compiled; no test files",
+        "environmentNote": "initial sandboxed attempt could not open the existing Go build cache; the identical command passed when that cache access was allowed"
+      },
+      {
+        "command": "/opt/homebrew/bin/go test ./internal/daemonws",
+        "result": "pass",
+        "elapsedSeconds": 1.655
+      },
+      {
+        "command": "/opt/homebrew/bin/go test ./internal/daemon -run 'Test(TaskWakeupURL|WSHeartbeatFreshnessSuppressesHTTP|ReadTaskWakeupMessages|WSRPCClient|WSOutbound|RuntimeGone|ExecuteAndDrain_(FlushesTranscriptBeforeReturningResult|SeqContinuesAcrossRetry|ContextCancelled_FlushesPendingTranscript|IdleWatchdog))' -count=1",
+        "result": "pass",
+        "elapsedSeconds": 2.430
+      },
+      {
+        "command": "/opt/homebrew/bin/go test ./pkg/agent -run 'Test(AgentStreamScanner|StreamJSONBackendsFinalOutputBoundaries|FinalizeStreamResult|ClaudeExecuteDoesNotDeadlockOnStartupStdoutBurst|CodexRawItemAgentMessageFinalAnswer|CodexRequestPrefersContextCancellation|OpencodeProcessEvents|QoderMessageStreamDropsSendAfterClose)' -count=1",
+        "result": "pass",
+        "elapsedSeconds": 7.685
+      },
+      {
+        "scope": "broader focused pkg/agent set; full shell command was not retained",
+        "result": "fail",
+        "failure": "TestCodexExecuteCleansUpWhenScannerOverflowsOnResume measured 5.368 seconds against a strict less-than-5-second assertion"
+      },
+      {
+        "command": "/opt/homebrew/bin/go test ./pkg/agent -run '^TestCodexExecuteCleansUpWhenScannerOverflowsOnResume$' -count=1",
+        "result": "fail",
+        "failure": "isolated rerun measured 5.491 seconds against a strict less-than-5-second assertion"
+      }
+    ],
+    "notRun": [
+      "full database integration suite",
+      "Redis relay integration suite",
+      "browser reconnect integration suite",
+      "Windows Job Object execution",
+      "multi-node integration suite"
+    ],
+    "postRunWorktreeState": "clean and equal to origin/main"
+  },
+  "result": "resolved-repository-pin-and-primary-source-blobs"
+}

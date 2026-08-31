@@ -26,7 +26,8 @@ laws, not the arithmetic.**
    structure. Relational views (reachability etc.) grow via the
    rules-as-spec emission (store-crdt.md), not here.
 3. **LLM calls = string transformers — LANDS TODAY.** `Rewriter`
-   (`Cas/Grammar/Rewriter.lean`): `String → String`, a NEW kind
+   (`Cas/Llm/Rewriter.lean` — path updated 2026-08-31, the trio moved
+   into the CasLlm lib): `String → String`, a NEW kind
    beside `Judge`, which is untouched by operator order — verdicts
    SELECT, rewrites PRODUCE. Pipelines are `andThen` with
    associativity and identity as rfl-theorems; **`Into Q`** is the

@@ -1,7 +1,7 @@
 # CATALOG — Program Proofs, tagged
 
 Mechanically rendered from [book-tags.json](book-tags.json) — do not
-hand-edit; regenerate from the JSON. Source: program_proofs.pdf
+hand-edit; regenerate from the JSON. Source: .reference/papers/program_proofs.pdf
 (sha256 a14a980377…cddf025). Wave: 10x codex gpt-5.6-sol/luna xhigh 2026-08-30,
 10 slices, 120 sections. Both role files project THIS set.
 
@@ -2565,4 +2565,3 @@ Laws:
 
 Breaker: Use witness soundness, quantifier duality, and range decomposition to catch false positives, false negatives, and search-boundary defects.
 Implementer: Provide an explicit witness for existential goals, use De Morgan to switch quantifiers safely, and split bounded searches without changing their endpoints.
-

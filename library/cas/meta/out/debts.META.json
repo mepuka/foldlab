@@ -1,10 +1,10 @@
 {
   "convention": "owed(<id>): <text> names a debt in a docstring and discharges(<id>): <text> settles it; an UNBOUND registry row is a ruling no declaration enforces yet",
   "counters": {
-    "debts": 54,
-    "docstrings": 26,
-    "named": 6,
-    "owed": 20,
+    "debts": 55,
+    "docstrings": 27,
+    "named": 7,
+    "owed": 21,
     "parked": 5,
     "pinPending": 1,
     "settled": 0,
@@ -15,7 +15,7 @@
       "excerpt": "…ted rather than asserted. What is still owed there is registry, not proof: wire tags 14 and 15 (`step`,…",
       "file": "library/cas/Cas.lean",
       "keyword": "owed",
-      "line": 31,
+      "line": 33,
       "module": "Cas",
       "source": "docstring",
       "state": "owed"
@@ -56,6 +56,16 @@
       "keyword": "owed",
       "line": 4,
       "module": "Cas.Backend.HttpProfile",
+      "source": "docstring",
+      "state": "owed"
+    },
+    {
+      "excerpt": "…opological sort\" read computationally. owed(reach-search-memoized): `reachIn` re-explores shared subgra…",
+      "file": "library/cas/Cas/IR/Reach.lean",
+      "id": "reach-search-memoized",
+      "keyword": "owed",
+      "line": 3,
+      "module": "Cas.IR.Reach",
       "source": "docstring",
       "state": "owed"
     },

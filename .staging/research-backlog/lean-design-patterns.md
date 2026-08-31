@@ -56,6 +56,20 @@ Seed list (one line each, from 2026-08-30's work alone):
     (the Backend.Ts deferral and the trimmed Sorts, both recorded
     under this heading in the strata seed).
 
+14. **`decide (a = b)` over `==` for classical-free decidability on
+    subtypes** — `Subtype`'s `BEq`/`LawfulBEq` instances route
+    `beq_of_eq` through `Classical.choice`; `decide` at the same
+    propositions does not. Measured with `#print axioms` in the
+    Reach lane (2026-08-31) and it moved four declarations off the
+    axiom; `find` already used the right spelling.
+15. **Pass-B counterexample-first on relation definitions** — the
+    Edge occurrence-vs-resolved cut (2026-08-31): the naive reading
+    matched `wf`'s scan and made the headline theorems FALSE on an
+    admitted word (shadowing builds a two-cycle); reading the
+    definition against a witness BEFORE proving changed a theorem's
+    truth value, not its ergonomics. The refutation lives in the
+    module docstring.
+
 Owed when the lane opens: per-pattern writeups with theorem
 signatures, worked examples from the tree, anti-patterns, and the
 relation to the bank's proof-shape ledger.

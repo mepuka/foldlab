@@ -1,3 +1,4 @@
+import Cas.Values.Cut
 import Cas.Values.Digits
 import Cas.Values.Json
 import Cas.Values.JsonInj
@@ -22,7 +23,11 @@ decimal spelling those proofs stand on, inverted through `Nat.repr`
 injectivity. `Markdown` is the typed emitter behind the human-facing
 surfaces — ledgers, briefings, manifest docs — which are byte-compared
 gate surfaces and so need a total renderer rather than string
-concatenation.
+concatenation. `Cut` is the other direction on the same object: how a
+spelling is taken APART and put back — `IsCutting cut` says the pieces
+join to the string, with one proved fixed-size cutter — which is what a
+streaming lane owes the exchange node's verbatim promise before it
+writes an answer in segments.
 
 Why a reader above should care: an address is a hash of bytes, so
 whatever decides the bytes decides identity. The injectivity proved

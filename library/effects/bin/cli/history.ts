@@ -19,6 +19,12 @@
  * different handlers, so it is also what a subscription will replay
  * when one lands.
  *
+ * One invocation prints ONE whole document, and the seam answers a
+ * page — so this verb DRAINS by chaining pulls (`drainFrom` below).
+ * The bound is the seam's business and never restated here; the verb's
+ * business is that `cas history` means the history and not its first
+ * page.
+ *
  * Kind names come off the generated registry (`kindTags.ts`, the
  * kind-name ruling); a tag the registry does not name renders as bare
  * hex, the ruled fallback.
@@ -95,10 +101,57 @@ const receiptLine = (entry: Cas.WordLogEntry, markWidth: number): string => {
   ].join("  ")
 }
 
+/**
+ * The whole history from a mark, by chaining pulls.
+ *
+ * The seam answers a PAGE now — at most `Cas.wordLogPageLimit`
+ * receipts — so one pull is no longer the whole word, and a verb that
+ * printed one pull would silently stop at the cap and call it the
+ * history. This verb prints ONE document, so it drains: read from the
+ * mark, resume at the `next` each page answers, stop when a page comes
+ * back empty.
+ *
+ * It terminates. The variant is `|w| − mark` into (ℕ, <): the bound is
+ * at least one, so a non-empty page moves `next` strictly past the
+ * mark it was asked from and the variant strictly decreases; an empty
+ * page is the fixpoint and ends the chain. The `next` that is printed
+ * is the LAST page's — the word's end — and the receipts are the
+ * concatenation, which is the suffix itself.
+ *
+ * A word that GROWS under the drain is not covered by this: the
+ * composition law licensed here (`since_compose`) is the fixed-word
+ * half, and the growth half is owed. On a growing store this verb
+ * prints a consistent prefix and a cursor to resume from, which is
+ * what a snapshot of a moving word can honestly be.
+ */
+const drainFrom = (
+  log: Cas.WordLogShape,
+  mark: number,
+): Effect.Effect<Cas.WordHistory, Cas.BackendFailure> => {
+  const step = (
+    at: number,
+    word: Array<Cas.WordLogEntry>,
+  ): Effect.Effect<Cas.WordHistory, Cas.BackendFailure> =>
+    Effect.flatMap(log.since(at), (page) => {
+      word.push(...page.word)
+      // The two stop conditions are the same one said twice: with a
+      // page bound of at least 1, an empty page IS the mark reaching
+      // the word's end. The second guard is the belt — a seam that
+      // ever failed to advance would loop here rather than spin the
+      // caller.
+      return page.word.length === 0 || page.next <= at
+        ? Effect.succeed({ next: page.next, word })
+        : step(page.next, word)
+    })
+  // The accumulator is made inside the suspend, so the effect this
+  // returns can be run more than once and drain from empty each time.
+  return Effect.suspend(() => step(mark, []))
+}
+
 const historyProgram = (mark: number, json: boolean) =>
   Effect.gen(function* () {
     const log = yield* Cas.WordLog
-    const history = yield* log.since(mark)
+    const history = yield* drainFrom(log, mark)
     if (json) {
       // The registered spelling, canonically printed: the exact
       // document the front end renders and a subscription will replay.

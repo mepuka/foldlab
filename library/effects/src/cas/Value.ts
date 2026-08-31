@@ -320,17 +320,24 @@ export const refWithTag = (
 ): Schema.Codec<Root<unknown>, typeof sentinelSchema.Encoded> =>
   refCodec<unknown>(referenceRepresentation(tag), () => tag)
 
-/** Construct a typed value projection over the in-memory CAS service. */
-export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
+/** The projection constructor WITHOUT the reserved-tag door — the
+ * library's own way of reading a plane it owns.
+ *
+ * The door on `value` below exists to stop a CALLER-DEFINED projection
+ * from giving a registry row a second public interpretation. A plane the
+ * library itself owns is the opposite case: `Cas.CanonicalSchema` reads
+ * the `schema` row (0x53) and `Cas.Annotations` reads the `annotation`
+ * row (0x41), and each is the ONE interpretation of its row rather than
+ * a second one. Before decision 40 the annotation plane rode a working
+ * tag and needed no exception; ratifying that tag as a registry row is
+ * what made the distinction have to be spelled.
+ *
+ * NOT exported from the package. A caller reaching a reserved row goes
+ * through the module that owns it, which is the whole content of the
+ * rule. */
+export const libraryValue = <A>(options: ValueOptions<A>): CasValue<A> => {
   const kindTag = Byte.make(options.kindTag)
   const revision = Revision.make(options.revision)
-  // The whole library-owned registry is refused, not just the replay
-  // tags — a projection aliasing a registry row would give one kind
-  // plane two public interpretations. The set is generated from
-  // `Cas.Grammar.manifestV0`, so this door widens with the grammar.
-  if (ReservedKindTags.has(kindTag)) {
-    throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)
-  }
 
   const put: CasValue<A>["put"] = Effect.fn("CasValue.put")(
     function* (input) {
@@ -386,4 +393,26 @@ export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
   )
 
   return { get, kindTag, put }
+}
+
+/** Construct a typed value projection over the in-memory CAS service.
+ *
+ * The whole library-owned registry is refused, not just the replay tags
+ * — a caller-defined projection aliasing a registry row would give one
+ * kind plane two public interpretations. The set is generated from
+ * `Cas.Grammar.manifestV0`, so this door widens with the grammar: the
+ * day a sort is ratified in Lean, the next regeneration closes the door
+ * on its tag, and the byte gate says so until that regeneration has
+ * run. Decision 40 widened it by four rows.
+ *
+ * A plane the library OWNS is read through the module that owns it —
+ * `Cas.CanonicalSchema` for the schema row, `Cas.Annotations` for the
+ * annotation row — which is `libraryValue` above and not an escape from
+ * this rule. */
+export const value = <A>(options: ValueOptions<A>): CasValue<A> => {
+  const kindTag = Byte.make(options.kindTag)
+  if (ReservedKindTags.has(kindTag)) {
+    throw new TypeError(`Projection kind tag 0x${kindTag.toString(16)} is reserved`)
+  }
+  return libraryValue(options)
 }

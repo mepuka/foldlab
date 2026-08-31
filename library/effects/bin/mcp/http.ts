@@ -17,7 +17,7 @@
  *   answers EVERY UNCLAIMED EXCHANGE — an unknown path or wrong method
  *   is the PROFILE's refusal (400/405 from the status table), not a
  *   router 404, because the wildcard hands each of them to `decide`.
- *   Not every exchange on the port: three co-tenant prefixes are
+ *   Not every exchange on the port: four co-tenant prefixes are
  *   claimed before the wildcard sees them, and the profile's own §14
  *   enumerates them as outside its media-type and status law.
  * - **MCP over HTTP** — `McpServer.layerHttp` at `/mcp`: the
@@ -28,11 +28,12 @@
  *   `layerHandlers` gate, after the SAME manifest agreement check —
  *   the gate is transport-independent law.
  *
- * Two more routes share the port and are host surface, not protocol:
+ * Three more routes share the port and are host surface, not protocol:
  * `/metrics` (Prometheus exposition, decision 20's first production
- * sensor) and `/projections` (below). They are the profile's declared
- * CO-TENANTS (PROFILE-CAS-HTTP-0 §14); everything unclaimed falls to
- * the profile.
+ * sensor), `/projections` (below), and `/history` — the store's own
+ * word, read-only, paged by mark and bound, the feed the front end
+ * polls. They are the profile's declared CO-TENANTS
+ * (PROFILE-CAS-HTTP-0 §14); everything unclaimed falls to the profile.
  *
  * ## The `ServePolicy`, honored for real this time
  *
@@ -194,7 +195,9 @@ import {
   HttpServerResponse,
 } from "effect/unstable/http"
 import { Otlp, PrometheusMetrics } from "effect/unstable/observability"
-import { Server } from "../../src/index.ts"
+import { Cas, Server } from "../../src/index.ts"
+import { canonicalJson } from "../../src/cas/Value.ts"
+import { wordHistorySchema } from "../../src/cas/generated/WordLogSchema.ts"
 import type { ServePolicy } from "../cli/store.ts"
 import { layerHandlers } from "./handlers.ts"
 import {
@@ -222,6 +225,12 @@ export const metricsPath = "/metrics"
  * the front end. */
 export const projectionsPath = "/projections"
 
+/** Where the store's own word is read — the history feed the front end
+ * polls. One exported constant, so the router, `planeOf`, the banner,
+ * and the drift gate all name the same string and none of them
+ * hand-types it. */
+export const historyPath = "/history"
+
 /** The one cas-http/0 read served outside the admission gate — it
  * touches no store, and a saturated store must not make the host look
  * dead to a client asking what it serves (the same ruling that keeps
@@ -229,7 +238,11 @@ export const projectionsPath = "/projections"
 const capabilitiesPath = "/control/capabilities"
 
 /** Which plane answered a path — the attribute every request metric
- * and request log line carries. */
+ * and request log line carries, and the media type every REFUSAL wears
+ * (`refusedResponse` branches on it). A route missing from this
+ * function is not merely mislabelled in the log: its refusals go out
+ * as cas-http/0's, which is octet-bare with no body at all, so the
+ * operator sees a naked status and the client sees nothing. */
 const planeOf = (path: string): string =>
   path === mcpPath
     ? "mcp"
@@ -237,6 +250,8 @@ const planeOf = (path: string): string =>
     ? "metrics"
     : path === projectionsPath || path.startsWith(`${projectionsPath}/`)
     ? "projections"
+    : path === historyPath
+    ? "history"
     : "cas-http/0"
 
 /* ── the daemon's own sensors ────────────────────────────────────── */
@@ -895,6 +910,31 @@ const layerFrontDoor = (options: {
  * files. The migration retargeted every source path into
  * `library/cas/meta/out/`; renaming a served path is a protocol change,
  * not a file-layout one.
+ *
+ * WHY THESE PATHS ARE STILL WRITTEN OUT, after `bin/cli/ledgers.ts`
+ * took its own from `MANIFEST.META.json` (D2 cutover): the fit is
+ * genuinely bad here, for four reasons that compound.
+ *
+ * - Four of the seven are not on the meta plane at all — `cas-tools`
+ *   is the MCP plane's, the two `schema-` documents are the schema
+ *   index's, `schema-verdicts` is conformance's — so the registry has
+ *   no row to give them and the list would end up half-derived.
+ * - The three that ARE on it (surface, obligations, environment) are
+ *   all `awaiting` rows. Deriving them buys a path and no shape,
+ *   which is the half of the cutover with nothing in it.
+ * - These resolve from `import.meta.url`, not from a lab root, and
+ *   the manifest is NOT shipped in the published tarball. A derived
+ *   list would serve zero projections from an installed tree where
+ *   this one still serves `cas-tools.json` — a regression in exactly
+ *   the deployment SERVING.md carries the OWED row for.
+ * - `projectionSources` is a VALUE, and SERVING.md's drift gate reads
+ *   it as one. Making it an effect would move that gate's authority
+ *   from a static export to a runtime file read.
+ *
+ * The plane the daemon serves and the plane that registers emitted
+ * artifacts are simply not the same plane. When the three meta rows
+ * grow shapes, what they earn is a decode through `toEffectSchema` —
+ * not a path from a registry that cannot reach half this list.
  */
 export const projectionSources: ReadonlyArray<{
   readonly name: string
@@ -956,6 +996,210 @@ const layerProjections: Layer.Layer<
       ),
   )
 }))
+
+/* ── history: the store's own word, served ───────────────────────── */
+
+/** The plane label `/history` answers under — its own, never
+ * cas-http/0's. */
+const historyPlane = "history"
+
+/** The canonical decimal encodings of ℕ, one string per mark: no sign,
+ * no leading zero, no exponent, no fraction, no whitespace.
+ *
+ * At the wire a query parameter IS a string, so this is a DECODE and
+ * not a coercion — there is no `number` here to be lenient about. The
+ * seam's own leniency (`flooredMark` floors a negative or fractional
+ * mark) exists for a caller who already holds a number and stays
+ * untouched; `?since=-5` answering the whole history would be exactly
+ * the "silently answered a different question" hazard the receipts
+ * plane must never commit. Refusing an alias like `01` also keeps the
+ * accepted set in bijection with the marks, so one mark has one
+ * spelling on this wire. */
+const wireNumeral = /^(0|[1-9][0-9]*)$/u
+
+/** The only query keys this route answers. */
+const historyKeys: ReadonlyArray<string> = ["since", "limit"]
+
+/** A parameter that is not a numeral. */
+const notANumeral = (key: string, raw: string): Refusal => ({
+  status: 400,
+  refused: `${key}=${shown(raw)} is not a ${key === "limit" ? "page limit" : "mark"}`,
+  why:
+    `at the wire a parameter is a string, so it is decoded rather than coerced: this route accepts the canonical decimal spelling of a whole number up to ${Number.MAX_SAFE_INTEGER} and nothing else — no sign, no leading zero, no fraction, no exponent, no spaces`,
+  fix: key === "limit"
+    ? `ask for ?limit=<n> with n at least 1 and at most ${Cas.wordLogPageLimit}, or leave it out for the default page`
+    : "ask for ?since=<mark>, a zero-based count of receipts — 0 is the whole history, and a later read starts from the `next` the previous one answered",
+})
+
+/** A key this route does not answer. `from`/`to` are held out on SCOPE
+ * and say so — `since`+`limit` already is a ranged read, and widening
+ * it is a ruling rather than an implementation choice. Everything else
+ * is the address-not-value line: the server executes what answers an
+ * ADDRESS and nothing whose answer is a computed VALUE. */
+const unknownKey = (key: string): Refusal =>
+  key === "from" || key === "to"
+    ? {
+      status: 400,
+      refused: `?${key}= is not answered on this route yet`,
+      why:
+        "a closed window is a capability this route already has the arithmetic for — `since` is the start and `limit` is the width — so a second spelling of it is deferred on scope, not refused on principle",
+      fix: "read the window as ?since=<from>&limit=<to − from>",
+    }
+    : {
+      status: 400,
+      refused: `?${shown(key)}= is not a parameter of this route`,
+      why:
+        "this route answers word-INDEX arithmetic only — a mark and a page bound. A predicate over a receipt's FIELDS is a computed value, and a route that silently IGNORED one would hand back an unfiltered page the client believes was filtered, which is worse than refusing",
+      fix:
+        "read the page with ?since=<mark>&limit=<n> and fold the receipts on your own side; the parameters this route answers are `since` and `limit`",
+    }
+
+/** One key, twice. Answering either value silently answers a question
+ * that was not asked, so the door refuses rather than picking. */
+const repeatedKey = (key: string): Refusal => ({
+  status: 400,
+  refused: `?${key}= was given more than once`,
+  why:
+    "two values for one parameter is two different questions, and answering either of them silently would be answering the one this route chose rather than the one that was asked",
+  fix: `send ?${key}= exactly once`,
+})
+
+/** The word log's own refusal, carried out to the wire with its text
+ * intact — the seam names the defect and the fix already, and
+ * restating it here would be a second, weaker voice. */
+const seamRefusal = (reason: string): Refusal => ({
+  status: 400,
+  refused: "the word log refused this read",
+  why: reason,
+  fix:
+    "read the whole history from mark 0, or resume from the `next` a previous read answered",
+})
+
+/** The wrong verb on the right path — the CO-TENANT's 405, never the
+ * profile's 400. PROFILE §14: the status table "does not answer
+ * exchanges inside a declared co-tenant prefix", and `/mcp`'s row
+ * shows the shape. */
+const methodRefused = (method: string): Refusal => ({
+  status: 405,
+  refused: `${shown(method)} is not a method this route answers`,
+  why:
+    "the word is read-only on this plane: history is a fact the store already recorded, and nothing writes it over HTTP. Admission happens through `cas put`, the MCP tool plane, or the cas-http/0 byte plane, and the receipt follows it",
+  fix: `GET ${historyPath}?since=<mark>&limit=<n>`,
+})
+
+/** What the door made of one request's query string: the decoded
+ * parameters, or the refusal that stopped it. */
+type HistoryQuery =
+  | { readonly _tag: "Decoded"; readonly since: number; readonly limit: number | undefined }
+  | { readonly _tag: "Refused"; readonly refusal: Refusal }
+
+/**
+ * The query string, decoded totally and FAIL-CLOSED.
+ *
+ * Fail-closed is the whole contract here, and it is stronger than "no
+ * parameter filters by receipt field" on purpose: that is a claim
+ * about BEHAVIOUR, and an implementation that silently ignores `?tag=1`
+ * satisfies it while being strictly worse than one that refuses — the
+ * client believes it received a filtered answer and folds a lie. The
+ * contract is therefore the DOOR, which also means the line holds
+ * against future creep with no further ruling: the day someone adds
+ * `?column=`, this function already says no.
+ */
+const decodeHistoryQuery = (url: string): HistoryQuery => {
+  const mark = url.indexOf("?")
+  const parameters = new URLSearchParams(mark < 0 ? "" : url.slice(mark + 1))
+  const seen = new Set<string>()
+  for (const key of parameters.keys()) {
+    if (!historyKeys.includes(key)) {
+      return { _tag: "Refused", refusal: unknownKey(key) }
+    }
+    if (seen.has(key)) return { _tag: "Refused", refusal: repeatedKey(key) }
+    seen.add(key)
+  }
+  const decoded: Record<string, number> = {}
+  for (const key of historyKeys) {
+    const raw = parameters.get(key)
+    if (raw === null) continue
+    if (!wireNumeral.test(raw) || Number(raw) > Number.MAX_SAFE_INTEGER) {
+      return { _tag: "Refused", refusal: notANumeral(key, raw) }
+    }
+    decoded[key] = Number(raw)
+  }
+  // `since` absent is mark 0 — the whole history (W2 `since_zero`).
+  // `limit` absent is left absent, so the SEAM's own default applies
+  // and there is exactly one page bound in the system rather than a
+  // second one declared here.
+  return { _tag: "Decoded", since: decoded["since"] ?? 0, limit: decoded["limit"] }
+}
+
+/**
+ * `GET /history?since&limit` — the store's word over HTTP, read-only.
+ *
+ * The document is the REGISTERED one: `wordHistorySchema`'s encoding,
+ * canonically printed, which is byte for byte what `cas history --json`
+ * prints at the same mark. Two registers, one document — and the
+ * printing path is literally the CLI's, so the two cannot drift into
+ * agreement-by-coincidence.
+ *
+ * Everything this route does NOT do is as ruled as what it does: no
+ * validator (no `etag`, no `last-modified`, no `304` — cut, and the
+ * cut is gated, because the log's own truncation repair moves `next`
+ * BACKWARD and a cached validator would then be stale-but-fresh-
+ * looking); no `hasMore` or `total` or tip beside `next`, because the
+ * wire record is emitted from `Cas/Lang/WordWire.lean` and byte-gated,
+ * so a field is an emitter change and a different slice; no write verb
+ * of any kind; no repair of a damaged log on read.
+ *
+ * An empty word answers 200 with `{"next":0,"word":[]}` and never 404:
+ * "no history yet" and "no route here" must not be the same sentence
+ * to a client.
+ */
+const historyAnswer = (
+  log: Cas.WordLogShape,
+  request: HttpServerRequest.HttpServerRequest,
+): Effect.Effect<HttpServerResponse.HttpServerResponse> => {
+  if (request.method !== "GET") {
+    return Effect.succeed(HttpServerResponse.setHeaders(
+      refusedResponse(historyPlane, methodRefused(request.method)),
+      { allow: "GET" },
+    ))
+  }
+  const query = decodeHistoryQuery(request.url)
+  if (query._tag === "Refused") {
+    return Effect.succeed(refusedResponse(historyPlane, query.refusal))
+  }
+  // The door decoded, so the read is attempted; a parameter that did
+  // not decode never reaches the log at all.
+  return log.since(query.since, query.limit).pipe(
+    Effect.match({
+      onFailure: (failure) =>
+        refusedResponse(historyPlane, seamRefusal(failure.reason)),
+      onSuccess: (history) =>
+        HttpServerResponse.text(
+          canonicalJson(Schema.encodeSync(wordHistorySchema)(history)),
+          {
+            contentType: "application/json",
+            // The same posture the sibling co-tenant keeps. A caching
+            // intermediary in front of a polled feed would serve a
+            // stale word to a client that cannot tell; whether this
+            // route should ever carry a validator is UNRULED and
+            // deliberately untested here.
+            headers: { "cache-control": "no-cache" },
+          },
+        ),
+    }),
+  )
+}
+
+const layerHistory: Layer.Layer<
+  never,
+  never,
+  HttpRouter.HttpRouter | Cas.WordLog
+> = Layer.effectDiscard(Effect.flatMap(
+  Effect.all([HttpRouter.HttpRouter, Cas.WordLog]),
+  ([router, log]) =>
+    router.add("*", historyPath, (request) => historyAnswer(log, request)),
+))
 
 /* ── the vitals sampler ──────────────────────────────────────────── */
 
@@ -1118,7 +1362,7 @@ const layerBanner = (
         Effect.annotateLogs({
           address: HttpServer.formatAddress(server.address),
           planes:
-            `cas-http/0=wildcard mcp=${mcpPath} metrics=${metricsPath} projections=${projectionsPath}`,
+            `cas-http/0=wildcard mcp=${mcpPath} metrics=${metricsPath} projections=${projectionsPath} history=${historyPath}`,
           protocols: offeredProtocols
             .map((protocol) => protocol.protocolVersion)
             .join(","),
@@ -1276,6 +1520,7 @@ export const layerDaemon = (options: DaemonOptions) =>
       }, adapterOrigins),
       layerCasPlane(limits),
       layerProjections,
+      layerHistory,
       PrometheusMetrics.layerHttp({ path: metricsPath }),
       layerFrontDoor({
         bindHost: options.host,

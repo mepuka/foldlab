@@ -52,8 +52,7 @@ import {
 } from "./render.ts"
 import {
   findLabRoot,
-  ledgers,
-  readLedger,
+  readLabLedgers,
   stated,
   type AdmissionLedger,
   type EnvironmentLedger,
@@ -346,8 +345,11 @@ const controlCharacter = /\p{Cc}/u
 
 /** The addressed content sits on a plane the annotation subject union
  * does not span, so nothing can be said ABOUT it yet. The refusal
- * prints the five planes from the same table the arm switch reads, so
- * the sentence and the union move together. */
+ * prints the planes from the same table the arm switch reads, so the
+ * sentence and the union move together — which is what kept it true
+ * when decision 40's rider CA-1 widened the union to thirteen arms.
+ * What is left outside is the INTERIOR of composites: a blob's `tree`
+ * and `manifest`, a journal `entry`, a program's `step`. */
 export class NotNameable extends Schema.TaggedError<NotNameable>()(
   "cli/NotNameable",
   { address: Schema.String, tag: Schema.Int },
@@ -722,7 +724,10 @@ const nameProgram = (address: string, text: string, json: boolean) =>
   })
 
 /** The nameable planes as one prose clause, off the same table the arm
- * switch reads — help and refusal say the same five, always. */
+ * switch reads — help and refusal say the same planes, always, and
+ * neither counts them by hand: decision 40's rider CA-1 took the union
+ * from five arms to thirteen, and a hand-written "five" in help text is
+ * exactly the sentence that would have survived it. */
 const nameablePlanesListed = nameablePlanes
   .map(([plane, tag]) => `${plane} (${tagHex(tag)})`)
   .join(", ")
@@ -755,7 +760,7 @@ export const name = Command.make("name", {
       "  and a second name never replaces a first — the store only grows.",
       "  A name is ONE LINE of human text: empty text and text carrying a control",
       "  character are refused here, because both would print as a line cas did not say.",
-      `  The annotation plane spans five kinds today: ${nameablePlanesListed}.`,
+      `  The annotation plane spans ${nameablePlanes.length} kinds today: ${nameablePlanesListed}.`,
       "  Anything else is refused by name: widening the plane is a Lean ruling",
       "  (Cas.Schema.AnnotationSubject), not a flag. Add --wizard to be walked through it.",
     ].join("\n")),
@@ -1536,12 +1541,12 @@ const doctorProgram = (json: boolean) =>
     }
 
     const labRoot = lab.value
-    const [environment, laws, obligations, admission] = yield* Effect.all([
-      readLedger(labRoot, ledgers.environment),
-      readLedger(labRoot, ledgers.laws),
-      readLedger(labRoot, ledgers.obligations),
-      readLedger(labRoot, ledgers.admissionMap),
-    ])
+    // WHERE each ledger lives comes from the meta plane's own registry,
+    // decoded through its emitted shape — this verb states counters and
+    // does not also hold an opinion about paths.
+    const { admissionMap: admission, environment, laws, obligations } = yield* readLabLedgers(
+      labRoot,
+    )
 
     if (json) {
       return yield* Console.log(renderJson({

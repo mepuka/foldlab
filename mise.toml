@@ -271,10 +271,13 @@ outputs = ["../effects/src/cas/generated/ConformanceVectorSchema.ts"]
 run = "lake exe emitwire"
 
 [tasks."gen:backend-word"]
-description = "Regenerate the effects package's word-record mirrors (the receipt and the history document) from the Lean codes"
+description = "Regenerate the word-record mirrors (the receipt and the history document) from the Lean codes — the effects package's copy and the workbench's, printed from one registry in one run"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
-outputs = ["../effects/src/cas/generated/WordLogSchema.ts"]
+outputs = [
+  "../effects/src/cas/generated/WordLogSchema.ts",
+  "../../experiments/workbench/src/generated/WordLogSchema.ts",
+]
 run = "lake exe emitword"
 
 [tasks."gen:backend-gate"]
@@ -327,7 +330,7 @@ outputs = [
 run = "lake exe emitlift"
 
 [tasks."gen:grammar-manifest"]
-description = "Regenerate the data grammar's sort table (JSON for the front ends, REGISTRY.md for humans) from the Lean grammar manifest (authority: Cas.Grammar.manifestV0)"
+description = "Regenerate the data grammar's sort table (JSON for the front ends, REGISTRY.md for humans, the door's refusal set and the derived-name inventory for both TypeScript packages) from the Lean grammar manifest (authority: Cas.Grammar.manifestV0)"
 dir = "{{config_root}}/library/cas"
 sources = ["Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain"]
 outputs = [
@@ -335,6 +338,8 @@ outputs = [
   "../effects/src/cas/generated/grammar/kindTags.ts",
   "../effects/src/cas/generated/grammar/refMarkers.ts",
   "../effects/src/cas/generated/grammar/names.json",
+  "../../experiments/workbench/src/generated/kindTags.ts",
+  "../../experiments/workbench/src/generated/grammar/names.json",
   "REGISTRY.md",
 ]
 run = "lake exe emitgrammar"
@@ -566,6 +571,10 @@ sources = [
   "Cas/**/*.lean", "tools/**/*.lean", "examples/**/*.lean", "lakefile.toml", "lean-toolchain",
   "vectors/**", "schemas/**", "conformance/**", "mcp/**", "REGISTRY.md",
   "../effects/src/cas/generated/**", "../effects/test/generated/**",
+  # The workbench's mirrors are fixtures of `emitword` and `emitgrammar`
+  # like every other, so they are sources of the gate that checks them:
+  # a hand-edited mirror must not leave this task "fresh" and skipped.
+  "../../experiments/workbench/src/generated/**",
   "meta/out/environment.META.json",
   "meta/out/strata.META.json",
   "../../experiments/entity-store-extract/inventory.json",
@@ -741,6 +750,7 @@ run = [
   "mise run --force check:effects:ts",
   "mise run --force check:effects:research",
   "mise run --force check:ledger",
+  "mise run --force check:workbench",
 ]
 
 [tasks.check]
@@ -779,12 +789,38 @@ run = [
   "bun run build",
 ]
 
-# No `gen:workbench` task yet, deliberately. Nothing in
-# experiments/workbench is derived from a declared source: the page is
-# hand-written because there is nothing to generate it from. The moment a
-# surface arrives that the store language already describes — the MCP tool
-# manifest, the canonical schemas, the wire profile — its TypeScript is
-# emitted by a task here and never typed by hand.
+# NO `gen:workbench` TASK, and the reason changed. It used to be that
+# nothing under experiments/workbench was derived from a declared source.
+# Three files now are — `src/generated/WordLogSchema.ts`,
+# `src/generated/kindTags.ts` and `src/generated/grammar/names.json` —
+# and they are still not a task of their own, because a task is not the
+# unit here. `lake exe emitword` and `lake exe emitgrammar` each write
+# BOTH packages' copies in ONE run, off one registry, so the workbench's
+# mirrors are outputs of `gen:backend-word` and `gen:grammar-manifest`
+# and are listed there. Three reasons a second task would be worse, not
+# better:
+#
+#   1. It would re-run the same executable, doing the same work twice
+#      and writing the same bytes twice per `gen`.
+#   2. `tools/EnvLedger.lean` joins each `[[lean_exe]]` to the task that
+#      runs it bare (`drives`) and to the `--check` that gates it
+#      (`gates`), taking the FIRST match. Two tasks running `lake exe
+#      emitword` makes `declaredOutputs` depend on the order of this
+#      file — precisely the drift the ledger exists to report.
+#   3. The zero-duplication spellings are unavailable by design: the
+#      ledger's TOML door reads `description`, `dir`, `run`, `sources`,
+#      `outputs` and REFUSES any other task key, so `depends` or an
+#      alias would red the environment gate rather than wire anything.
+#
+# The `check:cas` batch already gates both mirrors for the same reason:
+# `emitword --check` and `emitgrammar --check` visit every fixture their
+# tool declares, and the workbench's are fixtures. What that batch DID
+# need is the mirrors in its `sources` — see the note there.
+#
+# The README's law is unchanged and is why these three exist at all:
+# any surface the store language already describes is generated, never
+# typed by hand. The next such surface joins the emitter that already
+# owns it, the same way.
 
 [tasks."check:extract-twin"]
 description = """

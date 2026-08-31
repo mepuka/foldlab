@@ -133,11 +133,11 @@ defaultTargets = ["Cas", "CasBackend", "CasExamples", "CasWp"]
 
 # The substrate stratum, declared as its own library so the boundary is
 # a fact of the build rather than a claim in prose: `lake build
-# CasValues` builds the five substrate modules below, plus the front
+# CasValues` builds the six substrate modules below, plus the front
 # page that roots them, and NOTHING else in the package — which is what
 # "zero-dependency" has to mean to be worth saying.
 #
-# The globs name the six modules one by one instead of globbing the
+# The globs name the seven modules one by one instead of globbing the
 # `Cas.Values.+` subtree, and that is the whole point. It was measured,
 # not guessed: while `Canonicalize` and `Refs` still sat in the subtree,
 # a glob pulled those two in and, behind them, the seven
@@ -150,6 +150,7 @@ defaultTargets = ["Cas", "CasBackend", "CasExamples", "CasWp"]
 name = "CasValues"
 globs = [
   "Cas.Values",
+  "Cas.Values.Cut",
   "Cas.Values.Digits",
   "Cas.Values.Json",
   "Cas.Values.JsonInj",

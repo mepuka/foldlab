@@ -1,5 +1,5 @@
 {
-  "source": "program_proofs.pdf sha256 a14a98037799512eb343bdfe8efa4ff2022b09b08446ba8205b5e995fcddf025",
+  "source": ".reference/papers/program_proofs.pdf sha256 a14a98037799512eb343bdfe8efa4ff2022b09b08446ba8205b5e995fcddf025",
   "wave": "10x codex gpt-5.6-sol/luna xhigh 2026-08-30",
   "slices": [
     {

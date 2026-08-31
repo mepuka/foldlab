@@ -850,8 +850,8 @@
     {
       "denotes": true,
       "name": "annotation",
-      "note": "the sidecar annotation kind: key, a subject union over the five addressable planes (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), and a value that is either text or a typed reference",
-      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"key\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"ref\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"text\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"text\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}]}}]}}}",
+      "note": "the sidecar annotation kind: key, a subject union over the thirteen addressable planes — the meta and agent five (0x53 schema, 0x54 system, 0x58 exchange, 0x0F program, 0x47 git), the content four decision 40's rider CA-1 admitted (0x01 value, 0x08 chunk, 0x0B file, 0x0D context), and that decision's own four sorts (0x41 annotation, 0x49 agent, 0x51 query, 0x52 result) — and a value that is either text or a typed reference",
+      "payload": "{\"revision\":1,\"value\":{\"references\":{},\"representation\":{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"key\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"subject\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"agent\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":73},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"annotation\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":65},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"chunk\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":8},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"context\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":13},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"file\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":11},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"query\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":81},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"result\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":82},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"value\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":1},\"typeParameters\":[]}}]}]}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"value\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"ref\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Union\",\"checks\":[],\"mode\":\"oneOf\",\"types\":[{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"agent\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":73},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"annotation\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":65},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"chunk\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":8},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"context\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":13},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"exchange\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":88},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"file\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":11},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"git\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":71},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"program\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":15},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"query\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":81},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"result\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":82},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"schema\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":83},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"system\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":84},\"typeParameters\":[]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"value\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"address\"},\"type\":{\"_tag\":\"Declaration\",\"checks\":[],\"representation\":{\"id\":\"foldlab/cas/ref\",\"payload\":1},\"typeParameters\":[]}}]}]}}]},{\"_tag\":\"Objects\",\"checks\":[],\"indexSignatures\":[],\"propertySignatures\":[{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"_tag\"},\"type\":{\"_tag\":\"Literal\",\"checks\":[],\"literal\":{\"type\":\"string\",\"value\":\"text\"}}},{\"isMutable\":false,\"isOptional\":false,\"name\":{\"type\":\"string\",\"value\":\"text\"},\"type\":{\"_tag\":\"String\",\"checks\":[]}}]}]}}]}}}",
       "values": [
         {
           "label": "on-schema-text",
@@ -980,6 +980,102 @@
             }
           },
           "verdict": "accept"
+        },
+        {
+          "label": "tombstone-on-annotation",
+          "value": {
+            "key": "foldlab/tombstone",
+            "subject": {
+              "_tag": "annotation",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 65
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "superseded"
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "embedding-on-value",
+          "value": {
+            "key": "foldlab/embedding",
+            "subject": {
+              "_tag": "value",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 1
+                }
+              }
+            },
+            "value": {
+              "_tag": "ref",
+              "address": {
+                "_tag": "chunk",
+                "address": {
+                  "$link": {
+                    "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                    "tag": 8
+                  }
+                }
+              }
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "related-query-to-query",
+          "value": {
+            "key": "foldlab/related",
+            "subject": {
+              "_tag": "query",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 81
+                }
+              }
+            },
+            "value": {
+              "_tag": "ref",
+              "address": {
+                "_tag": "query",
+                "address": {
+                  "$link": {
+                    "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                    "tag": 81
+                  }
+                }
+              }
+            }
+          },
+          "verdict": "accept"
+        },
+        {
+          "label": "subject-refused-text-arm",
+          "value": {
+            "key": "foldlab/name",
+            "subject": {
+              "_tag": "text",
+              "address": {
+                "$link": {
+                  "id": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                  "tag": 1
+                }
+              }
+            },
+            "value": {
+              "_tag": "text",
+              "text": "no run sort"
+            }
+          },
+          "verdict": "refuse"
         },
         {
           "label": "subject-arm-tag-swapped",
@@ -1562,12 +1658,12 @@
     }
   ],
   "counts": {
-    "acceptValues": 41,
+    "acceptValues": 44,
     "admittedCodes": 44,
     "codes": 79,
-    "refuseValues": 62,
+    "refuseValues": 63,
     "refusedCodes": 35,
-    "values": 103
+    "values": 107
   },
   "emitted": {
     "emitter": "verdicts",

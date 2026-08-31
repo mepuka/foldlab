@@ -151,6 +151,10 @@ def Ty.sortName : Ty → String
   | .cont => "cont"
   | .schema => "schema"
   | .git => "git"
+  | .annotation => "annotation"
+  | .agent => "agent"
+  | .query => "query"
+  | .result => "result"
 
 /-- One payload field: its name, how it is written, what it means. -/
 structure Field where
@@ -384,6 +388,68 @@ private def wCont : Node :=
   ⟨schemeVersion, Ty.cont.wireTag, Cas.nat32 1,
     [⟨Ty.step.wireTag, noAddr⟩]⟩
 
+/-! ### The sort-event witnesses (decision 40)
+
+Four sorts ratified 2026-08-30 as one batch, and not one of them has a
+`Tree` constructor: the grammar builds blobs and journals, while these
+four are written by the schema plane (`Cas/Schema/Annotation.lean`) and
+by the agent language (`examples/CasExamples/AgentStep.lean`). Each
+witness is therefore the NODE, on the `context` precedent — a ratified
+row whose shape is read off what its writer writes, not off a
+constructor the grammar does not have.
+
+The `annotation` witness spells at layer 2 what
+`Cas.Schema.putNode … pinAnnotationKindTag …` writes, exactly as the
+program witnesses above spell `Defun`'s encoders; `tools/EmitGrammar.lean`
+sits above both planes and is where the hand-spelling is held to the
+projection. -/
+
+/-- An annotation node — `Cas.Schema.putNode` of an annotation whose
+value is a typed reference. The payload is the projection envelope
+(revision, then the annotation), and the two edges are the SUBJECT and
+the value's own reference, in that order. Both arms here are ratified
+planes, which is what lets the free-discipline guard read this witness;
+the arms at working tags are the reason the row's law is stated the way
+it is. -/
+private def wAnnotation : Node :=
+  ⟨schemeVersion, Ty.annotation.wireTag,
+    utf8 "{\"revision\":1,\"value\":{\"key\":\"foldlab/view\",\
+\"subject\":{\"_tag\":\"program\",\"address\":{\"$ref\":0}},\
+\"value\":{\"_tag\":\"ref\",\"address\":{\"_tag\":\"git\",\
+\"address\":{\"$ref\":1}}}}}",
+    [⟨Ty.cont.wireTag, noAddr⟩, ⟨Ty.git.wireTag, noAddr⟩]⟩
+
+/-- An agent chain's first step: no attestation, no edges. The `prev`
+edge of the form below expects this sort, so a chain has to bottom out
+somewhere, and this is where — `entry.genesis`'s move, at the sort that
+took the three-edge form off `entry`'s tag. -/
+private def wAgentGenesis : Node :=
+  ⟨schemeVersion, Ty.agent.wireTag, [], []⟩
+
+/-- One agent step as a node — the shape
+`CasExamples.AgentStep.agentNode` writes: the executor's attestation as
+the payload, and three typed edges, the folded context, the answer it
+produced, and the step before it. -/
+private def wAgent : Node :=
+  ⟨schemeVersion, Ty.agent.wireTag, utf8 "model=scripted;t=0",
+    [⟨Ty.context.wireTag, noAddr⟩, ⟨Ty.value.wireTag, noAddr⟩,
+     ⟨Ty.agent.wireTag, noAddr⟩]⟩
+
+/-- A query spec as a node: the spec's bytes and no edges. A spec names
+the classifiers it runs by DERIVED NAME — the strings `names.json`
+carries — and a name is not an address, so this sort is a leaf. -/
+private def wQuery : Node :=
+  ⟨schemeVersion, Ty.query.wireTag,
+    utf8 "{\"aggregator\":\"count\",\"generator\":\"tree.leaf\",\"rung\":\"R1\"}",
+    []⟩
+
+/-- A materialized answer as a node: the mark it was computed at, the
+spec it answers, and one edge per member. The witness carries one
+member so the free law has an edge to read. -/
+private def wResult : Node :=
+  ⟨schemeVersion, Ty.result.wireTag, Cas.nat32 7,
+    [⟨Ty.query.wireTag, noAddr⟩, ⟨Ty.value.wireTag, noAddr⟩]⟩
+
 def envelopeV0 : Envelope where
   fields := [
     { name := "version", enc := .u8,
@@ -428,10 +494,15 @@ cannot drift from what is written."],
      .code "Cas/Grammar/Sorts.lean", .text ", ", .code "Ty.wireTag",
      .text "/", .code "Ty.ofTag", .text "). Ratified by the grammar \
 grill (2026-08-28, rulings 2 and 3; recorded in ",
-     .code "library/effects/IMPLEMENTATION-PLAN.md", .text " §14). Tags \
-8, 9, and 10 are also the blob kinds of PROFILE-CAS-HTTP-0. A tag names \
-one node form family; references type-check at tag granularity, so a row \
-here is a contract on every wire."],
+     .code "library/effects/IMPLEMENTATION-PLAN.md", .text " §14), and \
+extended once since, by decision 40 (2026-08-30): ", .code "annotation",
+     .text ", ", .code "agent", .text ", ", .code "query", .text " and ",
+     .code "result", .text " entered as ONE grilled batch under the \
+principle that a thing deserves a sort iff the algebra needs typed, \
+admission-checked references TO it. Tags 8, 9, and 10 are also the blob \
+kinds of PROFILE-CAS-HTTP-0. A tag names one node form family; \
+references type-check at tag granularity, so a row here is a contract \
+on every wire."],
     [.text "The version above was bumped for a surface change, per the \
 manifest-versioning ruling: a form's reference discipline is now stated \
 under a ", .code "discipline", .text " key rather than implied by the ",
@@ -544,9 +615,14 @@ bound."] },
           meaning := "One journal entry over a file, linked to its predecessor." }]
       notes := [.text "Journal entry or genesis. The sort does not fix \
 its reference list: the codec constrains a reference's expected tag, \
-never the arity, and the agent language writes a three-edge entry \
-(context, value, entry) over this same tag. A reader dispatches on what \
-it finds, not on this row."] },
+never the arity, so a reader dispatches on what it finds, not on this \
+row. The agent language used to exercise exactly that latitude — it \
+wrote a three-edge step (context, value, entry) over this same tag — \
+and decision 40 moved that form onto its own ", .code "agent",
+        .text " row, because an edge expecting an AGENT specifically is \
+unspellable while the form rides this tag and expected-tag checking is \
+per-tag. Row ", .code "0x49", .text " carries it now; what is left \
+here is the journal."] },
     { id := .sort .context, name := "context", status := .core
       exemplar := none
       forms := [
@@ -635,6 +711,44 @@ then the cont node referencing them all. ",
 content and recovered from that content is the same table, so it runs \
 identically and denotes an observationally equal program. That is why \
 a program is a sort and not a convention over the value plane."] },
+    { id := .sort .annotation, name := "annotation", status := .core
+      exemplar := none
+      forms := [
+        { name := "annotation", witness := .node wAnnotation
+          fields := [
+            { name := "projection", enc := .opaque,
+              meaning := "the annotation projection's canonical JSON envelope: the revision, then the key, the addressed subject and what the annotation says" }]
+          refs := .free "link"
+            "One edge per addressed reference the annotation carries: \
+the SUBJECT first, then the value's own reference when the value is a \
+typed one rather than text — one edge under the text arm, two under \
+the ref arm. The sort fixes no slot list because the subject is a \
+UNION over addressable planes and a reference demands one tag, so \
+which tag edge 0 expects is the arm this annotation carries and not a \
+fact of this row. The law every edge satisfies is that its expected \
+tag is one AnnotationSubject names; unlike context and cont, that is \
+NOT the same as resolving through Ty.ofTag, because two of the union's \
+arms (exchange 0x58, system 0x54) address working tags with no \
+registry row. Cas.Schema.pinLink is the worked example, and the \
+witness above is its ratified-arm twin."
+          meaning := "One annotation: the projection envelope, the subject edge, and the value's edge when the value is a reference." }]
+      notes := [.text "The MEANING plane: one annotation node says one \
+thing about one addressed value, and the DAG carries as many of them \
+per subject as wanted. Ratified 2026-08-30 (decision 40) AT THE \
+WORKING TAG it was already riding — ", .code "Cas/Schema/Annotation.lean",
+        .text " has put annotation nodes at ", .code "0x41",
+        .text " since the sidecar kind landed, so promoting that byte \
+to a row re-authors no stored node and moves no address. The grammar \
+has no ", .code "annotation", .text " constructor, so the row's \
+witness is the NODE, on the ", .code "context",
+        .text " precedent: the shape ", .code "Cas.Schema.putNode",
+        .text " writes through the annotation projection. What earned \
+the row is the reflexive rung — an annotation ABOUT an annotation was \
+unspellable while the plane had no tag to demand, because a reference \
+demands one tag and expected-tag checking is per-tag. The subject \
+union widened in the same versioning event to the content planes and \
+to the batch's own four sorts, which is what makes notes-about-notes \
+and notes-about-results spellable at all."] },
     { id := .sort .git, name := "git", status := .core
       exemplar := some "git-pin-commit"
       forms := [
@@ -664,6 +778,89 @@ and parents, a tree's entries) stay inside the payload rather than \
 becoming typed CAS edges, exactly as the schema sort's ", .code "$defs",
         .text " graph does. Promoting them is the named follow-up, and \
 is what would turn a pinned object into a walkable history."] },
+    { id := .sort .agent, name := "agent", status := .core
+      exemplar := none
+      forms := [
+        { name := "genesis", witness := .node wAgentGenesis
+          fields := []
+          refs := .fixed []
+          meaning := "An agent chain's first step: no attestation, no edges." },
+        { name := "agent", witness := .node wAgent
+          fields := [
+            { name := "attestation", enc := .opaque,
+              meaning := "the executor's claim about the step it took, uninterpreted — a claim, never a proof" }]
+          refs := .fixed [
+            { name := "context", expects := .context,
+              meaning := "the folded context the step was taken over" },
+            { name := "output", expects := .value,
+              meaning := "the answer the step recorded" },
+            { name := "prev", expects := .agent,
+              meaning := "the step before it, or the chain's genesis" }]
+          meaning := "One agent step: the attestation, the context it folded, the answer it recorded, and the step before it." }]
+      notes := [.text "The ATTRIBUTION anchor. Ratified 2026-08-30 \
+(decision 40) for the three-edge form the agent language already \
+wrote — ", .code "CasExamples.AgentStep",
+        .text " admits exactly three nodes per step and the third was a \
+journal ", .code "entry", .text " over row ", .code "0x0C",
+        .text ". Riding that tag cost the thing the sort exists for: \
+references type-check at tag granularity, so an edge expecting an \
+AGENT specifically was unspellable, and \"who did this\" could not be \
+asked of the store as a typed walk. The form is unchanged by the move \
+— attestation, context, output, prev — and only the tag its ", .code "prev",
+        .text " edge demands changed, from the journal's to its own, \
+which is what makes an agent chain a chain of agent steps rather than a \
+branch of the journal. Two forms, on the ", .code "entry",
+        .text " precedent: a chain whose links point backwards has to \
+bottom out, and ", .code "agent.genesis", .text " is where. Greenfield \
+made the migration free — the estate held no stored node at this form, \
+so nothing was re-authored."] },
+    { id := .sort .query, name := "query", status := .core
+      exemplar := none
+      forms := [
+        { name := "query", witness := .node wQuery
+          fields := [
+            { name := "spec", enc := .opaque,
+              meaning := "the query spec's bytes — canonical JSON at the layer above, opaque here" }]
+          refs := .fixed []
+          meaning := "A query spec as content: the spec's bytes, and no edges." }]
+      notes := [.text "The SPEC plane — a query as content. Ratified \
+2026-08-30 (decision 40). A leaf, deliberately: a spec names the \
+classifiers it runs by DERIVED NAME, the strings ", .code "names.json",
+        .text " carries, and a name is not an address, so there is \
+nothing here for an edge to point at. What earned the row is the other \
+direction — a ", .code "result", .text " binds spec-to-query by a \
+typed edge, annotations are written about queries, and related-edges \
+run query to query; every one of those is a reference TO a spec, and a \
+reference demands one tag."] },
+    { id := .sort .result, name := "result", status := .core
+      exemplar := none
+      forms := [
+        { name := "result", witness := .node wResult
+          fields := [
+            { name := "mark", enc := .beU32,
+              meaning := "the word index the answer was computed at — the zero-based mark a non-monotone answer carries on its face" }]
+          refs := .free "member"
+            "The SPEC first — edge 0 expects the query tag, and is the \
+spec this node answers — then one edge per member of the answer, in \
+fold order, any number of them. The discipline is free rather than a \
+slot list because an answer's length is not a manifest fact, and the \
+manifest's two disciplines cannot state a fixed head and a free tail \
+in one form: .fixed is checked as exact list equality against the \
+witness and .free names no slots at all. So the leading slot is stated \
+as this law instead of as a table, and what the law adds to the free \
+one is that edge 0 is the spec. Every member edge's expected tag must \
+resolve through Ty.ofTag, exactly as a context's must."
+          meaning := "A materialized answer: the mark it was computed at, the spec it answers, and one edge per member." }]
+      notes := [.text "The ANSWER plane — a materialized result set. \
+Ratified 2026-08-30 (decision 40). The memoization law falls out of \
+the shape rather than being enforced beside it: the node's preimage IS \
+spec plus mark plus members, so the same spec at the same mark over \
+the same members is the same address, and a duplicate put is the \
+identity. This is also the INDEX kind the naming inventory anticipates \
+— a materialized page of a query, which is what a reverse-ref index \
+is a family of. A result is a REFERENCED thing (later steps hand \
+result handles onward, annotations are written about answers), which \
+is what earned it a tag rather than a composite."] },
     { id := .sort .schema, name := "schema", status := .revision1
       exemplar := some "schema-vector-document"
       forms := [
@@ -698,6 +895,21 @@ DISCHARGED: the rows were ratified 2026-08-29 and are the ",
 were removed with the reservation they pinned; the two names survive in ",
      .code "Defun.lean", .text " as abbreviations of the sorts' own \
 tags, so neither number is now written twice."],
+    [.text "Rows 65, 73, 81 and 82 are decision 40's, ratified \
+2026-08-30 as ONE batch and not four rulings: ", .code "annotation",
+     .text " (the meaning column, promoted at the working tag it was \
+already riding, so nothing stored moved), ", .code "agent",
+     .text " (the attribution anchor, taken off ", .code "entry",
+     .text "'s tag), ", .code "query", .text " (specs as content) and ",
+     .code "result", .text " (materialized answers). The batch scopes \
+the growth discipline rather than repealing it — one event, grilled \
+once, and the stillness resumes with it. ", .code "text",
+     .text " was refused from the batch the same day: no logged vision \
+sentence orders collaborative document editing, and the CRDT run's \
+self-referencing parent pointer forces a tag only if a buffer is ever \
+commissioned. None of the four has a ", .code "Tree",
+     .text " constructor, and none needs one — their writers sit at the \
+node layer, exactly as ", .code "context", .text "'s does."],
     [.text "No row is RESERVED today, and no row is formless. The \
 registry keeps both notions anyway — a row id that is a bare tag, a \
 status that says so, and the guards that tie the two together — \

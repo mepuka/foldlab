@@ -81,12 +81,15 @@ export const isRegisteredTag = (tag: number): boolean => kindNames.has(tag)
  * The everyday overlay on the registry names (vocabulary collision 3),
  * seeded from emitted tables and nowhere else.
  *
- * The annotation plane's arm words come first: `exchange`, `git`,
- * `program`, `schema`, `system` are the words the Lean union spells for
- * the five addressable planes, and they are everyday words already.
+ * The annotation plane's arm words come first: the words the Lean union
+ * spells for the addressable planes, which are everyday words already.
  * Two of those planes — `exchange` (0x58) and `system` (0x54) — have no
  * registry row at all, so before this seeding they rendered as bare hex
- * on one line of a screen whose next line spelled them out.
+ * on one line of a screen whose next line spelled them out. The rest
+ * now do have rows, and for those the overlay agrees with the registry
+ * rather than overriding it: decision 40's rider CA-1 added arms at
+ * `value`, `chunk`, `file`, `context`, `annotation`, `agent`, `query`
+ * and `result`, and every one of those arm words IS its row's name.
  *
  * The arm word for the `cont` tag is what carries collision 3's ruling:
  * a `cont` node is never named in a rendered surface — it is the
@@ -94,10 +97,14 @@ export const isRegisteredTag = (tag: number): boolean => kindNames.has(tag)
  * it is a step OF is read back out of the overlay rather than spelled
  * again here.
  *
- * Last, the annotation kind's own word, emitted beside its tag: a
- * working tag has no registry row, so `isRegisteredTag` still says
- * false and `put` still says so out loud; this only keeps a published
- * name from rendering as an unexplained byte in `ls`.
+ * Last, the annotation kind's own word, emitted beside its tag. That
+ * used to be the only way the word reached a screen, because the plane
+ * rode a working tag with no registry row; decision 40 ratified the
+ * tag, so `isRegisteredTag` says true now and `put` no longer warns.
+ * The seeding stays because it is the pinned pair — `EmitGrammar`
+ * holds the emitted word to the row's own name — and because dropping
+ * it would move the human register onto a table this file would then
+ * have to keep.
  *
  * Only the human register wears any of this. The machine register keeps
  * the registry names, which are the emitted facts.

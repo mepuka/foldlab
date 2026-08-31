@@ -146,7 +146,11 @@ def residence : List (String × String × String) := [
   ("check:fips202", "portable", "all inputs tracked"),
   ("check:ledger", "portable", "committed bun lockfile pins every dependency"),
   ("check:machine", "portable", "all inputs tracked"),
-  ("check:workbench", "host-local", "experiments/workbench is not yet committed"),
+  -- Was `host-local` while the package was uncommitted. It is tracked
+  -- now, lockfile and all, and CI runs this gate: a `host-local` row on
+  -- a task in `check:ci` would be the ledger asserting the CI chain
+  -- cannot run on a fresh clone.
+  ("check:workbench", "portable", "committed bun lockfile pins every dependency"),
   ("gen", "portable", "all inputs tracked"),
   ("gen:ci", "portable", "the forced mirror of `gen`; same inputs"),
   ("gen:inventory", "portable", "reads the vendored pinned Effect sources"),

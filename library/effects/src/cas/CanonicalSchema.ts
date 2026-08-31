@@ -602,7 +602,7 @@ const admitNode = (value: Schema.Json | undefined, path: string): void => {
     }
     case "suspend": {
       admitNode(node.thunk, `${path}~`)
-      return
+      break
     }
   }
 }

@@ -39,8 +39,14 @@
  */
 import { cast, Option, Predicate, Schema, SchemaAST } from "effect"
 import { ContentId } from "./Node.ts"
-import { type Root } from "./Value.ts"
-import { SystemKindTag as EmittedSystemKindTag } from "./generated/annotationPlane.ts"
+import { type CasValue, libraryValue, type Root } from "./Value.ts"
+import {
+  AnnotationKeys,
+  AnnotationKindTag as EmittedAnnotationKindTag,
+  AnnotationNameKey,
+  AnnotationRevision,
+  SystemKindTag as EmittedSystemKindTag,
+} from "./generated/annotationPlane.ts"
 import { KindTagsByName } from "./generated/grammar/kindTags.ts"
 import {
   annotationSchema,
@@ -206,6 +212,67 @@ export const onGit = (address: ContentId): Subject => ({
   address: arm(address),
 })
 
+/* ── the content planes, and the sort event's own four (decision 40) ──
+ *
+ * Rider CA-1 widened the Lean union past the meta planes: to the
+ * CONTENT planes, so an annotation about stored bytes is nameable at
+ * all, and to the four sorts the batch ratified, so a note about a
+ * note — or about a query, an answer, or an agent — is spellable. Each
+ * arm below is the constructor for one of those, and the suite walks
+ * the EMITTED table through them: an arm with no constructor here is a
+ * red case, never a silently unspellable plane. */
+
+/** The annotation is about the opaque value stored at this address. */
+export const onValue = (address: ContentId): Subject => ({
+  _tag: "value",
+  address: arm(address),
+})
+
+/** The annotation is about the chunk stored at this address — where an
+ * embedding's vector bytes live. */
+export const onChunk = (address: ContentId): Subject => ({
+  _tag: "chunk",
+  address: arm(address),
+})
+
+/** The annotation is about the named file stored at this address. */
+export const onFile = (address: ContentId): Subject => ({
+  _tag: "file",
+  address: arm(address),
+})
+
+/** The annotation is about the folded context stored at this address. */
+export const onContext = (address: ContentId): Subject => ({
+  _tag: "context",
+  address: arm(address),
+})
+
+/** The annotation is about the ANNOTATION stored at this address — the
+ * reflexive rung: notes about notes, tombstones over retracted ones. */
+export const onAnnotation = (address: ContentId): Subject => ({
+  _tag: "annotation",
+  address: arm(address),
+})
+
+/** The annotation is about the agent step stored at this address. */
+export const onAgent = (address: ContentId): Subject => ({
+  _tag: "agent",
+  address: arm(address),
+})
+
+/** The annotation is about the query spec stored at this address. */
+export const onQuery = (address: ContentId): Subject => ({
+  _tag: "query",
+  address: arm(address),
+})
+
+/** The annotation is about the materialized answer stored at this
+ * address. */
+export const onResult = (address: ContentId): Subject => ({
+  _tag: "result",
+  address: arm(address),
+})
+
 /** The annotation says this text. */
 export const text = (text: string): Value => ({ _tag: "text", text })
 
@@ -226,4 +293,40 @@ export const annotationOn = (subject: Subject) =>
   key: annotation.key,
   subject,
   value: annotation.value,
+})
+
+/** The kind tag annotation nodes reside at — `0x41`, a RATIFIED
+ * registry row since decision 40 and a working tag before it. The
+ * promotion kept the byte, which is why no stored annotation moved. */
+export const KindTag = EmittedAnnotationKindTag
+
+/** The projection revision annotation nodes ride, the Lean pin's own. */
+export const Revision = AnnotationRevision
+
+/** The name seat's key, and the rest of the ratified `foldlab/` family
+ * (rider CA-2), emitted from the Lean worked pins. A key is a string
+ * and the codec could not care which one — ratifying a family is not a
+ * narrowing of the carrier, it is the spelling existing once. */
+export const NameKey = AnnotationNameKey
+
+/** Every ratified `foldlab/` annotation key, in the order decision 40
+ * names them: the name seat first, then related, search-note, pref,
+ * embedding, tombstone. */
+export const Keys = AnnotationKeys
+
+/** THE annotation projection — the one interpretation of registry row
+ * `0x41`.
+ *
+ * It is `libraryValue` and not `Cas.value` for the reason
+ * `Cas.CanonicalSchema` is: the door on `Cas.value` refuses every
+ * registry row so that a CALLER-defined projection cannot give a row a
+ * second public interpretation, and this is the row's first. Before
+ * decision 40 the plane rode a working tag, every consumer built its own
+ * `Cas.value({ kindTag: 0x41, … })`, and the tag's ratification is what
+ * turned those into the aliasing the door exists against. One projection
+ * now, exported here, and its tag and revision are the emitted ones. */
+export const Node: CasValue<Annotation> = libraryValue({
+  kindTag: KindTag,
+  revision: Revision,
+  schema: Annotation,
 })

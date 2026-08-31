@@ -778,7 +778,7 @@ it.effect("help asked for is still help", () =>
 it.effect("name: a nameable node gets a published name, and show reads it back first", () =>
   withWorkspace(({ file, store }) =>
     Effect.gen(function* () {
-      // A schema-kind node: one of the five planes the subject union
+      // A schema-kind node: one of the planes the subject union
       // spans, so a name can be said about it.
       const subject = addressOf(yield* invoke("put", file, "--kind-tag", "83", "--store", store))
       const named = yield* invoke("name", subject, "the pin sample", "--store", store)
@@ -826,14 +826,21 @@ it.effect("name: --json answers the annotation, the subject, and the plane", () 
 it.effect("name: a plane outside the subject union is refused by name", () =>
   withWorkspace(({ file, store }) =>
     Effect.gen(function* () {
-      // The default kind is `value`, and the union has no value arm.
-      const subject = addressOf(yield* invoke("put", file, "--store", store))
+      // `tree` (0x09) is the INTERIOR of a blob, and the union has no
+      // arm for it: what a person names is the `file`, never the shape
+      // underneath it. This case used to ride the default `value` kind,
+      // which decision 40's rider CA-1 made nameable — the union spans
+      // the content planes now, and what stayed outside is exactly the
+      // interior of composites.
+      const subject = addressOf(
+        yield* invoke("put", file, "--kind-tag", "9", "--store", store),
+      )
       const refused = refusalText(
         yield* Effect.flip(invoke("name", subject, "nope", "--store", store)),
       )
-      expect(refused).toContain("nothing can be said about kind value (0x01) yet")
+      expect(refused).toContain("nothing can be said about kind tree (0x09) yet")
       expect(refused).toContain(
-        "exchange (0x58), git (0x47), program (0x0f), schema (0x53), system (0x54)",
+        "agent (0x49), annotation (0x41), chunk (0x08), context (0x0d), exchange (0x58), file (0x0b), git (0x47), program (0x0f), query (0x51), result (0x52), schema (0x53), system (0x54), value (0x01)",
       )
       expect(refused).toContain("a Lean ruling")
       // Nothing was stored or published on the way to the refusal.
@@ -883,10 +890,15 @@ it("every everyday kind word is an emitted one (decision 25)", () => {
   for (const row of AnnotationSubjectArms) {
     expect(tagLabel(row.tag)).toBe(`${row.arm} (${tagHex(row.tag)})`)
   }
-  // The annotation kind's own word, beside its own tag — and it is
-  // still a WORKING tag, which the overlay does not change.
+  // The annotation kind's own word, beside its own tag. That tag was a
+  // WORKING one until decision 40 ratified the same byte as the
+  // `annotation` registry row — the promotion kept the byte, so no
+  // stored annotation moved — and the overlay's word is now pinned to
+  // the row's own name in Lean (`tools/EmitGrammar.lean`), which is why
+  // the two agree here rather than merely happening to.
   expect(tagLabel(AnnotationKindTag)).toBe(`${AnnotationKindWord} (${tagHex(AnnotationKindTag)})`)
-  expect(isRegisteredTag(AnnotationKindTag)).toBe(false)
+  expect(isRegisteredTag(AnnotationKindTag)).toBe(true)
+  expect(KindTagsByName.annotation).toBe(AnnotationKindTag)
   // Collision 3's ruling still rides the overlay: a `cont` node is the
   // program, and a `step` is one of that program's steps — the noun
   // read back out of the overlay rather than spelled a second time.
@@ -909,10 +921,13 @@ it.effect("one screen, one spelling: the kind line and the plane list agree", ()
       expect(named[1]).toBe(`kind       exchange (${tagHex(exchange.tag)})  (scheme 0)`)
 
       // And the refusal on a plane the union does not span prints the
-      // same words for the same tags.
-      const value = addressOf(yield* invoke("put", file, "--store", store))
+      // same words for the same tags. `manifest` (0x0A) is one: the
+      // interior of a blob, which a person names through its `file`.
+      const unspanned = addressOf(
+        yield* invoke("put", file, "--kind-tag", "10", "--store", store),
+      )
       const refused = refusalText(
-        yield* Effect.flip(invoke("name", value, "nope", "--store", store)),
+        yield* Effect.flip(invoke("name", unspanned, "nope", "--store", store)),
       )
       for (const row of AnnotationSubjectArms) {
         expect(refused).toContain(`${row.arm} (${tagHex(row.tag)})`)

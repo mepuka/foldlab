@@ -3,41 +3,41 @@
     "Architecture": 39,
     "Backend": 273,
     "Codec": 281,
-    "Core": 440,
-    "Grammar": 151,
-    "IR": 174,
+    "Core": 486,
+    "Grammar": 158,
+    "IR": 265,
     "Lang": 374,
     "Lift": 77,
     "Llm": 30,
     "Schema": 764,
-    "Values": 436,
+    "Values": 438,
     "Vectors": 92
   },
   "axiomCensus": {
-    "Classical.choice": 261,
-    "Quot.sound": 459,
-    "propext": 663
+    "Classical.choice": 264,
+    "Quot.sound": 503,
+    "propext": 717
   },
   "beyondCleanAxioms": [],
   "carrierCensus": {
-    "Cas.Addr32": 211,
-    "Cas.Binding": 74,
+    "Cas.Addr32": 248,
+    "Cas.Binding": 103,
     "Cas.Grammar.Tree": 35,
-    "Cas.Grammar.Ty": 51,
+    "Cas.Grammar.Ty": 58,
     "Cas.Lang.Handler": 19,
     "Cas.Lang.Prog": 89,
     "Cas.Lang.Refusal": 42,
     "Cas.Lang.Sig": 44,
     "Cas.Lang.Status": 64,
     "Cas.Lang.interpret": 14,
-    "Cas.Node": 96,
+    "Cas.Node": 104,
     "Cas.Schema.Ast": 372,
     "Cas.Schema.Described": 48,
     "Cas.Schema.El": 42,
-    "Cas.Word": 141
+    "Cas.Word": 198
   },
-  "declarations": 2426,
-  "documented": 1283,
+  "declarations": 2533,
+  "documented": 1384,
   "emitted": {
     "emitter": "surface",
     "module": "library/cas/tools/Surface.lean",
@@ -6836,8 +6836,746 @@
       ]
     },
     {
-      "declarations": 10,
-      "documented": 5,
+      "declarations": 42,
+      "documented": 37,
+      "module": "Cas.IR.Query",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "structure",
+          "name": "Cas.Word.Aggregator",
+          "signature": "Type → Type"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.Aggregator.Comm",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → Prop",
+          "touches": ["IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.Aggregator.Idem",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → Prop",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Word.Aggregator.assoc",
+          "signature": "∀ {α : Type} (self : Cas.Word.Aggregator α) (x y z : α), self.merge (self.merge x y) z = self.merge x (self.merge y z)",
+          "touches": ["IR"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Word.Aggregator.empty",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → α",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Word.Aggregator.empty_left",
+          "signature": "∀ {α : Type} (self : Cas.Word.Aggregator α) (x : α), self.merge self.empty x = x",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Word.Aggregator.empty_right",
+          "signature": "∀ {α : Type} (self : Cas.Word.Aggregator α) (x : α), self.merge x self.empty = x",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Aggregator.foldr_seed",
+          "signature": "∀ {α : Type} (A : Cas.Word.Aggregator α) (l : List α) (z : α), List.foldr A.merge z l = A.merge (List.foldr A.merge A.empty l) z",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Aggregator.left_comm",
+          "signature": "∀ {α : Type} {A : Cas.Word.Aggregator α}, A.Comm → ∀ (x y z : α), A.merge x (A.merge y z) = A.merge y (A.merge x z)",
+          "touches": ["IR"]
+        },
+        {
+          "documented": false,
+          "kind": "def",
+          "name": "Cas.Word.Aggregator.merge",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → α → α → α",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.foldr_perm",
+          "signature": "∀ {β γ : Type} {g : β → γ → γ}, (∀ (x y : β) (z : γ), g x (g y z) = g y (g x z)) → ∀ {l₁ l₂ : List β}, l₁.Perm l₂ → ∀ (z : γ), List.foldr g z l₁ = List.foldr g z l₂"
+        },
+        {
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.Query.run",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → (Cas.Binding → α) → Cas.Word → α",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_append",
+          "signature": "∀ {α : Type} (A : Cas.Word.Aggregator α) (f : Cas.Binding → α) (w v : Cas.Word), Cas.Word.Query.run A f (w ++ v) = A.merge (Cas.Word.Query.run A f w) (Cas.Word.Query.run A f v)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_cons",
+          "signature": "∀ {α : Type} (A : Cas.Word.Aggregator α) (f : Cas.Binding → α) (b : Cas.Binding) (w : Cas.Word), Cas.Word.Query.run A f (b :: w) = A.merge (f b) (Cas.Word.Query.run A f w)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_dup_adjacent",
+          "signature": "∀ {α : Type} {A : Cas.Word.Aggregator α}, A.Idem → ∀ (f : Cas.Binding → α) (b : Cas.Binding) (w v : Cas.Word), Cas.Word.Query.run A f (w ++ b :: b :: v) = Cas.Word.Query.run A f (w ++ b :: v)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_natAgg_count",
+          "signature": "∀ (p : Cas.Binding → Bool) (w : Cas.Word), Cas.Word.Query.run Cas.Word.natAgg (fun b => if p b = true then 1 else 0) w = (List.filter p w).length",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_nil",
+          "signature": "∀ {α : Type} (A : Cas.Word.Aggregator α) (f : Cas.Binding → α), Cas.Word.Query.run A f [] = A.empty",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_perm",
+          "signature": "∀ {α : Type} {A : Cas.Word.Aggregator α}, A.Comm → ∀ (f : Cas.Binding → α) {w v : Cas.Word}, List.Perm w v → Cas.Word.Query.run A f w = Cas.Word.Query.run A f v",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_redelivered",
+          "signature": "∀ {α : Type} {A : Cas.Word.Aggregator α}, A.Comm → A.Idem → ∀ (f : Cas.Binding → α) (b : Cas.Binding) (w₁ w₂ w₃ : Cas.Word), Cas.Word.Query.run A f (w₁ ++ b :: (w₂ ++ b :: w₃)) = Cas.Word.Query.run A f (w₁ ++ b :: (w₂ ++ w₃))",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_replay",
+          "signature": "∀ {α : Type} {A : Cas.Word.Aggregator α}, A.Idem → ∀ (f : Cas.Binding → α) (w : Cas.Word), Cas.Word.Query.run A f (w ++ w) = Cas.Word.Query.run A f w",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Binding"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_singleton",
+          "signature": "∀ {α : Type} (A : Cas.Word.Aggregator α) (f : Cas.Binding → α) (b : Cas.Binding), Cas.Word.Query.run A f [b] = f b",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_storeAgg",
+          "signature": "∀ (w : Cas.Word), Cas.Word.Query.run Cas.Word.storeAgg Cas.Word.singleStore w = w.toStore",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Query.run_wordAgg_filter",
+          "signature": "∀ (p : Cas.Binding → Bool) (w : Cas.Word), Cas.Word.Query.run Cas.Word.wordAgg (fun b => if p b = true then [b] else []) w = List.filter p w",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.View.column_eq_ofQuery",
+          "signature": "∀ (t : Cas.Grammar.Ty), Cas.Word.View.column t = Cas.Word.View.ofQuery Cas.Word.wordAgg (Cas.Word.columnGen (fun b => Cas.Grammar.Ty.ofTag b.node.tag) t)",
+          "touches": ["Core", "Grammar", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.View.ext",
+          "signature": "∀ {α : Type} {V W : Cas.Word.View α}, V.run = W.run → V.merge = W.merge → V.empty = W.empty → V = W",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.View.height_eq_ofQuery",
+          "signature": "∀ (t : Cas.Grammar.Ty), Cas.Word.View.height t = Cas.Word.View.ofQuery Cas.Word.natAgg (Cas.Word.heightGen t)",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.View.lastK_not_ofQuery",
+          "signature": "∀ (t : Cas.Grammar.Ty) (k : Nat), ¬∃ A f, Cas.Word.View.ofQuery A f = Cas.Word.View.lastK t k",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "carriers": ["Cas.Binding"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.ofQuery",
+          "signature": "{α : Type} → Cas.Word.Aggregator α → (Cas.Binding → α) → Cas.Word.View α",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.View.unregistered_eq_ofQuery",
+          "signature": "Cas.Word.View.unregistered = Cas.Word.View.ofQuery Cas.Word.wordAgg Cas.Word.unregisteredGen",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.columnBy_eq_run",
+          "signature": "∀ {L : Type} [inst : DecidableEq L] (c : Cas.Binding → Option L) (l : L) (w : Cas.Word), Cas.Word.Query.run Cas.Word.wordAgg (Cas.Word.columnGen c l) w = Cas.Word.columnBy c l w",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.columnGen",
+          "signature": "{L : Type} → [DecidableEq L] → (Cas.Binding → Option L) → L → Cas.Binding → Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.column_eq_run",
+          "signature": "∀ (t : Cas.Grammar.Ty) (w : Cas.Word), Cas.Word.Query.run Cas.Word.wordAgg (Cas.Word.columnGen (fun b => Cas.Grammar.Ty.ofTag b.node.tag) t) w = Cas.Word.column t w",
+          "touches": ["Core", "Grammar", "IR"]
+        },
+        {
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.heightGen",
+          "signature": "Cas.Grammar.Ty → Cas.Binding → Nat",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Binding", "Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.height_eq_run",
+          "signature": "∀ (t : Cas.Grammar.Ty) (w : Cas.Word), Cas.Word.Query.run Cas.Word.natAgg (Cas.Word.heightGen t) w = List.length (Cas.Word.column t w)",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.natAgg",
+          "signature": "Cas.Word.Aggregator Nat",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.natAgg_comm",
+          "signature": "Cas.Word.natAgg.Comm",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Binding"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.singleStore",
+          "signature": "Cas.Binding → Cas.Store",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.storeAgg",
+          "signature": "Cas.Word.Aggregator Cas.Store",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.storeAgg_idem",
+          "signature": "Cas.Word.storeAgg.Idem",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.unregisteredGen",
+          "signature": "Cas.Binding → Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.unregistered_eq_run",
+          "signature": "∀ (w : Cas.Word), Cas.Word.Query.run Cas.Word.wordAgg Cas.Word.unregisteredGen w = w.unregistered",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.wordAgg",
+          "signature": "Cas.Word.Aggregator Cas.Word",
+          "touches": ["IR"]
+        }
+      ]
+    },
+    {
+      "declarations": 44,
+      "documented": 44,
+      "module": "Cas.IR.Reach",
+      "surface": [
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.Edge",
+          "signature": "Cas.Word → Cas.Addr32 → Cas.Addr32 → Prop",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "inductive",
+          "name": "Cas.Word.Reach",
+          "signature": "Cas.Word → Cas.Addr32 → Cas.Addr32 → Prop",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Reach.cases_head",
+          "signature": "∀ {w : Cas.Word} {a b : Cas.Addr32}, w.Reach a b → a = b ∨ ∃ c, w.Edge a c ∧ w.Reach c b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Reach.head",
+          "signature": "∀ {w : Cas.Word} {a b c : Cas.Addr32}, w.Edge a b → w.Reach b c → w.Reach a c",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Reach.single",
+          "signature": "∀ {w : Cas.Word} {a b : Cas.Addr32}, w.Edge a b → w.Reach a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.Reach.trans",
+          "signature": "∀ {w : Cas.Word} {a b c : Cas.Addr32}, w.Reach a b → w.Reach b c → w.Reach a c",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "instance",
+          "name": "Cas.Word.decidableReach",
+          "signature": "{w : Cas.Word} → w.wf = true → (a b : Cas.Addr32) → Decidable (w.Reach a b)",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.edgeB",
+          "signature": "Cas.Word → Cas.Addr32 → Cas.Addr32 → Bool",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.edgeB_iff",
+          "signature": "∀ {w : Cas.Word} {a b : Cas.Addr32}, w.edgeB a b = true ↔ w.Edge a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.edgeOccurrence",
+          "signature": "Cas.Word → Cas.Addr32 → Cas.Addr32 → Prop",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.edge_mono",
+          "signature": "∀ {w : Cas.Word} (v : Cas.Word) {a b : Cas.Addr32}, w.Edge a b → (w ++ v).Edge a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.edge_shadowed_ba",
+          "signature": "Cas.Word.shadowedWord.Edge Cas.Word.shadowedB Cas.Word.shadowedA",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.firstIndex",
+          "signature": "Cas.Word → Cas.Addr32 → Nat",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.firstIndex_append_of_isSome",
+          "signature": "∀ {w : Cas.Word} {b : Cas.Addr32}, (w.find b).isSome = true → ∀ (v : Cas.Word), (w ++ v).firstIndex b = w.firstIndex b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.firstIndex_le_length",
+          "signature": "∀ (w : Cas.Word) (b : Cas.Addr32), w.firstIndex b ≤ List.length w",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.firstIndex_lt_length",
+          "signature": "∀ {w : Cas.Word} {b : Cas.Addr32}, (w.find b).isSome = true → w.firstIndex b < List.length w",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.firstIndex_lt_of_take",
+          "signature": "∀ {w : Cas.Word} {b : Cas.Addr32} {k : Nat}, (Cas.Word.find (List.take k w) b).isSome = true → w.firstIndex b < k",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "instance",
+          "name": "Cas.Word.instDecidableEdge",
+          "signature": "(w : Cas.Word) → (a b : Cas.Addr32) → Decidable (w.Edge a b)",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.mem_succs_iff",
+          "signature": "∀ {w : Cas.Word} {a c : Cas.Addr32}, c ∈ w.succs a ↔ w.Edge a c",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.not_edge_shadowed_ab",
+          "signature": "¬Cas.Word.shadowedWord.Edge Cas.Word.shadowedA Cas.Word.shadowedB",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.occurrence_two_cycle",
+          "signature": "∃ w a b, w.wf = true ∧ a ≠ b ∧ w.edgeOccurrence a b ∧ w.edgeOccurrence b a",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.reachB",
+          "signature": "Cas.Word → Cas.Addr32 → Cas.Addr32 → Bool",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachB_complete",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a b : Cas.Addr32}, w.Reach a b → w.reachB a b = true",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachB_iff",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a b : Cas.Addr32}, w.reachB a b = true ↔ w.Reach a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachB_sound",
+          "signature": "∀ {w : Cas.Word} {a b : Cas.Addr32}, w.reachB a b = true → w.Reach a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.reachIn",
+          "signature": "Cas.Word → Cas.Addr32 → Nat → Cas.Addr32 → Bool",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachIn_complete",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {b : Cas.Addr32} (k : Nat) {a : Cas.Addr32}, w.Reach a b → w.firstIndex a ≤ k → w.reachIn b k a = true",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": [],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachIn_self",
+          "signature": "∀ (w : Cas.Word) (b : Cas.Addr32) (k : Nat), w.reachIn b k b = true",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reachIn_sound",
+          "signature": "∀ {w : Cas.Word} {b : Cas.Addr32} (k : Nat) (a : Cas.Addr32), w.reachIn b k a = true → w.Reach a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reach_acyclic",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a b : Cas.Addr32}, w.Reach a b → w.Reach b a → a = b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reach_index",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a b : Cas.Addr32}, w.Reach a b → a = b ∨ w.firstIndex b < w.firstIndex a",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.reach_mono",
+          "signature": "∀ {w : Cas.Word} (v : Cas.Word) {a b : Cas.Addr32}, w.Reach a b → (w ++ v).Reach a b",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedA",
+          "signature": "Cas.Addr32",
+          "touches": ["Core"]
+        },
+        {
+          "axioms": ["propext"],
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.shadowedA_ne_shadowedB",
+          "signature": "Cas.Word.shadowedA ≠ Cas.Word.shadowedB",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedB",
+          "signature": "Cas.Addr32",
+          "touches": ["Core"]
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedFirst",
+          "signature": "Cas.Node",
+          "touches": ["Core"]
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedLate",
+          "signature": "Cas.Node",
+          "touches": ["Core"]
+        },
+        {
+          "carriers": ["Cas.Node"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedMid",
+          "signature": "Cas.Node",
+          "touches": ["Core"]
+        },
+        {
+          "carriers": ["Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.shadowedWord",
+          "signature": "Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.shadowedWord_wf",
+          "signature": "Cas.Word.shadowedWord.wf = true",
+          "touches": ["IR"]
+        },
+        {
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.succs",
+          "signature": "Cas.Word → Cas.Addr32 → List Cas.Addr32",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.wfFrom_refs_prefix",
+          "signature": "∀ (w prior : Cas.Word), prior.wfFrom w = true → ∀ {a : Cas.Addr32} {n : Cas.Node}, w.find a = some n → ∀ {r : Cas.Ref}, r ∈ n.refs → (prior ++ List.take (w.firstIndex a) w).resolvesIn r = true",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.wf_edge_index",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a b : Cas.Addr32}, w.Edge a b → w.firstIndex b < w.firstIndex a",
+          "touches": ["Core", "IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "carriers": ["Cas.Addr32", "Cas.Binding", "Cas.Node", "Cas.Word"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.wf_refs_prefix",
+          "signature": "∀ {w : Cas.Word}, w.wf = true → ∀ {a : Cas.Addr32} {n : Cas.Node}, w.find a = some n → ∀ {r : Cas.Ref}, r ∈ n.refs → Cas.Word.resolvesIn (List.take (w.firstIndex a) w) r = true",
+          "touches": ["Core", "IR"]
+        }
+      ]
+    },
+    {
+      "declarations": 23,
+      "documented": 18,
       "module": "Cas.IR.View",
       "surface": [
         {
@@ -6867,6 +7605,14 @@
           "kind": "def",
           "name": "Cas.Word.View.height",
           "signature": "Cas.Grammar.Ty → Cas.Word.View Nat",
+          "touches": ["Grammar", "IR"]
+        },
+        {
+          "carriers": ["Cas.Grammar.Ty", "Cas.Word"],
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.View.lastK",
+          "signature": "Cas.Grammar.Ty → Nat → Cas.Word.View Cas.Word",
           "touches": ["Grammar", "IR"]
         },
         {
@@ -6915,6 +7661,100 @@
           "kind": "def",
           "name": "Cas.Word.View.unregistered",
           "signature": "Cas.Word.View Cas.Word",
+          "touches": ["IR"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Word.lastK",
+          "signature": "{α : Type} → Nat → List α → List α"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_append",
+          "signature": "∀ {α : Type} (k : Nat) (x y : List α), Cas.Word.lastK k (x ++ y) = Cas.Word.lastK k (Cas.Word.lastK k x ++ Cas.Word.lastK k y)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_append_eq",
+          "signature": "∀ {α : Type} (k : Nat) (x y : List α), Cas.Word.lastK k (x ++ y) = Cas.Word.lastK (k - y.length) x ++ Cas.Word.lastK k y",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_assoc",
+          "signature": "∀ {α : Type} (k : Nat) (x y z : List α), Cas.Word.lastK k (Cas.Word.lastK k (x ++ y) ++ z) = Cas.Word.lastK k (x ++ Cas.Word.lastK k (y ++ z))",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_idem",
+          "signature": "∀ {α : Type} (k : Nat) (l : List α), Cas.Word.lastK k (Cas.Word.lastK k l) = Cas.Word.lastK k l",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_lastK",
+          "signature": "∀ {α : Type} {j k : Nat}, j ≤ k → ∀ (l : List α), Cas.Word.lastK j (Cas.Word.lastK k l) = Cas.Word.lastK j l",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_left",
+          "signature": "∀ {α : Type} (k : Nat) (x y : List α), Cas.Word.lastK k (Cas.Word.lastK k x ++ y) = Cas.Word.lastK k (x ++ y)",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_length",
+          "signature": "∀ {α : Type} (k : Nat) (l : List α), (Cas.Word.lastK k l).length = min k l.length",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": [],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_not_comm",
+          "signature": "∀ {α : Type} {x y : α}, x ≠ y → Cas.Word.lastK 1 ([x] ++ [y]) ≠ Cas.Word.lastK 1 ([y] ++ [x])",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_not_idem",
+          "signature": "∀ {α : Type} (x : α), Cas.Word.lastK 2 ([x] ++ [x]) ≠ [x]",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_of_length_le",
+          "signature": "∀ {α : Type} {k : Nat} {l : List α}, l.length ≤ k → Cas.Word.lastK k l = l",
+          "touches": ["IR"]
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Word.lastK_right",
+          "signature": "∀ {α : Type} (k : Nat) (x y : List α), Cas.Word.lastK k (x ++ Cas.Word.lastK k y) = Cas.Word.lastK k (x ++ y)",
           "touches": ["IR"]
         }
       ]
@@ -16986,6 +17826,68 @@
       ]
     },
     {
+      "declarations": 8,
+      "documented": 7,
+      "module": "Cas.Values.Cut",
+      "surface": [
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Values.Cut.IsCutting",
+          "signature": "(String → List String) → Prop"
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Values.Cut.chunkAt",
+          "signature": "Nat → String → List String"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Values.Cut.chunkAt_isCutting",
+          "signature": "∀ (n : Nat), Cas.Values.Cut.IsCutting (Cas.Values.Cut.chunkAt n)",
+          "touches": ["Values"]
+        },
+        {
+          "documented": true,
+          "kind": "def",
+          "name": "Cas.Values.Cut.chunkChars",
+          "signature": "Nat → List Char → List (List Char)"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": false,
+          "kind": "theorem",
+          "name": "Cas.Values.Cut.chunkChars.induct",
+          "signature": "∀ (n : Nat) (motive : List Char → Prop), motive [] → (∀ (c : Char) (cs : List Char), motive (List.drop (n + 1) (c :: cs)) → motive (c :: cs)) → ∀ (a : List Char), motive a"
+        },
+        {
+          "axioms": ["Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Values.Cut.flatten_chunkChars",
+          "signature": "∀ (n : Nat) (l : List Char), (Cas.Values.Cut.chunkChars n l).flatten = l",
+          "touches": ["Values"]
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Values.Cut.toList_foldl_append",
+          "signature": "∀ (l : List String) (init : String), (List.foldl (fun x1 x2 => x1 ++ x2) init l).toList = init.toList ++ (List.map String.toList l).flatten"
+        },
+        {
+          "axioms": ["Classical.choice", "Quot.sound", "propext"],
+          "documented": true,
+          "kind": "theorem",
+          "name": "Cas.Values.Cut.toList_join",
+          "signature": "∀ (l : List String), (String.join l).toList = (List.map String.toList l).flatten"
+        }
+      ]
+    },
+    {
       "declarations": 17,
       "documented": 17,
       "module": "Cas.Values.Digits",
@@ -18980,10 +19882,10 @@
   ],
   "totals": {
     "class": 4,
-    "def": 1312,
-    "inductive": 61,
-    "instance": 138,
-    "structure": 80,
-    "theorem": 831
+    "def": 1343,
+    "inductive": 62,
+    "instance": 140,
+    "structure": 81,
+    "theorem": 903
   }
 }

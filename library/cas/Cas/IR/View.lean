@@ -19,10 +19,27 @@ every consumer inherits incrementality without re-proving it.
 Columns are the first inhabitants (`View.column`, `View.unregistered`),
 and column HEIGHT is the second (`View.height`) — the query the
 trunk's hypotenuse sorts by, and the first view whose carrier is not
-the word. `View.prod` closes the family under pairing: a component
-reading two queries is ONE view with ONE incremental render, so
-"how many views does this component have" stops being a question the
-render path can get wrong.
+the word. `View.lastK` is the third and the trunk's own carrier: the
+last `k` bindings of ONE column, bounded by construction, so the front
+end holds a window rather than a mirror of the store. `View.prod`
+closes the family under pairing: a component reading two queries is
+ONE view with ONE incremental render, so "how many views does this
+component have" stops being a question the render path can get wrong.
+
+## What `View.lastK` shows about this layer
+
+`View` asks for two laws; `Query` (`Cas/IR/Query.lean`) asks for a
+MONOID on the carrier and hands the two laws back. Every inhabitant
+above `View.lastK` satisfies both, which made the two structures look
+like the same demand written twice. `View.lastK` separates them: its
+merge truncates, so it is associative on `Word` (`lastK_assoc`) and has
+NO two-sided unit there — `merge empty w` is `lastK k w`, not `w`. It
+is therefore a lawful view and NOT `View.ofQuery` of anything, which
+`View.lastK_not_ofQuery` proves rather than asserts. The monoid it does
+have lives on the BOUNDED carrier (words of length at most `k`), where
+`lastK` is the identity; `View Word` is the unbounded reading of that
+same object, and the gap between the two is exactly the field `Query`
+cannot supply.
 
 Associativity of `merge` needs no theorem here. On the image of `run`
 it falls out of `List.append_assoc` through `run_append`: the word's
@@ -96,6 +113,171 @@ def View.height (t : Grammar.Ty) : View Nat where
     show (Word.column t (w ++ v)).length
         = (Word.column t w).length + (Word.column t v).length
     rw [Word.column_append, List.length_append]
+
+/-! ## The bounded tail
+
+`lastK` is the last `k` elements of a list. It is stated over a bare
+`List α` because nothing in it is about bindings: the trunk wants it at
+`Word`, the lemmas below are the reusable mint, and a proof that reads
+`Binding` where it means `α` is a proof nobody borrows.
+
+`lastK_append_eq` is the master statement and the only place a case
+split appears — everything after it is rewriting. Read it as: the last
+`k` of a concatenation is whatever the RIGHT side could not supply,
+taken from the left. The two corollaries `lastK_left`/`lastK_right` say
+a tail already taken is not taken again, and the view law
+(`lastK_append`) and associativity (`lastK_assoc`) are one rewrite each
+off those. -/
+
+/-- The last `k` elements of a list, `[]` when `k` is `0` and the whole
+list when the list is shorter than `k`. Spelled as a `drop` rather than
+a reversed `take` because that is what a host does to a growing array
+and because the index arithmetic is then the only thing to prove. -/
+def lastK {α : Type} (k : Nat) (l : List α) : List α :=
+  l.drop (l.length - k)
+
+/-- The window is bounded by `k` and by the list, which is the whole
+cost argument for the carrier: a column of ten million receipts is held
+as `k` of them. -/
+theorem lastK_length {α : Type} (k : Nat) (l : List α) :
+    (lastK k l).length = min k l.length := by
+  show (l.drop (l.length - k)).length = _
+  rw [List.length_drop]
+  omega
+
+/-- Below the bound the window is the list itself. This is the sense in
+which `lastK` is the identity on the bounded carrier, and it is the
+field `Query`'s `Aggregator` needs and cannot have on all of `Word`. -/
+theorem lastK_of_length_le {α : Type} {k : Nat} {l : List α}
+    (h : l.length ≤ k) : lastK k l = l := by
+  show l.drop (l.length - k) = l
+  have hz : l.length - k = 0 := by omega
+  rw [hz, List.drop_zero]
+
+/-- THE MASTER STATEMENT, and the only case split in the file: the last
+`k` of `x ++ y` is all of `y`'s window plus however much of `k` the
+right side left unfilled, taken from `x`'s end. The split is on whether
+`y` alone already fills the window — above the bound the left
+contribution is empty on both sides, below it the two indices agree by
+arithmetic. -/
+theorem lastK_append_eq {α : Type} (k : Nat) (x y : List α) :
+    lastK k (x ++ y) = lastK (k - y.length) x ++ lastK k y := by
+  show (x ++ y).drop ((x ++ y).length - k)
+      = x.drop (x.length - (k - y.length)) ++ y.drop (y.length - k)
+  rw [List.length_append, List.drop_append]
+  have hy : x.length + y.length - k - x.length = y.length - k := by omega
+  rw [hy]
+  by_cases h : k ≤ y.length
+  · have h1 : x.length ≤ x.length + y.length - k := by omega
+    have h2 : x.length ≤ x.length - (k - y.length) := by omega
+    rw [List.drop_eq_nil_of_le h1, List.drop_eq_nil_of_le h2]
+  · have h1 : x.length + y.length - k = x.length - (k - y.length) := by omega
+    rw [h1]
+
+/-- Nested windows collapse to the tighter one. A consumer that already
+holds `k` receipts and is asked for `j ≤ k` of them answers from what it
+holds — no re-read, which is why the bound composes down the render
+path. -/
+theorem lastK_lastK {α : Type} {j k : Nat} (h : j ≤ k) (l : List α) :
+    lastK j (lastK k l) = lastK j l := by
+  by_cases hl : l.length ≤ k
+  · rw [lastK_of_length_le hl]
+  · show (lastK k l).drop ((lastK k l).length - j) = l.drop (l.length - j)
+    rw [lastK_length]
+    show (l.drop (l.length - k)).drop (min k l.length - j) = _
+    rw [List.drop_drop]
+    congr 1
+    omega
+
+/-- Taking the window twice is taking it once. -/
+theorem lastK_idem {α : Type} (k : Nat) (l : List α) :
+    lastK k (lastK k l) = lastK k l := lastK_lastK (Nat.le_refl k) l
+
+/-- A left operand already cut to the window may be cut again with no
+loss: what the second cut would have dropped, the first already did. -/
+theorem lastK_left {α : Type} (k : Nat) (x y : List α) :
+    lastK k (lastK k x ++ y) = lastK k (x ++ y) := by
+  rw [lastK_append_eq, lastK_append_eq, lastK_lastK (Nat.sub_le k y.length)]
+
+/-- The same on the right, and the pair is what makes the merge
+well-behaved on windows that were themselves computed by merging. -/
+theorem lastK_right {α : Type} (k : Nat) (x y : List α) :
+    lastK k (x ++ lastK k y) = lastK k (x ++ y) := by
+  rw [lastK_append_eq, lastK_append_eq, lastK_idem, lastK_length]
+  congr 2
+  omega
+
+/-- THE VIEW LAW, on plain lists: the window over a concatenation is the
+window over the two windows. This is `View.lastK`'s `run_append` with
+the column peeled off, and the reason the view costs one rewrite. -/
+theorem lastK_append {α : Type} (k : Nat) (x y : List α) :
+    lastK k (x ++ y) = lastK k (lastK k x ++ lastK k y) := by
+  rw [lastK_left, lastK_right]
+
+/-- The truncating merge IS associative on the unbounded carrier, which
+is worth stating because the unit laws below are not: what `lastK` costs
+a monoid is the identity, not the bracketing. Three pages of receipts
+merged left-first and right-first give one window. -/
+theorem lastK_assoc {α : Type} (k : Nat) (x y z : List α) :
+    lastK k (lastK k (x ++ y) ++ z) = lastK k (x ++ lastK k (y ++ z)) := by
+  rw [lastK_left, lastK_right, List.append_assoc]
+
+/-- RUNG 0, first half: the merge does NOT commute. Two devices holding
+the same receipts in different admission orders see different windows,
+so the trunk's carrier gets no replica-agreement statement — `run_perm`
+is unavailable to it by this witness. -/
+theorem lastK_not_comm {α : Type} {x y : α} (h : x ≠ y) :
+    lastK 1 ([x] ++ [y]) ≠ lastK 1 ([y] ++ [x]) := by
+  intro hc
+  have hxy : [y] = [x] := hc
+  exact h (congrArg (fun l => l.headD x) hxy).symm
+
+/-- RUNG 0, second half: the merge is NOT idempotent. Re-delivering a
+page pushes its receipts through the window a second time, so
+`run_replay` is unavailable too and the HOST must guard: the trunk's
+fold drops entries with `seq < mark` (TRUNK-PLAN §3, S3a). That guard is
+not decoration — it is the premise this theorem says the algebra will
+not supply. -/
+theorem lastK_not_idem {α : Type} (x : α) :
+    lastK 2 ([x] ++ [x]) ≠ [x] := by
+  intro hc
+  have hlen : ([x, x] : List α).length = ([x] : List α).length :=
+    congrArg List.length hc
+  simp at hlen
+
+/-- THE TRUNK'S CARRIER: the last `k` bindings OF COLUMN `t`. Indexed by
+the column, never global — a view over the store's global tail paired
+with a column's height would answer two different questions and the
+front end would draw the pair as one.
+
+The carrier is the word, the merge truncates, and `run_append` is
+`column_append` (the classification localizes over append) followed by
+`lastK_append` (the window does too). Cost is the point: `k` receipts
+per column rather than the column, so a ten-million-receipt store is
+rendered out of a bounded model.
+
+**Rung 0, and the guard it forces on the host.** The merge is neither
+commutative (`lastK_not_comm`) nor idempotent (`lastK_not_idem`): this
+view is ORDER-SENSITIVE and NOT REPLAY-SAFE. A poll loop that re-
+delivers a page corrupts the window, so the consumer's fold must guard
+by `seq` (TRUNK-PLAN §3, S3a) — the guard is where replay safety comes
+from, because it does not come from here.
+
+**Not a query.** `View.lastK` is the first landed view that is NOT
+`View.ofQuery` of any aggregator and generator; `View.lastK_not_ofQuery`
+in `Cas/IR/Query.lean` proves it, and the module docstring above says
+what the gap is. -/
+def View.lastK (t : Grammar.Ty) (k : Nat) : View Word where
+  run := fun w => Word.lastK k (Word.column t w)
+  merge := fun a b => Word.lastK k (a ++ b)
+  empty := []
+  run_nil := List.drop_nil
+  run_append := by
+    intro w v
+    show Word.lastK k (Word.column t (w ++ v))
+        = Word.lastK k (Word.lastK k (Word.column t w)
+            ++ Word.lastK k (Word.column t v))
+    rw [Word.column_append, ← Word.lastK_append]
 
 /-- Two views paired is one view, componentwise. A component that
 reads a strip and its height, or two strips side by side, is a SINGLE

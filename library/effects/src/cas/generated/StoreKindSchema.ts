@@ -76,13 +76,39 @@ export const exchangeSchema = Schema.Struct({
  * the estate has today, each arm a typed reference at that plane's
  * tag. The subject was a bare schema reference, which made a view's
  * link to the value it projects, a program's human-facing name and
- * a topology's link to written code all unspellable at once.
- * Nothing is reserved for a plane that does not exist yet: growth
- * is by an arm, and an arm is arm-additive. */
+ * a topology's link to written code all unspellable at once. It
+ * then stopped at the meta and agent planes, which left an
+ * annotation about STORED CONTENT — and a note about a note —
+ * equally unspellable; decision 40's rider CA-1 widened it to the
+ * content planes and to the four sorts that batch ratified. No
+ * `text` arm: the CRDT run was refused from the batch, so there is
+ * no tag for an arm to demand. Nothing is reserved for a plane that
+ * does not exist yet: growth is by an arm, and an arm is
+ * arm-additive. */
 export const annotationSubjectSchema = Schema.Union([
+  Schema.Struct({
+    _tag: Schema.Literal("agent"),
+    address: refWithTag(Byte.make(73)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("annotation"),
+    address: refWithTag(Byte.make(65)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("chunk"),
+    address: refWithTag(Byte.make(8)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("context"),
+    address: refWithTag(Byte.make(13)),
+  }),
   Schema.Struct({
     _tag: Schema.Literal("exchange"),
     address: refWithTag(Byte.make(88)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("file"),
+    address: refWithTag(Byte.make(11)),
   }),
   Schema.Struct({
     _tag: Schema.Literal("git"),
@@ -93,12 +119,24 @@ export const annotationSubjectSchema = Schema.Union([
     address: refWithTag(Byte.make(15)),
   }),
   Schema.Struct({
+    _tag: Schema.Literal("query"),
+    address: refWithTag(Byte.make(81)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("result"),
+    address: refWithTag(Byte.make(82)),
+  }),
+  Schema.Struct({
     _tag: Schema.Literal("schema"),
     address: refWithTag(Byte.make(83)),
   }),
   Schema.Struct({
     _tag: Schema.Literal("system"),
     address: refWithTag(Byte.make(84)),
+  }),
+  Schema.Struct({
+    _tag: Schema.Literal("value"),
+    address: refWithTag(Byte.make(1)),
   }),
 ], { mode: "oneOf" })
 

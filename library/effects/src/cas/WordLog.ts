@@ -37,6 +37,31 @@
  * receipt only AFTER `putBytes` succeeds — so `log ⋈ load` recovers
  * full bindings whenever a consumer wants them.
  *
+ * ## The page, and which realization bounds what
+ *
+ * `since` answers a PAGE: the suffix from the mark, at most
+ * `wordLogPageLimit` receipts, with `next` meaning RESUME HERE. A
+ * truncated page does not teach the tip — `next` is the mark to ask
+ * from again, and only an untruncated read's `next` is the word's
+ * length. The two branches are one sentence: `next` is `mark +
+ * |page|` while the page is non-empty, and the word's length when it
+ * is empty, so a mark past the end still answers the true cursor and a
+ * client draining by `next` always advances. A bound of zero is a page
+ * that cannot advance, so it is REFUSED rather than answered.
+ *
+ * `limit` bounds the ANSWER on every realization. It bounds the READ
+ * on the sql one only, where it is a `LIMIT` clause and rows past the
+ * page are never fetched or decoded. **OWED ROW — the file
+ * realization's read is unbounded**: `readLog` reads and decodes the
+ * whole file before the page is cut, because the corruption law below
+ * is whole-log (an undecodable line anywhere but the tail refuses the
+ * read). Paging the answer is therefore all `limit` can mean there,
+ * and the sqlite backend is the bounded one. This is a NON-CLAIM,
+ * gated so it cannot silently change: `test/WordLogPaging.test.ts`
+ * asserts that a damaged line beyond the page still refuses the file
+ * log, so an "optimisation" that made the file read tolerant of
+ * mid-file corruption would go red.
+ *
  * ## What the log records, exactly
  *
  * Fresh admissions. A duplicate put is the identity on the store and
@@ -99,14 +124,22 @@ export interface WordLogShape {
     entry: WordLogAppend,
   ) => Effect.Effect<void, BackendFailure>
   /** The word's suffix from a mark (zero-based, half-open — never a
-   * timestamp): `since(0)` is the whole history, an empty `word` is
-   * "nothing happened since the mark". A mark past the end still
-   * answers the true cursor; a negative or fractional one is floored;
-   * one that is not a finite number is REFUSED rather than read as
-   * zero, because "the whole history" is a different answer than the
-   * caller asked for. */
+   * timestamp), at most `limit` receipts: `since(0)` is the whole
+   * history up to the page bound, an empty `word` is "nothing happened
+   * since the mark". A mark past the end still answers the true
+   * cursor; a negative or fractional one is floored; one that is not a
+   * finite number is REFUSED rather than read as zero, because "the
+   * whole history" is a different answer than the caller asked for.
+   *
+   * `limit` is the page bound: absent means `wordLogPageLimit`, more
+   * than the cap CLAMPS to it — "at most n" is still truly answered by
+   * at most the cap, and the truncation is observable through `next` —
+   * and less than one is REFUSED, because a page that cannot advance
+   * leaves a draining client spinning forever on a seam that keeps
+   * answering it. */
   readonly since: (
     mark: number,
+    limit?: number,
   ) => Effect.Effect<WordHistory, BackendFailure>
 }
 
@@ -140,6 +173,71 @@ const flooredMark = (mark: number): Effect.Effect<number, BackendFailure> =>
       ].join("\n"),
     }))
 
+/**
+ * The page bound: how many receipts one `since` answers when the
+ * caller names no bound, and the most it answers when the caller names
+ * a larger one. ONE constant — the default and the cap are the same
+ * number, so there is no second bound anywhere to drift from this one,
+ * and every consumer (the route, the CLI's drain) imports it rather
+ * than declaring its own.
+ *
+ * 10 000 receipts is the stream-loop review's parameter #11 (≈900 KB
+ * of history document). Without a default the pull is unbounded and
+ * `since(0)` on a large word decodes the whole log into one array;
+ * without a cap a caller restores that by asking for 10⁹.
+ */
+export const wordLogPageLimit = 10_000
+
+/**
+ * A page bound off a caller, decoded to the bound actually served.
+ *
+ * Absent is the cap. Above the cap CLAMPS: `limit` means "at most n",
+ * so answering at most 10 000 to a request for at most 10⁹ is a TRUE
+ * answer to the question asked, and the truncation is fully observable
+ * through `next` — the seam's prohibition on silently answering a
+ * DIFFERENT question is not engaged, because the question's truth
+ * conditions are preserved. A fractional bound floors, exactly as a
+ * fractional mark does.
+ *
+ * Below one is REFUSED, and the reason is the drain's termination
+ * argument rather than taste. A client chains `mark ← next`; the
+ * variant `|w| − mark` decreases only because a non-empty page has at
+ * least one receipt in it. At zero the variant never decreases and the
+ * client spins forever while the seam answers it 200 every time. There
+ * is no meaning-preserving clamp either — 1 answers more than was
+ * asked and the cap answers vastly more — so the only honest answer is
+ * a refusal that names what it refused.
+ */
+const boundedLimit = (
+  limit: number | undefined,
+): Effect.Effect<number, BackendFailure> => {
+  if (limit === undefined) return Effect.succeed(wordLogPageLimit)
+  const floored = Math.floor(limit)
+  return Number.isFinite(floored) && floored >= 1
+    ? Effect.succeed(Math.min(floored, wordLogPageLimit))
+    : Effect.fail(new BackendFailure({
+      reason: [
+        `${String(limit)} is not a page limit: a limit is a whole count of receipts, one or more`,
+        "  a page of zero cannot advance a reader — the mark it answers is the mark it was asked from, so a client draining by `next` never finishes",
+        `  ask for at least 1, or leave the limit out for the default page of ${wordLogPageLimit}`,
+      ].join("\n"),
+    }))
+}
+
+/** The cursor a page owes, from the page it answered and the word's
+ * own length — the two branches of `next`, written once so the three
+ * realizations cannot disagree about them.
+ *
+ * While the page is non-empty the cursor is RESUME HERE (`mark +
+ * |page|`), which is `|w|` exactly when the page was not truncated; an
+ * empty page owes the word's end, because the mark may lie beyond it
+ * and a caller who overshot must still learn where the word stops
+ * rather than be handed its own out-of-range mark back. With the bound
+ * at one or more the two cases are decidable from the document alone:
+ * the page is empty if and only if the mark is at or past the end. */
+const cursorOf = (mark: number, page: number, length: number): number =>
+  page > 0 ? mark + page : length
+
 /* ── memory ──────────────────────────────────────────────────────── */
 
 /** One isolated in-memory word log — the test seam, and the receipts
@@ -156,10 +254,15 @@ export const makeMemoryWordLog = (): WordLogShape => {
         tag: entry.tag,
       })
     }),
-    since: (mark) => Effect.map(flooredMark(mark), (from) => ({
-      next: entries.length,
-      word: entries.slice(from),
-    })),
+    since: (mark, limit) =>
+      flooredMark(mark).pipe(
+        Effect.flatMap((from) =>
+          Effect.map(boundedLimit(limit), (bound) => {
+            const word = entries.slice(from, from + bound)
+            return { next: cursorOf(from, word.length, entries.length), word }
+          })
+        ),
+      ),
   }
 }
 
@@ -259,11 +362,21 @@ export const makeSqlWordLog = (
     )
 
     const since: WordLogShape["since"] = Effect.fn("SqlWordLog.since")(
-      function* (mark) {
+      function* (mark, limit) {
         const from = yield* flooredMark(mark)
+        const bound = yield* boundedLimit(limit)
+        // The bound is in the STATEMENT, not in a `.slice` after it.
+        // Reading the suffix and cutting it in JS answers every
+        // behavioural law here and is still the unbounded read: it
+        // transfers and decodes every row past the page, which is the
+        // whole of the memory hazard `limit` exists to close.
+        // `test/WordLogPaging.test.ts` witnesses the bound from the
+        // outside — a row past the page that does not decode does not
+        // refuse the page — and `test/WordLogStatement.test.ts` reads
+        // the statement text itself.
         const rows = yield* client<typeof wordLogEntrySchema.Encoded>`
           SELECT seq, address, tag, size, at FROM ${table}
-          WHERE seq >= ${from} ORDER BY seq
+          WHERE seq >= ${from} ORDER BY seq LIMIT ${bound}
         `.pipe(Effect.mapError(sqlFailure))
         const word: Array<WordLogEntry> = []
         for (const row of rows) {
@@ -276,12 +389,18 @@ export const makeSqlWordLog = (
             })),
           ))
         }
-        const last = word.at(-1)
-        if (last !== undefined) {
-          return { next: last.seq + 1, word }
+        if (word.length > 0) {
+          // RESUME HERE, which is the word's end exactly when the page
+          // was not truncated. Read off the page's own length rather
+          // than off the last row's `seq`, so the three realizations
+          // compute one formula instead of three that agree by luck.
+          return { next: cursorOf(from, word.length, from), word }
         }
-        // An empty suffix still owes the true cursor: the mark may lie
+        // An empty page still owes the true cursor: the mark may lie
         // beyond the word, and `next` must say where the word ends.
+        // This is the ONLY branch that needs the word's length, and it
+        // is one aggregate row — the page above never widens to find
+        // it.
         const heads = yield* client`
           SELECT COALESCE(MAX(seq), -1) + 1 AS next FROM ${table}
         `.pipe(Effect.mapError(sqlFailure))
@@ -574,10 +693,19 @@ export const makeFileWordLog = (
     )
 
     const since: WordLogShape["since"] = Effect.fn("FileWordLog.since")(
-      function* (mark) {
+      function* (mark, limit) {
         const from = yield* flooredMark(mark)
+        const bound = yield* boundedLimit(limit)
+        // The OWED ROW, in one line: `readLog` is whole-file, so this
+        // realization's `limit` pages the ANSWER and not the READ. It
+        // is not an oversight to fix here — the corruption law above
+        // is whole-log, and a read that stopped at the page would stop
+        // finding the mid-file damage it is required to refuse. The
+        // sqlite backend is the bounded one; the non-claim is gated so
+        // it cannot change silently.
         const log = yield* readLog
-        return { next: log.entries.length, word: log.entries.slice(from) }
+        const word = log.entries.slice(from, from + bound)
+        return { next: cursorOf(from, word.length, log.entries.length), word }
       },
     )
 

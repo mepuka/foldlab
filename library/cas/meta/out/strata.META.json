@@ -38,15 +38,15 @@
   ],
   "convention": "THE RULE: lower never imports higher, and a leaf is imported by nothing outside itself. MEMBERSHIP is lakefile.toml's — each library's declared `globs`, then Lake's default `roots` (the library's own name), expanded by the toolchain's own Lake.Glob; the `Cas` stratum is the REMAINDER of the `Cas.` subtree after the explicit globs carve it up. ORDER is declared in tools/Strata.lean, mirroring the seed at the head of lakefile.toml. EDGES are the compiled environment's ModuleData imports, and only the IN-PACKAGE ones are transcribed: an import that no library claims is an external dependency and not this gate's subject. The CasMeta stratum is not walked — each executable root declares `main`, so two of them cannot share an environment — and what is checked about it is that nothing below it imports it, which the direction rule already says. A violation carrying a KNOWN MISFILES row is `known` and nonfatal; anything else is `fatal`.",
   "counters": {
-    "edges": 242,
+    "edges": 247,
     "fatal": 0,
     "known": 1,
     "knownMisfiles": 1,
-    "modules": 135,
+    "modules": 138,
     "stale": 0,
     "strata": 9,
     "violations": 1,
-    "walked": 108
+    "walked": 111
   },
   "emitted": {
     "emitter": "strata",
@@ -75,7 +75,7 @@
       "source": "library/cas/tools/Axioms.lean"
     },
     {
-      "imports": ["Cas.Architecture", "Cas.Backend.HttpProfile", "Cas.Codec.Bytes", "Cas.Codec.Hex", "Cas.Codec.Nat32", "Cas.Codec.NodeCodec", "Cas.Codec.Separation", "Cas.Codec.Sha256", "Cas.Core.Address", "Cas.Core.Admission", "Cas.Core.Canonical", "Cas.Core.Canonicalize", "Cas.Core.Canonicalize.Json", "Cas.Core.Node", "Cas.Core.Refs", "Cas.Core.Store", "Cas.Grammar.Grammar", "Cas.IR.Column", "Cas.IR.Join", "Cas.IR.View", "Cas.IR.Word", "Cas.Lang.Lang", "Cas.Lang.RefusalMap", "Cas.Lift.Decode", "Cas.Lift.Manifest", "Cas.Llm", "Cas.Schema.Schema", "Cas.Values", "Cas.Vectors.Vectors"],
+      "imports": ["Cas.Architecture", "Cas.Backend.HttpProfile", "Cas.Codec.Bytes", "Cas.Codec.Hex", "Cas.Codec.Nat32", "Cas.Codec.NodeCodec", "Cas.Codec.Separation", "Cas.Codec.Sha256", "Cas.Core.Address", "Cas.Core.Admission", "Cas.Core.Canonical", "Cas.Core.Canonicalize", "Cas.Core.Canonicalize.Json", "Cas.Core.Node", "Cas.Core.Refs", "Cas.Core.Store", "Cas.Grammar.Grammar", "Cas.IR.Column", "Cas.IR.Join", "Cas.IR.Query", "Cas.IR.Reach", "Cas.IR.View", "Cas.IR.Word", "Cas.Lang.Lang", "Cas.Lang.RefusalMap", "Cas.Lift.Decode", "Cas.Lift.Manifest", "Cas.Llm", "Cas.Schema.Schema", "Cas.Values", "Cas.Vectors.Vectors"],
       "lib": "Cas",
       "module": "Cas",
       "source": "library/cas/Cas.lean"
@@ -289,6 +289,18 @@
       "lib": "Cas",
       "module": "Cas.IR.Join",
       "source": "library/cas/Cas/IR/Join.lean"
+    },
+    {
+      "imports": ["Cas.IR.View"],
+      "lib": "Cas",
+      "module": "Cas.IR.Query",
+      "source": "library/cas/Cas/IR/Query.lean"
+    },
+    {
+      "imports": ["Cas.IR.Word"],
+      "lib": "Cas",
+      "module": "Cas.IR.Reach",
+      "source": "library/cas/Cas/IR/Reach.lean"
     },
     {
       "imports": ["Cas.IR.Column"],
@@ -633,10 +645,16 @@
       "source": "library/cas/Cas/Schema/Union.lean"
     },
     {
-      "imports": ["Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
+      "imports": ["Cas.Values.Cut", "Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
       "lib": "CasValues",
       "module": "Cas.Values",
       "source": "library/cas/Cas/Values.lean"
+    },
+    {
+      "imports": [],
+      "lib": "CasValues",
+      "module": "Cas.Values.Cut",
+      "source": "library/cas/Cas/Values/Cut.lean"
     },
     {
       "imports": [],
@@ -852,10 +870,10 @@
   "strata": [
     {
       "declared": "CasValues",
-      "globs": ["Cas.Values", "Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
+      "globs": ["Cas.Values", "Cas.Values.Cut", "Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
       "leaf": false,
       "lib": "CasValues",
-      "modules": ["Cas.Values", "Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
+      "modules": ["Cas.Values", "Cas.Values.Cut", "Cas.Values.Digits", "Cas.Values.Json", "Cas.Values.JsonInj", "Cas.Values.JsonParse", "Cas.Values.Markdown"],
       "rank": 0,
       "role": "The substrate. Canonical JSON, its two printers, its parser, and the injectivity that makes an address mean one value.",
       "roots": ["CasValues"],
@@ -903,7 +921,7 @@
       "globs": ["Cas"],
       "leaf": false,
       "lib": "Cas",
-      "modules": ["Cas", "Cas.Architecture", "Cas.Codec.NodeCodec", "Cas.Codec.Separation", "Cas.Codec.Sha256", "Cas.Core.Address", "Cas.Core.Admission", "Cas.Core.Canonical", "Cas.Core.Canonicalize", "Cas.Core.Canonicalize.Json", "Cas.Core.Node", "Cas.Core.Refs", "Cas.Core.Store", "Cas.Grammar.Grammar", "Cas.Grammar.Manifest", "Cas.Grammar.Sorts", "Cas.Grammar.Syntax", "Cas.Grammar.Tree", "Cas.IR.Column", "Cas.IR.Join", "Cas.IR.View", "Cas.IR.Word", "Cas.Lang.Auth", "Cas.Lang.Defun", "Cas.Lang.Fragments", "Cas.Lang.Handler", "Cas.Lang.Interp", "Cas.Lang.Lang", "Cas.Lang.Ops", "Cas.Lang.RefusalMap", "Cas.Lang.Representation", "Cas.Lang.Roots", "Cas.Lang.Tower", "Cas.Lang.TreeProg", "Cas.Lang.WordWire", "Cas.Lang.Worded", "Cas.Lift.Decode", "Cas.Lift.Manifest", "Cas.Lift.Taxonomy", "Cas.Schema.AdmissionMap", "Cas.Schema.Annotation", "Cas.Schema.Ast", "Cas.Schema.Basis", "Cas.Schema.Codec", "Cas.Schema.Codec.Core", "Cas.Schema.Codec.Laws", "Cas.Schema.Codec.Laws.Mutual", "Cas.Schema.Codec.Laws.Render", "Cas.Schema.Codec.References", "Cas.Schema.Codec.Scalars", "Cas.Schema.Declarations", "Cas.Schema.Deriving", "Cas.Schema.Deriving.Handler", "Cas.Schema.Deriving.Util", "Cas.Schema.Described", "Cas.Schema.Described.Core", "Cas.Schema.Described.Instances", "Cas.Schema.Discriminated", "Cas.Schema.El", "Cas.Schema.Exchange", "Cas.Schema.Foreign", "Cas.Schema.Guarded", "Cas.Schema.Ingest", "Cas.Schema.Notation", "Cas.Schema.PayloadInj", "Cas.Schema.Projection", "Cas.Schema.Schema", "Cas.Schema.SelfCodec", "Cas.Schema.System", "Cas.Schema.Union", "Cas.Vectors.Registry", "Cas.Vectors.Schema", "Cas.Vectors.Vectors"],
+      "modules": ["Cas", "Cas.Architecture", "Cas.Codec.NodeCodec", "Cas.Codec.Separation", "Cas.Codec.Sha256", "Cas.Core.Address", "Cas.Core.Admission", "Cas.Core.Canonical", "Cas.Core.Canonicalize", "Cas.Core.Canonicalize.Json", "Cas.Core.Node", "Cas.Core.Refs", "Cas.Core.Store", "Cas.Grammar.Grammar", "Cas.Grammar.Manifest", "Cas.Grammar.Sorts", "Cas.Grammar.Syntax", "Cas.Grammar.Tree", "Cas.IR.Column", "Cas.IR.Join", "Cas.IR.Query", "Cas.IR.Reach", "Cas.IR.View", "Cas.IR.Word", "Cas.Lang.Auth", "Cas.Lang.Defun", "Cas.Lang.Fragments", "Cas.Lang.Handler", "Cas.Lang.Interp", "Cas.Lang.Lang", "Cas.Lang.Ops", "Cas.Lang.RefusalMap", "Cas.Lang.Representation", "Cas.Lang.Roots", "Cas.Lang.Tower", "Cas.Lang.TreeProg", "Cas.Lang.WordWire", "Cas.Lang.Worded", "Cas.Lift.Decode", "Cas.Lift.Manifest", "Cas.Lift.Taxonomy", "Cas.Schema.AdmissionMap", "Cas.Schema.Annotation", "Cas.Schema.Ast", "Cas.Schema.Basis", "Cas.Schema.Codec", "Cas.Schema.Codec.Core", "Cas.Schema.Codec.Laws", "Cas.Schema.Codec.Laws.Mutual", "Cas.Schema.Codec.Laws.Render", "Cas.Schema.Codec.References", "Cas.Schema.Codec.Scalars", "Cas.Schema.Declarations", "Cas.Schema.Deriving", "Cas.Schema.Deriving.Handler", "Cas.Schema.Deriving.Util", "Cas.Schema.Described", "Cas.Schema.Described.Core", "Cas.Schema.Described.Instances", "Cas.Schema.Discriminated", "Cas.Schema.El", "Cas.Schema.Exchange", "Cas.Schema.Foreign", "Cas.Schema.Guarded", "Cas.Schema.Ingest", "Cas.Schema.Notation", "Cas.Schema.PayloadInj", "Cas.Schema.Projection", "Cas.Schema.Schema", "Cas.Schema.SelfCodec", "Cas.Schema.System", "Cas.Schema.Union", "Cas.Vectors.Registry", "Cas.Vectors.Schema", "Cas.Vectors.Vectors"],
       "rank": 1,
       "role": "The language proper. Nodes, the store, addresses, the admission judgment, schemas, the data grammar, the program grammar.",
       "roots": ["Cas"],

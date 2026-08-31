@@ -3,23 +3,23 @@
   "census": [
     {
       "axiom": "Classical.choice",
-      "declarations": 534
+      "declarations": 538
     },
     {
       "axiom": "Quot.sound",
-      "declarations": 768
+      "declarations": 819
     },
     {
       "axiom": "propext",
-      "declarations": 1201
+      "declarations": 1268
     }
   ],
   "cleanSet": ["propext", "Classical.choice", "Quot.sound"],
   "counters": {
-    "axiomFree": 1221,
+    "axiomFree": 1259,
     "beyondCleanSet": 0,
-    "declarations": 2426,
-    "withAxioms": 1205
+    "declarations": 2533,
+    "withAxioms": 1274
   },
   "declarations": [
     {
@@ -2027,6 +2027,306 @@
       "name": "Cas.put_duplicate_iff"
     },
     {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_append"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_dup_adjacent"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_natAgg_count"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_perm"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_redelivered"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_replay"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_storeAgg"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.Query.run_wordAgg_filter"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.View.column_eq_ofQuery"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.View.height_eq_ofQuery"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.View.lastK_not_ofQuery"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.View.ofQuery"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.View.unregistered_eq_ofQuery"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.columnBy_eq_run"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.column_eq_run"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.height_eq_run"
+    },
+    {
+      "axioms": ["Quot.sound"],
+      "kind": "def",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.storeAgg"
+    },
+    {
+      "axioms": ["Quot.sound"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.storeAgg_idem"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.unregistered_eq_run"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Query",
+      "name": "Cas.Word.wordAgg"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "instance",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.decidableReach"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.edgeB_iff"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.edge_mono"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.edge_shadowed_ba"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.firstIndex_append_of_isSome"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.firstIndex_le_length"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.firstIndex_lt_length"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.firstIndex_lt_of_take"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "instance",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.instDecidableEdge"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.mem_succs_iff"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.not_edge_shadowed_ab"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.occurrence_two_cycle"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reachB_complete"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reachB_iff"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reachB_sound"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reachIn_complete"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reachIn_sound"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reach_acyclic"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reach_index"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.reach_mono"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedA"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedA_ne_shadowedB"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedB"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedLate"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedMid"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedWord"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.shadowedWord_wf"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.wfFrom_refs_prefix"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.wf_edge_index"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.Reach",
+      "name": "Cas.Word.wf_refs_prefix"
+    },
+    {
       "axioms": ["propext"],
       "kind": "def",
       "module": "Cas.IR.View",
@@ -2039,10 +2339,76 @@
       "name": "Cas.Word.View.height"
     },
     {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.View.lastK"
+    },
+    {
       "axioms": ["propext"],
       "kind": "def",
       "module": "Cas.IR.View",
       "name": "Cas.Word.View.unregistered"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_append"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_append_eq"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_assoc"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_idem"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_lastK"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_left"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_length"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_not_idem"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_of_length_le"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.IR.View",
+      "name": "Cas.Word.lastK_right"
     },
     {
       "axioms": ["Quot.sound", "propext"],
@@ -6177,6 +6543,54 @@
       "kind": "theorem",
       "module": "Cas.Schema.Union",
       "name": "Cas.Schema.UnionMode.all_complete"
+    },
+    {
+      "axioms": ["propext"],
+      "kind": "def",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.IsCutting"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.chunkAt"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.chunkAt_isCutting"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "def",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.chunkChars"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.chunkChars.induct"
+    },
+    {
+      "axioms": ["Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.flatten_chunkChars"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.toList_foldl_append"
+    },
+    {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "kind": "theorem",
+      "module": "Cas.Values.Cut",
+      "name": "Cas.Values.Cut.toList_join"
     },
     {
       "axioms": ["Classical.choice", "Quot.sound", "propext"],

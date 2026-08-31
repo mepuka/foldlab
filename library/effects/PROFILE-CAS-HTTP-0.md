@@ -284,7 +284,7 @@ table are the law of those spaces.
 **Co-tenant prefixes.** A host MAY serve other prefixes on the same
 authority. Such a prefix is a CO-TENANT: it is outside this profile's
 media-type and status law, and a client MUST NOT read its answers
-through the exchange alphabet. `cas daemon` declares three, and they
+through the exchange alphabet. `cas daemon` declares four, and they
 are named here so a conforming client knows they are not the
 profile's:
 
@@ -293,6 +293,7 @@ profile's:
 | `/mcp` | MCP over HTTP (Streamable HTTP, POST-only) | media type (JSON), status table (405 on the wrong method is the adapter's) |
 | `/metrics` | Prometheus exposition | media type (text), status table |
 | `/projections`, `/projections/{name}` | the emitted byte-gated JSON artifacts, read-only (decision 32(a)) | media type (JSON), status table (404 is "not emitted", not an exchange event) |
+| `/history` | the store's own word, read-only and paged by mark and bound | media type (JSON), status table (405 on the wrong method is the co-tenant's; a malformed query is the co-tenant's 400, and an empty word is 200 with an empty word — never 404) |
 
 **Totality, restated exactly.** The profile's status table answers
 every UNCLAIMED exchange on the authority — every path a co-tenant

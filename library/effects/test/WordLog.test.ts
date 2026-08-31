@@ -110,7 +110,7 @@ it.effect("a put whose receipt fails FAILS TOGETHER: bytes first, the refusal na
           ? Effect.fail(new Cas.BackendFailure({ reason: "the receipts plane is gone" }))
           : receipts.append(entry)
       },
-      since: (mark) => receipts.since(mark),
+      since: (mark, limit) => receipts.since(mark, limit),
     }
     const watchedWriter: Cas.ByteWriterShape = {
       putBytes: (id, bytes) => {

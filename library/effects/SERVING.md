@@ -44,7 +44,8 @@ them. The daemon exists for the callers stdio cannot reach.
 | `/mcp` | MCP over HTTP | the same 6 tools the stdio host serves — `cas_put`, `cas_load`, `cas_run`, `cas_run_ref`, `cas_publish_root`, `cas_list_roots` — same handlers, same manifest gate. Streamable HTTP, POST-only |
 | `/metrics` | host | Prometheus exposition (decision 20's first production sensor) |
 | `/projections`, `/projections/{name}` | host | the emitted, byte-gated JSON artifacts, served read-only from a REPO CHECKOUT — tier 0 of the front end (decision 32(a)): `cas-tools.json`, `cas-surface.json`, `cas-obligations.json`, `schema-index.json`, `schema-addresses.json`, `schema-verdicts.json`, `environment.json`. From an installed package only `cas-tools.json` resolves; see below |
-| everything else | cas-http/0 | the wildcard hands EVERY UNCLAIMED EXCHANGE to the profile's own wire law, so refusals are the STATUS TABLE's (400/405), never a router 404. Unclaimed, not every — the three rows above are the profile's declared co-tenants (PROFILE-CAS-HTTP-0 §14), outside its media-type and status law |
+| `/history` | host | the store's own word, read-only: `GET /history?since=<mark>&limit=<n>` answers the same document `cas history --json --since <mark>` prints, byte for byte. See below |
+| everything else | cas-http/0 | the wildcard hands EVERY UNCLAIMED EXCHANGE to the profile's own wire law, so refusals are the STATUS TABLE's (400/405), never a router 404. Unclaimed, not every — the four rows above are the profile's declared co-tenants (PROFILE-CAS-HTTP-0 §14), outside its media-type and status law |
 
 The two planes stay distinct on purpose: cas-http/0 is the byte plane
 (content-addressed octets, capability document, presence, publish);
@@ -54,9 +55,41 @@ grow the other's verbs.
 **Co-tenancy, ruled.** Sharing one authority is not free wording: the
 profile's §14 (additive at `/0`, decision 32(c)) says the profile owns
 `/cas`, `/control`, and `/roots` and reserves them, enumerates `/mcp`,
-`/metrics`, and `/projections` as co-tenants outside its media-type
-and status law, and states the totality exactly — the status table
-answers every UNCLAIMED exchange, not every exchange on the port.
+`/metrics`, `/projections`, and `/history` as co-tenants outside its
+media-type and status law, and states the totality exactly — the
+status table answers every UNCLAIMED exchange, not every exchange on
+the port.
+
+**What `/history` serves.** `GET /history?since=<mark>&limit=<n>` — a
+page of the store's own word: the receipts from a mark, in admission
+order, and `next`, the mark to resume from. The body is the registered
+word-wire document (`wordHistorySchema`, emitted from
+`library/cas/Cas/Lang/WordWire.lean` and byte-gated), canonically
+printed — byte for byte what `cas history --json --since <mark>`
+prints. Two registers, one document.
+
+- `since` is a zero-based count of receipts, never a timestamp; absent
+  is 0, the whole history. `limit` is the page bound; absent is the
+  default page of 10 000 receipts, and a larger request CLAMPS to it.
+  Both are decoded at the door as canonical decimal numerals — `-1`,
+  `1.5`, `1e3`, `01`, and the empty string are refused, never coerced.
+- `limit=0` is refused: a page that cannot advance leaves a client
+  draining by `next` spinning forever.
+- The door is FAIL-CLOSED on the query. `since` and `limit` are the
+  only keys; anything else is refused rather than ignored, so a client
+  can never believe it received a filtered page. `from`/`to` are held
+  out on scope — `since`+`limit` already is a ranged read — and say so.
+- Truncation is visible only through `next`: a short page's `next` is
+  RESUME HERE, not the word's end. There is no `hasMore`, no `total`,
+  no tip; adding one is an emitter change and a different slice.
+- An empty word answers `200` with `{"next":0,"word":[]}` and never
+  `404`: "no history yet" and "no route here" are different sentences.
+  A method other than GET is the co-tenant's `405`.
+- Read-only, and stateless: the cursor lives with the caller. No
+  validator ships on this route — no `etag`, no `last-modified`, no
+  `304` — because the log's own truncation repair moves `next`
+  backward, which would leave a cached validator stale and
+  fresh-looking.
 
 **What `/projections` serves, and from where.** The seven artifacts
 above are the Lean emitters' output, read from disk per request (a
@@ -175,7 +208,8 @@ not just `/mcp` — holds the spec's line:
   stdio lacks (below).
 - **A refusal says what to do about itself.** Every 403 carries a
   body naming the defect and the fix, rendered in the media type of
-  the plane that answered — JSON on `/mcp` and `/projections`,
+  the plane that answered — JSON on `/mcp`, `/projections`, and
+  `/history`,
   Prometheus comment lines on `/metrics`. cas-http/0 is the deliberate
   exception and stays octet-bare: the profile's §1 framing rules a
   JSON body out, so there the status is the whole sentence and the
@@ -294,7 +328,8 @@ versioning event:
 
 - `message=request` (daemon, one per exchange): `seq` (per-boot
   monotone — total event order even within one millisecond), `plane`
-  (`cas-http/0` | `mcp` | `metrics` | `projections`), `method`,
+  (`cas-http/0` | `mcp` | `metrics` | `projections` | `history`),
+  `method`,
   `path`, `status` (a number, or `unhandled`), `ms`, and on refused
   exchanges `refused=host|origin` with the offending value.
 - `message=heartbeat` (both): `elapsedMs`, `lateMs`, `metrics` (the

@@ -4,7 +4,7 @@
   "title": "Concrete Models and Empirical Evaluations for the Categorical Compositional Distributional Model of Meaning",
   "authors": ["Edward Grefenstette", "Mehrnoosh Sadrzadeh"],
   "venue": "Computational Linguistics, Association for Computational Linguistics, 2015; doi:10.1162/COLI_a_00209",
-  "localPath": "coli_a_00209.pdf",
+  "localPath": ".reference/papers/coli_a_00209.pdf",
   "sha256": "ad4ef9b097740edc3f271bb614169e1a421e5ea24cf7e8cd7261c914d091a1ef",
   "bytes": 434852,
   "resolvedAt": "2026-08-30",

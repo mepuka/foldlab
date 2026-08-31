@@ -4,18 +4,33 @@ import Cas
 # The agent step — a program of the language
 
 The agent step is NOT a primitive — it is a program: load the history,
-refuse a non-entry, fold the context with `foldlM` (reduction free from
-the monad), `infer` against the folded prompt, and admit exactly three
-nodes — context, output, entry. The inference answer enters only as
-recorded content; admission is the only gate; the attestation is the
-executor's claim, never a proof.
+refuse a non-agent-step, fold the context with `foldlM` (reduction free
+from the monad), `infer` against the folded prompt, and admit exactly
+three nodes — context, output, agent step. The inference answer enters
+only as recorded content; admission is the only gate; the attestation
+is the executor's claim, never a proof.
+
+## The sort the third node rides (decision 40)
+
+That third node used to be a journal `entry` (`0x0C`), which was
+latitude the `entry` row explicitly granted — "the codec constrains a
+reference's expected tag, never the arity". It cost the one thing this
+program's records exist for: with the form riding the journal's tag, an
+edge expecting an AGENT STEP specifically was unspellable, because
+references type-check at tag granularity. Decision 40 ratified `agent`
+(`0x49`) for exactly this form, and the migration is one byte per edge
+— attestation, context, output, prev, all unchanged — plus a genesis
+for the chain to bottom out at, on the `entry.genesis` precedent. The
+chain a step extends is now a chain of agent steps rather than a branch
+of the journal, which is what "who did this" needs to be a typed walk.
 
 Content is seeded through the grammar (`journal%`/`save%`), flattened
-to a word under the production digest, and every check below runs at
-build time through the interpreter: the seeded word admits, the step
-appends exactly three bindings and preserves admission, a dangling
-history refuses before anything is admitted, and a wrong-kind history
-refuses at the guard.
+to a word under the production digest with the chain's genesis appended,
+and every check below runs at build time through the interpreter: the
+seeded word admits, the step appends exactly three bindings and
+preserves admission, a dangling history refuses before anything is
+admitted, and a wrong-kind history — a `file`, or the journal entry
+this form used to ride — refuses at the guard.
 -/
 
 namespace CasExamples.AgentStep
@@ -33,15 +48,21 @@ def valueNode (payload : Bytes) : Node :=
 def contextNode (refs : List Ref) : Node :=
   ⟨schemeVersion, Ty.context.wireTag, [], refs⟩
 
-/-- A journal entry: the attestation note and its three typed edges. -/
-def entryNode (note : Bytes) (refs : List Ref) : Node :=
-  ⟨schemeVersion, Ty.entry.wireTag, note, refs⟩
+/-- An agent step: the attestation note and its three typed edges. -/
+def agentNode (note : Bytes) (refs : List Ref) : Node :=
+  ⟨schemeVersion, Ty.agent.wireTag, note, refs⟩
+
+/-- An agent chain's first step: no attestation, no edges. The `prev`
+edge below expects this sort, so the chain has to bottom out, and this
+is where — `entry.genesis`'s move at the sort that took the form off
+`entry`'s tag. -/
+def agentGenesis : Node := ⟨schemeVersion, Ty.agent.wireTag, [], []⟩
 
 /-- One agent step, as a program of the agent language. -/
 def agentStep (history : Addr32) (contextIds : List Addr32)
     (attestation : Bytes) : Prog AgentSig Addr32 := do
   let prev ← liftCas (load history)
-  liftCas (require (prev.tag == Ty.entry.wireTag) "history is not an entry")
+  liftCas (require (prev.tag == Ty.agent.wireTag) "history is not an agent step")
   let links ← liftCas <| contextIds.foldlM (init := []) fun acc a => do
     let o ← load a
     pure (acc ++ [Ref.mk o.tag a])
@@ -51,9 +72,9 @@ def agentStep (history : Addr32) (contextIds : List Addr32)
     pure (acc ++ textOf o.payload ++ "\n")
   let answer ← infer prompt
   let out ← liftCas (put (valueNode (utf8 answer)))
-  liftCas (put (entryNode attestation
+  liftCas (put (agentNode attestation
     [⟨Ty.context.wireTag, ctx⟩, ⟨Ty.value.wireTag, out⟩,
-     ⟨Ty.entry.wireTag, history⟩]))
+     ⟨Ty.agent.wireTag, history⟩]))
 
 /-- Deterministic oracle for the demo run. -/
 def scripted (prompt : String) : String :=
@@ -67,12 +88,17 @@ def myDrawer : Tree .entry := journal% [
   save% "ideas.md" := "# merkle to merkle"
 ]
 
-/-- The seeded word, under the production digest. -/
-def w0 : Word := myDrawer.flatten sha256Addr
+/-- The chain's first step, addressed under the production digest. -/
+def genesisAddr : Addr32 := sha256Addr (encodeNode agentGenesis)
+
+/-- The seeded word, under the production digest: the drawer, then the
+agent chain's genesis. The genesis carries no edges, so appending it
+preserves the children-first admission discipline. -/
+def w0 : Word := myDrawer.flatten sha256Addr ++ [⟨genesisAddr, agentGenesis⟩]
 
 def demoRun : Status CasSig Addr32 × Word :=
   runAgent sha256Addr scripted 100
-    (agentStep (myDrawer.address sha256Addr)
+    (agentStep genesisAddr
       [helloFile.address sha256Addr]
       (utf8 "model=scripted;t=0"))
     w0
@@ -98,6 +124,12 @@ def checks : IO Unit := do
       (agentStep (helloFile.address sha256Addr) [] []) w0 with
   | (.refused _, _) => pure ()
   | _ => throw (IO.userError "wrong-kind history was not refused")
+  -- The tag this form used to ride is now just another wrong kind: a
+  -- journal entry is not an agent step, and the guard says so.
+  match runAgent sha256Addr scripted 100
+      (agentStep (myDrawer.address sha256Addr) [] []) w0 with
+  | (.refused _, _) => pure ()
+  | _ => throw (IO.userError "a journal entry was accepted as an agent history")
   IO.println s!"agent step ok: {w0.length} → {w0.length + 3} bindings"
 
 #eval checks
